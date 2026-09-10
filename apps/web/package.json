@@ -1,0 +1,47 @@
+{
+  "name": "@maun/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@maun/db": "workspace:*",
+    "@maun/domain": "workspace:*",
+    "@maun/ui": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-query-persist-client": "catalog:",
+    "idb-keyval": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "workbox-window": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@maun/config": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "jsdom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-pwa": "catalog:",
+    "vitest": "catalog:"
+  }
+}
