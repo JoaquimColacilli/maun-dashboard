@@ -1,0 +1,14 @@
+{
+  "extends": "@maun/config/tsconfig/app.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vite-plugin-pwa/react"],
+    "paths": { "@/*": ["./src/*"] },
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo"
+  },
+  "include": ["src", "vitest.setup.ts"],
+  "references": [
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/ui" }
+  ]
+}

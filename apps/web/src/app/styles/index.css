@@ -1,0 +1,5 @@
+@import 'tailwindcss' source(none);
+@import '@maun/ui/theme.css';
+
+@source '../..';
+@source not '../../../../../design-reference';

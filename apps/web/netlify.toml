@@ -1,0 +1,25 @@
+# Configuración del sitio en Netlify:
+# - Base directory: sin setear (instala desde la raíz, donde está pnpm-lock.yaml).
+# - Package directory: apps/web (acá vive este archivo).
+# Las rutas y comandos se resuelven desde la raíz del repo.
+# pnpm lo instala Corepack según el campo packageManager del package.json raíz.
+
+[build]
+  command = "pnpm turbo run build --filter=@maun/web"
+  publish = "apps/web/dist"
+  ignore = 'if [ -z "$CACHED_COMMIT_REF" ] || [ "$CACHED_COMMIT_REF" = "$COMMIT_REF" ]; then exit 1; fi; git diff --quiet "$CACHED_COMMIT_REF" "$COMMIT_REF" -- apps/web packages package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .nvmrc'
+
+[build.environment]
+  NODE_VERSION = "22"
+  HUSKY = "0"
+  TURBO_TELEMETRY_DISABLED = "1"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

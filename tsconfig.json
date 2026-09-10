@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "exclude": ["design-reference"],
+  "references": [
+    { "path": "./packages/domain" },
+    { "path": "./packages/db" },
+    { "path": "./packages/ui" },
+    { "path": "./apps/web" }
+  ]
+}

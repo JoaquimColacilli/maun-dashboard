@@ -1,0 +1,6 @@
+{
+  "extends": "@maun/config/tsconfig/library-check.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  }
+}

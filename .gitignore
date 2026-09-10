@@ -1,0 +1,34 @@
+# dependencias, builds y caches
+node_modules/
+dist/
+dev-dist/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# tests e2e
+playwright-report/
+test-results/
+blob-report/
+
+# entorno: solo se versiona el ejemplo
+.env
+.env.*
+!.env.example
+
+# supabase CLI: estado local, nunca se versiona
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/.env.*
+
+# netlify CLI
+.netlify/
+
+# material de consulta local, no es código del proyecto
+design-reference/
+
+# sistema operativo y logs
+.DS_Store
+Thumbs.db
+*.log
