@@ -1,4 +1,4 @@
-import { onlineManager, useIsMutating } from '@tanstack/react-query';
+import { onlineManager, useIsMutating, useMutationState } from '@tanstack/react-query';
 import { useSyncExternalStore } from 'react';
 
 import { calcularEstadoSync, type EstadoSync } from './estado-sync';
@@ -9,5 +9,10 @@ const estaEnLinea = () => onlineManager.isOnline();
 export function useEstadoSync(): EstadoSync {
   const enLinea = useSyncExternalStore(suscribir, estaEnLinea, estaEnLinea);
   const pendientes = useIsMutating();
-  return calcularEstadoSync(enLinea, pendientes);
+  const rechazados = useMutationState({
+    filters: { status: 'error' },
+    select: (mutacion) => mutacion.mutationId,
+  }).length;
+
+  return calcularEstadoSync(enLinea, pendientes, rechazados);
 }
