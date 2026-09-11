@@ -25,7 +25,9 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 
 1. Escribí una migración nueva en `supabase/migrations/<AAAAMMDDhhmmss>_<nombre>.sql`. Chica y legible: nadie la genera, así que la revisión del SQL es la red. Una migración aplicada no se edita nunca.
 2. Toda tabla nueva llega con RLS, sus policies (roles en `to`), grants explícitos por columna, el trigger `private.mantener_metadatos()`, `household_id`, un índice `(household_id, updated_at)`, índices para sus foreign keys y sus tests. `00_estructura.sql` falla si falta algo de eso. Si la tabla es sincronizable, sumala a `bootstrap()`, `delta()` y a `tables_are` en ese mismo test.
-3. `pnpm --filter @maun/db db:ensayo` aplica las migraciones pendientes, corre toda la suite de pgTAP y compara `@maun/domain` contra sus gemelas de SQL (`scripts/comparacion.ts`), todo en una transacción contra la base real que termina en rollback. Con `-- --seed` carga también el seed antes de los tests. Corre con `node --conditions=@maun/source` para leer el dominio desde su código fuente.
+3. `pnpm --filter @maun/db db:ensayo` aplica las migraciones pendientes, corre toda la suite de pgTAP y compara `@maun/domain` contra sus gemelas de SQL (`scripts/comparacion.ts`), todo en una transacción contra la base real que termina en rollback. Corre con `node --conditions=@maun/source` para leer el dominio desde su código fuente. Tiene dos variantes:
+   - **`-- --seed`** carga también el seed antes de los tests.
+   - **`-- --recargar-seed`** borra el seed antes de migrar y lo recarga después, y verifica cada liquidación del seed contra el dominio. Es el ensayo de la secuencia `db:seed:borrar` → `db push` → `db:seed`, la que se usa cuando una migración agrega invariantes que el seed viejo no cumple. Esa secuencia solo vale mientras no haya más datos que el seed.
 4. `pnpm --filter @maun/db sb db push`.
 5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`. Commiteá `src/database.types.ts` y `supabase/esquema.sql`: ninguno de los dos se edita a mano.
 6. `pnpm --filter @maun/db sb db advisors --linked` y `pnpm verify`.
@@ -36,8 +38,17 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 
 - `tests/pgtap.test.ts`: la suite de pgTAP, un archivo por transacción, siempre en rollback.
 - `tests/esquema.test.ts`: `supabase/esquema.sql` contra la base viva.
-- `tests/dominio-vs-sql.test.ts`: la misma comparación que corre el ensayo (`scripts/comparacion.ts`), ahora contra la base ya migrada: cascada, rangos, estados, transiciones y lo que congela `cobrar_proyecto`. Todo en rollback.
-- `tests/concurrencia.test.ts`: dos conexiones reales prueban que el cobro toma `for update` antes de leer pagos o gastos, y que la guarda de un pago espera al cobro. Cada test falla si falta el lock que prueba. Usa el proyecto entregado del seed (`5eed…020002`) como dato commiteado que las dos sesiones ven, y todo lo que escribe termina en rollback. Solo corre contra migraciones ya aplicadas: otra sesión no ve DDL sin commitear.
+- `tests/dominio-vs-sql.test.ts`: la misma comparación que corre el ensayo (`scripts/comparacion.ts`), ahora contra la base ya migrada, todo en rollback. Cubre:
+  - la cascada, los topes, los rangos, los estados, las transiciones, las liquidaciones y las reversiones;
+  - las liquidaciones reales paso a paso, calculadas como las calcula la app;
+  - cada liquidación del seed.
+- `tests/concurrencia.test.ts`: conexiones reales, y todo lo que escriben termina en rollback. Prueban que:
+  - la liquidación toma `for update` sobre el proyecto antes de leer pagos o gastos;
+  - la guarda de un pago espera a la liquidación;
+  - dos liquidaciones del mismo household se esperan en la fila de ajustes;
+  - una liquidación espera a una edición de los ajustes.
+
+  Cada test falla si falta el lock que prueba. Usan proyectos del seed (`5eed…020002` entregado, `5eed…020011` en contacto) como datos commiteados que las sesiones ven. Solo corren contra migraciones ya aplicadas: otra sesión no ve DDL sin commitear.
 
 ## Conexión
 
@@ -62,6 +73,6 @@ Los scripts y los tests se conectan con `pg` al pooler (`supabase/.temp/pooler-u
 - Los cuerpos de función van entre `$$`, no con `begin atomic`: el runner busca `begin`, `commit` y `rollback` sueltos, y el `end` de un `begin atomic` lo confundiría.
 - Ninguna migración ni el seed controlan la transacción: el ensayo los corre todos en la suya y los rechaza si traen `begin` o `commit`.
 - El ensayo corre todas las migraciones pendientes en una sola transacción: agregar un valor a un enum y usarlo en una migración posterior falla en el ensayo aunque `db push` ande. En ese caso, ensayá en dos tandas.
-- Una guarda que lee otra fila para decidir (el proyecto de un pago, el cliente de un proyecto) la bloquea con `for share` antes de leerla: sin eso, una operación concurrente pasa con el estado viejo.
-- Rechazos de negocio con SQLSTATE de la clase `MN` (tabla en ADR 0010).
+- Una guarda que lee otra fila para decidir (el proyecto de un pago, el cliente de un proyecto, los ajustes de una liquidación) la bloquea antes de leerla: sin eso, una operación concurrente pasa con el estado viejo. La liquidación bloquea el proyecto y después los ajustes, en ese orden.
+- Rechazos de negocio con SQLSTATE de la clase `MN` (tabla en ADR 0010). Si el usuario puede hacer algo para destrabarlo, el `hint` lo dice: la app lo muestra.
 - `supabase-js` devuelve `bigint` como `number` y los tipos generados lo tipan así: la conversión a `Money` (entero con brand, ADR 0002) se hace acá, en un solo lugar.

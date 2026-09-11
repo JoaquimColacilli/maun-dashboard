@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import type pg from 'pg';
 
-import { compararDominioYSql } from './comparacion.ts';
+import { compararDominioYSql, compararSeed } from './comparacion.ts';
 import { conectar, DIR_SUPABASE } from './conexion.ts';
 import {
   archivosDeTest,
@@ -17,8 +17,16 @@ import {
   type ArchivoSql,
 } from './pgtap.ts';
 
+type ModoSeed = 'sin' | 'cargar' | 'recargar';
+
 function version(migracion: ArchivoSql): string {
   return path.basename(migracion.nombre).split('_')[0] ?? '';
+}
+
+function modoSeed(argumentos: readonly string[]): ModoSeed {
+  if (argumentos.includes('--recargar-seed')) return 'recargar';
+  if (argumentos.includes('--seed')) return 'cargar';
+  return 'sin';
 }
 
 async function versionesAplicadas(cliente: pg.Client): Promise<Set<string>> {
@@ -42,18 +50,20 @@ async function aplicar(cliente: pg.Client, archivo: ArchivoSql, xid: string): Pr
   console.log(`  ok  ${archivo.nombre}`);
 }
 
-async function ensayar(cliente: pg.Client, conSeed: boolean): Promise<number> {
+async function ensayar(cliente: pg.Client, seed: ModoSeed): Promise<number> {
   const xid = await idDeTransaccion(cliente);
   const aplicadas = await versionesAplicadas(cliente);
   const pendientes = migraciones().filter((migracion) => !aplicadas.has(version(migracion)));
-  const seed = conSeed ? [leerSql(path.join(DIR_SUPABASE, 'seed.sql'))] : [];
+  const antes = seed === 'recargar' ? [leerSql(path.join(DIR_SUPABASE, 'seed-borrar.sql'))] : [];
+  const despues = seed === 'sin' ? [] : [leerSql(path.join(DIR_SUPABASE, 'seed.sql'))];
+  const archivos = [...antes, ...pendientes, ...despues];
 
-  for (const archivo of [...pendientes, ...seed]) exigirSinControlDeTransaccion(archivo);
+  for (const archivo of archivos) exigirSinControlDeTransaccion(archivo);
 
   console.log(
     `Migraciones ya aplicadas: ${aplicadas.size}. Pendientes a ensayar: ${pendientes.length}.`,
   );
-  for (const archivo of [...pendientes, ...seed]) await aplicar(cliente, archivo, xid);
+  for (const archivo of archivos) await aplicar(cliente, archivo, xid);
 
   let fallidos = 0;
   for (const test of archivosDeTest()) {
@@ -78,27 +88,29 @@ async function ensayar(cliente: pg.Client, conSeed: boolean): Promise<number> {
   }
 
   await cliente.query('savepoint ensayo_comparacion');
-  const diferencias = await compararDominioYSql(cliente);
+  const diferencias = [
+    ...(await compararDominioYSql(cliente)),
+    ...(seed === 'sin' ? [] : await compararSeed(cliente)),
+  ];
   await cliente.query('rollback to savepoint ensayo_comparacion');
   if (diferencias.length > 0) {
     fallidos += 1;
     console.log(`  MAL @maun/domain contra SQL (${String(diferencias.length)} diferencias)`);
     for (const diferencia of diferencias.slice(0, 20)) console.log(`      ${diferencia}`);
   } else {
-    console.log('  ok  @maun/domain contra SQL: cascada, rangos, estados, transiciones y cobros');
+    console.log(
+      `  ok  @maun/domain contra SQL: cascada, topes, rangos, estados, transiciones y liquidaciones${seed === 'sin' ? '' : ', y el seed'}`,
+    );
   }
 
   return fallidos;
 }
 
-const conSeed = process.argv.includes('--seed');
+const seed = modoSeed(process.argv);
 const cliente = await conectar();
 
 try {
-  const fallidos = await enTransaccionConRollback(
-    (conexion) => ensayar(conexion, conSeed),
-    cliente,
-  );
+  const fallidos = await enTransaccionConRollback((conexion) => ensayar(conexion, seed), cliente);
   console.log(
     fallidos === 0
       ? 'Ensayo en verde. La transacción terminó en rollback: nada quedó aplicado.'
