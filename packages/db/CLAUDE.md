@@ -26,9 +26,9 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 1. Escribí una migración nueva en `supabase/migrations/<AAAAMMDDhhmmss>_<nombre>.sql`. Chica y legible: nadie la genera, así que la revisión del SQL es la red. Una migración aplicada no se edita nunca.
 2. Toda tabla nueva llega con RLS, sus policies (roles en `to`), grants explícitos por columna, el trigger `private.mantener_metadatos()`, `household_id`, un índice `(household_id, updated_at)`, índices para sus foreign keys y sus tests. `00_estructura.sql` falla si falta algo de eso. Si la tabla es sincronizable, sumala a `bootstrap()`, `delta()` y a `tables_are` en ese mismo test.
 3. `pnpm --filter @maun/db db:ensayo` aplica las migraciones pendientes y corre toda la suite en una transacción contra la base real, y hace rollback. Con `-- --seed` carga también el seed antes de los tests.
-4. `supabase db push`.
+4. `pnpm --filter @maun/db sb db push`.
 5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`. Commiteá `src/database.types.ts` y `supabase/esquema.sql`: ninguno de los dos se edita a mano.
-6. `supabase db advisors --linked` y `pnpm verify`.
+6. `pnpm --filter @maun/db sb db advisors --linked` y `pnpm verify`.
 
 `supabase/esquema.sql` es la vista del estado final del esquema. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
 

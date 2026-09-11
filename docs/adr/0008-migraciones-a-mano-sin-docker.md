@@ -27,9 +27,9 @@ Además, el dueño decidió trabajar con **un solo proyecto**, que es producció
 1. Escribir la migración.
 2. `pnpm --filter @maun/db db:ensayo`: abre una transacción contra la base real, aplica las migraciones pendientes, corre toda la suite de pgTAP y hace **rollback siempre**. Es el reemplazo de la shadow database: la migración se prueba contra el mismo Postgres, con los mismos roles y extensiones, sin dejar nada.
 3. Si la migración es destructiva y toca una tabla con datos, **se frena y se consulta al dueño** antes de seguir (ver abajo).
-4. `supabase db push`.
+4. `pnpm --filter @maun/db sb db push` (el CLI con el token del repo, ver abajo).
 5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`, y se commitean los dos archivos generados.
-6. `supabase db advisors --linked` y `pnpm verify`.
+6. `pnpm --filter @maun/db sb db advisors --linked` y `pnpm verify`.
 
 **pgTAP con un runner propio.** Como `supabase test db` necesita Docker, la suite la corre un test de Vitest en `packages/db` que se conecta con `pg` (node-postgres) al pooler del proyecto. Por cada archivo de `supabase/tests/` abre una transacción, ejecuta `_preludio.sql` (pgTAP y los helpers de identidad), ejecuta el archivo y hace rollback, pase lo que pase. Los archivos no pueden controlar la transacción: el runner rechaza `begin`, `commit`, `rollback` y parecidos antes de ejecutar, y después compara el id de transacción del principio y del final para detectar un commit que se haya colado. Está dentro de `pnpm verify` y no depende de nada instalado en el sistema.
 
@@ -55,7 +55,7 @@ Además, el dueño decidió trabajar con **un solo proyecto**, que es producció
 
 El pooler presenta una cadena firmada por una CA privada de Supabase, que el store de certificados de Node no reconoce. Con `rejectUnauthorized: false` cualquiera en la misma red podía hacerse pasar por la base y quedarse con la contraseña de `postgres`. Por eso la raíz está fijada en `packages/db/certs/supabase-root-2021-ca.crt` y la conexión la exige.
 
-- **Qué es:** `Supabase Root 2021 CA`, SHA-256 `80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA`. Se verificó el 2026-09-11 por dos caminos independientes: la que presenta el pooler y la que publica Supabase (`https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt`, que es la misma que se baja del dashboard en Database → Settings → SSL Configuration).
+- **Qué es:** `Supabase Root 2021 CA`, SHA-256 `80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA`. Se verificó el 2026-09-11 por dos caminos independientes, que dieron la misma huella: la que presenta el pooler y la que publica Supabase en `https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt`, bajada por HTTPS con certificado público. El dashboard ofrece el mismo archivo en Database → Settings → SSL Configuration; esa descarga no se comparó.
 - **Cuándo vence:** el **2031-04-26**. Supabase la puede rotar antes, sin aviso a este repo.
 - **Qué pasa si rota:** todo lo que se conecta con `pg` falla con un error de verificación de certificado (`self-signed certificate in certificate chain` o `unable to get local issuer certificate`). Eso incluye los tests de `pnpm verify`, el ensayo, el seed y el snapshot. La app no se ve afectada: habla con la API por HTTPS con certificados públicos. El CLI tampoco.
 - **Aviso previo:** un test de `pnpm verify` (`tests/runner.test.ts`) falla cuando faltan menos de 90 días para el vencimiento.
