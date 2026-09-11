@@ -22,15 +22,16 @@
     "db:ensayo": "node --conditions=@maun/source scripts/ensayo.ts",
     "db:esquema": "node scripts/esquema.ts",
     "db:medir": "node scripts/medir.ts",
+    "db:household": "node scripts/household.ts",
     "db:seed": "node scripts/seed.ts",
     "db:seed:borrar": "node scripts/seed.ts --borrar"
   },
   "dependencies": {
+    "@maun/domain": "workspace:*",
     "@supabase/supabase-js": "catalog:"
   },
   "devDependencies": {
     "@maun/config": "workspace:*",
-    "@maun/domain": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "eslint": "catalog:",

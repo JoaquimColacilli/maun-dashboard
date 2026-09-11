@@ -179,6 +179,9 @@ catalogs:
     eslint-plugin-react-refresh:
       specifier: 0.5.6
       version: 0.5.6
+    fake-indexeddb:
+      specifier: 6.2.5
+      version: 6.2.5
     globals:
       specifier: 17.12.0
       version: 17.12.0
@@ -329,6 +332,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.10.0(jiti@2.7.0)(supports-color@7.2.0)
+      fake-indexeddb:
+        specifier: 'catalog:'
+        version: 6.2.5
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1
@@ -387,6 +393,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@maun/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.116.0
@@ -394,9 +403,6 @@ importers:
       '@maun/config':
         specifier: workspace:*
         version: link:../config
-      '@maun/domain':
-        specifier: workspace:*
-        version: link:../domain
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.2
@@ -2403,6 +2409,10 @@ packages:
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
@@ -5811,6 +5821,8 @@ snapshots:
   eta@4.6.0: {}
 
   expect-type@1.4.0: {}
+
+  fake-indexeddb@6.2.5: {}
 
   fast-deep-equal@3.1.3: {}
 
