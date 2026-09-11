@@ -20,7 +20,7 @@ select set_eq(
     select p.proname::text from pg_proc p
     where p.pronamespace = 'public'::regnamespace and p.prorettype <> 'event_trigger'::regtype
   $$,
-  array['bootstrap', 'delta'],
+  array['bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto'],
   'public expone exactamente las funciones esperadas'
 );
 
@@ -86,10 +86,9 @@ select is_empty(
     select p.oid::regprocedure::text
     from pg_proc p
     where p.pronamespace in ('public'::regnamespace, 'private'::regnamespace)
-      and p.prorettype <> 'event_trigger'::regtype
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   $$,
-  'anon no ejecuta ninguna función de public ni de private'
+  'anon no ejecuta ninguna función de public ni de private, tampoco las de la plataforma'
 );
 
 select is_empty(

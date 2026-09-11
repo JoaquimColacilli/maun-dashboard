@@ -131,9 +131,9 @@ insert into public.gastos (id, proyecto_id, fecha, monto_centavos)
 
 select throws_ok(
   $$ update public.proyectos set estado = 'cobrado' where id = 'aaaaaaaa-0000-7000-8000-000000000010' $$,
-  '23514',
+  'MN007',
   null,
-  'el cliente no marca cobrado un proyecto sin congelar la distribución'
+  'el cliente no marca cobrado un proyecto: eso es cobrar_proyecto'
 );
 
 select throws_ok(
