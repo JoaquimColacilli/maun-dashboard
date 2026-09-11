@@ -396,6 +396,9 @@ export type Database = {
           id: string;
           notas: string;
           presupuesto_centavos: number | null;
+          reapertura_fecha_cobro: string | null;
+          reapertura_tope_fijos_centavos: number | null;
+          reapertura_tope_sueldo_centavos: number | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -428,6 +431,9 @@ export type Database = {
           id?: string;
           notas?: string;
           presupuesto_centavos?: number | null;
+          reapertura_fecha_cobro?: string | null;
+          reapertura_tope_fijos_centavos?: number | null;
+          reapertura_tope_sueldo_centavos?: number | null;
           titulo: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
@@ -460,6 +466,9 @@ export type Database = {
           id?: string;
           notas?: string;
           presupuesto_centavos?: number | null;
+          reapertura_fecha_cobro?: string | null;
+          reapertura_tope_fijos_centavos?: number | null;
+          reapertura_tope_sueldo_centavos?: number | null;
           titulo?: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
@@ -503,7 +512,107 @@ export type Database = {
     };
     Functions: {
       bootstrap: { Args: never; Returns: Json };
+      cobrar_proyecto: {
+        Args: {
+          p_cobrado_centavos: number;
+          p_diezmo_centavos: number;
+          p_fecha_cobro: string;
+          p_fijos_centavos: number;
+          p_gastos_centavos: number;
+          p_proyecto_id: string;
+          p_remanente_centavos: number;
+          p_sueldo_centavos: number;
+          p_tope_fijos_centavos: number;
+          p_tope_sueldo_centavos: number;
+          p_version: number;
+        };
+        Returns: {
+          cliente_id: string;
+          comprobante: Database['public']['Enums']['comprobante'];
+          created_at: string;
+          deleted_at: string | null;
+          descripcion: string;
+          direccion_entrega: string;
+          dist_cobrado_centavos: number | null;
+          dist_diezmo_bp: number | null;
+          dist_diezmo_centavos: number | null;
+          dist_fijos_centavos: number | null;
+          dist_gastos_centavos: number | null;
+          dist_remanente_centavos: number | null;
+          dist_sueldo_centavos: number | null;
+          dist_tope_fijos_centavos: number | null;
+          dist_tope_sueldo_centavos: number | null;
+          entrega_estimada: string | null;
+          estado: Database['public']['Enums']['estado_proyecto'];
+          fecha_cobro: string | null;
+          fecha_entrega: string | null;
+          fecha_inicio: string | null;
+          fecha_visita: string | null;
+          forma_pago: Database['public']['Enums']['forma_pago'] | null;
+          household_id: string;
+          id: string;
+          notas: string;
+          presupuesto_centavos: number | null;
+          reapertura_fecha_cobro: string | null;
+          reapertura_tope_fijos_centavos: number | null;
+          reapertura_tope_sueldo_centavos: number | null;
+          titulo: string;
+          ultimo_contacto: string | null;
+          updated_at: string;
+          version: number;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'proyectos';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       delta: { Args: { p_desde: string }; Returns: Json };
+      reabrir_proyecto: {
+        Args: { p_proyecto_id: string; p_version: number };
+        Returns: {
+          cliente_id: string;
+          comprobante: Database['public']['Enums']['comprobante'];
+          created_at: string;
+          deleted_at: string | null;
+          descripcion: string;
+          direccion_entrega: string;
+          dist_cobrado_centavos: number | null;
+          dist_diezmo_bp: number | null;
+          dist_diezmo_centavos: number | null;
+          dist_fijos_centavos: number | null;
+          dist_gastos_centavos: number | null;
+          dist_remanente_centavos: number | null;
+          dist_sueldo_centavos: number | null;
+          dist_tope_fijos_centavos: number | null;
+          dist_tope_sueldo_centavos: number | null;
+          entrega_estimada: string | null;
+          estado: Database['public']['Enums']['estado_proyecto'];
+          fecha_cobro: string | null;
+          fecha_entrega: string | null;
+          fecha_inicio: string | null;
+          fecha_visita: string | null;
+          forma_pago: Database['public']['Enums']['forma_pago'] | null;
+          household_id: string;
+          id: string;
+          notas: string;
+          presupuesto_centavos: number | null;
+          reapertura_fecha_cobro: string | null;
+          reapertura_tope_fijos_centavos: number | null;
+          reapertura_tope_sueldo_centavos: number | null;
+          titulo: string;
+          ultimo_contacto: string | null;
+          updated_at: string;
+          version: number;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'proyectos';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
     };
     Enums: {
       comprobante: 'factura_a' | 'factura_b' | 'factura_c' | 'remito' | 'sin_comprobante';
