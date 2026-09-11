@@ -1,6 +1,6 @@
 # 0009. Velocidad: región, cache primero y un solo round trip
 
-Estado: aceptada, 2026-09-11. La región y la base (bootstrap, índices) quedan hechas en la fase 2A; el cache, la sesión y el bundle se implementan en la 2C.
+Estado: aceptada, 2026-09-11. La región y la base (bootstrap, índices) quedan hechas en la fase 2A; el cache, la sesión y el bundle, en la 2C.
 
 ## Contexto
 
@@ -10,9 +10,9 @@ El primer requisito del cliente: abre la app y ve sus datos, sin esperar ni mira
 
 **Región São Paulo (sa-east-1).** El proyecto se creó primero en Oregon y se recreó con la base vacía. Medido desde la PC del taller el 2026-09-11, con conexión TCP directa al pooler de cada región: **225 ms a Oregon, 45 ms a São Paulo**. Un pedido real a la API de Oregon, con la conexión ya abierta, tardaba 234 ms. Con Oregon, el cache sería lo único que sostuviera el requisito; con São Paulo, además, la red deja de ser el cuello.
 
-**Primero el cache, después la red.** El cache de TanStack Query persiste en IndexedDB y se hidrata antes del primer render. En una visita que no es la primera no hay skeleton: se pintan los datos que había y la red los actualiza en el lugar. Los skeletons quedan para la primera visita y para el estado vacío real.
+**Primero el cache, después la red.** El cache de TanStack Query persiste en IndexedDB y se hidrata antes del primer render: la app no monta las pantallas hasta que `useIsRestoring()` da falso, así que no hay un parpadeo de vacío antes de los datos guardados. En una visita que no es la primera no hay skeleton: se pintan los datos que había y la red los actualiza en el lugar. Los skeletons quedan para la primera visita y para el estado vacío real.
 
-**La sesión se valida sin red.** Las guardas de ruta usan `getClaims()`, que verifica el JWT localmente contra el JWKS cacheado (el proyecto usa claves asimétricas). `getUser()` hace un round trip al servidor de Auth antes de poder decidir entre la app y el login: queda fuera del camino crítico.
+**La sesión se valida sin red.** Las guardas de ruta usan `getClaims()`, que verifica el JWT localmente contra el JWKS cacheado. Que el proyecto firme con claves asimétricas está verificado: su JWKS devuelve una clave ES256. `getUser()` hace un round trip al servidor de Auth antes de poder decidir entre la app y el login: queda fuera del camino crítico. Si `getClaims()` falla por falta de red antes de tener el JWKS, se cae a la sesión local sin verificar, que alcanza para elegir la pantalla (ADR 0012).
 
 **Un solo round trip para arrancar.** `public.bootstrap()` devuelve en un JSON todo el household: households, membresías, ajustes, clientes, proyectos, pagos, gastos y movimientos. Con PostgREST serían ocho consultas; desde Buenos Aires, ocho round trips. A esta escala, armar el JSON en Postgres cuesta mucho menos que un viaje. Después del arranque, `public.delta(cursor)` trae solo lo cambiado, también en uno (ADR 0010).
 
@@ -32,8 +32,9 @@ Sumar saldos escala bien. `bootstrap()` crece peor que lineal a partir de las 24
 
 - **Saldos precalculados** (saldo al cierre de cada mes, mantenido por trigger o por un cierre explícito) cuando el household supere las 100.000 filas entre movimientos, pagos y gastos (100 ms en la base), o cuando calcular los saldos en un celular de gama baja tarde más de 50 ms.
 - **Arranque paginado y reconcile por checksums** (ADR 0010) cuando `bootstrap()` pase de 500 ms en la base o de 1 MB comprimido. Al ritmo estimado, eso es a los diez años; antes, si el taller carga más de lo previsto. Se vuelve a medir con `db:medir` cada vez que el volumen real se acerque.
+- **Escritura del cache a IndexedDB.** El persister de TanStack 5.102.8 guarda en cada evento del cache, sin throttle: cargar un movimiento reserializa la réplica entera varias veces. Con el dataset de hoy no se nota; es lo primero a medir cuando se acerque a los umbrales de arriba, y la salida es agrupar las escrituras con un flush al ocultar la pestaña.
 
-**El bundle.** Code splitting por ruta, fuentes self-hosted (ya están) y un `<link rel="preconnect">` al origen de Supabase en el HTML, para que el handshake TLS no se pague recién en la primera consulta.
+**El bundle.** Code splitting por ruta (cada pantalla entra con `lazy` en `app/router/paginas.tsx`, salvo el login, que es lo primero que se ve), fuentes self-hosted (ya están) y un `<link rel="preconnect">` al origen de Supabase en el HTML, que Vite completa con `%VITE_SUPABASE_URL%`, para que el handshake TLS no se pague recién en la primera consulta.
 
 ## Riesgo conocido: el plan Free pausa el proyecto
 
