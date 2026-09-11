@@ -19,7 +19,7 @@
     "gen:types": "node scripts/gen-tipos.ts",
     "sb": "node scripts/supabase.ts",
     "db:ca": "node scripts/ca.ts",
-    "db:ensayo": "node scripts/ensayo.ts",
+    "db:ensayo": "node --conditions=@maun/source scripts/ensayo.ts",
     "db:esquema": "node scripts/esquema.ts",
     "db:medir": "node scripts/medir.ts",
     "db:seed": "node scripts/seed.ts",
@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@maun/config": "workspace:*",
+    "@maun/domain": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "eslint": "catalog:",

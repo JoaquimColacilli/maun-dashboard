@@ -1,6 +1,6 @@
 # 0003. Distribución congelada y libro mayor como vista
 
-Estado: vigente. Es una propuesta a validar en la fase 2.
+Estado: aceptada, 2026-09-11, con la evidencia de la fase 2 (ver al final). La cascada, el cobro y la reapertura se detallan en el ADR 0011.
 
 ## Contexto
 
@@ -37,8 +37,18 @@ Hay además un problema de historia. Si el sueldo configurado cambia el año que
 - **La vista es un libro mayor de verdad**: una fila por cada tesoro que toca un asiento, con importe con signo. El saldo de un tesoro es `sum(monto_centavos) where tesoro = X`.
 - **La distribución congelada son columnas de `proyectos`**: `fecha_cobro`, lo cobrado y los gastos sobre los que se calculó, el porcentaje de diezmo y los topes de sueldo y fijos aplicados, y los cuatro escalones. Dos checks: cobrado si y solo si la distribución está completa, y los escalones suman exactamente la ganancia neta.
 - **Ganancia negativa:** diezmo, sueldo y fijos en cero, y la pérdida entera en el remanente, que es el único escalón que puede ser negativo. Así la suma siempre cierra. Lo confirma o lo corrige el dominio en la fase 2B.
-- **Las columnas de la distribución no tienen grant para el cliente.** Las va a escribir una función de cobro en la base (fase 2B), que calcula la cascada en SQL y rechaza el cobro si la fila cambió desde la versión que vio el cliente. Su primera sentencia tiene que bloquear el proyecto con `for update`, y recién después, en otra sentencia, sumar pagos y gastos. Del otro lado, la guarda de pagos y gastos toma `for share` sobre el mismo proyecto: entre las dos, un pago que llega en el mismo instante que el cobro queda adentro de la distribución o se rechaza, nunca afuera en silencio.
+- **Las columnas de la distribución no tienen grant para el cliente.** Las escribe `cobrar_proyecto` (fase 2B), que calcula la cascada en SQL y rechaza el cobro si la versión del proyecto, los totales, los topes, la fecha o la distribución no son los que vio el cliente. Su primera sentencia bloquea el proyecto con `for update`, y recién después, en otra sentencia, suma pagos y gastos. Del otro lado, la guarda de pagos y gastos toma `for share` sobre el mismo proyecto: entre las dos, un pago que llega en el mismo instante que el cobro queda adentro de la distribución o se rechaza, nunca afuera en silencio.
 - Una vez cobrado, los pagos y gastos del proyecto no se tocan (`MN001`) y el proyecto no se borra. Corregir es reabrir o registrar un ajuste, como dice arriba.
+
+## Evidencia de la fase 2
+
+- **Saldos en una sola consulta sobre volúmenes realistas: confirmado.** 6 ms con un año de datos, 23 ms con diez años y 100 ms con 100.000 filas, medido en la base real (ADR 0009).
+- **TypeScript y SQL dan igual en todos los casos: confirmado.** `packages/db/tests/dominio-vs-sql.test.ts` compara las dos cascadas en más de 5.000 casos, y compara lo que congela `cobrar_proyecto` contra `calcularDistribucion`.
+- **Cobro parcial y reapertura sin excepciones ad hoc: confirmado.**
+  - Los pagos se acumulan en el proyecto y la distribución se calcula sobre su suma al cobrar.
+  - Reabrir es una función que descongela y guarda los topes y la fecha del cobro original. Cobrar de nuevo recalcula con esos topes y esa fecha, no con los ajustes de hoy: corregir un gasto no reescribe el sueldo de un cobro viejo.
+  - Ninguna de las dos necesitó un caso especial en la vista.
+- **Lo que la tiraría abajo** sigue en observación: que reabrir resulte frecuente, o que el cobro en cuotas exija distribuir por pago en vez de por proyecto. Con el uso real se ve.
 
 ## Qué evidencia de la fase 2 la confirma o la tira abajo
 

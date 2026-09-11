@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import type pg from 'pg';
 
+import { compararDominioYSql } from './comparacion.ts';
 import { conectar, DIR_SUPABASE } from './conexion.ts';
 import {
   archivosDeTest,
@@ -74,6 +75,17 @@ async function ensayar(cliente: pg.Client, conSeed: boolean): Promise<number> {
       );
     }
     await cliente.query('rollback to savepoint ensayo_test');
+  }
+
+  await cliente.query('savepoint ensayo_comparacion');
+  const diferencias = await compararDominioYSql(cliente);
+  await cliente.query('rollback to savepoint ensayo_comparacion');
+  if (diferencias.length > 0) {
+    fallidos += 1;
+    console.log(`  MAL @maun/domain contra SQL (${String(diferencias.length)} diferencias)`);
+    for (const diferencia of diferencias.slice(0, 20)) console.log(`      ${diferencia}`);
+  } else {
+    console.log('  ok  @maun/domain contra SQL: cascada, rangos, estados, transiciones y cobros');
   }
 
   return fallidos;

@@ -1,30 +1,34 @@
 # @maun/domain
 
-Lógica de negocio pura. Hoy está vacío a propósito: el diseño sale de los tests de la fase 2.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), la máquina de estados del proyecto (`estados.ts`) y la entrega estimada (`fechas.ts`). Las decisiones están en el ADR 0011.
 
 ## Pureza (la aplican las herramientas)
 
 - ESLint rechaza cualquier import que no sea relativo. Los tests solo pueden importar además `vitest`.
 - El tsconfig compila con `lib: ES2023` y `types: []`: no existen `window`, `document`, `fetch` ni los globals de Node.
-- Nada de I/O, relojes ni aleatoriedad dentro de un cálculo: la fecha de hoy, los ajustes y los montos entran por parámetro.
+- Nada de I/O, relojes ni aleatoriedad dentro de un cálculo: la fecha de hoy, los ajustes, los feriados y los montos entran por parámetro. `new Date(numero)` y `Date.UTC` son cuentas; `Date.now()` y `new Date()` sin argumentos, no.
 - Imports relativos con extensión `.ts` (`NodeNext` + `rewriteRelativeImportExtensions`), para que `dist` corra en Node y el código fuente pueda leerlo Deno.
 
 ## Plata
 
-- `Money` es un `number` entero de centavos con brand (ADR 0002). Nada de decimales ni de `BigInt` de JavaScript. Los porcentajes son enteros en puntos básicos (1000 = 10%), nunca float.
-- El redondeo del 10% de diezmo es una regla de negocio: se define una vez, se testea y SQL la replica igual.
+- `Money` es un `number` entero de centavos con brand (ADR 0002). Nada de decimales ni de `BigInt` de JavaScript. Toda operación corta con `RangeError` si el resultado deja de ser un entero seguro.
+- Los porcentajes son `PuntosBasicos` enteros (1000 = 10%). `aplicarPorcentaje` redondea al centavo mitad hacia arriba: `floor((importe × bp + 5000) / 10000)`, la misma cuenta que SQL.
 - Dividir por 100 pasa una sola vez, al formatear, y el formateo no vive acá.
 
 ## La cascada
 
-`ganancia neta = total cobrado − gastos del proyecto`, y cada escalón come del anterior: 10% a DIEZMO, sueldo a HOGAR (topeado por lo que quedó), costos fijos a MAUN (topeado), remanente en MAUN. Todo movimiento tiene contrapartida.
+`neta = cobrado − gastos` (lo cobrado, nunca el presupuesto). Si la neta es cero o negativa, todo en cero y la pérdida en el remanente. Si no: 10% a DIEZMO, sueldo a HOGAR topeado por lo que queda, costos fijos a MAUN topeados por lo que queda, remanente en MAUN.
 
 No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin restar de MAUN, el pago de diezmo que no sale de ningún tesoro y la ganancia calculada sobre el presupuesto en vez de lo cobrado. `design-reference/src/lib/format.ts` (`despiece`) todavía calcula sobre el presupuesto: no se porta.
 
-La misma cascada existe en SQL. Todo cambio acá lleva una migración nueva en `supabase/migrations/` y el test que compara las dos implementaciones.
+## Gemelos en SQL
 
-La base ya fija dos invariantes de la distribución congelada (`proyectos_distribucion_cuadra`): los cuatro escalones suman exactamente la ganancia neta, y solo el remanente puede ser negativo, cuando hubo pérdida. El redondeo del diezmo lo define este paquete.
+La cascada existe también en `private.cascada`, y las transiciones en `private.transicion_valida` (migración `20260911200100_cascada_estados_y_cobro.sql`). **Todo cambio acá lleva el cambio en SQL, con una migración nueva, en el mismo PR.** `packages/db/tests/dominio-vs-sql.test.ts` los compara contra la base y falla si divergen en un solo caso.
+
+## Estados
+
+`TRANSICIONES` lista solo lo que el usuario cambia a mano. Llegar a `cobrado` (`puedeCobrar`: solo desde `entregado`) y salir de `cobrado` (`puedeReabrir`) son operaciones de la base, `cobrar_proyecto` y `reabrir_proyecto`, no transiciones.
 
 ## Tests
 
-Vitest, al lado del archivo (`*.test.ts`). Casos obligatorios de la cascada: ganancia cero, ganancia negativa, ganancia menor al sueldo y proyecto cobrado parcialmente. Cuando entre el primer test, sacá `--passWithNoTests` del script `test`.
+Vitest, al lado del archivo (`*.test.ts`), con **cobertura del 100%** exigida por `vitest.config.ts`: código sin test rompe `pnpm verify`. Para propiedades sobre muchas entradas se usa un generador determinístico con semilla fija dentro del test (no hay dependencias de testing más allá de Vitest).

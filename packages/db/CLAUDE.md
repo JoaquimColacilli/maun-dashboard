@@ -25,12 +25,19 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 
 1. Escribí una migración nueva en `supabase/migrations/<AAAAMMDDhhmmss>_<nombre>.sql`. Chica y legible: nadie la genera, así que la revisión del SQL es la red. Una migración aplicada no se edita nunca.
 2. Toda tabla nueva llega con RLS, sus policies (roles en `to`), grants explícitos por columna, el trigger `private.mantener_metadatos()`, `household_id`, un índice `(household_id, updated_at)`, índices para sus foreign keys y sus tests. `00_estructura.sql` falla si falta algo de eso. Si la tabla es sincronizable, sumala a `bootstrap()`, `delta()` y a `tables_are` en ese mismo test.
-3. `pnpm --filter @maun/db db:ensayo` aplica las migraciones pendientes y corre toda la suite en una transacción contra la base real, y hace rollback. Con `-- --seed` carga también el seed antes de los tests.
+3. `pnpm --filter @maun/db db:ensayo` aplica las migraciones pendientes, corre toda la suite de pgTAP y compara `@maun/domain` contra sus gemelas de SQL (`scripts/comparacion.ts`), todo en una transacción contra la base real que termina en rollback. Con `-- --seed` carga también el seed antes de los tests. Corre con `node --conditions=@maun/source` para leer el dominio desde su código fuente.
 4. `pnpm --filter @maun/db sb db push`.
 5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`. Commiteá `src/database.types.ts` y `supabase/esquema.sql`: ninguno de los dos se edita a mano.
 6. `pnpm --filter @maun/db sb db advisors --linked` y `pnpm verify`.
 
 `supabase/esquema.sql` es la vista del estado final del esquema. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
+
+## Tests de Vitest que tocan la base
+
+- `tests/pgtap.test.ts`: la suite de pgTAP, un archivo por transacción, siempre en rollback.
+- `tests/esquema.test.ts`: `supabase/esquema.sql` contra la base viva.
+- `tests/dominio-vs-sql.test.ts`: la misma comparación que corre el ensayo (`scripts/comparacion.ts`), ahora contra la base ya migrada: cascada, rangos, estados, transiciones y lo que congela `cobrar_proyecto`. Todo en rollback.
+- `tests/concurrencia.test.ts`: dos conexiones reales prueban que el cobro toma `for update` antes de leer pagos o gastos, y que la guarda de un pago espera al cobro. Cada test falla si falta el lock que prueba. Usa el proyecto entregado del seed (`5eed…020002`) como dato commiteado que las dos sesiones ven, y todo lo que escribe termina en rollback. Solo corre contra migraciones ya aplicadas: otra sesión no ve DDL sin commitear.
 
 ## Conexión
 

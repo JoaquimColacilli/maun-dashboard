@@ -15,10 +15,11 @@
     "build": "tsc -b",
     "typecheck": "tsc -p tsconfig.test.json",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@maun/config": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
