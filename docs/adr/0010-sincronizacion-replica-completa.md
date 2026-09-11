@@ -22,7 +22,7 @@ El taller tiene mala señal: la app tiene que seguir andando sin conexión y lo 
 - **Edición:** `update ... where id = X` con **solo las columnas que cambió el usuario**, nunca la fila entera. Si el servidor cambió otra columna en el medio (el cobro cambió el estado, otro dispositivo editó las notas), el reenvío no la pisa ni choca contra ella. `ajustes` solo se edita: no tiene alta desde el cliente.
 - **Baja:** `update ... set deleted_at = T where id = X`, con `T` fijado **al encolar**, no al ejecutar. Borrar otra vez algo ya borrado conserva la primera marca y no hace nada.
 
-**Idempotencia.** Drenar la cola dos veces no hace nada: un update que no cambia ningún valor no toca `updated_at` ni `version`, así que tampoco genera un delta. Las guardas de negocio también dejan pasar el reenvío idéntico de algo ya aplicado. Está probado en `supabase/tests/03_integridad.sql`.
+**Idempotencia.** Drenar la cola dos veces no hace nada: un update que no cambia ningún valor no toca `updated_at` ni `version`, así que tampoco genera un delta. Las guardas de negocio también dejan pasar el reenvío idéntico de algo ya aplicado, y `cobrar_proyecto` y `reabrir_proyecto` reconocen su propio reenvío (la versión subió exactamente uno y los datos coinciden) y devuelven el proyecto sin rechazar. Si después del cobro hubo otra edición, el reintento rebota con `MN001`, que es verdad. Está probado en `supabase/tests/03_integridad.sql` y `07_cobro.sql`.
 
 **Borrados lógicos.** `deleted_at` en toda tabla, y no hay grant de `delete` para el cliente. `delta()` devuelve también las filas borradas para que el cliente las saque de su copia. Un borrado físico sería invisible para un cliente que estuvo desconectado y le dejaría la fila para siempre. Borrar un proyecto borra sus pagos y gastos con la misma marca de tiempo.
 
@@ -36,9 +36,9 @@ La alternativa de un contador asignado en el commit es más exacta, pero pide un
 **Conflictos.**
 
 - **Por defecto, gana la última escritura**, y es una decisión, no un descuido: hay un solo usuario, y lo peor que pasa es que una edición de texto pise a otra.
-- **Para lo que toca plata, no alcanza.** Cobrar un proyecto congela su distribución (ADR 0003) y se hace por una función que recibe la `version` que vio el cliente: si la fila del servidor cambió, la escritura se rechaza y se le avisa al usuario. Se implementa en la fase 2B, junto con la cascada en SQL.
+- **Para lo que toca plata, no alcanza.** Cobrar un proyecto congela su distribución (ADR 0003) y se hace con `cobrar_proyecto`, que recibe la `version` que vio el cliente, los totales, los topes, la fecha y la distribución que calculó. Si algo de eso no coincide con la base, la escritura se rechaza con `MN006` (o con `MN008` si lo que difiere es la distribución) y se le avisa al usuario (ADR 0011). Reabrir funciona igual con la versión.
 - Una vez cobrado, los pagos y gastos del proyecto no se pueden crear, editar, mover ni borrar, y el proyecto no cambia de estado ni se borra. Si una mutación encolada offline llega después del cobro, la base la rechaza. Perder un cobro por una reconexión no es aceptable: preferimos un rechazo visible a una distribución desfasada.
-- La guarda de pagos y gastos bloquea el proyecto (`for share`) antes de mirar su estado. Así un pago que entra en el mismo instante en que otra sesión cobra espera al cobro y lo ve, en vez de pasar con el estado viejo. El contrato del otro lado, para la función de cobro de la fase 2B: su primera sentencia bloquea el proyecto con `for update`, y recién después, en otra sentencia, suma pagos y gastos.
+- La guarda de pagos y gastos bloquea el proyecto (`for share`) antes de mirar su estado, y `cobrar_proyecto` lo bloquea con `for update` como primera sentencia. Así un pago y un cobro simultáneos se esperan: el pago ve el proyecto ya cobrado y se rechaza, o el cobro ve el pago y lo suma. `packages/db/tests/concurrencia.test.ts` prueba con dos conexiones reales que cada lado espera al otro, y que el cobro espera antes de haber leído pagos o gastos. La rama commiteada (el pago que después de esperar rebota con `MN001`) no se prueba contra la base real, porque exigiría commitear en producción (ADR 0011).
 
 **Rechazos de negocio con código propio.** La base rechaza con SQLSTATE de la clase `MN`. La cola no reintenta esos rechazos ni el `42501`: se los muestra al usuario y saca la mutación de la cola. Todo lo demás (red, timeouts, 5xx) se reintenta.
 
@@ -49,6 +49,9 @@ La alternativa de un contador asignado en el commit es más exacta, pero pide un
 | `MN003` | El cliente tiene proyectos vivos: no se puede borrar.                                                                                                         |
 | `MN004` | Se intentó cambiar el `id` o el `household_id` de una fila.                                                                                                   |
 | `MN005` | El cliente está borrado: no se le crean ni se le reasignan proyectos.                                                                                         |
+| `MN006` | La versión del proyecto, el total cobrado, el de gastos, los topes o la fecha no son los que vio el usuario: la app vuelve a mostrar la distribución.         |
+| `MN007` | Transición de estado inválida, o cobrar algo que no está entregado, o reabrir algo que no está cobrado.                                                       |
+| `MN008` | La distribución que calculó la app no es la que calcula la base: la app está desactualizada y tiene que recargarse.                                           |
 | `42501` | El usuario no tiene household asignado, o no tiene permiso.                                                                                                   |
 
 **La UI no miente.** Tres estados, visibles y siempre correctos: sin conexión, N cambios pendientes, sincronizado. Nunca "guardado" para algo que está en la cola.
