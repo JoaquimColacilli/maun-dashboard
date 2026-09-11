@@ -89,6 +89,23 @@ begin
 end;
 $$;
 
+-- El hint de un rechazo: la guarda le dice al usuario cómo seguir, y eso también se prueba.
+create function tests.hint_de(p_sql text)
+returns text
+language plpgsql
+as $$
+declare
+  v_hint text;
+begin
+  execute p_sql;
+  return null;
+exception
+  when others then
+    get stacked diagnostics v_hint = pg_exception_hint;
+    return v_hint;
+end;
+$$;
+
 -- Los tests cambian de rol: que los helpers anden aunque el proyecto haya tocado el execute por
 -- defecto de public.
 grant execute on all functions in schema tests to anon, authenticated;

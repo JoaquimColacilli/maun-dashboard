@@ -32,7 +32,9 @@ update public.proyectos set
   estado = 'cobrado', fecha_cobro = '2026-08-20',
   dist_cobrado_centavos = 10000, dist_gastos_centavos = 3000, dist_diezmo_bp = 1000,
   dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
-  dist_diezmo_centavos = 700, dist_sueldo_centavos = 6300, dist_fijos_centavos = 0, dist_remanente_centavos = 0
+  dist_diezmo_centavos = 700, dist_sueldo_centavos = 6300, dist_fijos_centavos = 0, dist_remanente_centavos = 0,
+  dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0, dist_liquidado_at = now()
 where id = 'aaaaaaaa-0000-7000-8000-000000000011';
 select tests.entrar_como(tests.id('a'));
 

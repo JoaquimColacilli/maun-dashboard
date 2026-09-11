@@ -7,7 +7,8 @@
 -- Es idempotente: arranca borrando el household del seed, así que correrlo dos veces deja lo mismo.
 -- No suma miembros: para verlo desde la app hay que asignarle un usuario de prueba a mano.
 --
--- Importes en centavos. Ajustes: sueldo $1.800.000, fijos $250.000, diezmo 10%.
+-- Importes en centavos. Ajustes: sueldo $1.800.000 por proyecto, fijos $250.000 por mes, diezmo
+-- 10%; un perdido con seña paga diezmo y no sueldo (ADR 0011).
 
 delete from public.households where id = '5eed0000-0000-7000-8000-000000000001';
 
@@ -35,8 +36,9 @@ insert into public.clientes (
 
 
 -- Proyectos --------------------------------------------------------------------------------------
--- Los cobrados entran como entregados: primero se cargan sus pagos y gastos, y recién después se
--- congela la distribución, igual que en la vida real (la base no deja tocar los hijos de un cobrado).
+-- Los cobrados entran como entregados y los perdidos como leads: primero se cargan sus pagos y
+-- gastos, y recién después se congela la distribución, igual que en la vida real (la base no deja
+-- tocar los hijos de un proyecto liquidado).
 
 insert into public.proyectos (
   id, household_id, cliente_id, titulo, estado, presupuesto_centavos, forma_pago, comprobante,
@@ -85,9 +87,17 @@ insert into public.proyectos (
    null, '2026-09-09', null, null, null, 'Sarmiento 2310, Morón',
    'Preguntaron por WhatsApp. Pasar un precio aproximado.'),
   ('5eed0000-0000-7000-8000-000000020012', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000010004',
-   'Deck de madera para el patio', 'perdido', 110000000, null, 'factura_c',
+   'Deck de madera para el patio', 'presupuesto_enviado', 110000000, null, 'factura_c',
    '2026-06-28', '2026-07-10', null, null, null, 'Colón 455, Merlo',
-   'Eligió otro presupuesto más barato.');
+   'Eligió otro presupuesto más barato.'),
+  ('5eed0000-0000-7000-8000-000000020013', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000010005',
+   'Vestidor y placares del dormitorio principal', 'entregado', 320000000, 'transferencia', 'factura_b',
+   null, null, '2025-11-10', '2025-12-09', '2025-12-18', 'Alsina 88, Ramos Mejía',
+   'Lo encargó cuando vio la cocina terminada.'),
+  ('5eed0000-0000-7000-8000-000000020014', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000010004',
+   'Alacena para el lavadero', 'a_presupuestar', null, null, 'factura_c',
+   '2026-08-06', '2026-08-13', null, null, null, 'Colón 455, Merlo',
+   'Cobró la visita. Después avisó que lo iba a hacer él.');
 
 
 -- Pagos ------------------------------------------------------------------------------------------
@@ -108,7 +118,10 @@ insert into public.pagos (id, household_id, proyecto_id, fecha, concepto, monto_
   ('5eed0000-0000-7000-8000-000000030013', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-11-03', 'Seña', 180000000),
   ('5eed0000-0000-7000-8000-000000030014', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-11-24', 'Segunda cuota', 150000000),
   ('5eed0000-0000-7000-8000-000000030015', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-12-19', 'Tercera cuota y saldo', 150000000),
-  ('5eed0000-0000-7000-8000-000000030016', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020008', '2026-09-08', 'Seña a cuenta', 8000000);
+  ('5eed0000-0000-7000-8000-000000030016', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020008', '2026-09-08', 'Seña a cuenta', 8000000),
+  ('5eed0000-0000-7000-8000-000000030017', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020013', '2025-11-10', 'Anticipo', 160000000),
+  ('5eed0000-0000-7000-8000-000000030018', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020013', '2025-12-22', 'Saldo', 160000000),
+  ('5eed0000-0000-7000-8000-000000030019', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020014', '2026-08-06', 'Visita de relevamiento', 4000000);
 
 
 -- Gastos -----------------------------------------------------------------------------------------
@@ -140,40 +153,86 @@ insert into public.gastos (id, household_id, proyecto_id, fecha, descripcion, mo
   ('5eed0000-0000-7000-8000-000000040024', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-11-05', 'MDF 18mm para laquear (4 placas)', 39000000),
   ('5eed0000-0000-7000-8000-000000040025', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-11-12', 'Herrajes Blum: cajones y bisagras', 31000000),
   ('5eed0000-0000-7000-8000-000000040026', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-11-12', 'Tapacantos', 4200000),
-  ('5eed0000-0000-7000-8000-000000040027', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-12-15', 'Flete y ayudante para el montaje', 8800000);
+  ('5eed0000-0000-7000-8000-000000040027', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020007', '2025-12-15', 'Flete y ayudante para el montaje', 8800000),
+  ('5eed0000-0000-7000-8000-000000040028', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020013', '2025-11-12', 'Melamina roble 18mm (14 placas)', 61000000),
+  ('5eed0000-0000-7000-8000-000000040029', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020013', '2025-11-19', 'Herrajes Hettich y correderas', 21000000),
+  ('5eed0000-0000-7000-8000-000000040030', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020013', '2025-12-16', 'Flete y colocación', 8000000),
+  ('5eed0000-0000-7000-8000-000000040031', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020014', '2026-08-06', 'Nafta de la visita', 800000);
 
 
--- Cobros: se congela la distribución --------------------------------------------------------------
--- neta = cobrado − gastos; diezmo 10%; sueldo topeado en 180.000.000; fijos topeados en 25.000.000.
+-- Liquidaciones: se congela la distribución ------------------------------------------------------
+-- En el orden en que pasaron. neta = cobrado − gastos; diezmo 10%; sueldo topeado en 180.000.000
+-- por proyecto; fijos topeados por lo que falta de 25.000.000 en el mes. Un perdido paga diezmo y
+-- no sueldo. packages/db/tests/dominio-vs-sql.test.ts verifica cada una contra @maun/domain.
 
+-- Septiembre 2025.
 update public.proyectos set
-  estado = 'cobrado', fecha_cobro = '2026-08-28',
-  dist_cobrado_centavos = 124000000, dist_gastos_centavos = 35330000, dist_diezmo_bp = 1000,
-  dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
-  dist_diezmo_centavos = 8867000, dist_sueldo_centavos = 79803000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
-where id = '5eed0000-0000-7000-8000-000000020001';
-
-update public.proyectos set
-  estado = 'cobrado', fecha_cobro = '2026-07-15',
-  dist_cobrado_centavos = 54000000, dist_gastos_centavos = 19400000, dist_diezmo_bp = 1000,
-  dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
-  dist_diezmo_centavos = 3460000, dist_sueldo_centavos = 31140000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
-where id = '5eed0000-0000-7000-8000-000000020005';
-
-update public.proyectos set
-  estado = 'cobrado', fecha_cobro = '2025-09-05',
+  estado = 'cobrado', fecha_cobro = '2025-09-05', dist_liquidado_at = '2025-09-05 18:00-03',
   dist_cobrado_centavos = 89000000, dist_gastos_centavos = 30100000, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0,
   dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
   dist_diezmo_centavos = 5890000, dist_sueldo_centavos = 53010000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
 where id = '5eed0000-0000-7000-8000-000000020006';
 
--- El único que llega a cubrir sueldo y fijos y deja remanente.
+-- Diciembre 2025: la cocina cubre sueldo y fijos y deja remanente.
 update public.proyectos set
-  estado = 'cobrado', fecha_cobro = '2025-12-19',
+  estado = 'cobrado', fecha_cobro = '2025-12-19', dist_liquidado_at = '2025-12-19 18:00-03',
   dist_cobrado_centavos = 480000000, dist_gastos_centavos = 165000000, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0,
   dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
   dist_diezmo_centavos = 31500000, dist_sueldo_centavos = 180000000, dist_fijos_centavos = 25000000, dist_remanente_centavos = 78500000
 where id = '5eed0000-0000-7000-8000-000000020007';
+
+-- Tres días después, el vestidor: su propio sueldo, pero los fijos de diciembre ya estaban cubiertos.
+update public.proyectos set
+  estado = 'cobrado', fecha_cobro = '2025-12-22', dist_liquidado_at = '2025-12-22 18:00-03',
+  dist_cobrado_centavos = 320000000, dist_gastos_centavos = 90000000, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 180000000, dist_fijos_previo_centavos = 25000000,
+  dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 0,
+  dist_diezmo_centavos = 23000000, dist_sueldo_centavos = 180000000, dist_fijos_centavos = 0, dist_remanente_centavos = 27000000
+where id = '5eed0000-0000-7000-8000-000000020013';
+
+-- Julio 2026: el deck se pierde sin seña (todo en cero) y después se cobra el escritorio.
+update public.proyectos set
+  estado = 'perdido', fecha_cobro = '2026-07-10', dist_liquidado_at = '2026-07-10 18:00-03',
+  dist_cobrado_centavos = 0, dist_gastos_centavos = 0, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 0, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0,
+  dist_tope_sueldo_centavos = 0, dist_tope_fijos_centavos = 25000000,
+  dist_diezmo_centavos = 0, dist_sueldo_centavos = 0, dist_fijos_centavos = 0, dist_remanente_centavos = 0
+where id = '5eed0000-0000-7000-8000-000000020012';
+
+update public.proyectos set
+  estado = 'cobrado', fecha_cobro = '2026-07-15', dist_liquidado_at = '2026-07-15 18:00-03',
+  dist_cobrado_centavos = 54000000, dist_gastos_centavos = 19400000, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0,
+  dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
+  dist_diezmo_centavos = 3460000, dist_sueldo_centavos = 31140000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
+where id = '5eed0000-0000-7000-8000-000000020005';
+
+-- Agosto 2026: la alacena se pierde con la visita cobrada (neta 3.200.000: diezmo 320.000 y el
+-- resto a fijos), y después el placard encuentra agosto con 2.880.000 de fijos ya cubiertos.
+update public.proyectos set
+  estado = 'perdido', fecha_cobro = '2026-08-14', dist_liquidado_at = '2026-08-14 18:00-03',
+  dist_cobrado_centavos = 4000000, dist_gastos_centavos = 800000, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 0, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0,
+  dist_tope_sueldo_centavos = 0, dist_tope_fijos_centavos = 25000000,
+  dist_diezmo_centavos = 320000, dist_sueldo_centavos = 0, dist_fijos_centavos = 2880000, dist_remanente_centavos = 0
+where id = '5eed0000-0000-7000-8000-000000020014';
+
+update public.proyectos set
+  estado = 'cobrado', fecha_cobro = '2026-08-28', dist_liquidado_at = '2026-08-28 18:00-03',
+  dist_cobrado_centavos = 124000000, dist_gastos_centavos = 35330000, dist_diezmo_bp = 1000,
+  dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+  dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 2880000,
+  dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 22120000,
+  dist_diezmo_centavos = 8867000, dist_sueldo_centavos = 79803000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
+where id = '5eed0000-0000-7000-8000-000000020001';
 
 
 -- Movimientos manuales ---------------------------------------------------------------------------
