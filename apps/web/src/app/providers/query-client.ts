@@ -4,7 +4,7 @@ import { registrarMutacionesPersistibles } from './mutaciones-persistibles';
 
 export const DURACION_CACHE_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const VERSION_CACHE = '1';
+export const VERSION_CACHE = '2';
 
 export function crearQueryClient(): QueryClient {
   const queryClient = new QueryClient({

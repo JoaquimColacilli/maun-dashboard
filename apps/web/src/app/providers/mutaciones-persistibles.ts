@@ -1,11 +1,15 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-type DefaultsDeMutacion = Parameters<QueryClient['setMutationDefaults']>;
+import { CLAVE_DE_MOVIMIENTO, MUTACION_DE_MOVIMIENTO } from '@/features/registrar-movimiento';
 
-const mutacionesPersistibles: readonly DefaultsDeMutacion[] = [];
+type RegistroDeMutacion = (queryClient: QueryClient) => void;
+
+const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_MOVIMIENTO, MUTACION_DE_MOVIMIENTO);
+  },
+];
 
 export function registrarMutacionesPersistibles(queryClient: QueryClient): void {
-  for (const [mutationKey, opciones] of mutacionesPersistibles) {
-    queryClient.setMutationDefaults(mutationKey, opciones);
-  }
+  for (const registrar of mutacionesPersistibles) registrar(queryClient);
 }
