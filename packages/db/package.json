@@ -15,15 +15,26 @@
     "build": "tsc -b",
     "typecheck": "tsc -p tsconfig.test.json",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run --passWithNoTests",
-    "gen:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
+    "test": "vitest run",
+    "gen:types": "node scripts/gen-tipos.ts",
+    "sb": "node scripts/supabase.ts",
+    "db:ca": "node scripts/ca.ts",
+    "db:ensayo": "node scripts/ensayo.ts",
+    "db:esquema": "node scripts/esquema.ts",
+    "db:medir": "node scripts/medir.ts",
+    "db:seed": "node scripts/seed.ts",
+    "db:seed:borrar": "node scripts/seed.ts --borrar"
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:"
   },
   "devDependencies": {
     "@maun/config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "eslint": "catalog:",
+    "pg": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

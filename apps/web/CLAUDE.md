@@ -20,7 +20,8 @@ src/
 - `@maun/ui` se importa solo desde `shared/ui`; el resto del código usa `@/shared/ui`.
 - Supabase (`@maun/db`, `@supabase/supabase-js`) se importa solo desde `shared/api`.
 - `@/` apunta a `src/`. Está definido en `tsconfig.app.json` y en `vite.config.ts`: si cambia, cambia en los dos.
-- El estado del servidor vive en TanStack Query, dentro de `entities/*/api`. Las query keys llevan ids, nunca montos, porque un `bigint` no se puede hashear. El resto es estado local de React; no hay state manager global.
+- El estado del servidor vive en TanStack Query, dentro de `entities/*/api`. Las query keys llevan ids. El resto es estado local de React; no hay state manager global.
+- La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002).
 
 ## Sistema de diseño
 
@@ -31,9 +32,11 @@ src/
 
 ## Offline (ADR 0005)
 
-- `app/providers/query-client.ts` configura `networkMode: 'offlineFirst'` y un `gcTime` de 7 días, igual al `maxAge` del persister.
-- El cache se persiste en IndexedDB con structured clone (`app/providers/persister.ts`). No lo cambies por un persister JSON: rompe con `bigint`.
-- Toda mutación que pueda quedar en cola necesita su propia `mutationKey` y su `mutationFn` registrada en `app/providers/mutaciones-persistibles.ts`. Si no, cuando vuelve la señal, `resumePausedMutations()` falla con "No mutationFn found". Antes de registrar la primera, resolvé el punto abierto de ADR 0005 sobre `networkMode` y `retry` en mutaciones.
+- `app/providers/query-client.ts` configura `networkMode: 'offlineFirst'` para queries, `'online'` para mutaciones (con `'offlineFirst'` una mutación sin red falla en vez de quedar en cola) y un `gcTime` de 7 días, igual al `maxAge` del persister.
+- El cache se persiste en IndexedDB con structured clone (`app/providers/persister.ts`). No lo cambies por un persister de localStorage: es síncrono y chico.
+- Toda mutación que pueda quedar en cola necesita su propia `mutationKey` y su `mutationFn` registrada en `app/providers/mutaciones-persistibles.ts`. Si no, cuando vuelve la señal, `resumePausedMutations()` falla con "No mutationFn found".
+- Forma de las mutaciones (ADR 0010): alta, upsert de la fila completa por id (UUIDv7 generado en el cliente); edición, update por id con solo las columnas que cambiaron; baja, update de `deleted_at` con la marca fijada al encolar. `ajustes` solo se edita.
+- Los rechazos con SQLSTATE `MNxxx` y `42501` no se reintentan: se le muestran al usuario. La red, los timeouts y los 5xx sí.
 - Nunca muestres "guardado" para una mutación en cola. Para el estado real usá `useEstadoSync` y `describirEstadoSync` de `@/shared/lib`.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
 - El service worker precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.

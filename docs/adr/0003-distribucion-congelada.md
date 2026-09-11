@@ -29,6 +29,17 @@ Hay además un problema de historia. Si el sueldo configurado cambia el año que
 - Corregir una distribución cerrada es una operación explícita: reabrir el proyecto o registrar un ajuste. Nunca es un efecto colateral de editar.
 - Se guarda redundancia a propósito: los importes congelados y sus parámetros.
 
+## Cómo quedó en la base (fase 2A)
+
+- **Movimientos con contrapartida explícita.** Cada fila de `movimientos` tiene `tesoro_origen` y `tesoro_destino`, y null en un lado significa "afuera". Un ingreso es `(null → hogar)`, un gasto `(maun → null)`, un aporte a Cocos `(maun → cocos)`. Una transferencia es una sola fila, no dos que se pueden desfasar. Un check por tipo fija qué lados lleva cada uno.
+- **`movimientos` guarda solo lo cargado a mano.** Lo derivado de proyectos no se guarda: la vista `libro_mayor` lo arma desde `pagos` (entran a MAUN), `gastos` (salen de MAUN) y la distribución congelada (el diezmo pasa de MAUN a DIEZMO y el sueldo de MAUN a HOGAR; los fijos y el remanente se quedan en MAUN y no generan filas).
+- **El campo que distingue lo manual de lo derivado vive en la vista** (`libro_mayor.origen`: `manual`, `pago`, `gasto_proyecto`, `distribucion`), no en la tabla. El brief lo pedía como columna de `movimientos`. Guardar ahí los derivados sería volver a regenerarlos en cada guardado, que es justo lo que esta decisión elimina. `movimientos.proyecto_id` existe para un movimiento manual atribuible a un proyecto, como el ajuste que corrige una distribución cerrada.
+- **La vista es un libro mayor de verdad**: una fila por cada tesoro que toca un asiento, con importe con signo. El saldo de un tesoro es `sum(monto_centavos) where tesoro = X`.
+- **La distribución congelada son columnas de `proyectos`**: `fecha_cobro`, lo cobrado y los gastos sobre los que se calculó, el porcentaje de diezmo y los topes de sueldo y fijos aplicados, y los cuatro escalones. Dos checks: cobrado si y solo si la distribución está completa, y los escalones suman exactamente la ganancia neta.
+- **Ganancia negativa:** diezmo, sueldo y fijos en cero, y la pérdida entera en el remanente, que es el único escalón que puede ser negativo. Así la suma siempre cierra. Lo confirma o lo corrige el dominio en la fase 2B.
+- **Las columnas de la distribución no tienen grant para el cliente.** Las va a escribir una función de cobro en la base (fase 2B), que calcula la cascada en SQL y rechaza el cobro si la fila cambió desde la versión que vio el cliente. Su primera sentencia tiene que bloquear el proyecto con `for update`, y recién después, en otra sentencia, sumar pagos y gastos. Del otro lado, la guarda de pagos y gastos toma `for share` sobre el mismo proyecto: entre las dos, un pago que llega en el mismo instante que el cobro queda adentro de la distribución o se rechaza, nunca afuera en silencio.
+- Una vez cobrado, los pagos y gastos del proyecto no se tocan (`MN001`) y el proyecto no se borra. Corregir es reabrir o registrar un ajuste, como dice arriba.
+
 ## Qué evidencia de la fase 2 la confirma o la tira abajo
 
 - **La confirma** si:
