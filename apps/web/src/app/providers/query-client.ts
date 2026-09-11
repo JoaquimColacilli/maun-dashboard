@@ -15,7 +15,7 @@ export function crearQueryClient(): QueryClient {
         staleTime: 60 * 1000,
       },
       mutations: {
-        networkMode: 'offlineFirst',
+        networkMode: 'online',
       },
     },
   });
