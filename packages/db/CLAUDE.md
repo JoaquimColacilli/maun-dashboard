@@ -1,6 +1,6 @@
 # @maun/db
 
-Tipos generados de Postgres (`src/database.types.ts`) y `crearClienteMaun`, la factory del cliente de Supabase. Todavía no hay esquema: los tipos son el placeholder vacío con la forma que genera el CLI.
+Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase) y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos y el seed.
 
 ## Supabase CLI
 
@@ -9,31 +9,52 @@ No es una dependencia del repo: el paquete de npm baja un binario en el postinst
 - Windows: `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git` y `scoop install supabase`
 - macOS/Linux: `brew install supabase/tap/supabase`
 
-Versión fijada: **2.117.0**, la que generó `supabase/config.toml`. No hay CI que la imponga: mantené la local en esa versión (`supabase --version`, `scoop update supabase`) y, si se sube, actualizá este número en el mismo PR.
+Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa versión (`supabase --version`) y, si se sube, actualizá este número en el mismo PR.
 
-Sin CI, antes de pushear cualquier cambio en `supabase/` corré en local `supabase db lint --level warning --fail-on warning` y `supabase test db` (necesitan Docker).
+**No hay Docker** (ADR 0008). Andan `db push`, `migration list`, `gen types --linked` y `db lint --linked`: entran con un rol de login temporal, sin contraseña. No andan `start`, `db diff`, `db pull`, `db reset`, `db dump` ni `test db`.
 
-## Esquema y migraciones (ADR 0007)
+**El CLI se corre con `pnpm --filter @maun/db sb <comando>`** (por ejemplo `sb db push`, `sb migration list --linked`, `sb db advisors --linked`). El wrapper carga `SUPABASE_ACCESS_TOKEN` de `supabase/.env` en el entorno del proceso: la sesión global de la máquina se pisa con otra cuenta y no se usa. Si aparece un 403, el token del repo dejó de valer: avisale al usuario.
 
-1. Editá el estado deseado en `supabase/schemas/*.sql`.
-2. `supabase db diff -f <nombre_en_snake_case>` genera la migración en `supabase/migrations/`. Revisala, no la edites.
-3. `supabase db reset` para aplicarla desde cero con el seed, y `supabase test db` para correr pgTAP.
-4. `pnpm --filter @maun/db gen:types` regenera `database.types.ts` (con la base local levantada). Nunca se edita a mano.
+## Un solo proyecto, y es producción
 
-Nunca se cambia el esquema desde el SQL Editor del dashboard: `db diff` compara contra los archivos, no contra la base viva. La integración de GitHub de Supabase despliega las migraciones de `main`. El branching por PR requiere plan Pro: no hay entorno de preview.
+- Los tests corren siempre en una transacción que termina en rollback. Lo garantiza el runner: un archivo de `supabase/tests/` no puede tener `begin`, `commit` ni `rollback`.
+- El seed vive en el household `5eed0000-0000-7000-8000-000000000001`. `db:seed` lo carga (y antes lo borra), `db:seed:borrar` lo borra. Nada de `truncate` ni de `delete` sin `where`.
+- **Antes de aplicar una migración destructiva sobre una tabla con datos, se frena y se consulta al dueño.** Destructiva: `drop`, renombrar, achicar un tipo o un enum, agregar `not null` o `check` a una columna existente, `update` o `delete` de datos.
+
+## Cambiar el esquema
+
+1. Escribí una migración nueva en `supabase/migrations/<AAAAMMDDhhmmss>_<nombre>.sql`. Chica y legible: nadie la genera, así que la revisión del SQL es la red. Una migración aplicada no se edita nunca.
+2. Toda tabla nueva llega con RLS, sus policies (roles en `to`), grants explícitos por columna, el trigger `private.mantener_metadatos()`, `household_id`, un índice `(household_id, updated_at)`, índices para sus foreign keys y sus tests. `00_estructura.sql` falla si falta algo de eso. Si la tabla es sincronizable, sumala a `bootstrap()`, `delta()` y a `tables_are` en ese mismo test.
+3. `pnpm --filter @maun/db db:ensayo` aplica las migraciones pendientes y corre toda la suite en una transacción contra la base real, y hace rollback. Con `-- --seed` carga también el seed antes de los tests.
+4. `supabase db push`.
+5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`. Commiteá `src/database.types.ts` y `supabase/esquema.sql`: ninguno de los dos se edita a mano.
+6. `supabase db advisors --linked` y `pnpm verify`.
+
+`supabase/esquema.sql` es la vista del estado final del esquema. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
+
+## Conexión
+
+Los scripts y los tests se conectan con `pg` al pooler (`supabase/.temp/pooler-url`, lo escribe `supabase link`) usando `SUPABASE_DB_PASSWORD` de `supabase/.env`, que está en el `.gitignore`. `SUPABASE_DB_URL` en el entorno la reemplaza entera. Sin eso, `pnpm verify` falla con un mensaje que dice qué falta.
 
 ## RLS (ADR 0004)
 
 - RLS activo en todas las tablas, sin excepción, con aislamiento por `household_id`.
 - `(select auth.uid())`, nunca `auth.uid()` suelto.
-- Helpers `security definer stable` en el schema `private`, que la API no expone. Pertenencia: `household_id in (select private.user_household_ids())`.
+- Helpers `security definer stable` en el schema `private`, que la API no expone. Pertenencia: `household_id = any (array(select private.user_household_ids()))`. No `in (select ...)`: en una policy no entra en el índice (`06_planes.sql` lo verifica).
+- El `household_id` lo pone el default `private.household_actual()`: el cliente no tiene grant sobre esa columna.
 - Índice sobre toda columna que aparezca en una policy. Cada policy nombra sus roles en `to`.
 - Roles en `app_metadata` o en una tabla, nunca en `user_metadata`.
 - Vistas sobre tablas protegidas con `security_invoker = true`.
-- Cada policy tiene su test pgTAP, incluido el caso deslogueado.
+- Postgres da `execute` a `public` en toda función nueva: revocalo en la misma migración.
 
 ## Convenciones de SQL
 
 - Plata en `bigint` con sufijo `_centavos`. Nada de `numeric` ni `float` para importes.
 - `comment on table` y `comment on column` para todo lo que no sea obvio: es metadata real de la base.
-- `supabase-js` devuelve `bigint` como `number` y los tipos generados lo tipan así: la conversión a `Money` se hace acá, en un solo lugar, al leer y al escribir.
+- Un `check` que evalúa a null pasa. Si la condición puede dar null, envolvela en `coalesce(..., false)`.
+- Los cuerpos de función van entre `$$`, no con `begin atomic`: el runner busca `begin`, `commit` y `rollback` sueltos, y el `end` de un `begin atomic` lo confundiría.
+- Ninguna migración ni el seed controlan la transacción: el ensayo los corre todos en la suya y los rechaza si traen `begin` o `commit`.
+- El ensayo corre todas las migraciones pendientes en una sola transacción: agregar un valor a un enum y usarlo en una migración posterior falla en el ensayo aunque `db push` ande. En ese caso, ensayá en dos tandas.
+- Una guarda que lee otra fila para decidir (el proyecto de un pago, el cliente de un proyecto) la bloquea con `for share` antes de leerla: sin eso, una operación concurrente pasa con el estado viejo.
+- Rechazos de negocio con SQLSTATE de la clase `MN` (tabla en ADR 0010).
+- `supabase-js` devuelve `bigint` como `number` y los tipos generados lo tipan así: la conversión a `Money` (entero con brand, ADR 0002) se hace acá, en un solo lugar.

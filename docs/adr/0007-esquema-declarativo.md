@@ -1,6 +1,6 @@
 # 0007. Esquema declarativo y migraciones generadas
 
-Estado: aceptada, 2026-09-10.
+Estado: **reemplazada** por [0008](0008-migraciones-a-mano-sin-docker.md) el 2026-09-11. El flujo declarativo necesita una shadow database en Docker, y en esta máquina no hay Docker.
 
 ## Contexto
 
