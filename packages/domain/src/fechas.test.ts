@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { DIAS_HABILES_DE_ENTREGA, entregaEstimada, sumarDiasHabiles } from './fechas.ts';
+import { DIAS_HABILES_DE_ENTREGA, entregaEstimada, mesDe, sumarDiasHabiles } from './fechas.ts';
+
+describe('mesDe', () => {
+  it('es el mes calendario de la fecha, como AAAA-MM', () => {
+    expect(mesDe('2026-09-11')).toBe('2026-09');
+    expect(mesDe('2026-12-31')).toBe('2026-12');
+  });
+
+  it('rechaza una fecha que no existe', () => {
+    expect(() => mesDe('2026-02-30')).toThrow(RangeError);
+  });
+});
 
 describe('entregaEstimada', () => {
   it('son 21 días hábiles', () => {

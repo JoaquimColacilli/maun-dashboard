@@ -1,11 +1,17 @@
-import { calcularDistribucion, centavos, DIEZMO, type Distribucion } from '@maun/domain';
+import type { EstadoLiquidado } from '@maun/domain';
 import type pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import {
+  HOUSEHOLD_DEL_SEED,
+  liquidarPreparada,
+  prepararLiquidacion,
+  type LiquidacionPreparada,
+} from '../scripts/comparacion.ts';
 import { conectar } from '../scripts/conexion.ts';
 
-const HOUSEHOLD_DEL_SEED = '5eed0000-0000-7000-8000-000000000001';
 const PROYECTO_DEL_SEED = '5eed0000-0000-7000-8000-000000020002';
+const LEAD_DEL_SEED = '5eed0000-0000-7000-8000-000000020011';
 const PAGO_DEL_SEED = '5eed0000-0000-7000-8000-000000030004';
 
 const abiertas: pg.Client[] = [];
@@ -56,58 +62,48 @@ async function locksSobrePagosYGastos(monitor: pg.Client, pid: number): Promise<
   return rows[0]?.cantidad ?? -1;
 }
 
+async function lecturasDeProyectos(monitor: pg.Client, pid: number): Promise<number> {
+  const { rows } = await monitor.query<{ cantidad: number }>(
+    `select count(*)::int as cantidad from pg_locks
+     where pid = $1 and relation = 'public.proyectos'::regclass and mode = 'AccessShareLock'`,
+    [pid],
+  );
+  return rows[0]?.cantidad ?? -1;
+}
+
 async function abrirTransaccion(cliente: pg.Client): Promise<void> {
   await cliente.query('begin');
   await cliente.query("set local lock_timeout = '30s'");
 }
 
-interface DatosDeCobro {
-  version: number;
-  distribucion: Distribucion;
-}
+const ESTADO_DEL_SEED: Record<EstadoLiquidado, string> = {
+  cobrado: 'entregado',
+  perdido: 'contacto',
+};
 
-async function leerDatosDeCobro(monitor: pg.Client): Promise<DatosDeCobro> {
-  const { rows } = await monitor.query<{
-    estado: string;
-    borrado: boolean;
-    version: number;
-    cobrado: string;
-    gastos: string;
-    tope_sueldo: string;
-    tope_fijos: string;
-  }>(
-    `select p.estado, p.deleted_at is not null as borrado, p.version,
-            (select coalesce(sum(monto_centavos), 0)::bigint from public.pagos where proyecto_id = p.id and deleted_at is null) as cobrado,
-            (select coalesce(sum(monto_centavos), 0)::bigint from public.gastos where proyecto_id = p.id and deleted_at is null) as gastos,
-            coalesce(p.reapertura_tope_sueldo_centavos, a.sueldo_mensual_centavos) as tope_sueldo,
-            coalesce(p.reapertura_tope_fijos_centavos, a.costos_fijos_centavos) as tope_fijos
-     from public.proyectos p join public.ajustes a on a.household_id = p.household_id
-     where p.id = $1`,
-    [PROYECTO_DEL_SEED],
+async function leerDatos(
+  monitor: pg.Client,
+  proyectoId: string,
+  destino: EstadoLiquidado,
+): Promise<LiquidacionPreparada> {
+  const { rows } = await monitor.query<{ estado: string; borrado: boolean }>(
+    'select estado::text as estado, deleted_at is not null as borrado from public.proyectos where id = $1',
+    [proyectoId],
   );
   const fila = rows[0];
-  if (fila?.estado !== 'entregado' || fila.borrado) {
+  if (fila?.estado !== ESTADO_DEL_SEED[destino] || fila.borrado) {
     throw new Error(
-      'El test de concurrencia usa el proyecto entregado del seed (5eed…020002). Cargalo con `pnpm --filter @maun/db db:seed`.',
+      `El test de concurrencia usa proyectos del seed (${proyectoId}, ${ESTADO_DEL_SEED[destino]}). Cargalo con \`pnpm --filter @maun/db db:seed\`.`,
     );
   }
-  return {
-    version: fila.version,
-    distribucion: calcularDistribucion({
-      cobrado: centavos(Number(fila.cobrado)),
-      gastos: centavos(Number(fila.gastos)),
-      diezmoBp: DIEZMO,
-      topeSueldo: centavos(Number(fila.tope_sueldo)),
-      topeFijos: centavos(Number(fila.tope_fijos)),
-    }),
-  };
+  return prepararLiquidacion(monitor, HOUSEHOLD_DEL_SEED, proyectoId, destino, '2026-09-11');
 }
 
 async function entrarAlHousehold(cliente: pg.Client): Promise<void> {
   const { rows } = await cliente.query<{ id: string }>(
     `insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
      values (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-             'concurrencia@maun.test', '', now(), now())
+             'concurrencia-' || gen_random_uuid() || '@maun.test', '', now(), now())
      returning id`,
   );
   const userId = rows[0]?.id ?? '';
@@ -121,27 +117,7 @@ async function entrarAlHousehold(cliente: pg.Client): Promise<void> {
   await cliente.query("select set_config('role', 'authenticated', true)");
 }
 
-function cobrar(cliente: pg.Client, datos: DatosDeCobro): Promise<pg.QueryResult> {
-  const d = datos.distribucion;
-  return cliente.query(
-    'select * from public.cobrar_proyecto($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-    [
-      PROYECTO_DEL_SEED,
-      datos.version,
-      '2026-09-11',
-      d.cobrado,
-      d.gastos,
-      d.topeSueldo,
-      d.topeFijos,
-      d.diezmo,
-      d.sueldo,
-      d.fijos,
-      d.remanente,
-    ],
-  );
-}
-
-describe('cobro y pagos sobre el mismo proyecto, con dos conexiones reales y todo en rollback', () => {
+describe('liquidaciones y pagos sobre el mismo household, con conexiones reales y todo en rollback', () => {
   it('el cobro bloquea el proyecto antes de leer pagos y gastos: frente a un pago en curso, espera sin haber sumado', async () => {
     const pago = await sesion();
     const cobro = await sesion();
@@ -154,11 +130,11 @@ describe('cobro y pagos sobre el mismo proyecto, con dos conexiones reales y tod
       [HOUSEHOLD_DEL_SEED, PROYECTO_DEL_SEED],
     );
 
-    const datos = await leerDatosDeCobro(monitor);
+    const datos = await leerDatos(monitor, PROYECTO_DEL_SEED, 'cobrado');
     await abrirTransaccion(cobro);
     await entrarAlHousehold(cobro);
     const pidCobro = await pidDe(cobro);
-    const resultado = sinRechazoSuelto(cobrar(cobro, datos));
+    const resultado = sinRechazoSuelto(liquidarPreparada(cobro, datos));
 
     expect(await esperarQueEspere(monitor, pidCobro)).toContain(await pidDe(pago));
     expect(await locksSobrePagosYGastos(monitor, pidCobro)).toBe(0);
@@ -177,11 +153,11 @@ describe('cobro y pagos sobre el mismo proyecto, con dos conexiones reales y tod
       PROYECTO_DEL_SEED,
     ]);
 
-    const datos = await leerDatosDeCobro(monitor);
+    const datos = await leerDatos(monitor, PROYECTO_DEL_SEED, 'cobrado');
     await abrirTransaccion(cobro);
     await entrarAlHousehold(cobro);
     const pidCobro = await pidDe(cobro);
-    const resultado = sinRechazoSuelto(cobrar(cobro, datos));
+    const resultado = sinRechazoSuelto(liquidarPreparada(cobro, datos));
 
     expect(await esperarQueEspere(monitor, pidCobro)).toContain(await pidDe(bloqueador));
 
@@ -194,10 +170,10 @@ describe('cobro y pagos sobre el mismo proyecto, con dos conexiones reales y tod
     const cobro = await sesion();
     const monitor = await sesion();
 
-    const datos = await leerDatosDeCobro(monitor);
+    const datos = await leerDatos(monitor, PROYECTO_DEL_SEED, 'cobrado');
     await abrirTransaccion(cobro);
     await entrarAlHousehold(cobro);
-    await cobrar(cobro, datos);
+    await liquidarPreparada(cobro, datos);
 
     await abrirTransaccion(pago);
     const pidPago = await pidDe(pago);
@@ -211,5 +187,54 @@ describe('cobro y pagos sobre el mismo proyecto, con dos conexiones reales y tod
 
     await cobro.query('rollback');
     await expect(edicion).resolves.toBeDefined();
+  });
+
+  it('dos liquidaciones del mismo household, de proyectos distintos, se esperan en la fila de ajustes antes de sumar el mes, pagos y gastos', async () => {
+    const primera = await sesion();
+    const segunda = await sesion();
+    const monitor = await sesion();
+
+    const cobro = await leerDatos(monitor, PROYECTO_DEL_SEED, 'cobrado');
+    const cierre = await leerDatos(monitor, LEAD_DEL_SEED, 'perdido');
+    await abrirTransaccion(primera);
+    await entrarAlHousehold(primera);
+    await abrirTransaccion(segunda);
+    await entrarAlHousehold(segunda);
+
+    await liquidarPreparada(primera, cobro);
+    const pidSegunda = await pidDe(segunda);
+    const resultado = sinRechazoSuelto(liquidarPreparada(segunda, cierre));
+
+    expect(await esperarQueEspere(monitor, pidSegunda)).toContain(await pidDe(primera));
+    expect(await locksSobrePagosYGastos(monitor, pidSegunda)).toBe(0);
+    expect(await lecturasDeProyectos(monitor, pidSegunda)).toBe(0);
+
+    await primera.query('rollback');
+    await expect(resultado).resolves.toBeDefined();
+  });
+
+  it('una liquidación espera a una edición de los ajustes en curso: no liquida con un objetivo que está cambiando', async () => {
+    const edicion = await sesion();
+    const cobro = await sesion();
+    const monitor = await sesion();
+
+    const datos = await leerDatos(monitor, PROYECTO_DEL_SEED, 'cobrado');
+    await abrirTransaccion(edicion);
+    await edicion.query(
+      'update public.ajustes set meta_cocos_centavos = meta_cocos_centavos + 1 where household_id = $1',
+      [HOUSEHOLD_DEL_SEED],
+    );
+
+    await abrirTransaccion(cobro);
+    await entrarAlHousehold(cobro);
+    const pidCobro = await pidDe(cobro);
+    const resultado = sinRechazoSuelto(liquidarPreparada(cobro, datos));
+
+    expect(await esperarQueEspere(monitor, pidCobro)).toContain(await pidDe(edicion));
+    expect(await locksSobrePagosYGastos(monitor, pidCobro)).toBe(0);
+    expect(await lecturasDeProyectos(monitor, pidCobro)).toBe(0);
+
+    await edicion.query('rollback');
+    await expect(resultado).resolves.toBeDefined();
   });
 });

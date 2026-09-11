@@ -51,6 +51,9 @@ create table public.ajustes (
   updated_at timestamp with time zone not null default now(),
   deleted_at timestamp with time zone,
   version integer not null default 1,
+  sueldo_tope_mensual boolean not null default false,
+  perdido_con_sueldo boolean not null default false,
+  perdido_con_diezmo boolean not null default true,
   constraint ajustes_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint ajustes_household_key UNIQUE (household_id),
   constraint ajustes_importes_no_negativos CHECK (sueldo_mensual_centavos >= 0 AND costos_fijos_centavos >= 0 AND meta_cocos_centavos >= 0),
@@ -58,10 +61,13 @@ create table public.ajustes (
   constraint ajustes_tasa_valida CHECK (tasa_cocos_anual_bp >= 0 AND tasa_cocos_anual_bp <= 100000)
 );
 comment on table public.ajustes is 'Parámetros del household: una fila por household, creada con él. Cambiarlos no reescribe las distribuciones ya congeladas.';
-comment on column public.ajustes.sueldo_mensual_centavos is 'Sueldo que el taller le paga al hogar: tope del escalón de sueldo de la cascada.';
-comment on column public.ajustes.costos_fijos_centavos is 'Costos fijos mensuales del taller: tope del escalón de fijos de la cascada.';
+comment on column public.ajustes.sueldo_mensual_centavos is 'Sueldo que el taller le paga al hogar: objetivo del escalón de sueldo, por proyecto o por mes según sueldo_tope_mensual.';
+comment on column public.ajustes.costos_fijos_centavos is 'Costos fijos mensuales del taller: objetivo del escalón de fijos, que se topea por lo que falta del mes.';
 comment on column public.ajustes.meta_cocos_centavos is 'Meta de ahorro en Cocos.';
 comment on column public.ajustes.tasa_cocos_anual_bp is 'Tasa anual estimada de Cocos, en puntos básicos (4000 = 40%). Solo para proyectar.';
+comment on column public.ajustes.sueldo_tope_mensual is 'false: cada cobro paga hasta un sueldo entero (la regla del dueño). true: el sueldo se topea por lo que falta del mes, como los fijos. El cliente no tiene grant para prenderlo: antes hay que resolver que una liquidación offline deja de ser determinista (ADR 0011).';
+comment on column public.ajustes.perdido_con_sueldo is 'Si cerrar un perdido con seña retenida paga sueldo. Por defecto no: un lead que no prosperó no es un trabajo. Se aplica como objetivo de sueldo en cero para esa liquidación, no con otra cascada.';
+comment on column public.ajustes.perdido_con_diezmo is 'Si la seña retenida de un perdido paga diezmo. Por defecto sí: es ingreso reconocido.';
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
 create policy ajustes_edicion on public.ajustes as permissive
@@ -73,7 +79,7 @@ create policy ajustes_lectura on public.ajustes as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
-grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp) on public.ajustes to authenticated;
+grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo) on public.ajustes to authenticated;
 
 create table public.clientes (
   id uuid not null default private.uuidv7(),
@@ -343,43 +349,63 @@ create table public.proyectos (
   updated_at timestamp with time zone not null default now(),
   deleted_at timestamp with time zone,
   version integer not null default 1,
-  reapertura_tope_sueldo_centavos bigint,
-  reapertura_tope_fijos_centavos bigint,
+  reapertura_objetivo_sueldo_centavos bigint,
+  reapertura_objetivo_fijos_centavos bigint,
   reapertura_fecha_cobro date,
+  dist_objetivo_sueldo_centavos bigint,
+  dist_objetivo_fijos_centavos bigint,
+  dist_sueldo_mensual boolean,
+  dist_sueldo_previo_centavos bigint,
+  dist_fijos_previo_centavos bigint,
+  dist_liquidado_at timestamp with time zone,
+  reapertura_sueldo_mensual boolean,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
-  constraint proyectos_cobrado_con_distribucion CHECK ((estado = 'cobrado'::estado_proyecto) = (fecha_cobro IS NOT NULL) AND (num_nulls(fecha_cobro, dist_cobrado_centavos, dist_gastos_centavos, dist_diezmo_bp, dist_tope_sueldo_centavos, dist_tope_fijos_centavos, dist_diezmo_centavos, dist_sueldo_centavos, dist_fijos_centavos, dist_remanente_centavos) = ANY (ARRAY[0, 10]))),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint proyectos_household_id_key UNIQUE (household_id, id),
   constraint proyectos_largos CHECK (char_length(titulo) <= 200 AND char_length(descripcion) <= 10000 AND char_length(direccion_entrega) <= 500 AND char_length(notas) <= 10000),
+  constraint proyectos_liquidado_con_distribucion CHECK ((estado = ANY (ARRAY['cobrado'::estado_proyecto, 'perdido'::estado_proyecto])) = (fecha_cobro IS NOT NULL) AND (num_nulls(fecha_cobro, dist_cobrado_centavos, dist_gastos_centavos, dist_diezmo_bp, dist_tope_sueldo_centavos, dist_tope_fijos_centavos, dist_diezmo_centavos, dist_sueldo_centavos, dist_fijos_centavos, dist_remanente_centavos, dist_objetivo_sueldo_centavos, dist_objetivo_fijos_centavos, dist_sueldo_mensual, dist_sueldo_previo_centavos, dist_fijos_previo_centavos, dist_liquidado_at) = ANY (ARRAY[0, 16]))),
   constraint proyectos_pkey PRIMARY KEY (id),
   constraint proyectos_presupuesto_no_negativo CHECK (presupuesto_centavos IS NULL OR presupuesto_centavos >= 0),
-  constraint proyectos_reapertura_completa CHECK ((num_nulls(reapertura_tope_sueldo_centavos, reapertura_tope_fijos_centavos, reapertura_fecha_cobro) = ANY (ARRAY[0, 3])) AND (estado <> 'cobrado'::estado_proyecto OR reapertura_fecha_cobro IS NULL)),
-  constraint proyectos_titulo_valido CHECK (btrim(titulo) <> ''::text)
+  constraint proyectos_reapertura_completa CHECK ((num_nulls(reapertura_objetivo_sueldo_centavos, reapertura_objetivo_fijos_centavos, reapertura_sueldo_mensual, reapertura_fecha_cobro) = ANY (ARRAY[0, 4])) AND ((estado <> ALL (ARRAY['cobrado'::estado_proyecto, 'perdido'::estado_proyecto])) OR reapertura_fecha_cobro IS NULL)),
+  constraint proyectos_titulo_valido CHECK (btrim(titulo) <> ''::text),
+  constraint proyectos_topes_del_mes CHECK (dist_cobrado_centavos IS NULL OR COALESCE(dist_objetivo_sueldo_centavos >= 0 AND dist_objetivo_fijos_centavos >= 0 AND dist_sueldo_previo_centavos >= 0 AND dist_fijos_previo_centavos >= 0 AND dist_tope_fijos_centavos = GREATEST(0::bigint, dist_objetivo_fijos_centavos - dist_fijos_previo_centavos) AND dist_tope_sueldo_centavos =
+CASE
+    WHEN dist_sueldo_mensual THEN GREATEST(0::bigint, dist_objetivo_sueldo_centavos - dist_sueldo_previo_centavos)
+    ELSE dist_objetivo_sueldo_centavos
+END, false))
 );
-comment on table public.proyectos is 'Leads y proyectos: la misma fila avanza de seguimiento a obra y a cobrado. Al cobrar se congela la distribución (ADR 0003).';
+comment on table public.proyectos is 'Leads y proyectos: la misma fila avanza de seguimiento a obra y a cobrado, o se cierra como perdido. Liquidar (cobrar o cerrar como perdido) congela la distribución (ADR 0003 y 0011).';
 comment on column public.proyectos.titulo is 'El trabajo, en pocas palabras: "Placard 3 puertas con interior en melamina".';
 comment on column public.proyectos.presupuesto_centavos is 'Presupuesto acordado. Null mientras el lead no tiene presupuesto. La distribución NO se calcula sobre esto sino sobre lo cobrado.';
 comment on column public.proyectos.fecha_visita is 'Visita de relevamiento, en la etapa de seguimiento.';
 comment on column public.proyectos.ultimo_contacto is 'Último contacto con el cliente, en la etapa de seguimiento.';
 comment on column public.proyectos.entrega_estimada is 'Entrega prometida. La app la propone a 21 días hábiles del inicio.';
 comment on column public.proyectos.fecha_entrega is 'Entrega real.';
-comment on column public.proyectos.fecha_cobro is 'Fecha del cobro final. No null si y solo si estado = cobrado. Es la fecha de los movimientos derivados en el libro mayor.';
-comment on column public.proyectos.dist_cobrado_centavos is 'Congelado al cobrar: total cobrado (suma de pagos vivos) sobre el que se calculó la distribución.';
-comment on column public.proyectos.dist_gastos_centavos is 'Congelado al cobrar: total de gastos del proyecto.';
-comment on column public.proyectos.dist_diezmo_bp is 'Congelado al cobrar: porcentaje de diezmo aplicado, en puntos básicos (1000 = 10%).';
-comment on column public.proyectos.dist_tope_sueldo_centavos is 'Congelado al cobrar: tope de sueldo que se aplicó. Si cambian los ajustes, la historia no se reescribe.';
-comment on column public.proyectos.dist_tope_fijos_centavos is 'Congelado al cobrar: tope de costos fijos que se aplicó.';
-comment on column public.proyectos.dist_diezmo_centavos is 'Congelado al cobrar: lo que pasa de MAUN a DIEZMO.';
-comment on column public.proyectos.dist_sueldo_centavos is 'Congelado al cobrar: lo que pasa de MAUN a HOGAR.';
-comment on column public.proyectos.dist_fijos_centavos is 'Congelado al cobrar: lo que queda en MAUN para costos fijos. No mueve plata entre tesoros.';
-comment on column public.proyectos.dist_remanente_centavos is 'Congelado al cobrar: lo que sobra en MAUN. Negativo solo si el proyecto dio pérdida.';
-comment on column public.proyectos.deleted_at is 'Borrado lógico. Borrar un proyecto borra sus pagos y gastos; un proyecto cobrado no se borra y uno borrado no revive.';
-comment on column public.proyectos.reapertura_tope_sueldo_centavos is 'Tope de sueldo del cobro que se reabrió. El próximo cobro lo usa en vez del de los ajustes, y lo limpia.';
-comment on column public.proyectos.reapertura_tope_fijos_centavos is 'Tope de costos fijos del cobro que se reabrió. El próximo cobro lo usa en vez del de los ajustes, y lo limpia.';
-comment on column public.proyectos.reapertura_fecha_cobro is 'Fecha del cobro que se reabrió. El próximo cobro conserva esa fecha: corregir no mueve la distribución en el libro mayor.';
+comment on column public.proyectos.fecha_cobro is 'Fecha de la liquidación: el cobro final o el cierre como perdido. No null si y solo si el proyecto está cobrado o perdido. Es la fecha de los asientos derivados en el libro mayor y define el mes de los topes.';
+comment on column public.proyectos.dist_cobrado_centavos is 'Congelado al liquidar: total cobrado (suma de pagos vivos). En un perdido, la seña retenida.';
+comment on column public.proyectos.dist_gastos_centavos is 'Congelado al liquidar: total de gastos del proyecto.';
+comment on column public.proyectos.dist_diezmo_bp is 'Congelado al liquidar: porcentaje de diezmo aplicado, en puntos básicos (1000 = 10%). Un perdido usa 0 si ajustes.perdido_con_diezmo está apagado.';
+comment on column public.proyectos.dist_tope_sueldo_centavos is 'Congelado al liquidar: tope de sueldo que se aplicó. Sale del objetivo, del modo y de lo liquidado en el mes (proyectos_topes_del_mes).';
+comment on column public.proyectos.dist_tope_fijos_centavos is 'Congelado al liquidar: tope de costos fijos que se aplicó, lo que faltaba cubrir del mes.';
+comment on column public.proyectos.dist_diezmo_centavos is 'Congelado al liquidar: lo que pasa de MAUN a DIEZMO.';
+comment on column public.proyectos.dist_sueldo_centavos is 'Congelado al liquidar: lo que pasa de MAUN a HOGAR.';
+comment on column public.proyectos.dist_fijos_centavos is 'Congelado al liquidar: la parte de la ganancia que cubre costos fijos del mes. Queda en MAUN y no mueve plata entre tesoros.';
+comment on column public.proyectos.dist_remanente_centavos is 'Congelado al liquidar: lo que sobra en MAUN. Negativo solo si el proyecto dio pérdida.';
+comment on column public.proyectos.deleted_at is 'Borrado lógico. Borrar un proyecto borra sus pagos y gastos; uno liquidado con pagos o gastos vivos no se borra, y uno borrado no revive.';
+comment on column public.proyectos.reapertura_objetivo_sueldo_centavos is 'Objetivo de sueldo del cobro que se reabrió. El próximo cobro lo usa en vez del de los ajustes, y lo limpia.';
+comment on column public.proyectos.reapertura_objetivo_fijos_centavos is 'Objetivo de costos fijos del cobro que se reabrió. El tope se recalcula contra lo liquidado hoy en ese mes.';
+comment on column public.proyectos.reapertura_fecha_cobro is 'Fecha del cobro que se reabrió. El próximo cobro conserva esa fecha y ese mes: corregir no mueve la distribución en el libro mayor.';
+comment on column public.proyectos.dist_objetivo_sueldo_centavos is 'Congelado al liquidar: objetivo de sueldo con el que se calculó el tope. En un perdido sin sueldo, cero.';
+comment on column public.proyectos.dist_objetivo_fijos_centavos is 'Congelado al liquidar: costos fijos del mes con los que se calculó el tope.';
+comment on column public.proyectos.dist_sueldo_mensual is 'Congelado al liquidar: si el sueldo se topeó por mes (true) o por proyecto (false).';
+comment on column public.proyectos.dist_sueldo_previo_centavos is 'Congelado al liquidar: sueldo que el mes ya llevaba liquidado por otros proyectos en ese instante. Explica el tope; una reapertura posterior en el mismo mes no lo reescribe.';
+comment on column public.proyectos.dist_fijos_previo_centavos is 'Congelado al liquidar: costos fijos que el mes ya llevaba liquidados por otros proyectos en ese instante.';
+comment on column public.proyectos.dist_liquidado_at is 'Congelado al liquidar: el instante de la liquidación. Ordena las liquidaciones de un mismo mes.';
+comment on column public.proyectos.reapertura_sueldo_mensual is 'Modo del sueldo del cobro que se reabrió. El próximo cobro lo conserva aunque los ajustes hayan cambiado.';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
+CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
 CREATE TRIGGER borrar_hijos AFTER UPDATE OF deleted_at ON proyectos FOR EACH ROW WHEN (new.deleted_at IS NOT NULL AND old.deleted_at IS NULL) EXECUTE FUNCTION private.borrar_hijos_de_proyecto();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE TRIGGER validar_proyecto BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.validar_proyecto();
@@ -474,7 +500,7 @@ UNION ALL
     p.id AS proyecto_id
    FROM proyectos p
      CROSS JOIN LATERAL ( VALUES ('diezmo'::tesoro,'maun'::tesoro,p.dist_diezmo_centavos,'diezmo'::text), ('maun'::tesoro,'diezmo'::tesoro,- p.dist_diezmo_centavos,'diezmo'::text), ('hogar'::tesoro,'maun'::tesoro,p.dist_sueldo_centavos,'sueldo'::text), ('maun'::tesoro,'hogar'::tesoro,- p.dist_sueldo_centavos,'sueldo'::text)) d(tesoro, contrapartida, monto_centavos, concepto)
-  WHERE p.estado = 'cobrado'::estado_proyecto AND p.deleted_at IS NULL AND d.monto_centavos <> 0;
+  WHERE (p.estado = ANY (ARRAY['cobrado'::estado_proyecto, 'perdido'::estado_proyecto])) AND p.deleted_at IS NULL AND d.monto_centavos <> 0;
 comment on view public.libro_mayor is 'Libro mayor por tesoro: una fila por tesoro afectado, importe con signo. El saldo de un tesoro es sum(monto_centavos) where tesoro = X.';
 grant select on public.libro_mayor to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.libro_mayor to service_role;
@@ -519,20 +545,35 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function bootstrap() is 'Todo el household del usuario en un JSON, sin filas borradas, más el cursor para el primer delta. Es también el reconcile completo: el cliente reemplaza su copia entera con esto.';
 
+CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer)
+ RETURNS proyectos
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select *
+  from private.liquidar(
+    'perdido', p_proyecto_id, p_version, p_fecha, p_cobrado_centavos, p_gastos_centavos,
+    p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
+    p_fijos_centavos, p_remanente_centavos, p_diezmo_bp
+  )
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function cerrar_perdido(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer) is 'RPC de cierre como perdido de un lead o de una obra que se cayó. Liquida la seña retenida con la misma cascada que un cobro. Los mismos parámetros que cobrar_proyecto, más el diezmo que vio el usuario: en un perdido es un dato de los ajustes, no una regla.';
+
 CREATE OR REPLACE FUNCTION public.cobrar_proyecto(p_proyecto_id uuid, p_version integer, p_fecha_cobro date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint)
  RETURNS proyectos
  LANGUAGE sql
  SET search_path TO ''
 AS $function$
   select *
-  from private.cobrar_proyecto(
-    p_proyecto_id, p_version, p_fecha_cobro, p_cobrado_centavos, p_gastos_centavos,
+  from private.liquidar(
+    'cobrado', p_proyecto_id, p_version, p_fecha_cobro, p_cobrado_centavos, p_gastos_centavos,
     p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
-    p_fijos_centavos, p_remanente_centavos
+    p_fijos_centavos, p_remanente_centavos, null
   )
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro. La app manda la versión del proyecto, los totales, los topes, la fecha y la distribución que le mostró al usuario.';
+comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha y la distribución que le mostró al usuario.';
 
 CREATE OR REPLACE FUNCTION public.delta(p_desde timestamp with time zone)
  RETURNS jsonb
@@ -661,163 +702,6 @@ $function$;
 -- execute: solo el dueño
 comment on function private.cascada(bigint,bigint,integer,bigint,bigint) is 'La cascada: neta = cobrado - gastos; diezmo (mitad hacia arriba); sueldo y fijos topeados por lo que queda; remanente. Gemela de calcularDistribucion de @maun/domain, con el mismo rango de importes.';
 
-CREATE OR REPLACE FUNCTION private.cobrar_proyecto(p_proyecto_id uuid, p_version integer, p_fecha_cobro date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint)
- RETURNS proyectos
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-declare
-  v_proyecto public.proyectos;
-  v_ajustes public.ajustes;
-  v_tope_sueldo bigint;
-  v_tope_fijos bigint;
-  v_fecha date;
-  v_cobrado bigint;
-  v_gastos bigint;
-  v_dist record;
-begin
-  if num_nulls(
-    p_proyecto_id, p_version, p_fecha_cobro, p_cobrado_centavos, p_gastos_centavos,
-    p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
-    p_fijos_centavos, p_remanente_centavos
-  ) > 0 then
-    raise exception 'cobrar_proyecto necesita todos sus parámetros' using errcode = '22004';
-  end if;
-
-  -- Primera sentencia: bloquear el proyecto. La guarda de pagos y gastos toma for share sobre esta
-  -- misma fila, así que un pago que llega en el mismo instante espera a que el cobro termine (y
-  -- entonces lo ve cobrado), o el cobro espera a que el pago termine (y entonces lo suma).
-  select p.* into v_proyecto
-  from public.proyectos p
-  where p.id = p_proyecto_id
-    and p.household_id = any (array(select private.user_household_ids()))
-  for update;
-
-  if not found then
-    raise exception 'El proyecto no existe o no es tuyo' using errcode = '42501';
-  end if;
-
-  -- El reenvío de la cola: este mismo cobro ya se aplicó (la versión subió exactamente uno) y la
-  -- respuesta se perdió. Se devuelve la fila tal cual, sin rechazar algo que salió bien.
-  if v_proyecto.estado = 'cobrado'
-    and v_proyecto.version = p_version + 1
-    and (
-      v_proyecto.fecha_cobro, v_proyecto.dist_cobrado_centavos, v_proyecto.dist_gastos_centavos,
-      v_proyecto.dist_tope_sueldo_centavos, v_proyecto.dist_tope_fijos_centavos,
-      v_proyecto.dist_diezmo_centavos, v_proyecto.dist_sueldo_centavos,
-      v_proyecto.dist_fijos_centavos, v_proyecto.dist_remanente_centavos
-    ) = (
-      p_fecha_cobro, p_cobrado_centavos, p_gastos_centavos, p_tope_sueldo_centavos,
-      p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos, p_fijos_centavos,
-      p_remanente_centavos
-    )
-  then
-    return v_proyecto;
-  end if;
-
-  if v_proyecto.deleted_at is not null then
-    raise exception 'El proyecto está borrado' using errcode = 'MN002';
-  end if;
-
-  if v_proyecto.estado = 'cobrado' then
-    raise exception 'El proyecto ya está cobrado' using errcode = 'MN001';
-  end if;
-
-  if v_proyecto.estado <> 'entregado' then
-    raise exception 'Solo se cobra un proyecto entregado, y este está en %', v_proyecto.estado
-      using errcode = 'MN007';
-  end if;
-
-  if v_proyecto.version <> p_version then
-    raise exception 'El proyecto cambió desde que lo viste'
-      using errcode = 'MN006',
-            detail = format('versión vista %s, versión actual %s', p_version, v_proyecto.version);
-  end if;
-
-  select a.* into v_ajustes
-  from public.ajustes a
-  where a.household_id = v_proyecto.household_id;
-
-  if not found then
-    raise exception 'El household no tiene ajustes' using errcode = 'P0002';
-  end if;
-
-  -- Un proyecto reabierto se vuelve a cobrar con los topes y la fecha de su cobro original.
-  v_tope_sueldo := coalesce(v_proyecto.reapertura_tope_sueldo_centavos, v_ajustes.sueldo_mensual_centavos);
-  v_tope_fijos := coalesce(v_proyecto.reapertura_tope_fijos_centavos, v_ajustes.costos_fijos_centavos);
-  v_fecha := coalesce(v_proyecto.reapertura_fecha_cobro, p_fecha_cobro);
-
-  -- Recién ahora, con el proyecto bloqueado y en sentencias nuevas, se suman pagos y gastos.
-  select coalesce(sum(g.monto_centavos), 0) into v_cobrado
-  from public.pagos g
-  where g.household_id = v_proyecto.household_id
-    and g.proyecto_id = v_proyecto.id
-    and g.deleted_at is null;
-
-  select coalesce(sum(g.monto_centavos), 0) into v_gastos
-  from public.gastos g
-  where g.household_id = v_proyecto.household_id
-    and g.proyecto_id = v_proyecto.id
-    and g.deleted_at is null;
-
-  -- Lo que se congela tiene que salir de lo que el usuario vio: si el total cobrado, el de gastos,
-  -- los topes o la fecha cambiaron desde que la app calculó la distribución, se rechaza.
-  if v_cobrado <> p_cobrado_centavos
-    or v_gastos <> p_gastos_centavos
-    or v_tope_sueldo <> p_tope_sueldo_centavos
-    or v_tope_fijos <> p_tope_fijos_centavos
-    or v_fecha <> p_fecha_cobro
-  then
-    raise exception 'Los pagos, los gastos, los topes o la fecha cambiaron desde que viste la distribución'
-      using errcode = 'MN006',
-            detail = format(
-              'cobrado %s, gastos %s, tope de sueldo %s, tope de fijos %s, fecha %s',
-              v_cobrado, v_gastos, v_tope_sueldo, v_tope_fijos, v_fecha
-            );
-  end if;
-
-  select * into v_dist
-  from private.cascada(v_cobrado, v_gastos, 1000, v_tope_sueldo, v_tope_fijos);
-
-  -- Y la distribución que se le mostró tiene que ser la que calcula la base. Si no, la app y la
-  -- base están aplicando reglas distintas (una versión vieja de la app, o un bug): mejor un
-  -- rechazo visible que congelar otra cosa.
-  if (v_dist.diezmo_centavos, v_dist.sueldo_centavos, v_dist.fijos_centavos, v_dist.remanente_centavos)
-    is distinct from (p_diezmo_centavos, p_sueldo_centavos, p_fijos_centavos, p_remanente_centavos)
-  then
-    raise exception 'La distribución que viste no es la que calcula la base: actualizá la app'
-      using errcode = 'MN008',
-            detail = format(
-              'diezmo %s, sueldo %s, fijos %s, remanente %s',
-              v_dist.diezmo_centavos, v_dist.sueldo_centavos, v_dist.fijos_centavos, v_dist.remanente_centavos
-            );
-  end if;
-
-  update public.proyectos set
-    estado = 'cobrado',
-    fecha_cobro = v_fecha,
-    dist_cobrado_centavos = v_cobrado,
-    dist_gastos_centavos = v_gastos,
-    dist_diezmo_bp = 1000,
-    dist_tope_sueldo_centavos = v_tope_sueldo,
-    dist_tope_fijos_centavos = v_tope_fijos,
-    dist_diezmo_centavos = v_dist.diezmo_centavos,
-    dist_sueldo_centavos = v_dist.sueldo_centavos,
-    dist_fijos_centavos = v_dist.fijos_centavos,
-    dist_remanente_centavos = v_dist.remanente_centavos,
-    reapertura_tope_sueldo_centavos = null,
-    reapertura_tope_fijos_centavos = null,
-    reapertura_fecha_cobro = null
-  where id = v_proyecto.id
-  returning * into v_proyecto;
-
-  return v_proyecto;
-end;
-$function$;
--- execute: authenticated:EXECUTE
-comment on function private.cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'Cobra un proyecto entregado y congela su distribución. Rechaza con MN006 si la versión del proyecto, el total cobrado, el de gastos, los topes o la fecha no son los que vio el cliente, y con MN008 si la distribución que calculó la app no es la de la base. Reconoce el reenvío idéntico.';
-
 CREATE OR REPLACE FUNCTION private.crear_household(p_nombre text, p_user_id uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -874,6 +758,254 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.household_actual() is 'Household del usuario de la sesión. Es el default de household_id en todas las tablas: el cliente no lo manda nunca.';
 
+CREATE OR REPLACE FUNCTION private.liquidacion_valida(p_desde estado_proyecto, p_hacia estado_proyecto)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    case p_hacia
+      when 'cobrado' then p_desde = 'entregado'
+      when 'perdido' then p_desde in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso')
+      else false
+    end,
+    false
+  )
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.liquidacion_valida(estado_proyecto,estado_proyecto) is 'Desde qué estado se liquida hacia cobrado o perdido. Gemela de puedeLiquidar de @maun/domain.';
+
+CREATE OR REPLACE FUNCTION private.liquidar(p_destino estado_proyecto, p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer)
+ RETURNS proyectos
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  -- DIEZMO de @maun/domain.
+  c_diezmo_bp constant integer := 1000;
+  v_proyecto public.proyectos;
+  v_ajustes public.ajustes;
+  v_fecha date;
+  v_inicio_mes date;
+  v_diezmo_bp integer;
+  v_objetivo_sueldo bigint;
+  v_objetivo_fijos bigint;
+  v_sueldo_mensual boolean;
+  v_sueldo_previo bigint;
+  v_fijos_previo bigint;
+  v_topes record;
+  v_cobrado bigint;
+  v_gastos bigint;
+  v_dist record;
+begin
+  if num_nulls(
+    p_destino, p_proyecto_id, p_version, p_fecha, p_cobrado_centavos, p_gastos_centavos,
+    p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
+    p_fijos_centavos, p_remanente_centavos
+  ) > 0 then
+    raise exception 'La liquidación necesita todos sus parámetros' using errcode = '22004';
+  end if;
+
+  if p_destino not in ('cobrado', 'perdido') then
+    raise exception 'Solo se liquida hacia cobrado o perdido' using errcode = '22023';
+  end if;
+
+  -- El diezmo de un perdido es un dato (ajustes.perdido_con_diezmo), no una regla: la app manda el
+  -- que vio, y si cambió es MN006. En un cobro es la regla (DIEZMO) y no se manda: si cambia, MN008.
+  if p_destino = 'perdido' and p_diezmo_bp is null then
+    raise exception 'El cierre de un perdido necesita el diezmo que vio el usuario' using errcode = '22004';
+  end if;
+
+  -- Primer lock: el proyecto. La guarda de pagos y gastos toma for share sobre esta misma fila, así
+  -- que un pago que llega en el mismo instante espera a que la liquidación termine (y entonces lo
+  -- ve liquidado), o la liquidación espera a que el pago termine (y entonces lo suma).
+  select p.* into v_proyecto
+  from public.proyectos p
+  where p.id = p_proyecto_id
+    and p.household_id = any (array(select private.user_household_ids()))
+  for update;
+
+  if not found then
+    raise exception 'El proyecto no existe o no es tuyo' using errcode = '42501';
+  end if;
+
+  -- El reenvío de la cola: esta misma liquidación ya se aplicó (la versión subió exactamente uno) y
+  -- la respuesta se perdió. Se devuelve la fila tal cual, sin rechazar algo que salió bien.
+  if v_proyecto.estado = p_destino
+    and v_proyecto.version = p_version + 1
+    and (
+      v_proyecto.fecha_cobro, v_proyecto.dist_cobrado_centavos, v_proyecto.dist_gastos_centavos,
+      v_proyecto.dist_tope_sueldo_centavos, v_proyecto.dist_tope_fijos_centavos,
+      v_proyecto.dist_diezmo_centavos, v_proyecto.dist_sueldo_centavos,
+      v_proyecto.dist_fijos_centavos, v_proyecto.dist_remanente_centavos
+    ) = (
+      p_fecha, p_cobrado_centavos, p_gastos_centavos, p_tope_sueldo_centavos,
+      p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos, p_fijos_centavos,
+      p_remanente_centavos
+    )
+    and (p_diezmo_bp is null or v_proyecto.dist_diezmo_bp = p_diezmo_bp)
+  then
+    return v_proyecto;
+  end if;
+
+  if v_proyecto.deleted_at is not null then
+    raise exception 'El proyecto está borrado' using errcode = 'MN002';
+  end if;
+
+  if v_proyecto.estado in ('cobrado', 'perdido') then
+    raise exception 'El proyecto ya está %', v_proyecto.estado using errcode = 'MN001';
+  end if;
+
+  if not private.liquidacion_valida(v_proyecto.estado, p_destino) then
+    raise exception '%', case p_destino
+        when 'cobrado' then format('Solo se cobra un proyecto entregado, y este está en %s', v_proyecto.estado)
+        else 'Lo entregado no se da por perdido: se cobra'
+      end
+      using errcode = 'MN007';
+  end if;
+
+  if v_proyecto.version <> p_version then
+    raise exception 'El proyecto cambió desde que lo viste'
+      using errcode = 'MN006',
+            detail = format('versión vista %s, versión actual %s', p_version, v_proyecto.version);
+  end if;
+
+  -- Segundo lock: la fila de ajustes del household. Toda liquidación y toda reversión la toman, así
+  -- que dos liquidaciones del mismo household se serializan y la segunda suma el mes después de
+  -- que la primera commiteó. for no key update: choca con otra liquidación y con una edición de
+  -- los ajustes, no con las foreign keys. Es por household, más grueso que por mes (ADR 0011).
+  select a.* into v_ajustes
+  from public.ajustes a
+  where a.household_id = v_proyecto.household_id
+  for no key update;
+
+  if not found then
+    raise exception 'El household no tiene ajustes' using errcode = 'P0002';
+  end if;
+
+  -- Con qué fecha, diezmo y objetivos se liquida. Gemela de planDeLiquidacion.
+  if p_destino = 'perdido' then
+    -- Un cierre como perdido es un evento nuevo: no usa la foto de una reapertura. El sueldo del
+    -- perdido es un objetivo en cero cuando perdido_con_sueldo está apagado, no otra cascada.
+    v_fecha := p_fecha;
+    v_diezmo_bp := case when v_ajustes.perdido_con_diezmo then c_diezmo_bp else 0 end;
+    v_objetivo_sueldo := case when v_ajustes.perdido_con_sueldo then v_ajustes.sueldo_mensual_centavos else 0 end;
+    v_objetivo_fijos := v_ajustes.costos_fijos_centavos;
+    v_sueldo_mensual := v_ajustes.sueldo_tope_mensual;
+  elsif v_proyecto.reapertura_fecha_cobro is not null then
+    -- Un cobro reabierto se vuelve a cobrar con la fecha y los objetivos del original.
+    v_fecha := v_proyecto.reapertura_fecha_cobro;
+    v_diezmo_bp := c_diezmo_bp;
+    v_objetivo_sueldo := v_proyecto.reapertura_objetivo_sueldo_centavos;
+    v_objetivo_fijos := v_proyecto.reapertura_objetivo_fijos_centavos;
+    v_sueldo_mensual := v_proyecto.reapertura_sueldo_mensual;
+  else
+    v_fecha := p_fecha;
+    v_diezmo_bp := c_diezmo_bp;
+    v_objetivo_sueldo := v_ajustes.sueldo_mensual_centavos;
+    v_objetivo_fijos := v_ajustes.costos_fijos_centavos;
+    v_sueldo_mensual := v_ajustes.sueldo_tope_mensual;
+  end if;
+
+  -- Lo que el mes ya lleva liquidado por otros proyectos, en una sentencia posterior al lock de
+  -- ajustes. Gemela de liquidadoDelMes. No se guarda en ningún lado: reabrir un proyecto lo saca
+  -- de esta suma por el solo hecho de descongelarlo.
+  v_inicio_mes := make_date(extract(year from v_fecha)::integer, extract(month from v_fecha)::integer, 1);
+
+  select coalesce(sum(p.dist_sueldo_centavos), 0), coalesce(sum(p.dist_fijos_centavos), 0)
+  into v_sueldo_previo, v_fijos_previo
+  from public.proyectos p
+  where p.household_id = v_proyecto.household_id
+    and p.fecha_cobro >= v_inicio_mes
+    and p.fecha_cobro < (v_inicio_mes + interval '1 month')::date
+    and p.deleted_at is null
+    and p.id <> v_proyecto.id;
+
+  select * into v_topes
+  from private.topes_de_la_liquidacion(
+    v_objetivo_sueldo, v_objetivo_fijos, v_sueldo_mensual, v_sueldo_previo, v_fijos_previo
+  );
+
+  select coalesce(sum(g.monto_centavos), 0) into v_cobrado
+  from public.pagos g
+  where g.household_id = v_proyecto.household_id
+    and g.proyecto_id = v_proyecto.id
+    and g.deleted_at is null;
+
+  select coalesce(sum(g.monto_centavos), 0) into v_gastos
+  from public.gastos g
+  where g.household_id = v_proyecto.household_id
+    and g.proyecto_id = v_proyecto.id
+    and g.deleted_at is null;
+
+  -- Lo que se congela tiene que salir de lo que el usuario vio. Un tope distinto quiere decir que
+  -- la app no veía otra liquidación del mes (o una reapertura), o que cambiaron los ajustes.
+  if v_cobrado <> p_cobrado_centavos
+    or v_gastos <> p_gastos_centavos
+    or v_topes.tope_sueldo_centavos <> p_tope_sueldo_centavos
+    or v_topes.tope_fijos_centavos <> p_tope_fijos_centavos
+    or v_fecha <> p_fecha
+    or v_diezmo_bp <> coalesce(p_diezmo_bp, v_diezmo_bp)
+  then
+    raise exception 'Los pagos, los gastos, los topes, el diezmo o la fecha cambiaron desde que viste la distribución'
+      using errcode = 'MN006',
+            detail = format(
+              'cobrado %s, gastos %s, tope de sueldo %s, tope de fijos %s, diezmo %s bp, fecha %s; el mes ya llevaba %s de sueldo y %s de fijos',
+              v_cobrado, v_gastos, v_topes.tope_sueldo_centavos, v_topes.tope_fijos_centavos, v_diezmo_bp,
+              v_fecha, v_sueldo_previo, v_fijos_previo
+            );
+  end if;
+
+  select * into v_dist
+  from private.cascada(v_cobrado, v_gastos, v_diezmo_bp, v_topes.tope_sueldo_centavos, v_topes.tope_fijos_centavos);
+
+  -- Y la distribución que se le mostró tiene que ser la que calcula la base. Si no, la app y la
+  -- base están aplicando reglas distintas (una versión vieja de la app, o un bug): mejor un
+  -- rechazo visible que congelar otra cosa.
+  if (v_dist.diezmo_centavos, v_dist.sueldo_centavos, v_dist.fijos_centavos, v_dist.remanente_centavos)
+    is distinct from (p_diezmo_centavos, p_sueldo_centavos, p_fijos_centavos, p_remanente_centavos)
+  then
+    raise exception 'La distribución que viste no es la que calcula la base: actualizá la app'
+      using errcode = 'MN008',
+            detail = format(
+              'diezmo %s, sueldo %s, fijos %s, remanente %s',
+              v_dist.diezmo_centavos, v_dist.sueldo_centavos, v_dist.fijos_centavos, v_dist.remanente_centavos
+            );
+  end if;
+
+  update public.proyectos set
+    estado = p_destino,
+    fecha_cobro = v_fecha,
+    dist_cobrado_centavos = v_cobrado,
+    dist_gastos_centavos = v_gastos,
+    dist_diezmo_bp = v_diezmo_bp,
+    dist_tope_sueldo_centavos = v_topes.tope_sueldo_centavos,
+    dist_tope_fijos_centavos = v_topes.tope_fijos_centavos,
+    dist_diezmo_centavos = v_dist.diezmo_centavos,
+    dist_sueldo_centavos = v_dist.sueldo_centavos,
+    dist_fijos_centavos = v_dist.fijos_centavos,
+    dist_remanente_centavos = v_dist.remanente_centavos,
+    dist_objetivo_sueldo_centavos = v_objetivo_sueldo,
+    dist_objetivo_fijos_centavos = v_objetivo_fijos,
+    dist_sueldo_mensual = v_sueldo_mensual,
+    dist_sueldo_previo_centavos = v_sueldo_previo,
+    dist_fijos_previo_centavos = v_fijos_previo,
+    dist_liquidado_at = clock_timestamp(),
+    reapertura_objetivo_sueldo_centavos = null,
+    reapertura_objetivo_fijos_centavos = null,
+    reapertura_sueldo_mensual = null,
+    reapertura_fecha_cobro = null
+  where id = v_proyecto.id
+  returning * into v_proyecto;
+
+  return v_proyecto;
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.liquidar(estado_proyecto,uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer) is 'Liquida un proyecto hacia cobrado o perdido y congela su distribución. Bloquea el proyecto y después los ajustes, suma lo liquidado en el mes, y rechaza con MN006 si la versión, los totales, los topes o la fecha no son los que vio el cliente, y con MN008 si la distribución no es la de la base. Reconoce el reenvío idéntico.';
+
 CREATE OR REPLACE FUNCTION private.mantener_metadatos()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -922,7 +1054,25 @@ $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
 
-CREATE OR REPLACE FUNCTION private.reabrir_proyecto(p_proyecto_id uuid, p_version integer)
+CREATE OR REPLACE FUNCTION private.reversion_valida(p_desde estado_proyecto, p_hacia estado_proyecto)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    case p_desde
+      when 'cobrado' then p_hacia = 'entregado'
+      when 'perdido' then p_hacia in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado')
+      else false
+    end,
+    false
+  )
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.reversion_valida(estado_proyecto,estado_proyecto) is 'A qué estado vuelve una liquidación revertida. Gemela de puedeRevertir de @maun/domain.';
+
+CREATE OR REPLACE FUNCTION private.revertir_liquidacion(p_proyecto_id uuid, p_version integer, p_desde estado_proyecto, p_hacia estado_proyecto)
  RETURNS proyectos
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -931,8 +1081,8 @@ AS $function$
 declare
   v_proyecto public.proyectos;
 begin
-  if num_nulls(p_proyecto_id, p_version) > 0 then
-    raise exception 'reabrir_proyecto necesita todos sus parámetros' using errcode = '22004';
+  if num_nulls(p_proyecto_id, p_version, p_desde, p_hacia) > 0 then
+    raise exception 'La reversión necesita todos sus parámetros' using errcode = '22004';
   end if;
 
   select p.* into v_proyecto
@@ -945,17 +1095,25 @@ begin
     raise exception 'El proyecto no existe o no es tuyo' using errcode = '42501';
   end if;
 
-  -- El reenvío de la cola: esta misma reapertura ya se aplicó y la respuesta se perdió.
-  if v_proyecto.estado = 'entregado'
+  -- El reenvío de la cola: esta misma reversión ya se aplicó y la respuesta se perdió. Reabrir un
+  -- cobro deja la foto de la reapertura; reactivar un perdido no deja ninguna.
+  if v_proyecto.estado = p_hacia
     and v_proyecto.fecha_cobro is null
-    and v_proyecto.reapertura_fecha_cobro is not null
     and v_proyecto.version = p_version + 1
+    and (p_desde = 'cobrado') = (v_proyecto.reapertura_fecha_cobro is not null)
   then
     return v_proyecto;
   end if;
 
-  if v_proyecto.estado <> 'cobrado' then
-    raise exception 'Solo se reabre un proyecto cobrado, y este está en %', v_proyecto.estado
+  if v_proyecto.deleted_at is not null then
+    raise exception 'El proyecto está borrado' using errcode = 'MN002';
+  end if;
+
+  if v_proyecto.estado <> p_desde or not private.reversion_valida(p_desde, p_hacia) then
+    raise exception '%', case p_desde
+        when 'cobrado' then format('Solo se reabre un proyecto cobrado, y este está en %s', v_proyecto.estado)
+        else format('Solo se reactiva un perdido, a un estado de seguimiento: este está en %s y el destino es %s', v_proyecto.estado, p_hacia)
+      end
       using errcode = 'MN007';
   end if;
 
@@ -965,11 +1123,22 @@ begin
             detail = format('versión vista %s, versión actual %s', p_version, v_proyecto.version);
   end if;
 
+  -- El mismo segundo lock que la liquidación: una liquidación del mismo mes que corre en paralelo
+  -- ve el mes con este proyecto adentro o afuera, nunca a medias.
+  perform 1
+  from public.ajustes a
+  where a.household_id = v_proyecto.household_id
+  for no key update;
+
+  -- Reabrir un cobro guarda la fecha, los objetivos y el modo del original para el cobro
+  -- siguiente (ADR 0003). Reactivar un perdido no guarda nada: un lead que revive es un lead vivo
+  -- otra vez, y un cierre posterior es un evento nuevo con su fecha.
   update public.proyectos set
-    estado = 'entregado',
-    reapertura_tope_sueldo_centavos = dist_tope_sueldo_centavos,
-    reapertura_tope_fijos_centavos = dist_tope_fijos_centavos,
-    reapertura_fecha_cobro = fecha_cobro,
+    estado = p_hacia,
+    reapertura_objetivo_sueldo_centavos = case when p_desde = 'cobrado' then dist_objetivo_sueldo_centavos end,
+    reapertura_objetivo_fijos_centavos = case when p_desde = 'cobrado' then dist_objetivo_fijos_centavos end,
+    reapertura_sueldo_mensual = case when p_desde = 'cobrado' then dist_sueldo_mensual end,
+    reapertura_fecha_cobro = case when p_desde = 'cobrado' then fecha_cobro end,
     fecha_cobro = null,
     dist_cobrado_centavos = null,
     dist_gastos_centavos = null,
@@ -979,7 +1148,13 @@ begin
     dist_diezmo_centavos = null,
     dist_sueldo_centavos = null,
     dist_fijos_centavos = null,
-    dist_remanente_centavos = null
+    dist_remanente_centavos = null,
+    dist_objetivo_sueldo_centavos = null,
+    dist_objetivo_fijos_centavos = null,
+    dist_sueldo_mensual = null,
+    dist_sueldo_previo_centavos = null,
+    dist_fijos_previo_centavos = null,
+    dist_liquidado_at = null
   where id = v_proyecto.id
   returning * into v_proyecto;
 
@@ -987,7 +1162,46 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.reabrir_proyecto(uuid,integer) is 'Reabre un proyecto cobrado: vuelve a entregado, descongela la distribución y guarda los topes y la fecha del cobro para el cobro siguiente. Rechaza con MN006 si el proyecto cambió. Reconoce el reenvío idéntico.';
+comment on function private.revertir_liquidacion(uuid,integer,estado_proyecto,estado_proyecto) is 'Descongela la distribución de un proyecto liquidado: reabre un cobrado a entregado guardando la foto del cobro, o reactiva un perdido a un estado de seguimiento sin foto. Los demás proyectos del mes no se recalculan. Rechaza con MN006 si el proyecto cambió. Reconoce el reenvío idéntico.';
+
+CREATE OR REPLACE FUNCTION private.topes_de_la_liquidacion(p_objetivo_sueldo_centavos bigint, p_objetivo_fijos_centavos bigint, p_sueldo_mensual boolean, p_sueldo_previo_centavos bigint, p_fijos_previo_centavos bigint, OUT tope_sueldo_centavos bigint, OUT tope_fijos_centavos bigint)
+ RETURNS record
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+declare
+  -- Number.MAX_SAFE_INTEGER, como en private.cascada.
+  c_maximo constant bigint := 9007199254740991;
+begin
+  if num_nulls(
+    p_objetivo_sueldo_centavos, p_objetivo_fijos_centavos, p_sueldo_mensual,
+    p_sueldo_previo_centavos, p_fijos_previo_centavos
+  ) > 0 then
+    raise exception 'Los topes necesitan todos sus parámetros' using errcode = '22004';
+  end if;
+
+  if least(
+    p_objetivo_sueldo_centavos, p_objetivo_fijos_centavos, p_sueldo_previo_centavos, p_fijos_previo_centavos
+  ) < 0 then
+    raise exception 'Los topes no aceptan importes negativos' using errcode = '22023';
+  end if;
+
+  if greatest(
+    p_objetivo_sueldo_centavos, p_objetivo_fijos_centavos, p_sueldo_previo_centavos, p_fijos_previo_centavos
+  ) > c_maximo then
+    raise exception 'Importe fuera del rango exacto de Money' using errcode = '22003';
+  end if;
+
+  tope_fijos_centavos := greatest(0, p_objetivo_fijos_centavos - p_fijos_previo_centavos);
+  tope_sueldo_centavos := case
+    when p_sueldo_mensual then greatest(0, p_objetivo_sueldo_centavos - p_sueldo_previo_centavos)
+    else p_objetivo_sueldo_centavos
+  end;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.topes_de_la_liquidacion(bigint,bigint,boolean,bigint,bigint) is 'Los topes de una liquidación: fijos por lo que falta del mes; sueldo por proyecto (el objetivo entero) o por mes. Gemela de topesDeLaLiquidacion de @maun/domain.';
 
 CREATE OR REPLACE FUNCTION private.transicion_valida(p_desde estado_proyecto, p_hasta estado_proyecto)
  RETURNS boolean
@@ -1000,16 +1214,14 @@ AS $function$
     from (
       values
         ('contacto', 'relevamiento'), ('contacto', 'a_presupuestar'), ('contacto', 'presupuesto_enviado'),
-        ('contacto', 'en_curso'), ('contacto', 'perdido'),
+        ('contacto', 'en_curso'),
         ('relevamiento', 'contacto'), ('relevamiento', 'a_presupuestar'), ('relevamiento', 'presupuesto_enviado'),
-        ('relevamiento', 'en_curso'), ('relevamiento', 'perdido'),
+        ('relevamiento', 'en_curso'),
         ('a_presupuestar', 'contacto'), ('a_presupuestar', 'relevamiento'), ('a_presupuestar', 'presupuesto_enviado'),
-        ('a_presupuestar', 'en_curso'), ('a_presupuestar', 'perdido'),
+        ('a_presupuestar', 'en_curso'),
         ('presupuesto_enviado', 'contacto'), ('presupuesto_enviado', 'relevamiento'),
-        ('presupuesto_enviado', 'a_presupuestar'), ('presupuesto_enviado', 'en_curso'), ('presupuesto_enviado', 'perdido'),
-        ('perdido', 'contacto'), ('perdido', 'relevamiento'), ('perdido', 'a_presupuestar'),
-        ('perdido', 'presupuesto_enviado'),
-        ('en_curso', 'presupuesto_enviado'), ('en_curso', 'entregado'), ('en_curso', 'perdido'),
+        ('presupuesto_enviado', 'a_presupuestar'), ('presupuesto_enviado', 'en_curso'),
+        ('en_curso', 'presupuesto_enviado'), ('en_curso', 'entregado'),
         ('entregado', 'en_curso')
     ) as t (desde, hasta)
     where t.desde::public.estado_proyecto = p_desde
@@ -1017,7 +1229,7 @@ AS $function$
   )
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.transicion_valida(estado_proyecto,estado_proyecto) is 'Transiciones manuales de estado. Gemela de TRANSICIONES de @maun/domain.';
+comment on function private.transicion_valida(estado_proyecto,estado_proyecto) is 'Transiciones manuales de estado. Liquidar y revertir no están: son operaciones. Gemela de TRANSICIONES de @maun/domain.';
 
 CREATE OR REPLACE FUNCTION private.user_household_ids()
  RETURNS SETOF uuid
@@ -1090,6 +1302,7 @@ CREATE OR REPLACE FUNCTION private.validar_proyecto_abierto()
 AS $function$
 declare
   v_proyectos uuid[];
+  v_liquidado public.estado_proyecto;
 begin
   if tg_op = 'INSERT' then
     -- En un upsert que choca contra una fila existente, este trigger corre antes de detectar el
@@ -1110,11 +1323,11 @@ begin
     v_proyectos := array[old.proyecto_id, new.proyecto_id];
   end if;
 
-  -- Bloquea el proyecto antes de mirarlo. Sin esto, un pago que entra mientras otra sesión cobra
+  -- Bloquea el proyecto antes de mirarlo. Sin esto, un pago que entra mientras otra sesión liquida
   -- el proyecto pasa la guarda con el estado viejo y queda fuera de la distribución congelada: la
-  -- foreign key solo toma un lock que no choca con el update del cobro. Con for share, este trigger
-  -- espera al cobro y los exists de abajo, que son consultas nuevas, ya lo ven commiteado. El
-  -- contrato del otro lado: la función de cobro bloquea el proyecto con for update antes de sumar.
+  -- foreign key solo toma un lock que no choca con el update de la liquidación. Con for share, este
+  -- trigger espera a la liquidación y la consulta de abajo, que es nueva, ya la ve commiteada. El
+  -- contrato del otro lado: private.liquidar bloquea el proyecto con for update antes de sumar.
   perform 1
   from public.proyectos p
   where p.household_id = new.household_id
@@ -1122,16 +1335,20 @@ begin
   order by p.id
   for share;
 
-  if exists (
-    select 1
-    from public.proyectos p
-    where p.household_id = new.household_id
-      and p.id = any (v_proyectos)
-      and p.estado = 'cobrado'
-  ) then
-    raise exception 'El proyecto ya está cobrado y su distribución congelada: sus pagos y gastos no se modifican'
+  select p.estado into v_liquidado
+  from public.proyectos p
+  where p.household_id = new.household_id
+    and p.id = any (v_proyectos)
+    and p.estado in ('cobrado', 'perdido')
+  limit 1;
+
+  if found then
+    raise exception 'El proyecto está % y su distribución congelada: sus pagos y gastos no se modifican', v_liquidado
       using errcode = 'MN001',
-            hint = 'Para corregirlo hay que reabrir el proyecto o registrar un ajuste.';
+            hint = case v_liquidado
+              when 'cobrado' then 'Para corregirlo hay que reabrir el proyecto o registrar un ajuste.'
+              else 'Para cargarlo hay que reactivar el perdido y volver a cerrarlo.'
+            end;
   end if;
 
   -- Un hijo de un proyecto borrado solo puede quedar borrado (es lo que hace la baja en cascada).
@@ -1150,7 +1367,7 @@ begin
 end;
 $function$;
 -- execute: solo el dueño
-comment on function private.validar_proyecto_abierto() is 'Guarda de pagos y gastos: rechaza altas y cambios sobre un proyecto cobrado (MN001) o borrado (MN002). Deja pasar el reenvío idéntico de la cola.';
+comment on function private.validar_proyecto_abierto() is 'Guarda de pagos y gastos: rechaza altas y cambios sobre un proyecto liquidado, cobrado o perdido (MN001), o borrado (MN002). Deja pasar el reenvío idéntico de la cola.';
 
 CREATE OR REPLACE FUNCTION private.validar_proyecto()
  RETURNS trigger
@@ -1167,9 +1384,9 @@ begin
       return new;
     end if;
 
-    -- Un proyecto nace en cualquier estado menos cobrado: cobrar es una operación, no un dato.
-    if new.estado = 'cobrado' and new.fecha_cobro is null then
-      raise exception 'Un proyecto se cobra con cobrar_proyecto, no se crea cobrado'
+    -- Un proyecto no nace liquidado: cobrar y cerrar como perdido son operaciones, no datos.
+    if new.estado in ('cobrado', 'perdido') and new.fecha_cobro is null then
+      raise exception 'Un proyecto no se crea %: se cobra con cobrar_proyecto y se pierde con cerrar_perdido', new.estado
         using errcode = 'MN007';
     end if;
   elsif private.es_reenvio(to_jsonb(old), to_jsonb(new)) then
@@ -1177,16 +1394,30 @@ begin
   end if;
 
   if tg_op = 'UPDATE' then
-    -- Lo congelado solo se mueve reabriendo, y la reapertura limpia fecha_cobro. Sin esta guarda,
+    -- Lo congelado solo se mueve revirtiendo, y la reversión limpia fecha_cobro. Sin esta guarda,
     -- una edición encolada con el estado viejo rebotaría contra un check con un 23514 genérico.
-    if old.estado = 'cobrado' and new.fecha_cobro is not null and new.estado <> 'cobrado' then
-      raise exception 'El proyecto ya está cobrado: su estado solo cambia al reabrirlo'
+    if old.estado in ('cobrado', 'perdido') and new.fecha_cobro is not null and new.estado <> old.estado then
+      raise exception 'El proyecto está % y su distribución congelada: su estado no cambia editándolo', old.estado
         using errcode = 'MN001',
-              hint = 'Para corregirlo hay que reabrir el proyecto o registrar un ajuste.';
+              hint = case old.estado
+                when 'cobrado' then 'Para corregirlo hay que reabrir el proyecto o registrar un ajuste.'
+                else 'Un perdido vuelve al seguimiento con reactivar_perdido.'
+              end;
     end if;
 
-    if old.estado = 'cobrado' and old.deleted_at is null and new.deleted_at is not null then
-      raise exception 'Un proyecto cobrado no se borra: tiene la distribución congelada'
+    -- Borrar un proyecto borra sus pagos y gastos: si está liquidado y movió plata, eso la sacaría
+    -- del libro mayor. Un liquidado sin pagos ni gastos (el lead perdido sin seña) sí se borra.
+    if old.fecha_cobro is not null and old.deleted_at is null and new.deleted_at is not null and (
+      exists (
+        select 1 from public.pagos g
+        where g.household_id = old.household_id and g.proyecto_id = old.id and g.deleted_at is null
+      )
+      or exists (
+        select 1 from public.gastos g
+        where g.household_id = old.household_id and g.proyecto_id = old.id and g.deleted_at is null
+      )
+    ) then
+      raise exception 'Un proyecto % con pagos o gastos no se borra: tiene la distribución congelada', old.estado
         using errcode = 'MN001';
     end if;
 
@@ -1198,17 +1429,17 @@ begin
     end if;
 
     if new.estado is distinct from old.estado then
-      if new.estado = 'cobrado' then
-        -- Solo cobrar_proyecto llega acá con la distribución congelada: el cliente no tiene grant
+      if new.estado in ('cobrado', 'perdido') then
+        -- Solo private.liquidar llega acá con la distribución congelada: el cliente no tiene grant
         -- sobre fecha_cobro.
-        if old.estado <> 'entregado' or new.fecha_cobro is null then
-          raise exception 'Un proyecto se cobra con cobrar_proyecto, y solo si está entregado'
+        if new.fecha_cobro is null or not private.liquidacion_valida(old.estado, new.estado) then
+          raise exception 'Un proyecto no pasa de % a % editando el estado: se cobra con cobrar_proyecto y se pierde con cerrar_perdido', old.estado, new.estado
             using errcode = 'MN007';
         end if;
-      elsif old.estado = 'cobrado' then
-        -- Solo reabrir_proyecto llega acá, porque es la única que limpia fecha_cobro.
-        if new.estado <> 'entregado' then
-          raise exception 'Un proyecto cobrado se reabre a entregado'
+      elsif old.estado in ('cobrado', 'perdido') then
+        -- Solo private.revertir_liquidacion llega acá, porque es la única que limpia fecha_cobro.
+        if not private.reversion_valida(old.estado, new.estado) then
+          raise exception 'Un proyecto % no vuelve a %', old.estado, new.estado
             using errcode = 'MN007';
         end if;
       elsif not private.transicion_valida(old.estado, new.estado) then
@@ -1235,14 +1466,24 @@ begin
 end;
 $function$;
 -- execute: solo el dueño
-comment on function private.validar_proyecto() is 'Guarda de proyectos: un cobrado no cambia de estado ni se borra (MN001), un borrado no revive (MN002), un proyecto vivo no cuelga de un cliente borrado (MN005) y el estado solo sigue transiciones válidas (MN007). Deja pasar el reenvío idéntico de la cola.';
+comment on function private.validar_proyecto() is 'Guarda de proyectos: un liquidado (cobrado o perdido) no cambia de estado editándolo, y con pagos o gastos no se borra (MN001); un borrado no revive (MN002); un proyecto vivo no cuelga de un cliente borrado (MN005); el estado solo sigue transiciones válidas (MN007). Deja pasar el reenvío idéntico de la cola.';
 
 CREATE OR REPLACE FUNCTION public.reabrir_proyecto(p_proyecto_id uuid, p_version integer)
  RETURNS proyectos
  LANGUAGE sql
  SET search_path TO ''
 AS $function$
-  select * from private.reabrir_proyecto(p_proyecto_id, p_version)
+  select * from private.revertir_liquidacion(p_proyecto_id, p_version, 'cobrado', 'entregado')
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function reabrir_proyecto(uuid,integer) is 'RPC de reapertura de un proyecto cobrado.';
+comment on function reabrir_proyecto(uuid,integer) is 'RPC de reapertura de un proyecto cobrado: vuelve a entregado y guarda la fecha y los objetivos del cobro.';
+
+CREATE OR REPLACE FUNCTION public.reactivar_perdido(p_proyecto_id uuid, p_version integer, p_estado estado_proyecto)
+ RETURNS proyectos
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select * from private.revertir_liquidacion(p_proyecto_id, p_version, 'perdido', p_estado)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function reactivar_perdido(uuid,integer,estado_proyecto) is 'RPC de reactivación de un perdido: descongela su liquidación y lo vuelve al estado de seguimiento elegido.';

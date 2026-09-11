@@ -1,5 +1,6 @@
--- La máquina de estados aplicada por la base. La tabla entera la compara contra @maun/domain
--- packages/db/tests/dominio-vs-sql.test.ts; acá se prueba que la guarda la hace cumplir.
+-- La máquina de estados aplicada por la base. Las tablas enteras las compara contra @maun/domain
+-- packages/db/tests/dominio-vs-sql.test.ts; acá se prueba que la guarda las hace cumplir. Cerrar
+-- como perdido y reactivar se prueban en 11_perdido.sql.
 
 select plan(13);
 
@@ -49,7 +50,7 @@ select throws_ok(
 
 select throws_ok(
   $$ update public.proyectos set estado = 'perdido' where id = 'aaaaaaaa-0000-7000-8000-000000000010' $$,
-  'MN007', null, 'lo entregado no se da por perdido'
+  'MN007', null, 'lo entregado tampoco pasa a perdido editando el estado'
 );
 
 select lives_ok(
@@ -62,19 +63,19 @@ select lives_ok(
   'repetir el mismo estado junto con otro cambio no es una transición'
 );
 
-select lives_ok(
-  $$ update public.proyectos set estado = 'perdido' where id = 'aaaaaaaa-0000-7000-8000-000000000010' $$,
-  'una obra se puede caer'
-);
-
 select throws_ok(
-  $$ update public.proyectos set estado = 'en_curso' where id = 'aaaaaaaa-0000-7000-8000-000000000010' $$,
-  'MN007', null, 'un perdido no vuelve directo a la obra: se reactiva como lead'
+  $$ update public.proyectos set estado = 'perdido' where id = 'aaaaaaaa-0000-7000-8000-000000000010' $$,
+  'MN007', null, 'una obra que se cae se cierra con cerrar_perdido, no editando el estado'
 );
 
 select throws_ok(
   $$ insert into public.proyectos (cliente_id, titulo, estado) values ('aaaaaaaa-0000-7000-8000-000000000001', 'Nace cobrado', 'cobrado') $$,
   'MN007', null, 'un proyecto no se crea cobrado'
+);
+
+select throws_ok(
+  $$ insert into public.proyectos (cliente_id, titulo, estado) values ('aaaaaaaa-0000-7000-8000-000000000001', 'Nace perdido', 'perdido') $$,
+  'MN007', null, 'ni perdido: los dos se llegan liquidando'
 );
 
 select lives_ok(

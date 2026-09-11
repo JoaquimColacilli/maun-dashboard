@@ -1,7 +1,8 @@
 -- Cobrar y reabrir: lo que se congela, cuándo se rechaza, el reenvío de la cola y quién puede.
 -- Proyecto 010: pagos 60M + 40M, gasto 30M, topes 180M y 25M. Neta 70M: diezmo 7M, sueldo 63M.
+-- Los topes mensuales se prueban en 10_topes_mensuales.sql y el perdido en 11_perdido.sql.
 
-select plan(38);
+select plan(41);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('b', tests.crear_usuario('b@maun.test'));
@@ -125,6 +126,16 @@ select results_eq(
   'congela la cascada sobre lo cobrado y los topes del momento'
 );
 
+select results_eq(
+  $$
+    select dist_objetivo_sueldo_centavos, dist_objetivo_fijos_centavos, dist_sueldo_mensual,
+           dist_sueldo_previo_centavos, dist_fijos_previo_centavos, dist_liquidado_at is not null
+    from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000010'
+  $$,
+  $$ values (180000000::bigint, 25000000::bigint, false, 0::bigint, 0::bigint, true) $$,
+  'y congela los objetivos, el modo del sueldo, lo que el mes ya llevaba liquidado y el instante'
+);
+
 select is(
   (select version from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000010'),
   current_setting('tests.v010')::int + 1,
@@ -211,7 +222,8 @@ select ok(
     select fecha_cobro is null and num_nonnulls(
       dist_cobrado_centavos, dist_gastos_centavos, dist_diezmo_bp, dist_tope_sueldo_centavos,
       dist_tope_fijos_centavos, dist_diezmo_centavos, dist_sueldo_centavos, dist_fijos_centavos,
-      dist_remanente_centavos
+      dist_remanente_centavos, dist_objetivo_sueldo_centavos, dist_objetivo_fijos_centavos,
+      dist_sueldo_mensual, dist_sueldo_previo_centavos, dist_fijos_previo_centavos, dist_liquidado_at
     ) = 0
     from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000010'
   ),
@@ -220,11 +232,12 @@ select ok(
 
 select results_eq(
   $$
-    select reapertura_tope_sueldo_centavos, reapertura_tope_fijos_centavos, reapertura_fecha_cobro
+    select reapertura_objetivo_sueldo_centavos, reapertura_objetivo_fijos_centavos,
+           reapertura_sueldo_mensual, reapertura_fecha_cobro
     from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000010'
   $$,
-  $$ values (180000000::bigint, 25000000::bigint, '2026-09-10'::date) $$,
-  'pero guarda los topes y la fecha del cobro original'
+  $$ values (180000000::bigint, 25000000::bigint, false, '2026-09-10'::date) $$,
+  'pero guarda la fecha, los objetivos y el modo del sueldo del cobro original'
 );
 
 select is(
@@ -273,7 +286,7 @@ select results_eq(
     (select version from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000010')
   ),
   $$ values (7500000::bigint, 67500000::bigint, 180000000::bigint, '2026-09-10'::date, true) $$,
-  'con los topes y la fecha originales, se vuelve a cobrar con el pago nuevo y se limpia lo guardado'
+  'con los objetivos y la fecha originales, se vuelve a cobrar con el pago nuevo y se limpia lo guardado'
 );
 
 
@@ -321,6 +334,16 @@ select throws_ok(
 select throws_ok(
   $$ select public.reabrir_proyecto('aaaaaaaa-0000-7000-8000-000000000010', 1) $$,
   '42501', null, 'anon no reabre'
+);
+
+select throws_ok(
+  $$ select public.cerrar_perdido('aaaaaaaa-0000-7000-8000-000000000010', 1, '2026-09-10', 0, 0, 0, 0, 0, 0, 0, 0, 1000) $$,
+  '42501', null, 'anon no cierra un perdido'
+);
+
+select throws_ok(
+  $$ select public.reactivar_perdido('aaaaaaaa-0000-7000-8000-000000000010', 1, 'contacto') $$,
+  '42501', null, 'anon no reactiva un perdido'
 );
 
 select * from finish();

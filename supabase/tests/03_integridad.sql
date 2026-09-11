@@ -1,6 +1,6 @@
 -- Metadatos, idempotencia, constraints de plata y las guardas que protegen lo congelado.
 
-select plan(53);
+select plan(55);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller A', tests.id('a')));
@@ -166,17 +166,21 @@ select throws_ok(
 
 select tests.salir();
 
+-- Cada rechazo nombra su constraint: con las demás satisfechas, falla la que se está probando y no
+-- otra por accidente.
 select throws_ok(
   $$
     update public.proyectos set
       estado = 'cobrado', fecha_cobro = '2026-08-20',
       dist_cobrado_centavos = 100000000, dist_gastos_centavos = 30000000, dist_diezmo_bp = 1000,
       dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
-      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 1
+      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 1,
+      dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+      dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0, dist_liquidado_at = now()
     where id = 'aaaaaaaa-0000-7000-8000-000000000010'
   $$,
   '23514',
-  null,
+  'new row for relation "proyectos" violates check constraint "proyectos_distribucion_cuadra"',
   'una distribución que no suma la ganancia neta no entra'
 );
 
@@ -186,12 +190,46 @@ select throws_ok(
       estado = 'cobrado', fecha_cobro = '2026-08-20',
       dist_cobrado_centavos = 100000000, dist_gastos_centavos = 30000000, dist_diezmo_bp = 1000,
       dist_tope_sueldo_centavos = 50000000, dist_tope_fijos_centavos = 25000000,
-      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
+      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 0,
+      dist_objetivo_sueldo_centavos = 50000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+      dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0, dist_liquidado_at = now()
     where id = 'aaaaaaaa-0000-7000-8000-000000000010'
   $$,
   '23514',
-  null,
+  'new row for relation "proyectos" violates check constraint "proyectos_distribucion_cuadra"',
   'el sueldo no pasa su tope'
+);
+
+select throws_ok(
+  $$
+    update public.proyectos set
+      estado = 'cobrado', fecha_cobro = '2026-08-20',
+      dist_cobrado_centavos = 100000000, dist_gastos_centavos = 30000000, dist_diezmo_bp = 1000,
+      dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
+      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 0,
+      dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+      dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 10000000, dist_liquidado_at = now()
+    where id = 'aaaaaaaa-0000-7000-8000-000000000010'
+  $$,
+  '23514',
+  'new row for relation "proyectos" violates check constraint "proyectos_topes_del_mes"',
+  'el tope congelado sale del objetivo y de lo que el mes ya llevaba liquidado'
+);
+
+select throws_ok(
+  $$
+    update public.proyectos set
+      estado = 'cobrado', fecha_cobro = '2026-08-20',
+      dist_cobrado_centavos = 100000000, dist_gastos_centavos = 30000000, dist_diezmo_bp = 1000,
+      dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
+      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 0,
+      dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+      dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0
+    where id = 'aaaaaaaa-0000-7000-8000-000000000010'
+  $$,
+  '23514',
+  'new row for relation "proyectos" violates check constraint "proyectos_liquidado_con_distribucion"',
+  'lo congelado está completo o no está: sin el instante de la liquidación no entra'
 );
 
 select lives_ok(
@@ -200,7 +238,9 @@ select lives_ok(
       estado = 'cobrado', fecha_cobro = '2026-08-20',
       dist_cobrado_centavos = 100000000, dist_gastos_centavos = 30000000, dist_diezmo_bp = 1000,
       dist_tope_sueldo_centavos = 180000000, dist_tope_fijos_centavos = 25000000,
-      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 0
+      dist_diezmo_centavos = 7000000, dist_sueldo_centavos = 63000000, dist_fijos_centavos = 0, dist_remanente_centavos = 0,
+      dist_objetivo_sueldo_centavos = 180000000, dist_objetivo_fijos_centavos = 25000000, dist_sueldo_mensual = false,
+      dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0, dist_liquidado_at = now()
     where id = 'aaaaaaaa-0000-7000-8000-000000000010'
   $$,
   'una distribución que cuadra congela el proyecto'
@@ -211,11 +251,15 @@ select lives_ok(
     insert into public.proyectos (
       household_id, cliente_id, titulo, estado, fecha_cobro,
       dist_cobrado_centavos, dist_gastos_centavos, dist_diezmo_bp, dist_tope_sueldo_centavos, dist_tope_fijos_centavos,
-      dist_diezmo_centavos, dist_sueldo_centavos, dist_fijos_centavos, dist_remanente_centavos
+      dist_diezmo_centavos, dist_sueldo_centavos, dist_fijos_centavos, dist_remanente_centavos,
+      dist_objetivo_sueldo_centavos, dist_objetivo_fijos_centavos, dist_sueldo_mensual,
+      dist_sueldo_previo_centavos, dist_fijos_previo_centavos, dist_liquidado_at
     )
     select household_id, id, 'Proyecto a pérdida', 'cobrado', '2026-08-20',
       10000000, 15000000, 1000, 180000000, 25000000,
-      0, 0, 0, -5000000
+      0, 0, 0, -5000000,
+      180000000, 25000000, false,
+      0, 0, now()
     from public.clientes where id = 'aaaaaaaa-0000-7000-8000-000000000001'
   $$,
   'un proyecto con pérdida congela todo en cero y la pérdida en el remanente'

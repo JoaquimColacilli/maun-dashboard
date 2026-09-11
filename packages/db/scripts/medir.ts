@@ -82,7 +82,9 @@ async function sembrar(cliente: pg.Client, filas: number): Promise<string> {
        dist_tope_sueldo_centavos = 0, dist_tope_fijos_centavos = 0,
        dist_diezmo_centavos = greatest(0, (s.cobrado - s.gastos) / 10),
        dist_sueldo_centavos = 0, dist_fijos_centavos = 0,
-       dist_remanente_centavos = (s.cobrado - s.gastos) - greatest(0, (s.cobrado - s.gastos) / 10)
+       dist_remanente_centavos = (s.cobrado - s.gastos) - greatest(0, (s.cobrado - s.gastos) / 10),
+       dist_objetivo_sueldo_centavos = 0, dist_objetivo_fijos_centavos = 0, dist_sueldo_mensual = false,
+       dist_sueldo_previo_centavos = 0, dist_fijos_previo_centavos = 0, dist_liquidado_at = now()
      from (
        select pr.id,
               (select sum(monto_centavos)::bigint from public.pagos where proyecto_id = pr.id) as cobrado,
