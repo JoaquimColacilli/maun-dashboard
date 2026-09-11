@@ -1,6 +1,28 @@
 # @maun/db
 
-Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase) y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos y el seed.
+Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed y el alta de households.
+
+## La réplica del household
+
+`src/replica.ts` es la copia local del household y la lógica que la mantiene al día (ADR 0010). Es pura y sin dependencias: se testea con `src/replica.test.ts`, sin base.
+
+- `leerLote()` valida lo que devuelven `bootstrap()` y `delta()` antes de creerle: id, version y deleted_at por fila.
+- `aplicarLote(replica, lote, modo)` reemplaza entera con `reconcile` y mezcla con `delta`. En la mezcla gana la fila que llega salvo que traiga una `version` más vieja, que es lo que produce el solape de cinco minutos.
+- `aplicarFilaLocal` y `quitarFilaLocal` son la aplicación optimista de la cola de salida y su vuelta atrás cuando la base rechaza.
+- `necesitaReconcile(replica, ahora)` decide entre `bootstrap()` y `delta()`: reconcile completo al entrar y cada 24 horas.
+- `src/sincronizacion.ts` son las llamadas (`traerBootstrap`, `traerDelta`, `guardarMovimiento`) y `src/errores.ts` clasifica los rechazos: los `MNxxx` y el `42501` no se reintentan.
+- La conversión de `bigint` a `Money` vive en `src/dinero.ts`, en un solo lugar.
+
+## Dar acceso a una cuenta
+
+Nadie se crea un household solo: `private.crear_household` no tiene grant (ADR 0004). Después de que alguien se registra en la app, el alta la hace el dueño de la base:
+
+```sh
+pnpm --filter @maun/db db:household --listar
+pnpm --filter @maun/db db:household --email <mail> --nombre "<taller>"
+```
+
+`--listar` muestra los usuarios de Auth, si confirmaron el mail y a qué household pertenecen. El alta es idempotente: si la cuenta ya tiene household, avisa y no cambia nada.
 
 ## Supabase CLI
 
