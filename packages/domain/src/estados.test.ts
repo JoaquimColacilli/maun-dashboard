@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ESTADOS,
+  ESTADOS_DE_SEGUIMIENTO,
   esEstado,
+  estaLiquidado,
   faseDe,
   puedeCambiarEstado,
+  puedeCerrarPerdido,
   puedeCobrar,
+  puedeLiquidar,
   puedeReabrir,
+  puedeReactivar,
+  puedeRevertir,
   TRANSICIONES,
   type EstadoProyecto,
 } from './estados.ts';
@@ -41,6 +47,11 @@ describe('estados', () => {
       'activos',
       'historial',
     ]);
+    expect(ESTADOS_DE_SEGUIMIENTO.map(faseDe)).toEqual(Array(4).fill('seguimiento'));
+  });
+
+  it('liquidado es cobrado o perdido: los dos tienen la distribución congelada', () => {
+    expect(ESTADOS.filter(estaLiquidado)).toEqual(['perdido', 'cobrado']);
   });
 });
 
@@ -50,51 +61,42 @@ describe('transiciones manuales', () => {
     for (const estado of ESTADOS) expect(puedeCambiarEstado(estado, estado)).toBe(false);
   });
 
-  it('nadie llega a cobrado ni sale de cobrado a mano: eso es cobrar y reabrir', () => {
+  it('son diecinueve', () => {
+    expect(Object.values(TRANSICIONES).flat()).toHaveLength(19);
+  });
+
+  it('nadie llega a un estado liquidado ni sale de uno a mano: eso es liquidar y revertir', () => {
     for (const estado of ESTADOS) {
-      expect(puedeCambiarEstado(estado, 'cobrado')).toBe(false);
-      expect(puedeCambiarEstado('cobrado', estado)).toBe(false);
+      for (const liquidado of ['cobrado', 'perdido'] as const) {
+        expect(puedeCambiarEstado(estado, liquidado)).toBe(false);
+        expect(puedeCambiarEstado(liquidado, estado)).toBe(false);
+      }
     }
   });
 
-  it('un lead avanza, retrocede dentro del seguimiento, se convierte o se pierde', () => {
-    const seguimiento: EstadoProyecto[] = [
-      'contacto',
-      'relevamiento',
-      'a_presupuestar',
-      'presupuesto_enviado',
-    ];
-    for (const desde of seguimiento) {
-      for (const hasta of seguimiento)
+  it('un lead avanza, retrocede dentro del seguimiento o se convierte en obra', () => {
+    for (const desde of ESTADOS_DE_SEGUIMIENTO) {
+      for (const hasta of ESTADOS_DE_SEGUIMIENTO)
         expect(puedeCambiarEstado(desde, hasta)).toBe(desde !== hasta);
       expect(puedeCambiarEstado(desde, 'en_curso')).toBe(true);
-      expect(puedeCambiarEstado(desde, 'perdido')).toBe(true);
       expect(puedeCambiarEstado(desde, 'entregado')).toBe(false);
     }
   });
 
-  it('un perdido se reactiva como lead, pero no salta a la obra', () => {
-    expect(puedeCambiarEstado('perdido', 'contacto')).toBe(true);
-    expect(puedeCambiarEstado('perdido', 'presupuesto_enviado')).toBe(true);
-    expect(puedeCambiarEstado('perdido', 'en_curso')).toBe(false);
-  });
-
-  it('la obra se entrega, se cae o vuelve a presupuesto; lo entregado puede volver al taller', () => {
+  it('la obra se entrega o vuelve a presupuesto; lo entregado puede volver al taller', () => {
     expect(puedeCambiarEstado('en_curso', 'entregado')).toBe(true);
-    expect(puedeCambiarEstado('en_curso', 'perdido')).toBe(true);
     expect(puedeCambiarEstado('en_curso', 'presupuesto_enviado')).toBe(true);
     expect(puedeCambiarEstado('en_curso', 'contacto')).toBe(false);
     expect(puedeCambiarEstado('entregado', 'en_curso')).toBe(true);
-    expect(puedeCambiarEstado('entregado', 'perdido')).toBe(false);
   });
 
-  it('desde un contacto se llega a cualquier estado, contando el cobro', () => {
+  it('desde un contacto se llega a cualquier estado, contando liquidar y revertir', () => {
     const alcanzados = new Set<EstadoProyecto>(['contacto']);
     let frontera: EstadoProyecto[] = ['contacto'];
     while (frontera.length > 0) {
       const siguientes = frontera.flatMap((estado) => [
         ...TRANSICIONES[estado],
-        ...(puedeCobrar(estado) ? (['cobrado'] as const) : []),
+        ...ESTADOS.filter((hacia) => puedeLiquidar(estado, hacia) || puedeRevertir(estado, hacia)),
       ]);
       frontera = siguientes.filter((estado) => !alcanzados.has(estado));
       for (const estado of frontera) alcanzados.add(estado);
@@ -103,9 +105,33 @@ describe('transiciones manuales', () => {
   });
 });
 
-describe('cobrar y reabrir', () => {
-  it('solo se cobra un proyecto entregado y solo se reabre uno cobrado', () => {
+describe('liquidar y revertir', () => {
+  it('se cobra solo lo entregado; se cierra como perdido un lead o una obra, no lo entregado', () => {
     expect(ESTADOS.filter(puedeCobrar)).toEqual(['entregado']);
+    expect(ESTADOS.filter(puedeCerrarPerdido)).toEqual([...ESTADOS_DE_SEGUIMIENTO, 'en_curso']);
+  });
+
+  it('solo se liquida hacia cobrado o perdido', () => {
+    for (const desde of ESTADOS) {
+      for (const hacia of ESTADOS) {
+        if (!estaLiquidado(hacia)) expect(puedeLiquidar(desde, hacia)).toBe(false);
+      }
+    }
+  });
+
+  it('un cobrado se reabre a entregado; un perdido se reactiva a cualquier estado de seguimiento', () => {
     expect(ESTADOS.filter(puedeReabrir)).toEqual(['cobrado']);
+    expect(ESTADOS.filter(puedeReactivar)).toEqual(['perdido']);
+    expect(ESTADOS.filter((hacia) => puedeRevertir('cobrado', hacia))).toEqual(['entregado']);
+    expect(ESTADOS.filter((hacia) => puedeRevertir('perdido', hacia))).toEqual([
+      ...ESTADOS_DE_SEGUIMIENTO,
+    ]);
+  });
+
+  it('lo que no está liquidado no se revierte', () => {
+    for (const desde of ESTADOS) {
+      if (estaLiquidado(desde)) continue;
+      for (const hacia of ESTADOS) expect(puedeRevertir(desde, hacia)).toBe(false);
+    }
   });
 });
