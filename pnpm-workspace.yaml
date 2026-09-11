@@ -18,6 +18,7 @@ catalog:
   '@testing-library/jest-dom': 7.0.1
   '@testing-library/react': 16.3.3
   '@types/node': 22.20.2
+  '@types/pg': 8.23.1
   '@types/react': 19.3.0
   '@types/react-dom': 19.3.0
   '@vitejs/plugin-react': 6.1.1
@@ -33,6 +34,7 @@ catalog:
   idb-keyval: 6.3.0
   jsdom: 30.0.1
   lint-staged: 17.5.0
+  pg: 8.23.0
   prettier: 3.9.6
   react: 19.3.0
   react-dom: 19.3.0
