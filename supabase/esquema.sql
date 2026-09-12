@@ -555,7 +555,7 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function bootstrap() is 'Todo el household del usuario en un JSON, sin filas borradas, más el cursor para el primer delta. Es también el reconcile completo: el cliente reemplaza su copia entera con esto.';
 
-CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer)
+CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
  RETURNS proyectos
  LANGUAGE sql
  SET search_path TO ''
@@ -564,13 +564,14 @@ AS $function$
   from private.liquidar(
     'perdido', p_proyecto_id, p_version, p_fecha, p_cobrado_centavos, p_gastos_centavos,
     p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
-    p_fijos_centavos, p_remanente_centavos, p_diezmo_bp
+    p_fijos_centavos, p_remanente_centavos, p_diezmo_bp,
+    p_sueldo_previo_centavos, p_fijos_previo_centavos
   )
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function cerrar_perdido(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer) is 'RPC de cierre como perdido de un lead o de una obra que se cayó. Liquida la seña retenida con la misma cascada que un cobro. Los mismos parámetros que cobrar_proyecto, más el diezmo que vio el usuario: en un perdido es un dato de los ajustes, no una regla.';
+comment on function cerrar_perdido(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint) is 'RPC de cierre como perdido de un lead o de una obra que se cayó. Liquida la seña retenida con la misma cascada que un cobro. Los mismos parámetros que cobrar_proyecto, más el diezmo que vio el usuario: en un perdido es un dato de los ajustes, no una regla.';
 
-CREATE OR REPLACE FUNCTION public.cobrar_proyecto(p_proyecto_id uuid, p_version integer, p_fecha_cobro date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint)
+CREATE OR REPLACE FUNCTION public.cobrar_proyecto(p_proyecto_id uuid, p_version integer, p_fecha_cobro date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
  RETURNS proyectos
  LANGUAGE sql
  SET search_path TO ''
@@ -579,11 +580,12 @@ AS $function$
   from private.liquidar(
     'cobrado', p_proyecto_id, p_version, p_fecha_cobro, p_cobrado_centavos, p_gastos_centavos,
     p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
-    p_fijos_centavos, p_remanente_centavos, null
+    p_fijos_centavos, p_remanente_centavos, null,
+    p_sueldo_previo_centavos, p_fijos_previo_centavos
   )
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha y la distribución que le mostró al usuario.';
+comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha, la distribución que le mostró al usuario y el acumulado del mes que vio. Si ese acumulado no es el de la base, la liquidación se congela con el de la base y la app lo ve comparando dist_sueldo_previo_centavos contra lo que mandó.';
 
 CREATE OR REPLACE FUNCTION public.delta(p_desde timestamp with time zone)
  RETURNS jsonb
@@ -1039,7 +1041,7 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.liquidacion_valida(estado_proyecto,estado_proyecto) is 'Desde qué estado se liquida hacia cobrado o perdido. Gemela de puedeLiquidar de @maun/domain.';
 
-CREATE OR REPLACE FUNCTION private.liquidar(p_destino estado_proyecto, p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer)
+CREATE OR REPLACE FUNCTION private.liquidar(p_destino estado_proyecto, p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
  RETURNS proyectos
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -1059,9 +1061,12 @@ declare
   v_sueldo_previo bigint;
   v_fijos_previo bigint;
   v_topes record;
+  v_topes_vistos record;
+  v_ajustada boolean := false;
   v_cobrado bigint;
   v_gastos bigint;
   v_dist record;
+  v_dist_vista record;
 begin
   if num_nulls(
     p_destino, p_proyecto_id, p_version, p_fecha, p_cobrado_centavos, p_gastos_centavos,
@@ -1069,6 +1074,12 @@ begin
     p_fijos_centavos, p_remanente_centavos
   ) > 0 then
     raise exception 'La liquidación necesita todos sus parámetros' using errcode = '22004';
+  end if;
+
+  -- El acumulado del mes son dos números o ninguno: con uno solo no se puede saber si la app vio
+  -- lo mismo que la base.
+  if num_nulls(p_sueldo_previo_centavos, p_fijos_previo_centavos) = 1 then
+    raise exception 'El acumulado del mes va entero o no va' using errcode = '22004';
   end if;
 
   if p_destino not in ('cobrado', 'perdido') then
@@ -1109,6 +1120,26 @@ begin
       p_remanente_centavos
     )
     and (p_diezmo_bp is null or v_proyecto.dist_diezmo_bp = p_diezmo_bp)
+  then
+    return v_proyecto;
+  end if;
+
+  -- El reenvío de una liquidación que salió ajustada. Los topes y los cuatro escalones congelados no
+  -- son los que mandó la app —ese es justamente el ajuste—, así que el reenvío se reconoce por las
+  -- entradas que la app sí controla. La última condición es la guarda: esta rama solo vale cuando el
+  -- acumulado que vio la app no es el que quedó congelado, que es la definición de ajustada. Sin
+  -- esto, un cobro ajustado cuya respuesta se perdió rebotaría con MN001 al reintentarlo.
+  if p_sueldo_previo_centavos is not null
+    and v_proyecto.estado = p_destino
+    and v_proyecto.version = p_version + 1
+    and (
+      v_proyecto.fecha_cobro, v_proyecto.dist_cobrado_centavos, v_proyecto.dist_gastos_centavos
+    ) = (
+      p_fecha, p_cobrado_centavos, p_gastos_centavos
+    )
+    and (p_diezmo_bp is null or v_proyecto.dist_diezmo_bp = p_diezmo_bp)
+    and (v_proyecto.dist_sueldo_previo_centavos, v_proyecto.dist_fijos_previo_centavos)
+      is distinct from (p_sueldo_previo_centavos, p_fijos_previo_centavos)
   then
     return v_proyecto;
   end if;
@@ -1191,6 +1222,23 @@ begin
     v_objetivo_sueldo, v_objetivo_fijos, v_sueldo_mensual, v_sueldo_previo, v_fijos_previo
   );
 
+  -- La liquidación sale ajustada cuando la app mandó el acumulado del mes y no es el de la base.
+  -- Es lo único que la app no podía conocer: otra liquidación del mismo mes hecha en otro
+  -- dispositivo, o una reapertura que todavía no replicó.
+  v_ajustada := p_sueldo_previo_centavos is not null
+    and (p_sueldo_previo_centavos, p_fijos_previo_centavos)
+      is distinct from (v_sueldo_previo, v_fijos_previo);
+
+  if v_ajustada then
+    select * into v_topes_vistos
+    from private.topes_de_la_liquidacion(
+      v_objetivo_sueldo, v_objetivo_fijos, v_sueldo_mensual,
+      p_sueldo_previo_centavos, p_fijos_previo_centavos
+    );
+  else
+    v_topes_vistos := v_topes;
+  end if;
+
   select coalesce(sum(g.monto_centavos), 0) into v_cobrado
   from public.pagos g
   where g.household_id = v_proyecto.household_id
@@ -1204,13 +1252,20 @@ begin
     and g.deleted_at is null;
 
   -- Lo que se congela tiene que salir de lo que el usuario vio. Un tope distinto quiere decir que
-  -- la app no veía otra liquidación del mes (o una reapertura), o que cambiaron los ajustes.
+  -- la app no veía otra liquidación del mes (o una reapertura), o que cambiaron los ajustes. Con el
+  -- acumulado a la vista eso deja de ser una adivinanza: si el acumulado coincide, un tope distinto
+  -- solo puede venir de los objetivos, y sigue siendo MN006.
   if v_cobrado <> p_cobrado_centavos
     or v_gastos <> p_gastos_centavos
-    or v_topes.tope_sueldo_centavos <> p_tope_sueldo_centavos
-    or v_topes.tope_fijos_centavos <> p_tope_fijos_centavos
     or v_fecha <> p_fecha
     or v_diezmo_bp <> coalesce(p_diezmo_bp, v_diezmo_bp)
+    or (
+      not v_ajustada
+      and (
+        v_topes.tope_sueldo_centavos <> p_tope_sueldo_centavos
+        or v_topes.tope_fijos_centavos <> p_tope_fijos_centavos
+      )
+    )
   then
     raise exception 'Los pagos, los gastos, los topes, el diezmo o la fecha cambiaron desde que viste la distribución'
       using errcode = 'MN006',
@@ -1221,21 +1276,49 @@ begin
             );
   end if;
 
-  select * into v_dist
-  from private.cascada(v_cobrado, v_gastos, v_diezmo_bp, v_topes.tope_sueldo_centavos, v_topes.tope_fijos_centavos);
+  -- Una liquidación ajustada no afloja el MN008: la app tiene que haber aplicado bien la regla de
+  -- los topes contra su propio acumulado. Si ni eso cierra, no es que vio otro mes: es que está
+  -- calculando distinto. Va antes de la cascada porque un tope negativo la cortaría con un 22023.
+  if v_ajustada
+    and (
+      v_topes_vistos.tope_sueldo_centavos <> p_tope_sueldo_centavos
+      or v_topes_vistos.tope_fijos_centavos <> p_tope_fijos_centavos
+    )
+  then
+    raise exception 'Los topes que viste no son los que salen de ese acumulado: actualizá la app'
+      using errcode = 'MN008',
+            detail = format(
+              'con el mes en %s de sueldo y %s de fijos, los topes son %s y %s',
+              p_sueldo_previo_centavos, p_fijos_previo_centavos,
+              v_topes_vistos.tope_sueldo_centavos, v_topes_vistos.tope_fijos_centavos
+            );
+  end if;
 
-  -- Y la distribución que se le mostró tiene que ser la que calcula la base. Si no, la app y la
-  -- base están aplicando reglas distintas (una versión vieja de la app, o un bug): mejor un
-  -- rechazo visible que congelar otra cosa.
-  if (v_dist.diezmo_centavos, v_dist.sueldo_centavos, v_dist.fijos_centavos, v_dist.remanente_centavos)
+  -- Y la distribución que se le mostró tiene que ser la que calcula la base con las entradas que la
+  -- app tenía. Si no, la app y la base están aplicando reglas distintas (una versión vieja de la
+  -- app, o un bug): mejor un rechazo visible que congelar otra cosa.
+  select * into v_dist_vista
+  from private.cascada(v_cobrado, v_gastos, v_diezmo_bp, p_tope_sueldo_centavos, p_tope_fijos_centavos);
+
+  if (v_dist_vista.diezmo_centavos, v_dist_vista.sueldo_centavos, v_dist_vista.fijos_centavos, v_dist_vista.remanente_centavos)
     is distinct from (p_diezmo_centavos, p_sueldo_centavos, p_fijos_centavos, p_remanente_centavos)
   then
     raise exception 'La distribución que viste no es la que calcula la base: actualizá la app'
       using errcode = 'MN008',
             detail = format(
               'diezmo %s, sueldo %s, fijos %s, remanente %s',
-              v_dist.diezmo_centavos, v_dist.sueldo_centavos, v_dist.fijos_centavos, v_dist.remanente_centavos
+              v_dist_vista.diezmo_centavos, v_dist_vista.sueldo_centavos,
+              v_dist_vista.fijos_centavos, v_dist_vista.remanente_centavos
             );
+  end if;
+
+  -- Recién acá se congela con el acumulado de la base. Cuando no hubo ajuste, es exactamente la
+  -- misma cuenta que acaba de pasar el MN008.
+  if v_ajustada then
+    select * into v_dist
+    from private.cascada(v_cobrado, v_gastos, v_diezmo_bp, v_topes.tope_sueldo_centavos, v_topes.tope_fijos_centavos);
+  else
+    v_dist := v_dist_vista;
   end if;
 
   update public.proyectos set
@@ -1267,7 +1350,7 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.liquidar(estado_proyecto,uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer) is 'Liquida un proyecto hacia cobrado o perdido y congela su distribución. Bloquea el proyecto y después los ajustes, suma lo liquidado en el mes, y rechaza con MN006 si la versión, los totales, los topes o la fecha no son los que vio el cliente, y con MN008 si la distribución no es la de la base. Reconoce el reenvío idéntico.';
+comment on function private.liquidar(estado_proyecto,uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint) is 'Liquida un proyecto hacia cobrado o perdido y congela su distribución. Bloquea el proyecto y después los ajustes, suma lo liquidado en el mes, y rechaza con MN006 si la versión, los totales, el diezmo o la fecha no son los que vio el cliente, y con MN008 si la distribución no es la de la base. Si el cliente manda el acumulado del mes que vio y no es el de la base, recalcula los topes con el suyo y congela eso en vez de rechazar: el MN008 se sigue exigiendo contra lo que el cliente vio. Reconoce el reenvío, ajustado o no.';
 
 CREATE OR REPLACE FUNCTION private.mantener_metadatos()
  RETURNS trigger

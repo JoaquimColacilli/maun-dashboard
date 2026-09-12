@@ -549,10 +549,12 @@ export type Database = {
           p_diezmo_centavos: number;
           p_fecha: string;
           p_fijos_centavos: number;
+          p_fijos_previo_centavos?: number;
           p_gastos_centavos: number;
           p_proyecto_id: string;
           p_remanente_centavos: number;
           p_sueldo_centavos: number;
+          p_sueldo_previo_centavos?: number;
           p_tope_fijos_centavos: number;
           p_tope_sueldo_centavos: number;
           p_version: number;
@@ -612,10 +614,12 @@ export type Database = {
           p_diezmo_centavos: number;
           p_fecha_cobro: string;
           p_fijos_centavos: number;
+          p_fijos_previo_centavos?: number;
           p_gastos_centavos: number;
           p_proyecto_id: string;
           p_remanente_centavos: number;
           p_sueldo_centavos: number;
+          p_sueldo_previo_centavos?: number;
           p_tope_fijos_centavos: number;
           p_tope_sueldo_centavos: number;
           p_version: number;
