@@ -14,7 +14,17 @@ export function rutaDeCierre(id: string): string {
   return `/proyectos/${id}/cerrar`;
 }
 
+export function rutaDeAprobacion(id: string): string {
+  return `/proyectos/${id}/aprobar`;
+}
+
 export const RUTA_DE_PROYECTO_NUEVO = '/proyectos/nuevo';
+
+export const RUTA_DE_PROYECTOS = '/proyectos';
+
+export const RUTA_DE_SEGUIMIENTO = '/seguimiento';
+
+export const RUTA_DE_CONTACTO_NUEVO = '/seguimiento/nuevo';
 
 export const RUTA_DE_FINANZAS = '/finanzas';
 

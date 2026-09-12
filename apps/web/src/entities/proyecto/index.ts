@@ -76,6 +76,7 @@ export {
   type Urgencia,
 } from './model/entrega';
 export {
+  cambiaLaFila,
   datosDelFormulario,
   esquemaDeProyecto,
   estadosDisponibles,
@@ -83,9 +84,24 @@ export {
   pedidoDeGuardado,
   totalDeLasFilas,
   valoresDelFormulario,
+  versionDelGuardado,
   type FilaDinamica,
   type FormularioDeProyecto,
 } from './model/formulario';
+export {
+  contactosEnOrden,
+  diaDeLaMarca,
+  DIAS_PARA_ENFRIARSE,
+  esEtapaDeSeguimiento,
+  etapaAlGuardarElContacto,
+  pasoSiguiente,
+  situacionDelContacto,
+  ultimasActividades,
+  type ContactoEnLista,
+  type EtapaDeSeguimiento,
+  type PasoDelContacto,
+  type SituacionDelContacto,
+} from './model/seguimiento';
 export {
   gastosDelProyecto,
   metricasDeProyectos,
@@ -96,7 +112,11 @@ export {
   type ResumenDeProyecto,
 } from './model/resumen';
 export {
+  RUTA_DE_CONTACTO_NUEVO,
   RUTA_DE_PROYECTO_NUEVO,
+  RUTA_DE_PROYECTOS,
+  RUTA_DE_SEGUIMIENTO,
+  rutaDeAprobacion,
   rutaDeCierre,
   rutaDeCobro,
   rutaDeEdicion,
