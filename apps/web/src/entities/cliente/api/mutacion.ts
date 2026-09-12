@@ -130,6 +130,9 @@ export const MUTACION_DE_BAJA_DE_CLIENTE: MutationOptions<
     cambiarReplicas(client, (replica) => quitarFilaLocal(replica, 'clientes', id));
     await guardarCacheAhora();
   },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'clientes', fila));
+  },
   onError: (_error, { previo }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'clientes', previo));
   },

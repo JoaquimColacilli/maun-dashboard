@@ -134,6 +134,9 @@ export const MUTACION_DE_BAJA_DE_MOVIMIENTO: MutationOptions<
     cambiarReplicas(client, (replica) => quitarFilaLocal(replica, 'movimientos', id));
     await guardarCacheAhora();
   },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'movimientos', fila));
+  },
   onError: (_error, { previo }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'movimientos', previo));
   },
