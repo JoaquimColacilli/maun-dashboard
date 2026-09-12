@@ -1,7 +1,7 @@
 -- Dos talleres, cada uno con su usuario y un juego completo de datos. Un usuario ve y toca solo
 -- lo suyo, por cada camino: las tablas, la vista, las funciones de sync y las foreign keys.
 
-select plan(31);
+select plan(38);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('b', tests.crear_usuario('b@maun.test'));
@@ -149,6 +149,60 @@ select throws_ok(
   '42501',
   null,
   'A no crea households'
+);
+
+
+-- A no se suma al taller de B por ningún camino --------------------------------------------------
+-- Que cada uno se cree el suyo al registrarse (ADR 0012) no puede significar que pueda meterse en
+-- el de otro. Las membresías las crea únicamente el trigger de auth.users.
+
+select throws_ok(
+  format(
+    'insert into public.household_members (household_id, user_id) values (%L, %L)',
+    tests.id('household_b'), tests.id('a')
+  ),
+  '42501',
+  null,
+  'A no se agrega al taller de B: authenticated no tiene insert sobre household_members'
+);
+
+select throws_ok(
+  format(
+    'update public.household_members set household_id = %L where user_id = %L',
+    tests.id('household_b'), tests.id('a')
+  ),
+  '42501',
+  null,
+  'A no muda su membresía al taller de B: tampoco tiene update'
+);
+
+select throws_ok(
+  format('update public.household_members set deleted_at = null where user_id = %L', tests.id('a')),
+  '42501',
+  null,
+  'A no revive una membresía revocada'
+);
+
+select ok(
+  not has_function_privilege('authenticated', 'private.crear_taller_del_usuario()', 'EXECUTE'),
+  'A no llama a mano a la función que crea talleres'
+);
+
+with u as (
+  update public.households set nombre = 'Robado' where id = tests.id('household_b') returning 1
+)
+select is(count(*), 0::bigint, 'A no renombra el taller de B: la policy no se lo muestra') from u;
+
+with u as (
+  update public.households set nombre = 'Mi taller nuevo' where id = tests.id('household_a') returning 1
+)
+select is(count(*), 1::bigint, 'el suyo sí: el nombre es el único campo que el usuario escribe') from u;
+
+select throws_ok(
+  format('update public.households set deleted_at = now() where id = %L', tests.id('household_a')),
+  '42501',
+  null,
+  'y es el único: no puede borrar su taller ni tocarle los metadatos'
 );
 
 

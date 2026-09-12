@@ -1,14 +1,37 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
-import { VerificacionPage } from '@/pages/verificacion';
+import { AccesoPage } from '@/pages/acceso';
 
 import { Shell } from '../layout/Shell';
+import { RutaConAcceso, RutaConSesion, RutaPublica } from './guardas';
+import {
+  CrearCuentaPage,
+  InicioPage,
+  NuevaContrasenaPage,
+  RecuperarPage,
+  VerificacionPage,
+} from './paginas';
 
 export const router = createBrowserRouter([
   {
     element: <Shell />,
     children: [
-      { index: true, element: <VerificacionPage /> },
+      { path: '/verificacion', element: <VerificacionPage /> },
+      { path: '/acceso/nueva-contrasena', element: <NuevaContrasenaPage /> },
+      {
+        element: <RutaPublica />,
+        children: [
+          { path: '/acceso', element: <AccesoPage /> },
+          { path: '/acceso/crear-cuenta', element: <CrearCuentaPage /> },
+          { path: '/acceso/recuperar', element: <RecuperarPage /> },
+        ],
+      },
+      {
+        element: <RutaConSesion />,
+        children: [
+          { element: <RutaConAcceso />, children: [{ index: true, element: <InicioPage /> }] },
+        ],
+      },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

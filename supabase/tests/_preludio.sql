@@ -8,7 +8,11 @@ create schema tests;
 grant usage on schema tests to anon, authenticated;
 
 -- Un usuario de Auth mínimo. Solo existe dentro de la transacción del test.
-create function tests.crear_usuario(p_email text)
+--
+-- Nace sin confirmar, que es como nace un registro real y, sobre todo, es lo que deja que el test
+-- arme el household que quiere con private.crear_household(): confirmar el mail dispara el trigger
+-- que le crea el suyo (ver 12_alta_de_cuenta.sql).
+create function tests.crear_usuario(p_email text, p_confirmado boolean default false)
 returns uuid
 language plpgsql
 as $$
@@ -20,10 +24,18 @@ begin
     raw_app_meta_data, raw_user_meta_data, created_at, updated_at
   ) values (
     v_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', p_email, '',
-    now(), '{"provider": "email", "providers": ["email"]}', '{}', now(), now()
+    case when p_confirmado then now() end,
+    '{"provider": "email", "providers": ["email"]}', '{}', now(), now()
   );
   return v_id;
 end;
+$$;
+
+create function tests.confirmar_mail(p_user_id uuid)
+returns void
+language sql
+as $$
+  update auth.users set email_confirmed_at = now() where id = p_user_id
 $$;
 
 -- Lo mismo que hace PostgREST con un JWT válido: rol authenticated y los claims en el setting.

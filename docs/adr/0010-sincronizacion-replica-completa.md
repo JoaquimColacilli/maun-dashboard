@@ -1,6 +1,6 @@
 # 0010. Sincronización: réplica completa del household
 
-Estado: aceptada, 2026-09-11. La base (ids, metadatos, bootstrap, delta, guardas) queda hecha en la fase 2A; la cola de salida y los indicadores, en la 2C.
+Estado: aceptada, 2026-09-11. La base (ids, metadatos, bootstrap, delta, guardas) queda hecha en la fase 2A; la cola de salida, la réplica del cliente y los indicadores, en la 2C.
 
 ## Contexto
 
@@ -15,6 +15,11 @@ El taller tiene mala señal: la app tiene que seguir andando sin conexión y lo 
 **Metadatos que pone la base.** `updated_at` y `version` los mantiene `private.mantener_metadatos()`, nunca el cliente, que no tiene grant sobre esas columnas. `id` y `household_id` son inmutables. El `household_id` tampoco lo manda el cliente: su default es el household de la sesión, que sale de `household_members`.
 
 **Cola de salida.** Toda mutación entra primero a una cola persistida en IndexedDB, se aplica de forma optimista al cache y se drena cuando vuelve la conexión. Se apoya en las mutaciones pausadas de TanStack Query, con `networkMode: 'online'` para las mutaciones (ADR 0005) y cada `mutationFn` registrada con `setMutationDefaults`.
+
+- **El orden lo da `scope: { id: 'salida' }`**, no el reanudado: `resumePausedMutations()` arranca todas las pausadas en paralelo. El scope se persiste junto con la mutación, así que el orden sobrevive a cerrar la app. Verificado con un test sobre IndexedDB real (ADR 0012).
+- **La réplica del cliente es una sola entrada del cache**, `['replica', usuarioId]`. `bootstrap()` la reemplaza entera; `delta(cursor)` la mezcla comparando `version` y saca las filas con `deleted_at`. El reconcile completo corre al entrar y cada 24 horas, **salvo que haya cambios en la cola**: reemplazar la copia entera se llevaría puestas las filas optimistas. Si el usuario de la réplica guardada no es el de la sesión, se descarta.
+- **La mezcla se aplica sobre el cache fresco**, no sobre la copia que se leyó antes de llamar a la base: entre el pedido y la respuesta, la cola pudo haber agregado o sacado filas.
+- **La marca del último reconcile es el reloj del cliente**, no el cursor del servidor. Es lo único que se compara contra `Date.now()`: mezclar los dos relojes hace que, con el del cliente atrasado, el reconcile no vuelva a correr nunca.
 
 - **Las liquidaciones también se aplican al cache**, con la distribución que calculó la app, y la cola las drena en orden.
 - El motivo: el tope de fijos es mensual (ADR 0011). Si el cache no contara las liquidaciones pendientes, un segundo cobro del mismo mes hecho sin señal saldría con un acumulado viejo y rebotaría con `MN006`.
@@ -67,7 +72,7 @@ La alternativa de un contador asignado en el commit es más exacta, pero pide un
 | `MN008` | La distribución que calculó la app no es la que calcula la base: la app está desactualizada y tiene que recargarse.                                                                                                                           |
 | `42501` | El usuario no tiene household asignado, o no tiene permiso.                                                                                                                                                                                   |
 
-**La UI no miente.** Tres estados, visibles y siempre correctos: sin conexión, N cambios pendientes, sincronizado. Nunca "guardado" para algo que está en la cola.
+**La UI no miente.** Cuatro estados, visibles y siempre correctos: sin conexión, N cambios pendientes, N cambios rechazados y sincronizado. Nunca "guardado" para algo que está en la cola.
 
 ## Alternativas descartadas
 

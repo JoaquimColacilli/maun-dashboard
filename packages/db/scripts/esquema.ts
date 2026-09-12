@@ -263,6 +263,21 @@ async function vistas(cliente: pg.Client): Promise<string[]> {
   return lineas;
 }
 
+// auth.users no es nuestra, pero el alta de una cuenta cuelga de estos triggers (ADR 0012): si
+// alguien los borra, el registro deja de crear el taller y nadie se entera hasta que un usuario
+// nuevo entra sin nada. Van al snapshot para que el test los exija.
+async function triggersDeAuth(cliente: pg.Client): Promise<string[]> {
+  return (
+    await filas<{ definicion: string }>(
+      cliente,
+      `select pg_get_triggerdef(t.oid, true) as definicion
+       from pg_trigger t
+       where t.tgrelid = 'auth.users'::regclass and not t.tgisinternal
+       order by t.tgname`,
+    )
+  ).map((fila) => `${fila.definicion};`);
+}
+
 async function funciones(cliente: pg.Client): Promise<string[]> {
   const lineas: string[] = [];
   for (const funcion of await filas<{
@@ -307,6 +322,7 @@ export async function generarEsquema(cliente: pg.Client): Promise<string> {
     ['Enums', await enums(cliente)],
     ['Tablas', await tablas(cliente)],
     ['Vistas', await vistas(cliente)],
+    ['Triggers sobre auth.users', await triggersDeAuth(cliente)],
     ['Funciones', await funciones(cliente)],
   ];
   const cuerpo = secciones.map(([titulo, lineas]) =>

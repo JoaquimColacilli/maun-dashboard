@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('la pantalla de verificación arranca con los tokens portados', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/verificacion');
 
   const titulo = page.getByRole('heading', { level: 1 });
   await expect(titulo).toHaveText('Verificación del sistema de diseño');

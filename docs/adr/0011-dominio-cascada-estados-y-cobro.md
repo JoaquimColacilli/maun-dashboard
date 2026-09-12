@@ -205,6 +205,19 @@ Queda fuera de este cambio. Cuando llegue, se modela como un pago con importe ne
   - el concepto por signo en el libro mayor, para que una devolución no se lea como "cobro".
 - **Mientras tanto, el único camino para un lead con seña es retenerla.** Si la seña se devolvió de verdad, no hay forma de registrarlo: el cierre la liquida como retenida.
 
+## El diezmo tendría que ser configurable (no en este cambio)
+
+Hoy el diezmo es una constante: `DIEZMO = 1000` puntos básicos en `packages/domain/src/cascada.ts` y `c_diezmo_bp constant integer := 1000` en `private.liquidar`. Son gemelas y por eso no divergen, pero es una regla del negocio de un taller y no del sistema. Con el registro abierto y auto-servicio (ADR 0012), cada usuario que se crea su taller trae su propia decisión, y "diezmo cero" es una respuesta legítima.
+
+Lo que implicaría, para cuando se haga:
+
+- **Un parámetro más en `ajustes`:** `diezmo_bp integer not null default 1000` con check `between 0 and 10000` y grant de update para `authenticated`, al lado del sueldo y los fijos.
+- **La cascada no cambia.** Ya recibe `diezmoBp` como entrada: lo que cambia es quién se lo pasa. `calcularDistribucion` y `private.cascada` quedan intactas, y con ellas la comparación de más de 5.000 casos que las ata.
+- **`planDeLiquidacion` y su gemela adentro de `private.liquidar`** leen el valor de los ajustes en vez de la constante, igual que ya leen el sueldo y los fijos. El perdido ya hace media parte: `perdido_con_diezmo` elige entre la constante y cero, y pasaría a elegir entre el ajuste y cero.
+- **Lo congelado no se toca.** `proyectos.dist_diezmo_bp` guarda el porcentaje de cada liquidación: cambiar la tasa no reescribe ninguna, y cada distribución se sigue explicando sola (ADR 0003).
+- **El libro mayor y los tesoros tampoco.** El asiento de diezmo sale del importe congelado, no de la tasa. Con tasa en cero no hay asiento, que es exactamente lo que hoy pasa con un perdido sin diezmo.
+- **Lo que sí hay que decidir es la pantalla.** El tesoro DIEZMO y `Diezmo.dc.html` están dibujados asumiendo que existe: con la tasa en cero hay que elegir entre esconderlo o mostrarlo vacío.
+
 ## Pendiente de confirmar con el dueño
 
 La estructura no cambia con estas respuestas: son los dos parámetros del perdido, en `ajustes`.

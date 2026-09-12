@@ -215,11 +215,16 @@ comment on column public.households.deleted_at is 'Borrado lógico. Un household
 comment on column public.households.version is 'Contador de cambios de la fila, mantenido por trigger. Base del control de concurrencia en las operaciones de plata.';
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON households FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.households enable row level security;
+create policy households_edicion on public.households as permissive
+  for update to authenticated
+  using ((id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 create policy households_lectura_miembros on public.households as permissive
   for select to authenticated
   using ((id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.households to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.households to service_role;
+grant update (nombre) on public.households to authenticated;
 
 create table public.movimientos (
   id uuid not null default private.uuidv7(),
@@ -506,6 +511,11 @@ grant select on public.libro_mayor to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.libro_mayor to service_role;
 
 
+-- Triggers sobre auth.users ----------------------------------------------------------------------
+
+CREATE TRIGGER taller_al_confirmar_el_mail AFTER UPDATE OF email_confirmed_at ON auth.users FOR EACH ROW WHEN (old.email_confirmed_at IS NULL AND new.email_confirmed_at IS NOT NULL) EXECUTE FUNCTION private.crear_taller_del_usuario();
+CREATE TRIGGER taller_al_crear_la_cuenta AFTER INSERT ON auth.users FOR EACH ROW WHEN (new.email_confirmed_at IS NOT NULL) EXECUTE FUNCTION private.crear_taller_del_usuario();
+
 -- Funciones --------------------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.bootstrap()
@@ -724,6 +734,30 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.crear_household(text,uuid) is 'Crea un household con sus ajustes y, si se pasa un usuario, lo suma como titular. Solo la ejecuta el dueño de la base.';
+
+CREATE OR REPLACE FUNCTION private.crear_taller_del_usuario()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  -- Idempotente, y por eso los dos triggers comparten la función: si la cuenta ya tuvo taller
+  -- alguna vez, no se crea otro. Cuenta también la membresía revocada: crear uno nuevo dejaría el
+  -- anterior con datos y sin ningún miembro vivo, invisible por RLS.
+  if exists (select 1 from public.household_members m where m.user_id = new.id) then
+    return null;
+  end if;
+
+  -- El nombre es una constante y no un dato del registro: lo que viene de afuera puede violar
+  -- households_nombre_valido, y un rechazo acá no rompe un alta sino todas. El taller se renombra
+  -- desde la app, en la primera configuración.
+  perform private.crear_household('Mi taller', new.id);
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.crear_taller_del_usuario() is 'Trigger de auth.users: a la cuenta que confirma su mail le crea el taller, la membresía de titular y los ajustes en cero. Idempotente: si ya tuvo taller, no hace nada.';
 
 CREATE OR REPLACE FUNCTION private.es_reenvio(p_old jsonb, p_new jsonb)
  RETURNS boolean
