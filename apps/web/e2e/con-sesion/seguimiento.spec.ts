@@ -206,7 +206,7 @@ test('perder un contacto con seña liquida la seña: diezmo sí, sueldo no, y pa
 
   await abrir(page, `/proyectos/${id}`);
   await expect(page.getByRole('region', { name: 'Si no sale' })).toContainText('$ 200.000');
-  await page.getByRole('button', { name: 'Darlo por perdido' }).click();
+  await page.getByRole('button', { name: 'Dar por perdido' }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/cerrar$`));
   await expect(page.getByRole('region', { name: 'Qué pasa con la seña' })).toContainText(
     'dejan de ser un anticipo',
@@ -444,7 +444,7 @@ test('seguimiento y la ficha del contacto se recorren con el teclado', async ({ 
   expect(enLaFicha.some((foco) => foco.includes('Ya lo aprobó'))).toBe(true);
   expect(enLaFicha.some((foco) => foco.includes('Presupuesto enviado'))).toBe(true);
   expect(enLaFicha.some((foco) => foco.includes('Notas'))).toBe(true);
-  expect(enLaFicha.some((foco) => foco.includes('Darlo por perdido'))).toBe(true);
+  expect(enLaFicha.some((foco) => foco.includes('Dar por perdido'))).toBe(true);
 
   await page.getByRole('button', { name: 'Editar', exact: true }).focus();
   await page.keyboard.press('Enter');

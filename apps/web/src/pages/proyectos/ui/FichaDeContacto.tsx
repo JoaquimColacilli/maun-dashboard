@@ -195,7 +195,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
               }}
             >
               <Icono nombre="x" tamano={16} />
-              Darlo por perdido
+              Dar por perdido
             </Button>
           </section>
         </div>
