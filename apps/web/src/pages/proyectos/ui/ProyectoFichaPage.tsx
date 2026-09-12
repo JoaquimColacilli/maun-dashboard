@@ -1,6 +1,4 @@
 import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
-import { useMutation } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
 import { enlaceDeMapa } from '@/entities/cliente';
@@ -8,15 +6,14 @@ import {
   COMPROBANTE,
   despieceDelProyecto,
   DistribucionDespiece,
+  esEtapaDeSeguimiento,
   ESTADO,
   EstadoBadge,
   FORMA_DE_PAGO,
   gastosDelProyecto,
-  hijosDelProyecto,
   MarcaDeLiquidacion,
-  MUTACION_DE_BAJA_DE_PROYECTO,
-  MUTACION_DE_NOTAS,
   pagosDelProyecto,
+  RUTA_DE_PROYECTOS,
   resumenDeProyecto,
   rutaDeCierre,
   rutaDeCobro,
@@ -24,15 +21,15 @@ import {
   useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
-import { mensajeDeSincronizacion } from '@/shared/api';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
 import { Button, Icono, PanelDeAvisos } from '@/shared/ui';
 
-const DEMORA_DE_LAS_NOTAS_MS = 900;
+import { FichaDeContacto } from './FichaDeContacto';
 
-function vieneDeLiquidar(estado: unknown): boolean {
-  return typeof estado === 'object' && estado !== null && 'recienLiquidado' in estado;
+function vieneDe(estado: unknown, marca: 'recienLiquidado' | 'recienAprobado'): boolean {
+  return typeof estado === 'object' && estado !== null && marca in estado;
 }
 
 function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: string }) {
@@ -61,20 +58,8 @@ export function ProyectoFichaPage() {
   const avisos = useAvisosDelProyecto(id);
   const enVuelo = useLiquidacionEnVuelo(id);
 
-  const guardarNotas = useMutation(MUTACION_DE_NOTAS);
-  const borrar = useMutation(MUTACION_DE_BAJA_DE_PROYECTO);
-  const [notas, setNotas] = useState<string | null>(null);
-  const [confirmando, setConfirmando] = useState(false);
-  const reloj = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const recienLiquidado = vieneDeLiquidar(location.state);
-
-  useEffect(
-    () => () => {
-      clearTimeout(reloj.current);
-    },
-    [],
-  );
+  const recienLiquidado = vieneDe(location.state, 'recienLiquidado');
+  const recienAprobado = vieneDe(location.state, 'recienAprobado');
 
   if (!resumen) {
     return (
@@ -86,7 +71,7 @@ export function ProyectoFichaPage() {
         </p>
         <Button
           onClick={() => {
-            void navegar('/proyectos');
+            void navegar(RUTA_DE_PROYECTOS);
           }}
         >
           Volver a Proyectos
@@ -96,44 +81,20 @@ export function ProyectoFichaPage() {
   }
 
   const { proyecto, cliente } = resumen;
+
+  if (esEtapaDeSeguimiento(proyecto.estado)) {
+    return <FichaDeContacto key={proyecto.id} resumen={resumen} etapa={proyecto.estado} />;
+  }
+
   const pagos = pagosDelProyecto(replica, proyecto.id);
   const gastos = gastosDelProyecto(replica, proyecto.id);
   const despiece = despieceDelProyecto(replica, proyecto, hoy);
   const liquidado = estaLiquidado(proyecto.estado);
 
-  const notasVisibles = notas ?? proyecto.notas;
   const direccionDistinta =
     cliente !== undefined &&
     cliente.direccion.trim() !== '' &&
     proyecto.direccion_entrega.trim() !== cliente.direccion.trim();
-
-  function alEscribirNotas(texto: string): void {
-    setNotas(texto);
-    clearTimeout(reloj.current);
-    reloj.current = setTimeout(() => {
-      guardarNotas.mutate({
-        id: proyecto.id,
-        cambios: { notas: texto.trim() },
-        previos: { notas: proyecto.notas },
-      });
-    }, DEMORA_DE_LAS_NOTAS_MS);
-  }
-
-  // La app no dice "guardado" para algo que sigue en la cola (ADR 0010): mientras la mutación está
-  // pausada por falta de señal, lo que se muestra es eso.
-  const estadoDeLasNotas = guardarNotas.isPaused
-    ? {
-        texto: 'Sin señal: se guarda cuando vuelva',
-        icono: 'cloud-off' as const,
-        tono: 'text-text-2',
-      }
-    : guardarNotas.isPending
-      ? { texto: 'Guardando…', icono: 'arrow-up-down' as const, tono: 'text-text-2' }
-      : guardarNotas.isError
-        ? { texto: 'No se pudo guardar', icono: 'triangle-alert' as const, tono: 'text-alerta' }
-        : guardarNotas.isSuccess
-          ? { texto: 'Guardado', icono: 'check' as const, tono: 'text-hogar' }
-          : undefined;
 
   const fechas: { clave: string; valor: string; tono?: string }[] = [];
   if (proyecto.fecha_inicio !== null) {
@@ -171,23 +132,20 @@ export function ProyectoFichaPage() {
     <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) md:py-5 lg:px-(--page-pad-desktop) lg:py-6">
       <div className="mb-2.5 flex items-center justify-between">
         <Link
-          to="/proyectos"
+          to={RUTA_DE_PROYECTOS}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
           Proyectos
         </Link>
         <div className="flex gap-2">
-          <Button
-            variant="secundario"
-            size="chico"
-            onClick={() => {
-              setConfirmando(true);
+          <BorradoDelProyecto
+            proyecto={proyecto}
+            sustantivo="proyecto"
+            alBorrar={() => {
+              void navegar(RUTA_DE_PROYECTOS);
             }}
-          >
-            <Icono nombre="trash-2" tamano={16} />
-            Borrar
-          </Button>
+          />
           <Button
             variant="secundario"
             size="chico"
@@ -222,6 +180,12 @@ export function ProyectoFichaPage() {
             <MarcaDeLiquidacion proyectoId={proyecto.id} />
           </span>
         </div>
+        {recienAprobado && (
+          <p className="flex items-center gap-1.5 text-label font-medium text-hogar">
+            <Icono nombre="check" tamano={16} />
+            Pasó de Seguimiento a Activos, con lo que ya habías cobrado adentro.
+          </p>
+        )}
         {fechas.length > 0 && (
           <dl className="mt-1 flex flex-wrap gap-x-6 gap-y-1.5 text-label">
             {fechas.map((fecha) => (
@@ -336,35 +300,14 @@ export function ProyectoFichaPage() {
             />
           </section>
 
-          <section aria-label="Notas de obra" className="mt-5">
-            <div className="mb-2 flex items-baseline justify-between gap-3">
-              <h2 className="text-section font-semibold">Notas de obra</h2>
-              {estadoDeLasNotas !== undefined && (
-                <span
-                  role="status"
-                  className={`flex items-center gap-1.5 text-meta ${estadoDeLasNotas.tono}`}
-                >
-                  <Icono nombre={estadoDeLasNotas.icono} tamano={13} />
-                  {estadoDeLasNotas.texto}
-                </span>
-              )}
-            </div>
-            <textarea
-              value={notasVisibles}
-              onChange={(evento) => {
-                alEscribirNotas(evento.target.value);
-              }}
-              rows={Math.max(4, notasVisibles.split('\n').length + 1)}
-              aria-label="Notas de obra"
+          <div className="mt-5">
+            <NotasDelProyecto
+              key={proyecto.id}
+              proyecto={proyecto}
+              titulo="Notas de obra"
               placeholder="Medidas, qué falta, qué hablar con el cliente…"
-              className="block w-full resize-y rounded-field border border-hairline bg-paper-notas px-3.5 py-2.5 text-body-lg text-ink focus:border-ink"
             />
-            {guardarNotas.isError && (
-              <p role="alert" className="mt-1.5 text-label font-medium text-alerta">
-                {mensajeDeSincronizacion(guardarNotas.error)}
-              </p>
-            )}
-          </section>
+          </div>
         </div>
 
         <div className="min-w-0 lg:order-1">
@@ -471,66 +414,6 @@ export function ProyectoFichaPage() {
           )}
         </div>
       </div>
-
-      {confirmando && (
-        <div className="fixed inset-0 z-40">
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => {
-              setConfirmando(false);
-            }}
-            className="absolute inset-0 cursor-default bg-ink/35"
-          />
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="Confirmar el borrado"
-            className="absolute inset-x-0 bottom-0 flex flex-col gap-3.5 rounded-t-sheet bg-paper p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-sheet md:inset-auto md:top-1/2 md:left-1/2 md:w-[min(440px,calc(100%-40px))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-dialog"
-          >
-            <h2 className="text-body-lg leading-snug font-semibold">
-              ¿Borrás «{proyecto.titulo}»?
-            </h2>
-            <p className="text-label leading-relaxed text-text-2">
-              Se va a llevar sus {String(pagos.length)} pagos y sus {String(gastos.length)} gastos,
-              y con eso salen del libro mayor.
-            </p>
-            {borrar.isError && (
-              <p role="alert" className="text-label font-medium text-alerta">
-                {mensajeDeSincronizacion(borrar.error)}
-              </p>
-            )}
-            <div className="flex gap-2.5">
-              <Button
-                variant="secundario"
-                className="flex-1"
-                onClick={() => {
-                  setConfirmando(false);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="peligro"
-                className="flex-1"
-                cargando={borrar.isPending}
-                onClick={() => {
-                  borrar.mutate({
-                    id: proyecto.id,
-                    borradoEn: new Date().toISOString(),
-                    previos: { proyecto, ...hijosDelProyecto(replica, proyecto.id) },
-                  });
-                  setConfirmando(false);
-                  void navegar('/proyectos');
-                }}
-              >
-                Borrar el proyecto
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

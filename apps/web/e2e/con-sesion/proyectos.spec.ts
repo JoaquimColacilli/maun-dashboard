@@ -266,7 +266,7 @@ test('el control segmentado navega entre Seguimiento, Activos e Historial', asyn
   await page.getByRole('tab', { name: /Seguimiento/ }).click();
   await expect(page).toHaveURL(/\/seguimiento$/);
   await expect(page.getByRole('heading', { level: 2 })).toHaveText(
-    'El seguimiento llega en el paso que viene',
+    'Nadie en seguimiento por ahora',
   );
 
   await page.getByRole('tab', { name: /Historial/ }).click();

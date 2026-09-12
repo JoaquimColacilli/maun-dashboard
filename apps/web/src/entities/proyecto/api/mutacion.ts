@@ -18,6 +18,8 @@ import {
 } from '@/shared/api';
 import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/lib';
 
+import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
+
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
@@ -41,6 +43,7 @@ export interface EdicionDeProyecto {
   id: string;
   cambios: CambiosDeProyecto;
   previos: CambiosDeProyecto;
+  version?: number;
 }
 
 export interface BajaDeProyecto {
@@ -78,7 +81,12 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
   const ahora = new Date().toISOString();
   const actual = filaPorId(replica, 'proyectos', pedido.id);
   const fila: FilaDe<'proyectos'> = actual
-    ? { ...actual, ...pedido.datos }
+    ? {
+        ...actual,
+        ...pedido.datos,
+        version: versionDelGuardado(actual, pedido.datos),
+        updated_at: cambiaLaFila(actual, pedido.datos) ? ahora : actual.updated_at,
+      }
     : ({
         ...pedido.datos,
         id: pedido.id,
@@ -160,8 +168,18 @@ function aplicarSiNoEsVieja(replica: Replica, fila: FilaDe<'proyectos'>): Replic
   return aplicarFilaLocal(replica, 'proyectos', fila);
 }
 
-function conLoQueVolvio(replica: Replica, guardado: ProyectoGuardado): Replica {
-  let siguiente = aplicarSiNoEsVieja(replica, guardado.proyecto);
+function conLoQueVolvio(
+  replica: Replica,
+  guardado: ProyectoGuardado,
+  { pedido, previos }: GuardadoDeProyecto,
+): Replica {
+  const esperada = versionDelGuardado(previos.proyecto, pedido.datos);
+  const actual = filaPorId(replica, 'proyectos', guardado.proyecto.id);
+  const hayAlgoMasNuevo =
+    actual !== undefined && actual.version > Math.max(esperada, guardado.proyecto.version);
+  let siguiente = hayAlgoMasNuevo
+    ? replica
+    : aplicarFilaLocal(replica, 'proyectos', guardado.proyecto);
   for (const pago of guardado.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
   for (const gasto of guardado.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
   return siguiente;
@@ -192,8 +210,8 @@ export const MUTACION_DE_PROYECTO: MutationOptions<ProyectoGuardado, unknown, Gu
       cambiarReplicas(client, (replica) => conElAgregado(replica, pedido));
       await guardarCacheAhora();
     },
-    onSuccess: (guardado, _variables, _contexto, { client }) => {
-      cambiarReplicas(client, (replica) => conLoQueVolvio(replica, guardado));
+    onSuccess: (guardado, variables, _contexto, { client }) => {
+      cambiarReplicas(client, (replica) => conLoQueVolvio(replica, guardado, variables));
     },
     onError: (_error, variables, _contexto, { client }) => {
       cambiarReplicas(client, (replica) => comoEstaba(replica, variables));
@@ -203,7 +221,22 @@ export const MUTACION_DE_PROYECTO: MutationOptions<ProyectoGuardado, unknown, Gu
 function conCambios(replica: Replica, id: string, cambios: CambiosDeProyecto): Replica {
   const actual = filaPorId(replica, 'proyectos', id);
   if (!actual) return replica;
-  return aplicarFilaLocal(replica, 'proyectos', { ...actual, ...cambios });
+  return aplicarFilaLocal(replica, 'proyectos', {
+    ...actual,
+    ...cambios,
+    version: versionDelGuardado(actual, cambios),
+    updated_at: cambiaLaFila(actual, cambios) ? new Date().toISOString() : actual.updated_at,
+  });
+}
+
+function sinLosCambios(replica: Replica, { id, previos, version }: EdicionDeProyecto): Replica {
+  const actual = filaPorId(replica, 'proyectos', id);
+  if (!actual) return replica;
+  return aplicarFilaLocal(replica, 'proyectos', {
+    ...actual,
+    ...previos,
+    version: version ?? actual.version,
+  });
 }
 
 export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, EdicionDeProyecto> = {
@@ -220,8 +253,8 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
   },
-  onError: (_error, { id, previos }, _contexto, { client }) => {
-    cambiarReplicas(client, (replica) => conCambios(replica, id, previos));
+  onError: (_error, variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLosCambios(replica, variables));
   },
 };
 

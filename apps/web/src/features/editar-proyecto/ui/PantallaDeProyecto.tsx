@@ -1,4 +1,4 @@
-import { entregaEstimada, estaLiquidado, type EstadoProyecto } from '@maun/domain';
+import { entregaEstimada, estaLiquidado, faseDe, type EstadoProyecto } from '@maun/domain';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -144,7 +144,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
   const opcionesDeEstado: EstadoProyecto[] =
     proyecto === undefined
-      ? ESTADOS_EN_ORDEN.filter((estado) => !estaLiquidado(estado))
+      ? ESTADOS_EN_ORDEN.filter((estado) => faseDe(estado) === 'activos')
       : estadosDisponibles(proyecto.estado);
 
   const totalCobrado = totalDeLasFilas(filasDePagos);

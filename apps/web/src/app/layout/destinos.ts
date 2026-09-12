@@ -63,7 +63,7 @@ export const ACCIONES_RAPIDAS: readonly AccionRapida[] = [
   { etiqueta: 'Movimiento', icono: 'arrow-left-right', ruta: '/finanzas' },
   { etiqueta: 'Cobro de proyecto', icono: 'hand-coins', ruta: '/proyectos' },
   { etiqueta: 'Proyecto nuevo', icono: 'folder-plus', ruta: '/proyectos/nuevo' },
-  { etiqueta: 'Contacto de seguimiento', icono: 'user-plus', ruta: '/seguimiento' },
+  { etiqueta: 'Contacto de seguimiento', icono: 'user-plus', ruta: '/seguimiento/nuevo' },
 ];
 
 export function seccionDeLaRuta(ruta: string): IdDeSeccion {

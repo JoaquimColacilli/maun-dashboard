@@ -55,6 +55,7 @@ export {
   type Proyecto,
   type ResumenDeCliente,
 } from './model/resumen';
+export { AccionesDeContacto, type AccionesDeContactoProps } from './ui/AccionesDeContacto';
 export { ClienteCombobox, type ClienteComboboxProps } from './ui/ClienteCombobox';
 export { rutaDelCliente } from './model/rutas';
 export { EnlaceACliente } from './ui/EnlaceACliente';
