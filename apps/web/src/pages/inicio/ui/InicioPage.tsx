@@ -245,7 +245,7 @@ export function InicioPage() {
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+      <section aria-label="Tesoros" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {TESOROS_EN_ORDEN.map((id) => (
           <Tarjeta
             key={id}
@@ -255,7 +255,7 @@ export function InicioPage() {
             alElegir={irA(id === 'diezmo' ? '/diezmo' : '/finanzas')}
           />
         ))}
-      </div>
+      </section>
 
       <LiquidacionesSinConfirmar replica={replica} />
 

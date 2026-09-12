@@ -102,6 +102,33 @@ async function cobrarDesdeLaLista(page: Page, titulo: string): Promise<void> {
   await page.getByRole('link', { name: 'Proyectos', exact: true }).first().click();
 }
 
+// Los cuatro saldos como los ve el usuario en Inicio. Se comparan por diferencia y no por valor
+// absoluto: el taller de prueba conserva sus movimientos entre corridas, y lo que importa es cuánto
+// movió el cobro.
+interface SaldosDeInicio {
+  hogar: number;
+  maun: number;
+  diezmo: number;
+  cocos: number;
+}
+
+async function saldosEnInicio(page: Page): Promise<SaldosDeInicio> {
+  await page.goto('/');
+  const tesoros = page.getByRole('region', { name: 'Tesoros' });
+  const leer = async (nombre: string): Promise<number> => {
+    const texto = await tesoros.getByRole('button', { name: new RegExp(`^${nombre}`) }).innerText();
+    const encontrado = /\$\s?([\d.]+)/.exec(texto);
+    if (!encontrado?.[1]) throw new Error(`no se pudo leer el saldo de ${nombre}: «${texto}»`);
+    return Number(encontrado[1].replaceAll('.', ''));
+  };
+  return {
+    hogar: await leer('Hogar'),
+    maun: await leer('Maun'),
+    diezmo: await leer('Diezmo'),
+    cocos: await leer('Cocos'),
+  };
+}
+
 async function esperarEstado(id: string, estado: string): Promise<void> {
   await expect
     .poll(async () => (await distribucionDe(sesion, id))?.estado, { timeout: 30_000 })
@@ -112,6 +139,8 @@ test('el despiece se ve antes de cobrar y la distribución queda congelada despu
   page,
 }) => {
   const { id } = await proyecto('Placard de tres puertas', { pago: 70_000_000 });
+
+  const antes = await saldosEnInicio(page);
 
   await page.goto(`/proyectos/${id}`);
   await page.getByRole('button', { name: /^Cobrar/ }).click();
@@ -134,6 +163,16 @@ test('el despiece se ve antes de cobrar y la distribución queda congelada despu
   expect(congelada?.dist_sueldo_centavos).toBe(50_000_000);
   expect(congelada?.dist_fijos_centavos).toBe(13_000_000);
   expect(congelada?.dist_remanente_centavos).toBe(0);
+
+  // Y los cuatro tesoros de Inicio se movieron como corresponde. Lo cobrado ya había entrado a MAUN
+  // cuando se cargó el pago, que es cuando el cliente puso la plata: lo que hace el cobro es sacar
+  // de ahí el diezmo y el sueldo. Por eso MAUN baja 570.000 en vez de subir, y los tres asientos
+  // cierran contra cero. Cocos no se toca.
+  const despues = await saldosEnInicio(page);
+  expect(despues.hogar - antes.hogar).toBe(500_000);
+  expect(despues.diezmo - antes.diezmo).toBe(70_000);
+  expect(despues.maun - antes.maun).toBe(-570_000);
+  expect(despues.cocos - antes.cocos).toBe(0);
 });
 
 test('sin señal el cobro queda pendiente de confirmar, sobrevive a cerrar la app y después pasa a firme', async ({
