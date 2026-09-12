@@ -10,9 +10,6 @@ export interface LiquidacionesSinConfirmarProps {
   replica: Replica;
 }
 
-// Los saldos de los tesoros son los optimistas, que es el número que el usuario espera ver después
-// de cobrar. Pero un cobro encolado no está cobrado, así que la marca lo dice y da el camino para
-// ver cuáles son (ADR 0016).
 export function LiquidacionesSinConfirmar({ replica }: LiquidacionesSinConfirmarProps) {
   const enVuelo = useLiquidacionesEnVuelo();
   if (enVuelo.length === 0) return null;

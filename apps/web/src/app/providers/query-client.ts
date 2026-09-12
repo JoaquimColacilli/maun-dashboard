@@ -33,9 +33,6 @@ export function crearQueryClient(): QueryClient {
     },
   });
 
-  // La bandeja de avisos no es cache de nada: es el registro de lo que la base rechazó y de las
-  // liquidaciones que volvieron ajustadas, y se vacía cuando el usuario lo descarta. Sin el gcTime
-  // infinito, el recolector se la lleva en cuanto ninguna pantalla la está mirando (ADR 0016).
   queryClient.setQueryDefaults(CLAVE_DE_AVISOS, {
     gcTime: Infinity,
     staleTime: Infinity,

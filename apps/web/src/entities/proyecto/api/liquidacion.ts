@@ -30,8 +30,6 @@ export const CLAVE_DE_REVERSION = ['proyectos', 'revertir'] as const;
 
 const REINTENTOS = 5;
 
-// La mutación vive en el cache lo que tarda en drenar; el rastro del rechazo lo guarda la bandeja,
-// que se persiste y dura hasta que el usuario lo descarta (ADR 0016).
 const DURACION_DEL_RECHAZO_MS = 24 * 60 * 60 * 1000;
 
 export interface LiquidacionDeProyecto {
@@ -71,8 +69,6 @@ function cambiarReplicas(cliente: QueryClient, cambio: (replica: Replica) => Rep
   );
 }
 
-// Un rechazo de liquidación no puede quedarse en el formulario que ya se cerró: se anota en la
-// bandeja, que es lo que leen la fila del proyecto, su ficha, el aviso global y Ajustes.
 function anotarElRechazo(
   cliente: QueryClient,
   error: unknown,
@@ -102,9 +98,6 @@ function anotarElRechazo(
   });
 }
 
-// Cuando la base recalcula con su acumulado del mes, la liquidación vuelve ajustada: lo que se
-// congeló no es lo que el usuario vio. No alcanza con un cartelito, así que el aviso dice qué
-// escalón cambió, de cuánto a cuánto, y por qué (ADR 0011 y 0016).
 function anotarElAjuste(
   cliente: QueryClient,
   fila: FilaDe<'proyectos'>,
@@ -204,8 +197,6 @@ export interface LiquidacionEnVuelo {
   enPausa: boolean;
 }
 
-// El filtro mira todas las mutaciones pendientes, y el guardado del agregado también trae un
-// `pedido`: lo que distingue a una liquidación es que el suyo lleva `proyectoId`.
 function enVuelo(variables: unknown, enPausa: boolean): LiquidacionEnVuelo | undefined {
   if (typeof variables !== 'object' || variables === null || !('pedido' in variables)) {
     return undefined;
@@ -232,9 +223,6 @@ function enVuelo(variables: unknown, enPausa: boolean): LiquidacionEnVuelo | und
   };
 }
 
-// El estado por fila: una liquidación encolada no está confirmada, y hasta que el servidor conteste
-// el proyecto se muestra como cobrado y pendiente, con su distribución marcada como provisoria
-// (ADR 0016). El indicador global no alcanza cuando lo que está en la cola es plata.
 export function useLiquidacionesEnVuelo(): readonly LiquidacionEnVuelo[] {
   return useMutationState({
     filters: { status: 'pending' },

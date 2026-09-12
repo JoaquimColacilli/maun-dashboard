@@ -10,8 +10,6 @@ export interface ProyectoLiquidacionPageProps {
   destino: EstadoLiquidado;
 }
 
-// Un proyecto que no se puede liquidar desde su estado no tiene por qué tener esta pantalla: se
-// vuelve a la ficha en vez de ofrecer un botón que la base va a rechazar con MN007.
 export function ProyectoLiquidacionPage({ destino }: ProyectoLiquidacionPageProps) {
   const replica = useReplicaDelTaller();
   const { id = '' } = useParams();

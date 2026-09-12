@@ -22,8 +22,6 @@ export interface MarcaDeSincronizacion {
   tono: string;
 }
 
-// Una liquidación encolada no está confirmada: la fila lo dice con estas palabras, y no con el
-// indicador global, que alcanza para un cliente pero no para plata (ADR 0016).
 export function marcaDeLiquidacion(
   enVuelo: { operacion: OperacionDeLiquidacion; enPausa: boolean } | undefined,
   hayRechazo: boolean,

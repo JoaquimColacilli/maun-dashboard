@@ -74,9 +74,6 @@ export interface PantallaDeLiquidacionProps {
   destino: EstadoLiquidado;
 }
 
-// El cobro no lleva «¿estás seguro?»: la confirmación es el despiece, que se lee en vez de
-// descartarse, y el botón dice el verbo de verdad (ADR 0016). Cobrar es reversible, y eso también
-// está dicho abajo del botón.
 export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacionProps) {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
@@ -92,9 +89,6 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const [fecha, setFecha] = useState(hoyLocal);
   const [concepto, setConcepto] = useState('Saldo final en la entrega');
 
-  // La fecha del pago es del pago: el cliente pudo haber transferido el martes. La liquidación es de
-  // hoy, y es la que decide en qué mes cae el reparto. Si el cobro viene de una reapertura, el
-  // dominio ignora las dos y usa la del cobro original (ADR 0011).
   const pagoExtra = centavos(conPagoFinal && faltaCobrar ? (parsearPesos(monto) ?? 0) : 0);
   const liquidacion = liquidacionProyectada(replica, proyecto, hoyLocal(), { destino, pagoExtra });
   const despiece = despieceDeLaLiquidacion(liquidacion);

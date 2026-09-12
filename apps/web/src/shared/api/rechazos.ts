@@ -34,8 +34,6 @@ function comoQuedo(contexto: ContextoDelRechazo): string {
   return contexto.estado === 'perdido' ? 'cerrado como perdido' : 'cobrado';
 }
 
-// La salida de un liquidado depende de cómo se cerró: un cobro se reabre, un perdido se reactiva y
-// se vuelve a cerrar. Es el hint que ya da la base, dicho sin la palabra «distribución».
 function laSalida(contexto: ContextoDelRechazo): string {
   return contexto.estado === 'perdido'
     ? 'Reactivá el presupuesto, cargá lo que falte y volvé a cerrarlo: el reparto de la seña se hace de nuevo.'
@@ -162,8 +160,6 @@ const PARA_TODOS: Readonly<Record<string, (contexto: ContextoDelRechazo) => Rech
   }),
 };
 
-// Los MN00x son para nosotros, no para el dueño del taller: cada uno se cuenta como lo que pasó y
-// qué hacer ahora. El código queda aparte, para cuando haya que pedir ayuda con un rechazo raro.
 export function traducirRechazo(
   error: unknown,
   contexto: ContextoDelRechazo = CONTEXTO_GENERICO,
@@ -195,8 +191,6 @@ export function traducirRechazo(
   const conocido = PARA_TODOS[rechazo.codigo];
   if (conocido) return { ...conocido(contexto), codigo: rechazo.codigo };
 
-  // Cualquier otro SQLSTATE es un rechazo definitivo sin traducción: se muestra lo que dice la base,
-  // que al menos está en castellano, y el código para poder buscarlo.
   return {
     titulo: rechazo.mensaje,
     queHacer: rechazo.hint === '' ? 'Volvé a intentarlo, y si sigue igual avisá.' : rechazo.hint,

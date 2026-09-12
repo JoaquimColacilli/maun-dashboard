@@ -20,10 +20,6 @@ function Fecha({ valor }: { valor: string }) {
   return <>{Number.isNaN(marca) ? '—' : new Date(marca).toLocaleString('es-AR')}</>;
 }
 
-// El registro completo: los avisos anotados —los rechazos y las liquidaciones que volvieron
-// ajustadas— se persisten y duran hasta que el usuario los descarta. Debajo quedan los rechazos que
-// todavía viven en la cola de este rato y que no dejaron aviso propio, como el guardado de un
-// cliente (ADR 0016).
 function RechazosDeLaCola() {
   const rechazos = useMutationState({
     filters: { status: 'error' },

@@ -17,11 +17,6 @@ export interface AvisoAnotado {
   ruta: string | null;
 }
 
-// La bandeja es una entrada más del cache, así que se persiste en IndexedDB con todo lo demás y
-// sobrevive a cerrar la app. Un aviso se va cuando el usuario lo descarta, no cuando vence un
-// reloj: es lo único que queda de una operación que el usuario da por hecha, y sobre todo de una
-// liquidación, que mueve plata. El gcTime infinito (query-client.ts) es lo que impide que el
-// recolector se la lleve cuando ninguna pantalla la está mirando.
 export function avisosAnotados(queryClient: QueryClient): AvisoAnotado[] {
   return queryClient.getQueryData<AvisoAnotado[]>(CLAVE_DE_AVISOS) ?? [];
 }
@@ -39,8 +34,6 @@ export function descartarAviso(queryClient: QueryClient, id: string): void {
   );
 }
 
-// Un proyecto que vuelve a liquidarse bien se lleva sus rechazos: el aviso dejó de ser cierto. Los
-// ajustes no se borran solos, porque siguen explicando por qué el reparto congelado es el que es.
 export function limpiarRechazosDelProyecto(queryClient: QueryClient, proyectoId: string): void {
   queryClient.setQueryData<AvisoAnotado[]>(CLAVE_DE_AVISOS, (previos) =>
     (previos ?? []).filter(

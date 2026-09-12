@@ -296,10 +296,6 @@ export async function borrarProyecto(
   return data;
 }
 
-// La liquidación y la reversión no escriben columnas: llaman a las cuatro funciones de la base, que
-// son las únicas que tocan la distribución congelada (ADR 0003 y 0011). La app manda la versión que
-// vio, los totales, los topes, la fecha, los cuatro escalones y el acumulado del mes que vio: si ese
-// acumulado no es el de la base, la liquidación vuelve ajustada en vez de rechazada.
 export interface PedidoDeLiquidacion {
   proyectoId: string;
   version: number;
@@ -344,8 +340,6 @@ export async function liquidarProyecto(
     p_fijos_previo_centavos: pedido.fijosPrevioCentavos,
   };
 
-  // El diezmo de un perdido es un dato de los ajustes y viaja con el pedido; en un cobro es la regla
-  // y lo pone la base, así que cobrar_proyecto no lo recibe.
   const { data, error } =
     pedido.destino === 'cobrado'
       ? await cliente.rpc('cobrar_proyecto', { ...comun, p_fecha_cobro: pedido.fecha })

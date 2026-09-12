@@ -8,9 +8,6 @@ function porcentaje(parte: number): string {
   return `${String(Math.round(parte * 100))}%`;
 }
 
-// El corte se anima con clip-path y opacidad, que no piden layout, y cada pieza entra con su
-// retraso. Con prefers-reduced-motion las dos duraciones valen 0ms (theme.css) y el tablero aparece
-// entero. Nada bloquea: es CSS y la pantalla se puede usar mientras corre.
 function animacionDelCorte(indice: number): CSSProperties {
   return {
     animationName: 'maun-corte',

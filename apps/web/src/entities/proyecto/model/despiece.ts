@@ -82,8 +82,6 @@ export function reaperturaDe(proyecto: Proyecto): Reapertura | null {
 // presupuesto en vez de sobre lo cobrado (ADR 0003 y 0011).
 export interface OpcionesDeProyeccion {
   destino?: EstadoLiquidado;
-  // El pago final que el usuario está por registrar desde la pantalla de cobro y que todavía no
-  // está en la réplica: el despiece tiene que mostrar los importes con él adentro.
   pagoExtra?: Money;
 }
 

@@ -154,10 +154,6 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
   return siguiente;
 }
 
-// La respuesta de un guardado no pisa una liquidación que ya se aplicó optimista encima. Pasa al
-// cobrar registrando el pago final: el guardado del pago vuelve con el proyecto todavía en
-// entregado, y sin esta guarda borraría el cobro de la pantalla hasta que conteste el cobro. Es la
-// misma regla que usa el delta: gana la fila que llega salvo que traiga una versión más vieja.
 function aplicarSiNoEsVieja(replica: Replica, fila: FilaDe<'proyectos'>): Replica {
   const actual = filaPorId(replica, 'proyectos', fila.id);
   if (actual && actual.version > fila.version) return replica;

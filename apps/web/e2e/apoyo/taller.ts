@@ -121,10 +121,6 @@ export interface FilaDeProyecto {
   presupuesto_centavos: number | null;
 }
 
-// Un proyecto liquidado no se borra si tiene pagos o gastos (MN001), y sin borrarlo tampoco se
-// puede borrar su cliente (MN003). Desde que existe la pantalla de cobro la suite los crea, así que
-// el vaciado los descongela primero: reabre los cobrados y reactiva los perdidos. Es lo mismo que
-// hace el usuario desde la ficha, por las mismas dos funciones.
 export async function descongelarProyectos({
   entorno,
   accessToken,
@@ -255,8 +251,6 @@ export async function distribucionDe(
   return filas[0];
 }
 
-// Cobrar desde afuera de la app: sirve para dejar el mes con algo adentro antes de cobrar por la
-// interfaz, que es como se prueba el acumulado desactualizado.
 export async function cobrarPorRpc(
   { entorno, accessToken }: SesionDePrueba,
   argumentos: Record<string, unknown>,
@@ -268,8 +262,6 @@ export async function cobrarPorRpc(
   });
 }
 
-// PostgREST rechaza un PATCH sin filtro con un 21000, aunque la RLS ya deje una sola fila a la
-// vista: el filtro tiene que estar igual.
 export async function ajustarTaller(
   { entorno, accessToken }: SesionDePrueba,
   cambios: Record<string, number>,

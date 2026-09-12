@@ -516,10 +516,7 @@ async function totales(
 export interface LiquidacionPreparada {
   proyectoId: string;
   version: number;
-  // Lo que la base tiene que congelar, calculado con todo lo que el mes lleva de verdad.
   esperado: Liquidacion;
-  // Lo que la app vio y manda. Es igual a `esperado` salvo que el escenario diga que la app no vio
-  // alguna liquidación del mes: ahí la app manda su acumulado viejo y la base ajusta (ADR 0011).
   vista: Liquidacion;
 }
 
@@ -621,8 +618,6 @@ interface MovimientoDeEscenario {
 }
 
 type Paso =
-  // `sinVer` son las claves de los proyectos cuya liquidación la app todavía no replicó: manda el
-  // acumulado del mes sin contarlas, y la base tiene que ajustar en vez de rechazar.
   | { liquidar: EstadoLiquidado; proyecto: string; fecha: string; sinVer?: string[] }
   | { revertir: EstadoProyecto; proyecto: string }
   | { pago: number; proyecto: string }
@@ -759,9 +754,6 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
     ],
   },
   {
-    // El celular cobra sin haber visto el cobro que se hizo en la PC del taller. Antes rebotaba con
-    // MN006; ahora la base recalcula los topes con su acumulado y congela eso, y lo que queda
-    // congelado tiene que ser exactamente lo que calcula el dominio con el mes completo.
     nombre: 'un cobro con el acumulado del mes viejo se ajusta, y lo congelado es lo del dominio',
     ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
     proyectos: {
@@ -776,8 +768,6 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
     ],
   },
   {
-    // El tope de fijos de un perdido también es mensual, así que el ajuste se dispara sin prender el
-    // sueldo mensual: es el caso que hoy existe de verdad.
     nombre: 'cerrar un perdido con el acumulado viejo también ajusta',
     ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
     proyectos: {
@@ -790,8 +780,6 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
     ],
   },
   {
-    // Con el sueldo mensual prendido, el acumulado viejo mueve plata de verdad: sin el ajuste, el
-    // segundo cobro se llevaría un sueldo entero de más.
     nombre: 'con sueldo mensual, el acumulado viejo ajusta el sueldo y no lo duplica',
     ajustes: { sueldo: 50_000_000, fijos: 0, sueldoTopeMensual: true },
     proyectos: {

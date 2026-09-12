@@ -10,8 +10,6 @@ import {
 
 import type { Proyecto } from './catalogos';
 
-// guardar_proyecto escribe la fila entera (ADR 0015), así que registrar el pago final desde la
-// pantalla de cobro tiene que mandar las columnas como están, sin tocarlas.
 export function datosActualesDelProyecto(proyecto: Proyecto): DatosDeProyecto {
   const datos = {} as Record<string, unknown>;
   for (const columna of COLUMNAS_DE_PROYECTO) datos[columna] = proyecto[columna];
@@ -32,9 +30,6 @@ export interface AjusteDeLaLiquidacion {
   remanenteQuedo: Money;
 }
 
-// Lo que viaja a cobrar_proyecto o a cerrar_perdido es exactamente lo que se le mostró al usuario,
-// más el acumulado del mes que la app vio. Si ese acumulado no es el de la base, la liquidación
-// vuelve ajustada en vez de rechazada (ADR 0011 y 0016).
 export function pedidoDeLiquidacion(
   proyecto: Proyecto,
   liquidacion: Liquidacion,
@@ -67,9 +62,6 @@ export function pedidoDeReversion(proyecto: Proyecto, hacia: EstadoProyecto): Pe
   };
 }
 
-// La fila que la app escribe en su réplica antes de que el servidor conteste: la misma que va a
-// escribir private.liquidar. La versión sube acá también, así una reapertura hecha a continuación y
-// sin señal manda la versión que el servidor va a tener cuando la cola llegue.
 export function filaLiquidada(
   proyecto: Proyecto,
   liquidacion: Liquidacion,
@@ -103,8 +95,6 @@ export function filaLiquidada(
   };
 }
 
-// Reabrir un cobro guarda la foto del cobro original; reactivar un perdido no guarda nada, porque un
-// lead que revive es un lead vivo y un cierre posterior es otro evento (ADR 0011).
 export function filaRevertida(
   proyecto: Proyecto,
   hacia: EstadoProyecto,
@@ -141,9 +131,6 @@ export function filaRevertida(
   };
 }
 
-// La base no devuelve una marca de «ajustada»: devuelve la fila congelada. Comparando el acumulado
-// que quedó congelado contra el que se mandó, la app sabe que otra liquidación del mes se llevó una
-// parte, y con los escalones tiene la diferencia en plata.
 export function ajusteDeLaLiquidacion(
   fila: Proyecto,
   pedido: PedidoDeLiquidacion,

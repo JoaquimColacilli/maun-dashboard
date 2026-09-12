@@ -36,6 +36,10 @@ la seguridad, no el marco del diálogo.
 - **Reabrir y reactivar explican su diferencia ahí mismo**, sin que haya que leer un ADR: reabrir
   conserva la fecha y los objetivos del cobro original, reactivar no guarda nada porque un lead que
   revive es un lead vivo.
+- **La fecha del pago final y la fecha de la liquidación son dos cosas distintas.** La pantalla deja
+  fechar el pago el día que el cliente transfirió, pero la liquidación es de hoy, que es la que
+  decide en qué mes cae el reparto. Si no, fechar un pago la semana pasada movería el cobro de mes
+  sin que nadie lo pida. En un cobro reabierto el dominio ignora las dos y usa la del cobro original.
 
 ## Un cobro encolado no está cobrado
 

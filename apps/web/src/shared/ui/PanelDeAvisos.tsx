@@ -20,8 +20,6 @@ export interface PanelDeAvisosProps {
   children?: (aviso: AvisoAnotado) => ReactNode;
 }
 
-// Lo que la base rechazó o ajustó, en el lugar donde el usuario lo iría a buscar. Cada aviso se
-// descarta a mano: no vence solo (ADR 0016).
 export function PanelDeAvisos({ avisos, children }: PanelDeAvisosProps) {
   const queryClient = useQueryClient();
   if (avisos.length === 0) return null;

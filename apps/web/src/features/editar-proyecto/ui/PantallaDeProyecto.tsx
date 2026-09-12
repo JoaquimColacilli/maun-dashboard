@@ -79,9 +79,6 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const [rechazo, setRechazo] = useState<unknown>(null);
-  // Cuando el usuario descongela el proyecto desde acá para cargar lo que faltaba, al guardar lo
-  // llevamos a rehacer la liquidación en vez de a la ficha: es el camino de salida del ADR 0011, y
-  // así ve el reparto nuevo antes de confirmarlo en vez de que se lo rehagan por atrás.
   const [volverALiquidar, setVolverALiquidar] = useState<'cierre' | 'cobro' | null>(null);
   const revertir = useMutation(MUTACION_DE_REVERSION);
 
@@ -160,10 +157,6 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
   // lo que hace que el taller pueda cargar un proyecto en modo avión. Con señal se espera la
   // respuesta, porque un rechazo (una versión vieja, un proyecto ya cobrado) tiene que verse acá,
   // con todo lo que el usuario escribió todavía en pantalla.
-  // Descongelar el proyecto desde el formulario: los campos se desbloquean en el lugar. Tres cosas
-  // que hay que mover con eso, o el guardado siguiente rebota: la versión que se va a mandar (la
-  // reversión la subió), el estado del formulario (que seguía diciendo «perdido», y eso es MN007) y
-  // a dónde ir al guardar.
   function reabrirParaEditar(fila: NonNullable<typeof proyecto>): void {
     const hacia = fila.estado === 'perdido' ? 'presupuesto_enviado' : 'entregado';
     revertir.mutate({

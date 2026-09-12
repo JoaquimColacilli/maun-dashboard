@@ -67,8 +67,6 @@ export function ProyectoFichaPage() {
   const [confirmando, setConfirmando] = useState(false);
   const reloj = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // El corte se anima una sola vez, al volver de confirmar el cobro: es el momento orquestado del
-  // brief de diseño. Entrar de nuevo a la ficha muestra el tablero quieto.
   const recienLiquidado = vieneDeLiquidar(location.state);
 
   useEffect(

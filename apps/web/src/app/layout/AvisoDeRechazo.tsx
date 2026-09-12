@@ -4,9 +4,6 @@ import { useLocation, useNavigate } from 'react-router';
 import { descartarAviso, useAvisos } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
-// Si el usuario está en la app cuando llega el rechazo, se entera en el momento, esté donde esté:
-// un cobro que rebota y nadie ve es peor que uno que falla en la cara del usuario (ADR 0016). Se
-// muestra el más nuevo, con el camino al proyecto; el resto queda en la ficha y en Ajustes.
 export function AvisoDeRechazo() {
   const avisos = useAvisos();
   const queryClient = useQueryClient();

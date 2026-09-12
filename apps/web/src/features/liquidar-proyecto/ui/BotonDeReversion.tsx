@@ -19,9 +19,6 @@ export interface BotonDeReversionProps {
   proyecto: Proyecto;
 }
 
-// Reabrir deshace un reparto ya cerrado y puede mover el acumulado del mes, así que lleva una
-// confirmación liviana —un panel que se abre, no un diálogo que tapa la pantalla— y el texto dice
-// qué se deshace, en plata y en palabras (ADR 0016).
 export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
   const revertir = useMutation(MUTACION_DE_REVERSION);
   const [abierto, setAbierto] = useState(false);

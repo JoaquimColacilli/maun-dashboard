@@ -12,8 +12,6 @@ function texto(codigo: string, contexto: ContextoDelRechazo): string {
   return `${traducido.titulo} ${traducido.queHacer}`;
 }
 
-// Los ocho códigos, como los lee alguien con serrín en las manos. Este test es la lista: si el texto
-// cambia, cambia acá, y así se puede leer lo que ve el usuario sin abrir la app (ADR 0016).
 describe('los MN00x traducidos a castellano de taller', () => {
   it('MN001 al cobrar: ya estaba cobrado', () => {
     expect(texto('MN001', { operacion: 'cobro', sujeto: 'Placard', estado: 'cobrado' })).toBe(

@@ -123,3 +123,10 @@ src/
 - **El formulario bloquea los pagos y los gastos de un proyecto liquidado, y ese aviso lleva el botón para descongelarlo.** No es un adorno: sin él es un callejón sin salida, que es lo que el ADR 0011 prohíbe. Al descongelar desde ahí hay que mover tres cosas o el guardado siguiente rebota: la versión que se va a mandar (la reversión la subió), el `estado` del formulario (seguía en `perdido`, y eso sale `MN007`) y a dónde ir al guardar, que pasa a ser la pantalla de liquidación.
 - El corte se anima con `clip-path` y un retraso por pieza, una sola vez, por el `state` de la navegación. `prefers-reduced-motion` ya lo neutraliza `theme.css`: no agregues un caso especial.
 - **`vaciarTaller` del e2e descongela antes de borrar** (`descongelarProyectos`): un liquidado con pagos o gastos no se borra (`MN001`) y sin borrarlo tampoco se borra su cliente (`MN003`).
+- `useLiquidacionEnVuelo` filtra **todas** las mutaciones pendientes, y el guardado del agregado también lleva un `pedido`: lo que distingue a una liquidación es que el suyo trae `proyectoId`. Si agregás otra mutación con esa forma, ajustá el filtro.
+
+## Cosas que muerden en el e2e
+
+- **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
+- **PostgREST rechaza un `PATCH` sin filtro** con un `21000` («UPDATE requires a WHERE clause»), aunque la RLS ya deje una sola fila a la vista: los helpers que editan por REST llevan el filtro igual.
+- El navegador **normaliza `0ms` a `0s`** al leer una custom property computada: para afirmar sobre una duración, comparar el número y no el texto.
