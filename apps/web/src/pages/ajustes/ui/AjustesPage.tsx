@@ -6,23 +6,24 @@ import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { useSesionActiva } from '@/entities/sesion';
-import {
-  ajustesDe,
-  cantidadDe,
-  householdDe,
-  mensajeDeSincronizacion,
-  saldosDeLaReplica,
-  TABLAS_REPLICADAS,
-} from '@/shared/api';
+import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
 import { Pagina, PanelDeAvisos } from '@/shared/ui';
 
 const SECCION =
   'flex min-w-0 max-w-[560px] flex-col gap-3.5 border-t border-hairline pt-5 xl:max-w-none';
 
-function Fecha({ valor }: { valor: string }) {
+const FORMATO_DE_LA_SINCRONIZACION = new Intl.DateTimeFormat('es-AR', {
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function ultimaSincronizacion(valor: string): string {
   const marca = Date.parse(valor);
-  return <>{Number.isNaN(marca) ? '—' : new Date(marca).toLocaleString('es-AR')}</>;
+  if (Number.isNaN(marca)) return 'Todavía no se sincronizó con el servidor.';
+  return `Última sincronización: ${FORMATO_DE_LA_SINCRONIZACION.format(new Date(marca))}.`;
 }
 
 function RechazosDeLaCola() {
@@ -121,30 +122,9 @@ export function AjustesPage() {
             Este dispositivo
           </h2>
           <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
-          <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-            {TABLAS_REPLICADAS.map((tabla) => (
-              <li key={tabla} className="flex flex-col gap-1 rounded-panel bg-surface p-3.5">
-                <span className="text-meta text-text-2">{tabla}</span>
-                <span className="text-money-lg font-semibold tabular-nums">
-                  {cantidadDe(replica, tabla)}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <dl className="flex flex-col text-label">
-            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-              <dt className="text-text-2">Último delta</dt>
-              <dd className="tabular-nums">
-                <Fecha valor={replica.cursor} />
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-              <dt className="text-text-2">Última copia completa</dt>
-              <dd className="tabular-nums">
-                <Fecha valor={replica.reconciliadoEn} />
-              </dd>
-            </div>
-          </dl>
+          <p className="text-label text-text-3 tabular-nums">
+            {ultimaSincronizacion(replica.cursor)}
+          </p>
         </section>
 
         <section aria-labelledby="titulo-cuenta" className={`${SECCION} items-start`}>
