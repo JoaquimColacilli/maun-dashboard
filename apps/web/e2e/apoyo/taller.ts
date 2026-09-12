@@ -212,12 +212,13 @@ export async function vaciarTaller(sesion: SesionDePrueba): Promise<void> {
 export async function crearCliente(
   { entorno, accessToken }: SesionDePrueba,
   nombre: string,
+  extra: { telefono?: string; direccion?: string } = {},
 ): Promise<string> {
   const filas = (await pedir(entorno, '/rest/v1/clientes', {
     method: 'POST',
     accessToken,
     headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ nombre }),
+    body: JSON.stringify({ nombre, ...extra }),
   })) as { id: string }[];
   const fila = filas[0];
   if (fila === undefined) throw new Error('el alta de cliente no devolvió la fila');
@@ -260,6 +261,83 @@ export async function montosDe(
     { accessToken },
   )) as { monto_centavos: number }[];
   return filas.map((fila) => fila.monto_centavos);
+}
+
+export interface FilaDePago {
+  id: string;
+  fecha: string;
+  concepto: string;
+  monto_centavos: number;
+}
+
+export async function pagosDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDePago[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/pagos?select=id,fecha,concepto,monto_centavos&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=id`,
+    { accessToken },
+  )) as FilaDePago[];
+}
+
+export interface ContactoDePrueba {
+  id: string;
+  clienteId: string;
+  titulo: string;
+}
+
+export async function contactoPorRpc(
+  sesion: SesionDePrueba,
+  datos: {
+    titulo: string;
+    estado?: string;
+    sena?: number;
+    gasto?: number;
+    visita?: string | null;
+    telefono?: string;
+  },
+): Promise<ContactoDePrueba> {
+  const { titulo, estado = 'contacto', sena = 0, gasto = 0, visita = null, telefono = '' } = datos;
+  const clienteId = await crearCliente(sesion, `Cliente de ${titulo}`, { telefono });
+  const id = crypto.randomUUID();
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id,
+      version: null,
+      cliente_id: clienteId,
+      titulo,
+      estado,
+      presupuesto_centavos: null,
+      comprobante: 'sin_comprobante',
+      fecha_visita: visita,
+    },
+    pagos:
+      sena === 0
+        ? []
+        : [
+            {
+              id: crypto.randomUUID(),
+              fecha: hoy,
+              concepto: 'Seña de la visita',
+              monto_centavos: sena,
+            },
+          ],
+    gastos:
+      gasto === 0
+        ? []
+        : [
+            {
+              id: crypto.randomUUID(),
+              fecha: hoy,
+              descripcion: 'Nafta de la visita',
+              monto_centavos: gasto,
+            },
+          ],
+  });
+  return { id, clienteId, titulo };
 }
 
 export interface DistribucionCongelada {
