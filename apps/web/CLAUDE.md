@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes** (lista, ficha y formulario) y **Proyectos** (lista con su control segmentado, formulario y detalle), que es la superficie más grande. Las secciones que faltan (Seguimiento, Diezmo, Finanzas) son pantallas que dicen qué llega y cuándo, no rutas muertas.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas** y **Diezmo**. Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño.
 
 ## Capas (FSD, ADR 0006)
 
@@ -10,9 +10,10 @@ src/
   app/         arranque, providers, router con sus guardas y layout del shell
   pages/       una carpeta por ruta, finas: componen features y entidades
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
-               cerrar-sesion, configurar-taller, registrar-movimiento, editar-cliente,
-               editar-proyecto)
-  entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente y proyecto
+               cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
+               editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto)
+  entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
+               proyecto y movimiento
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
                uuid, sync) y ui
 ```
@@ -146,6 +147,34 @@ src/
 - Sin virtualización de listas y sin librería de gráficos. El gráfico del mes es `aria-hidden` y la
   tabla con los mismos números vive detrás de «Ver los números», visible para cualquiera.
 
+## Seguimiento (ADR 0019)
+
+- **Un contacto es una fila de `proyectos` en fase de seguimiento.** No tiene tabla ni mutación
+  propia: todo pasa por `MUTACION_DE_PROYECTO`, y la seña es un pago del agregado. No agregues una
+  tabla de leads: la seña tendría que mudarse al aprobar, y eso es lo que no puede pasar.
+- **La ficha es `/proyectos/:id` y elige la vista por la fase** (`FichaDeContacto` o la de obra). No
+  agregues `/seguimiento/:id`: los avisos, el cierre y `rutaDelProyecto` ya apuntan a la otra.
+- **El orden y el próximo paso se derivan, no se cargan.** `contactosEnOrden` usa
+  `ultimasActividades` (el `updated_at` más nuevo entre la fila, sus pagos y sus gastos) y
+  `situacionDelContacto` escribe la frase. Las visitas agendadas van al final.
+- **El pasaje (`/proyectos/:id/aprobar`) manda `pagos: []`**: la seña no se toca, así que no viaja ni
+  se duplica. `ProyectoPasajePage` decide si deja entrar **al montarse**, con un `useState`: la fila
+  optimista pasa a `en_curso` antes de la respuesta, y una guarda por render desmontaría el formulario
+  antes de que un rechazo se viera.
+- **La fila optimista de un guardado y de las notas sube la `version` si cambia alguna columna**
+  (`versionDelGuardado`). Sin eso, dos pasos seguidos sin señal rebotan con `MN006`. La respuesta se
+  aplica salvo que la réplica tenga algo más nuevo que la versión que dejó esta mutación y que la que
+  devolvió la base.
+- **El teléfono vive en el cliente.** La hoja liviana encola la edición del cliente antes del guardado
+  del contacto.
+- **La seña se edita desde la hoja solo si hay cero o un pago.** Con varios, el campo muestra el total y
+  manda al detalle.
+- **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `role="dialog"`**: si no, una hoja
+  abierta por ruta (`/seguimiento/nuevo`, `/finanzas/nuevo`) perdía el foco del primer campo.
+- **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). No es un bug, y el e2e
+  lo deja escrito.
+- Proyecto nuevo solo ofrece estados de obra: un contacto entra por Seguimiento.
+
 ## Cosas que muerden en el e2e
 
 - **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
@@ -153,4 +182,12 @@ src/
 - El navegador **normaliza `0ms` a `0s`** al leer una custom property computada: para afirmar sobre una duración, comparar el número y no el texto.
 - **`saldosEnInicio` vive en `e2e/apoyo/pantalla.ts`** y la tarjeta de DIEZMO no trae importe cuando está al día: el helper devuelve 0 en ese caso y negativo cuando dice «de más». Un helper que asume «siempre hay un `$`» se rompe con el taller vacío.
 - **Un cambio hecho por REST después de que la app cargó no aparece con un `page.goto`.** La réplica tiene `staleTime` de 60 s: al volver a montar, TanStack la considera fresca y no refetchea. O se hace el cambio **antes** del primer `goto`, o se cambia desde la interfaz.
+- **`contactoPorRpc` crea el cliente como «Cliente de {título}»**, así que `getByRole('link', { name: título })`
+  sin `exact: true` encuentra dos enlaces (el del trabajo y el del cliente) y rompe por modo estricto.
+- **La primera carga de un contexto nuevo puede pasar de cinco segundos** en «Trayendo los datos del
+  taller»: no hay nada en IndexedDB y la réplica sale de `bootstrap()`. Un recorrido con `Tab` que
+  arranca ahí no encuentra nada. `abrir()` de `seguimiento.spec.ts` espera al `<main>` antes de seguir.
+- **`page.clock.setFixedTime` antes del `goto` manda al login**: con el reloj adelantado días, el token
+  guardado está vencido. Para probar «hace N días» se adelanta el reloj **después** de que la app cargó y
+  se fuerza un render navegando (una pestaña y vuelta).
 - **`getByRole('status')` no es el indicador de sincronización a secas.** Cualquier confirmación con `role="status"` entra en ese locator y rompe el `toBeHidden`. Para esperar a que la cola drene conviene preguntarle a la base (`expect.poll` sobre un helper de `apoyo/taller.ts`), que además es la afirmación que importa.
