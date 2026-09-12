@@ -1,4 +1,5 @@
 export { borrarCacheLocal, crearPersisterIndexedDb } from './cache/persister';
+export { guardarCacheAhora, registrarGuardado } from './cache/guardado';
 export { claveDeReplica, claveDeTodaReplica, RAIZ_DE_REPLICA } from './claves';
 export { COLA_DE_SALIDA, esPersistible, reanudarCola } from './cache/cola';
 export { limpiarDatosLocales } from './cache/limpieza';

@@ -16,7 +16,7 @@ import {
   type ProyectoParaGuardar,
   type Replica,
 } from '@/shared/api';
-import { claveDeTodaReplica, COLA_DE_SALIDA } from '@/shared/lib';
+import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/lib';
 
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
@@ -190,6 +190,7 @@ export const MUTACION_DE_PROYECTO: MutationOptions<ProyectoGuardado, unknown, Gu
     onMutate: async ({ pedido }, { client }) => {
       await client.cancelQueries({ queryKey: claveDeTodaReplica() });
       cambiarReplicas(client, (replica) => conElAgregado(replica, pedido));
+      await guardarCacheAhora();
     },
     onSuccess: (guardado, _variables, _contexto, { client }) => {
       cambiarReplicas(client, (replica) => conLoQueVolvio(replica, guardado));
@@ -214,6 +215,7 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   onMutate: async ({ id, cambios }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conCambios(replica, id, cambios));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
@@ -246,6 +248,7 @@ export const MUTACION_DE_BAJA_DE_PROYECTO: MutationOptions<
   onMutate: async ({ id }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => sinElProyecto(replica, id));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', fila));

@@ -14,7 +14,7 @@ import {
   type FilaDe,
   type Replica,
 } from '@/shared/api';
-import { claveDeTodaReplica, COLA_DE_SALIDA } from '@/shared/lib';
+import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/lib';
 
 export const CLAVE_DE_CLIENTE_NUEVO = ['clientes', 'crear'] as const;
 export const CLAVE_DE_CLIENTE = ['clientes', 'editar'] as const;
@@ -76,6 +76,7 @@ export const MUTACION_DE_CLIENTE_NUEVO: MutationOptions<
     // Una sincronización en vuelo terminaría escribiendo la réplica que leyó antes de esta fila.
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conClienteNuevo(replica, nuevo));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _nuevo, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'clientes', fila));
@@ -94,6 +95,7 @@ export const MUTACION_DE_CLIENTE: MutationOptions<FilaDe<'clientes'>, unknown, E
   onMutate: async ({ id, cambios }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conCambios(replica, id, cambios));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'clientes', fila));
@@ -126,6 +128,7 @@ export const MUTACION_DE_BAJA_DE_CLIENTE: MutationOptions<
   onMutate: async ({ id }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => quitarFilaLocal(replica, 'clientes', id));
+    await guardarCacheAhora();
   },
   onError: (_error, { previo }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'clientes', previo));

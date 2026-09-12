@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  asientosDeLaLinea,
   asientosDelLibro,
   asientosDelMes,
   entradasYSalidas,
+  estadoDelDiezmo,
+  lineasDelLibro,
   proyeccionCocos,
   saldosDelLibro,
   saldosPorTesoro,
@@ -343,5 +346,195 @@ describe('proyeccionCocos', () => {
   it('rechaza una tasa que no es un entero no negativo', () => {
     expect(() => proyeccionCocos($(1), -1, 365)).toThrow(RangeError);
     expect(() => proyeccionCocos($(1), 1.5, 365)).toThrow(RangeError);
+  });
+});
+
+describe('lineasDelLibro', () => {
+  it('una transferencia es una sola línea con los dos lados, y sus dos asientos salen de ella', () => {
+    const lineas = lineasDelLibro(
+      datos({
+        movimientos: [
+          movimiento({
+            id: 'm1',
+            tipo: 'transferencia',
+            tesoroOrigen: 'cocos',
+            tesoroDestino: 'maun',
+            monto: $(300_000),
+          }),
+        ],
+      }),
+    );
+
+    expect(lineas).toEqual([
+      {
+        origen: 'manual',
+        asientoId: 'm1',
+        fecha: '2026-09-01',
+        desde: 'cocos',
+        hacia: 'maun',
+        monto: 300_000,
+        concepto: 'transferencia',
+        categoria: '',
+        descripcion: '',
+        proyectoId: null,
+      },
+    ]);
+
+    const [linea] = lineas;
+    if (!linea) throw new Error('la transferencia no generó su línea');
+    expect(asientosDeLaLinea(linea).map((asiento) => [asiento.tesoro, asiento.monto])).toEqual([
+      ['maun', 300_000],
+      ['cocos', -300_000],
+    ]);
+  });
+
+  it('un ingreso y un gasto tienen un solo lado y un solo asiento', () => {
+    const lineas = lineasDelLibro(
+      datos({
+        movimientos: [
+          movimiento({ id: 'm1', tipo: 'ingreso', tesoroOrigen: null, tesoroDestino: 'hogar' }),
+          movimiento({ id: 'm2', tipo: 'gasto', tesoroOrigen: 'hogar', tesoroDestino: null }),
+        ],
+      }),
+    );
+
+    expect(lineas.map((linea) => [linea.desde, linea.hacia])).toEqual([
+      [null, 'hogar'],
+      ['hogar', null],
+    ]);
+    expect(lineas.flatMap(asientosDeLaLinea)).toHaveLength(2);
+  });
+
+  it('un pago entra a maun sin contrapartida y un gasto de proyecto sale de maun', () => {
+    const lineas = lineasDelLibro(
+      datos({
+        proyectos: [proyecto({})],
+        pagos: [pago({ id: 'g1', monto: $(500_000) })],
+        gastos: [gasto({ id: 'x1', monto: $(120_000) })],
+      }),
+    );
+
+    expect(lineas.map((linea) => [linea.origen, linea.desde, linea.hacia, linea.monto])).toEqual([
+      ['pago', null, 'maun', 500_000],
+      ['gasto_proyecto', 'maun', null, 120_000],
+    ]);
+  });
+
+  it('la distribución congelada son dos líneas de maun hacia diezmo y hogar', () => {
+    const lineas = lineasDelLibro(
+      datos({
+        proyectos: [
+          proyecto({
+            estado: 'cobrado',
+            fechaCobro: '2026-09-10',
+            diezmo: $(70_000),
+            sueldo: $(500_000),
+          }),
+        ],
+      }),
+    );
+
+    expect(
+      lineas.map((linea) => [linea.concepto, linea.desde, linea.hacia, linea.monto, linea.fecha]),
+    ).toEqual([
+      ['diezmo', 'maun', 'diezmo', 70_000, '2026-09-10'],
+      ['sueldo', 'maun', 'hogar', 500_000, '2026-09-10'],
+    ]);
+    expect(lineas.every((linea) => linea.asientoId === 'p1')).toBe(true);
+  });
+
+  it('un escalón en cero no genera línea', () => {
+    const lineas = lineasDelLibro(
+      datos({
+        proyectos: [
+          proyecto({ estado: 'perdido', fechaCobro: '2026-09-10', diezmo: $(0), sueldo: $(0) }),
+        ],
+      }),
+    );
+
+    expect(lineas).toEqual([]);
+  });
+
+  it('un proyecto sin liquidar, o liquidado sin fecha, no genera distribución', () => {
+    expect(
+      lineasDelLibro(
+        datos({ proyectos: [proyecto({ estado: 'en_curso', diezmo: $(1), sueldo: $(1) })] }),
+      ),
+    ).toEqual([]);
+    expect(
+      lineasDelLibro(
+        datos({
+          proyectos: [
+            proyecto({ estado: 'cobrado', fechaCobro: null, diezmo: $(1), sueldo: $(1) }),
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('los pagos y los gastos de un proyecto que no está en la réplica se ignoran', () => {
+    expect(
+      lineasDelLibro(
+        datos({ pagos: [pago({ proyectoId: 'otro' })], gastos: [gasto({ proyectoId: 'otro' })] }),
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe('estadoDelDiezmo', () => {
+  function conDiezmo(generado: number, pagado: number): Asiento[] {
+    return asientosDelLibro(
+      datos({
+        proyectos: [proyecto({ estado: 'cobrado', fechaCobro: '2026-09-10', diezmo: $(generado) })],
+        movimientos:
+          pagado === 0
+            ? []
+            : [
+                movimiento({
+                  id: 'm1',
+                  tipo: 'pago_diezmo',
+                  tesoroOrigen: 'diezmo',
+                  tesoroDestino: null,
+                  monto: $(pagado),
+                }),
+              ],
+      }),
+    );
+  }
+
+  it('con más generado que pagado, debe la diferencia', () => {
+    expect(estadoDelDiezmo(conDiezmo(100_000, 30_000))).toEqual({
+      situacion: 'debe',
+      importe: 70_000,
+      generado: 100_000,
+      pagado: 30_000,
+    });
+  });
+
+  it('con todo pagado está al día, y el importe es cero', () => {
+    expect(estadoDelDiezmo(conDiezmo(100_000, 100_000))).toEqual({
+      situacion: 'al-dia',
+      importe: 0,
+      generado: 100_000,
+      pagado: 100_000,
+    });
+  });
+
+  it('con más pagado que generado, pagó de más, y el importe sigue siendo positivo', () => {
+    expect(estadoDelDiezmo(conDiezmo(100_000, 130_000))).toEqual({
+      situacion: 'pago-de-mas',
+      importe: 30_000,
+      generado: 100_000,
+      pagado: 130_000,
+    });
+  });
+
+  it('sin nada generado ni pagado, está al día', () => {
+    expect(estadoDelDiezmo([])).toEqual({
+      situacion: 'al-dia',
+      importe: 0,
+      generado: 0,
+      pagado: 0,
+    });
   });
 });

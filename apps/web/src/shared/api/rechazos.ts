@@ -151,10 +151,10 @@ const PARA_TODOS: Readonly<Record<string, (contexto: ContextoDelRechazo) => Rech
     codigo: '',
   }),
   MN008: (contexto) => ({
-    titulo: 'Esta app quedó vieja y está sacando otra cuenta que el servidor.',
+    titulo: 'Esta app quedó vieja y no saca la misma cuenta que el servidor.',
     queHacer:
       contexto.operacion === 'cobro' || contexto.operacion === 'cierre'
-        ? 'No se guardó nada: el reparto quedó como estaba. Cerrá la app y volvé a abrirla para que se actualice, y hacelo de nuevo.'
+        ? 'No se guardó nada: el trabajo quedó como estaba. Puede ser el corte de la ganancia, o lo que el mes ya lleva cubierto. Cerrá la app, volvé a abrirla para que se actualice, y hacelo de nuevo.'
         : 'Cerrá la app y volvé a abrirla para que se actualice, y probá otra vez.',
     codigo: '',
   }),

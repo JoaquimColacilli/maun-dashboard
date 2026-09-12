@@ -11,7 +11,7 @@ import {
   type MovimientoNuevo,
   type Replica,
 } from '@/shared/api';
-import { COLA_DE_SALIDA } from '@/shared/lib';
+import { COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/lib';
 
 export const CLAVE_DE_MOVIMIENTO = ['movimientos', 'registrar'] as const;
 
@@ -66,6 +66,7 @@ export const MUTACION_DE_MOVIMIENTO: MutationOptions<
     // Una sincronización en vuelo terminaría escribiendo la réplica que leyó antes de esta fila.
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conFilaOptimista(replica, movimiento));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _movimiento, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'movimientos', fila));
