@@ -17,6 +17,18 @@ export {
 export { calcularDistribucion, DIEZMO, type Distribucion, type EntradaCascada } from './cascada.ts';
 
 export {
+  digitosDeCuit,
+  formatearCuit,
+  LARGO_DE_CUIT,
+  PREFIJOS_DE_EMPRESA,
+  PREFIJOS_DE_PERSONA,
+  revisarCuit,
+  verificadorDeCuit,
+  type MotivoDeCuit,
+  type RevisionDeCuit,
+} from './cuit.ts';
+
+export {
   calcularLiquidacion,
   liquidadoDelMes,
   planDeLiquidacion,
