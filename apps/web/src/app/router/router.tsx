@@ -7,10 +7,12 @@ import { DiezmoPage } from '@/pages/diezmo';
 import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/pages/finanzas';
 import { InicioPage } from '@/pages/inicio';
 import {
+  ContactoNuevoPage,
   ProyectoEdicionPage,
   ProyectoFichaPage,
   ProyectoLiquidacionPage,
   ProyectoNuevoPage,
+  ProyectoPasajePage,
   ProyectosPage,
 } from '@/pages/proyectos';
 
@@ -45,11 +47,16 @@ export const router = createBrowserRouter([
                   // Seguimiento es la primera pestaña de Proyectos y no una pantalla aparte: el
                   // control segmentado es el modelo mental del dueño, y en escritorio Seguimiento
                   // es además un destino propio, así que la pestaña tiene que ser una ruta.
-                  { path: '/seguimiento', element: <ProyectosPage /> },
+                  {
+                    path: '/seguimiento',
+                    element: <ProyectosPage />,
+                    children: [{ path: 'nuevo', element: <ContactoNuevoPage /> }],
+                  },
                   { path: '/proyectos', element: <ProyectosPage /> },
                   { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
                   { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
                   { path: '/proyectos/:id/editar', element: <ProyectoEdicionPage /> },
+                  { path: '/proyectos/:id/aprobar', element: <ProyectoPasajePage /> },
                   {
                     path: '/proyectos/:id/cobrar',
                     element: <ProyectoLiquidacionPage destino="cobrado" />,

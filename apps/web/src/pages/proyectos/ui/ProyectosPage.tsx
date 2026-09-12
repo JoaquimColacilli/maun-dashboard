@@ -1,6 +1,6 @@
 import { type EstadoProyecto, type Fase } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import { EnlaceACliente } from '@/entities/cliente';
 import {
@@ -18,6 +18,7 @@ import {
   ordenarProyectos,
   ORDEN_POR_DEFECTO,
   resumenesDeProyectos,
+  RUTA_DE_CONTACTO_NUEVO,
   RUTA_DE_PROYECTO_NUEVO,
   rutaDelProyecto,
   type ResumenDeProyecto,
@@ -25,6 +26,8 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { alternar, formatearPesos, hoyLocal, useAnchoDePantalla, type Sentido } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
+
+import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
 function etapaDeLaRuta(pathname: string, busqueda: URLSearchParams): Fase {
   if (pathname === '/seguimiento') return 'seguimiento';
@@ -265,18 +268,13 @@ function HojaDeOrden({
   );
 }
 
-function Vacio({ etapa }: { etapa: Fase }) {
+function Vacio({ etapa }: { etapa: Exclude<Fase, 'seguimiento'> }) {
   const navegar = useNavigate();
-  const textos: Record<Fase, { titulo: string; detalle: string }> = {
-    seguimiento: {
-      titulo: 'El seguimiento llega en el paso que viene',
-      detalle:
-        'Acá van a vivir los contactos, los relevamientos y los presupuestos enviados, y las fichas se van a pasar solas a Activos cuando la obra arranque. Todavía no existe: lo que cargues hoy entra como obra en curso.',
-    },
+  const textos: Record<Exclude<Fase, 'seguimiento'>, { titulo: string; detalle: string }> = {
     activos: {
       titulo: 'Todavía no hay proyectos activos',
       detalle:
-        'Cargá el primero con el cliente, el presupuesto y la seña. Desde ahí la app te va a decir cuánto falta cobrar y cuándo vence la entrega.',
+        'Acá están los trabajos que te aprobaron. Los contactos y los presupuestos que esperan respuesta viven en Seguimiento, y pasan solos a esta pestaña cuando los aprobás.',
     },
     historial: {
       titulo: 'Todavía no cerraste ningún proyecto',
@@ -294,15 +292,13 @@ function Vacio({ etapa }: { etapa: Fase }) {
       </span>
       <h2 className="mt-1 text-h1 leading-tight font-semibold">{texto.titulo}</h2>
       <p className="text-body leading-relaxed text-text-2">{texto.detalle}</p>
-      {etapa !== 'seguimiento' && (
-        <Button
-          onClick={() => {
-            void navegar(RUTA_DE_PROYECTO_NUEVO);
-          }}
-        >
-          Cargar un proyecto
-        </Button>
-      )}
+      <Button
+        onClick={() => {
+          void navegar(RUTA_DE_PROYECTO_NUEVO);
+        }}
+      >
+        Cargar un proyecto
+      </Button>
     </section>
   );
 }
@@ -352,14 +348,25 @@ export function ProyectosPage() {
     <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
       <header className="mb-3.5 flex items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
-        <Button
-          onClick={() => {
-            void navegar(RUTA_DE_PROYECTO_NUEVO);
-          }}
-        >
-          <Icono nombre="plus" tamano={18} />
-          Nuevo proyecto
-        </Button>
+        {etapa === 'seguimiento' ? (
+          <Button
+            onClick={() => {
+              void navegar(RUTA_DE_CONTACTO_NUEVO);
+            }}
+          >
+            <Icono nombre="user-plus" tamano={18} />
+            Cargar contacto
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              void navegar(RUTA_DE_PROYECTO_NUEVO);
+            }}
+          >
+            <Icono nombre="plus" tamano={18} />
+            Nuevo proyecto
+          </Button>
+        )}
       </header>
 
       <div
@@ -390,7 +397,9 @@ export function ProyectosPage() {
         })}
       </div>
 
-      {deLaEtapa.length === 0 ? (
+      {etapa === 'seguimiento' ? (
+        <ListaDeSeguimiento resumenes={deLaEtapa} replica={replica} hoy={hoy} />
+      ) : deLaEtapa.length === 0 ? (
         <Vacio etapa={etapa} />
       ) : (
         <>
@@ -485,6 +494,8 @@ export function ProyectosPage() {
           }}
         />
       )}
+
+      <Outlet />
     </div>
   );
 }
