@@ -3,6 +3,7 @@ import type { MutationOptions, QueryClient } from '@tanstack/react-query';
 import {
   aplicarFilaLocal,
   crearCliente,
+  darDeBajaCliente,
   debeReintentarse,
   editarCliente,
   filaPorId,
@@ -99,5 +100,34 @@ export const MUTACION_DE_CLIENTE: MutationOptions<FilaDe<'clientes'>, unknown, E
   },
   onError: (_error, { id, previos }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => conCambios(replica, id, previos));
+  },
+};
+
+export const CLAVE_DE_BAJA_DE_CLIENTE = ['clientes', 'borrar'] as const;
+
+export interface BajaDeCliente {
+  id: string;
+  borradoEn: string;
+  previo: FilaDe<'clientes'>;
+}
+
+// La marca de borrado se fija al encolar y no al ejecutar, así reenviar la baja conserva la primera
+// (ADR 0010). La base rechaza con MN003 si el cliente todavía tiene proyectos vivos.
+export const MUTACION_DE_BAJA_DE_CLIENTE: MutationOptions<
+  FilaDe<'clientes'>,
+  unknown,
+  BajaDeCliente
+> = {
+  mutationKey: CLAVE_DE_BAJA_DE_CLIENTE,
+  mutationFn: ({ id, borradoEn }) => darDeBajaCliente(id, borradoEn),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) => quitarFilaLocal(replica, 'clientes', id));
+  },
+  onError: (_error, { previo }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'clientes', previo));
   },
 };

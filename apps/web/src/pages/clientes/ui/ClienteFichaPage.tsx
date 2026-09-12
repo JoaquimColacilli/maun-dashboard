@@ -1,4 +1,5 @@
 import { faseDe } from '@maun/domain';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -10,14 +11,17 @@ import {
   enlaceDeWhatsapp,
   fechaDelProyecto,
   iniciales,
+  MUTACION_DE_BAJA_DE_CLIENTE,
   nombreCorto,
   ORIGEN,
   resumenDeCliente,
   type Proyecto,
   type ResumenDeCliente,
 } from '@/entities/cliente';
+import { RUTA_DE_PROYECTO_NUEVO } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
+import { mensajeDeSincronizacion } from '@/shared/api';
 import { fechaLarga, formatearPesos, hoyLocal, relativa } from '@/shared/lib';
 import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
 
@@ -169,6 +173,8 @@ export function ClienteFichaPage() {
   const navegar = useNavigate();
   const { id = '' } = useParams();
   const [editando, setEditando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const borrar = useMutation(MUTACION_DE_BAJA_DE_CLIENTE);
 
   const hoy = hoyLocal();
   const resumen = resumenDeCliente(replica, id);
@@ -223,16 +229,28 @@ export function ClienteFichaPage() {
           <Icono nombre="chevron-left" tamano={20} />
           Clientes
         </Link>
-        <Button
-          variant="secundario"
-          size="chico"
-          onClick={() => {
-            setEditando(true);
-          }}
-        >
-          <Icono nombre="pencil" tamano={16} />
-          Editar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="secundario"
+            size="chico"
+            onClick={() => {
+              setConfirmando(true);
+            }}
+          >
+            <Icono nombre="trash-2" tamano={16} />
+            Borrar
+          </Button>
+          <Button
+            variant="secundario"
+            size="chico"
+            onClick={() => {
+              setEditando(true);
+            }}
+          >
+            <Icono nombre="pencil" tamano={16} />
+            Editar
+          </Button>
+        </div>
       </div>
 
       <header className="flex items-center gap-3.5">
@@ -322,7 +340,7 @@ export function ClienteFichaPage() {
           <Button
             className="mt-4 w-full"
             onClick={() => {
-              void navegar('/proyectos');
+              void navegar(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
             }}
           >
             <Icono nombre="folder-plus" tamano={18} />
@@ -338,6 +356,65 @@ export function ClienteFichaPage() {
             setEditando(false);
           }}
         />
+      )}
+
+      {confirmando && (
+        <div className="fixed inset-0 z-40">
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => {
+              setConfirmando(false);
+            }}
+            className="absolute inset-0 cursor-default bg-ink/35"
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Confirmar el borrado"
+            className="absolute inset-x-0 bottom-0 flex flex-col gap-3.5 rounded-t-sheet bg-paper p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-sheet md:inset-auto md:top-1/2 md:left-1/2 md:w-[min(440px,calc(100%-40px))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-dialog"
+          >
+            <h2 className="text-body-lg leading-snug font-semibold">¿Borrás a {cliente.nombre}?</h2>
+            <p className="text-label leading-relaxed text-text-2">
+              {resumen.proyectos.length === 0
+                ? 'No tiene trabajos cargados, así que no se pierde historia.'
+                : 'Si todavía tiene proyectos vivos, la base lo va a rechazar: primero hay que borrarlos o reasignarlos.'}
+            </p>
+            {borrar.isError && (
+              <p role="alert" className="text-label font-medium text-alerta">
+                {mensajeDeSincronizacion(borrar.error)}
+              </p>
+            )}
+            <div className="flex gap-2.5">
+              <Button
+                variant="secundario"
+                className="flex-1"
+                onClick={() => {
+                  setConfirmando(false);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="peligro"
+                className="flex-1"
+                cargando={borrar.isPending}
+                onClick={() => {
+                  borrar.mutate({
+                    id: cliente.id,
+                    borradoEn: new Date().toISOString(),
+                    previo: cliente,
+                  });
+                  setConfirmando(false);
+                  void navegar('/clientes');
+                }}
+              >
+                Borrar el cliente
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
