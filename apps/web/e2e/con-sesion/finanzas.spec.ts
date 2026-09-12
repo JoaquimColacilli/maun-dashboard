@@ -281,6 +281,11 @@ test('registrar diezmo abre la hoja encima de Diezmo y el botón atrás la cierr
   await expect(page).toHaveURL(/\/finanzas\/nuevo\?clase=pago_diezmo$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
   await expect(page.getByRole('radio', { name: 'Diezmo' })).toHaveAttribute('aria-checked', 'true');
+  expect(
+    await page
+      .getByRole('dialog')
+      .evaluate((hoja) => Number.parseFloat(getComputedStyle(hoja).transitionDuration)),
+  ).toBeGreaterThan(0.1);
 
   await page.goBack();
   await expect(page.getByRole('dialog')).toBeHidden();
@@ -292,6 +297,27 @@ test('registrar diezmo abre la hoja encima de Diezmo y el botón atrás la cierr
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Finanzas');
   await page.getByRole('button', { name: 'Cerrar' }).click();
   await expect(page).toHaveURL(/\/finanzas$/);
+});
+
+test.describe('con prefers-reduced-motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('la hoja abre y cierra sin transición, y anda igual con Escape', async ({ page }) => {
+    await page.goto('/diezmo');
+    await page.getByRole('link', { name: 'Registrar diezmo' }).click();
+
+    const hoja = page.getByRole('dialog');
+    await expect(hoja).toBeVisible();
+    const duracion = await hoja.evaluate((dialogo) =>
+      Number.parseFloat(getComputedStyle(dialogo).transitionDuration),
+    );
+    expect(duracion).toBeLessThan(0.001);
+
+    await page.keyboard.press('Escape');
+    await expect(hoja).toBeHidden();
+    await expect(page).toHaveURL(/\/diezmo$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
+  });
 });
 
 test('los tres estados del diezmo: con deuda, al día y pagado de más', async ({ page }) => {
