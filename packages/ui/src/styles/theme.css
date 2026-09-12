@@ -68,6 +68,20 @@
     }
   }
 
+  /* El tablero cortándose en las piezas de cada tesoro: el único momento orquestado de la app.
+     Anima clip-path y opacidad, que no piden layout, y cada pieza entra con su retraso. Con
+     prefers-reduced-motion las duraciones de abajo pasan a cero y el corte aparece entero. */
+  @keyframes maun-corte {
+    from {
+      clip-path: inset(0 100% 0 0);
+      opacity: 0.4;
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+      opacity: 1;
+    }
+  }
+
   @keyframes maun-shimmer {
     0% {
       background-position: 200% 0;

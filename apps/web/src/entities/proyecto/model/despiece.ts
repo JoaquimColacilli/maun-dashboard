@@ -3,8 +3,10 @@ import {
   centavos,
   estaLiquidado,
   puntosBasicos,
+  sumar,
   type AjustesDeLiquidacion,
   type Distribucion,
+  type EstadoLiquidado,
   type Liquidacion,
   type Money,
   type Reapertura,
@@ -58,7 +60,7 @@ export function ajustesDeLaReplica(replica: Replica): AjustesDeLiquidacion {
   };
 }
 
-function reaperturaDe(proyecto: Proyecto): Reapertura | null {
+export function reaperturaDe(proyecto: Proyecto): Reapertura | null {
   const {
     reapertura_fecha_cobro: fecha,
     reapertura_objetivo_sueldo_centavos: sueldo,
@@ -78,21 +80,39 @@ function reaperturaDe(proyecto: Proyecto): Reapertura | null {
 // contando las liquidaciones que ya lleva el mes (incluidas las que todavía están en la cola, que
 // la réplica ya tiene aplicadas). No se porta el despiece del diseño, que reparte sobre el
 // presupuesto en vez de sobre lo cobrado (ADR 0003 y 0011).
+export interface OpcionesDeProyeccion {
+  destino?: EstadoLiquidado;
+  // El pago final que el usuario está por registrar desde la pantalla de cobro y que todavía no
+  // está en la réplica: el despiece tiene que mostrar los importes con él adentro.
+  pagoExtra?: Money;
+}
+
 export function liquidacionProyectada(
   replica: Replica,
   proyecto: Proyecto,
   hoy: string,
+  { destino = 'cobrado', pagoExtra = centavos(0) }: OpcionesDeProyeccion = {},
 ): Liquidacion {
   const { cobrado, gastos } = totalesDelProyecto(replica, proyecto.id);
   return calcularLiquidacion({
-    destino: 'cobrado',
+    destino,
     fecha: hoy,
-    cobrado,
+    cobrado: sumar(cobrado, pagoExtra),
     gastos,
     ajustes: ajustesDeLaReplica(replica),
     reapertura: reaperturaDe(proyecto),
     liquidaciones: liquidacionesDeLaReplica(replica, proyecto.id),
   });
+}
+
+export function despieceDeLaLiquidacion(liquidacion: Liquidacion): Despiece {
+  return {
+    modo: 'proyeccion',
+    cobrado: liquidacion.cobrado,
+    gastos: liquidacion.gastos,
+    neta: liquidacion.neta,
+    piezas: piezasDe(liquidacion),
+  };
 }
 
 function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {

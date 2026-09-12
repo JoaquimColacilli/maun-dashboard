@@ -10,11 +10,15 @@ import {
 } from '@/entities/cliente';
 import {
   CLAVE_DE_BAJA_DE_PROYECTO,
+  CLAVE_DE_LIQUIDACION,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
+  CLAVE_DE_REVERSION,
   MUTACION_DE_BAJA_DE_PROYECTO,
+  MUTACION_DE_LIQUIDACION,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
+  MUTACION_DE_REVERSION,
 } from '@/entities/proyecto';
 import {
   CLAVE_DE_AJUSTES,
@@ -53,6 +57,12 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_PROYECTO, MUTACION_DE_BAJA_DE_PROYECTO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_LIQUIDACION, MUTACION_DE_LIQUIDACION);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_REVERSION, MUTACION_DE_REVERSION);
   },
 ];
 

@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 import { formatearPesos, TESORO } from '@/shared/lib';
 
 import type { Despiece } from '../model/despiece';
@@ -6,7 +8,20 @@ function porcentaje(parte: number): string {
   return `${String(Math.round(parte * 100))}%`;
 }
 
-function Tablero({ despiece }: { despiece: Despiece }) {
+// El corte se anima con clip-path y opacidad, que no piden layout, y cada pieza entra con su
+// retraso. Con prefers-reduced-motion las dos duraciones valen 0ms (theme.css) y el tablero aparece
+// entero. Nada bloquea: es CSS y la pantalla se puede usar mientras corre.
+function animacionDelCorte(indice: number): CSSProperties {
+  return {
+    animationName: 'maun-corte',
+    animationDuration: 'var(--dur-corte)',
+    animationTimingFunction: 'var(--ease-out)',
+    animationFillMode: 'both',
+    animationDelay: `calc(${String(indice)} * var(--dur-corte-stagger))`,
+  };
+}
+
+function Tablero({ despiece, animar }: { despiece: Despiece; animar: boolean }) {
   const visibles = despiece.piezas.filter((pieza) => pieza.monto > 0);
   if (visibles.length === 0) return null;
 
@@ -17,12 +32,15 @@ function Tablero({ despiece }: { despiece: Despiece }) {
         despiece.modo === 'real' ? 'bg-ink' : 'bg-border'
       }`}
     >
-      {visibles.map((pieza) => {
+      {visibles.map((pieza, indice) => {
         const tesoro = TESORO[pieza.tesoro];
         return (
           <div
             key={pieza.id}
-            style={{ flex: `${pieza.parte.toFixed(4)} 1 0` }}
+            style={{
+              flex: `${pieza.parte.toFixed(4)} 1 0`,
+              ...(animar ? animacionDelCorte(indice) : {}),
+            }}
             title={`${pieza.etiqueta}: ${formatearPesos(pieza.monto)}`}
             className={`flex min-w-[3px] items-end p-1.5 ${
               despiece.modo === 'real'
@@ -42,12 +60,18 @@ function Tablero({ despiece }: { despiece: Despiece }) {
 
 export interface DistribucionDespieceProps {
   despiece: Despiece;
+  animar?: boolean;
+  provisoria?: boolean;
 }
 
 // El despiece de la distribución. En un proyecto liquidado muestra lo que quedó congelado; en el
 // resto, la proyección atenuada de a dónde iría cada peso si se cobrara hoy. Es el mismo componente
-// que va a usar la pantalla de cobro: lo que cambia es el modo, no la cuenta.
-export function DistribucionDespiece({ despiece }: DistribucionDespieceProps) {
+// que usa la pantalla de cobro: lo que cambia es el modo, no la cuenta.
+export function DistribucionDespiece({
+  despiece,
+  animar = false,
+  provisoria = false,
+}: DistribucionDespieceProps) {
   const enProyeccion = despiece.modo === 'proyeccion';
 
   return (
@@ -80,7 +104,7 @@ export function DistribucionDespiece({ despiece }: DistribucionDespieceProps) {
         </p>
       ) : (
         <>
-          <Tablero despiece={despiece} />
+          <Tablero despiece={despiece} animar={animar} />
           <ul className="mt-2.5 list-none">
             {despiece.piezas.map((pieza) => {
               const tesoro = TESORO[pieza.tesoro];
@@ -123,6 +147,13 @@ export function DistribucionDespiece({ despiece }: DistribucionDespieceProps) {
         <p className="mt-2.5 text-meta leading-normal text-text-3">
           Proyección sobre lo cobrado hasta hoy. El corte se hace efectivo cuando el proyecto se
           cobre.
+        </p>
+      )}
+
+      {provisoria && (
+        <p className="mt-2.5 rounded-field bg-atencion-tint px-3 py-2 text-meta leading-normal text-atencion">
+          Este reparto todavía no lo confirmó el servidor: es el que va a quedar si nada cambió del
+          otro lado. Se confirma solo cuando vuelva la señal.
         </p>
       )}
     </section>
