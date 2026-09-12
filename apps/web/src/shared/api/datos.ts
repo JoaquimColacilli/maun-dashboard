@@ -1,9 +1,11 @@
 import {
   aplicarLote,
   borrarCliente,
+  borrarMovimiento,
   borrarProyecto,
   guardarAjustes,
   guardarCambiosDeCliente,
+  guardarCambiosDeMovimiento,
   guardarCambiosDeProyecto,
   guardarClienteNuevo,
   guardarMovimiento,
@@ -17,6 +19,7 @@ import {
   traerDelta,
   type CambiosDeAjustes,
   type CambiosDeCliente,
+  type CambiosDeMovimiento,
   type CambiosDeProyecto,
   type ClienteNuevo,
   type FilaDe,
@@ -67,6 +70,20 @@ export async function registrarMovimiento(
   movimiento: MovimientoNuevo,
 ): Promise<FilaDe<'movimientos'>> {
   return guardarMovimiento(clienteMaun(), movimiento);
+}
+
+export async function editarMovimiento(
+  id: string,
+  cambios: CambiosDeMovimiento,
+): Promise<FilaDe<'movimientos'>> {
+  return guardarCambiosDeMovimiento(clienteMaun(), id, cambios);
+}
+
+export async function darDeBajaMovimiento(
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'movimientos'>> {
+  return borrarMovimiento(clienteMaun(), id, borradoEn);
 }
 
 export async function editarAjustes(

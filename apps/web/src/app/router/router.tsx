@@ -4,7 +4,7 @@ import { AccesoPage } from '@/pages/acceso';
 import { AjustesPage } from '@/pages/ajustes';
 import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
-import { FinanzasPage } from '@/pages/finanzas';
+import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/pages/finanzas';
 import { InicioPage } from '@/pages/inicio';
 import {
   ProyectoEdicionPage,
@@ -60,7 +60,14 @@ export const router = createBrowserRouter([
                   },
                   { path: '/clientes', element: <ClientesPage /> },
                   { path: '/clientes/:id', element: <ClienteFichaPage /> },
-                  { path: '/finanzas', element: <FinanzasPage /> },
+                  {
+                    path: '/finanzas',
+                    element: <FinanzasPage />,
+                    children: [
+                      { path: 'nuevo', element: <MovimientoNuevoPage /> },
+                      { path: ':id', element: <MovimientoEdicionPage /> },
+                    ],
+                  },
                   { path: '/diezmo', element: <DiezmoPage /> },
                   { path: '/ajustes', element: <AjustesPage /> },
                 ],
