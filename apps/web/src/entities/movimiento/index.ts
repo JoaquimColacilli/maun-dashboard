@@ -11,6 +11,7 @@ export {
 export { ayudaDelMovimiento, type ContextoDeAyuda } from './model/ayuda';
 export { fraseDelDiezmo, type FraseDelDiezmo } from './model/diezmo';
 export { resumenMensual, type ResumenMensual } from './model/mes';
+export { fraseDelSueldo, type FraseDelSueldo } from './model/sueldo';
 export {
   agruparPorDia,
   efectoDeLaLinea,

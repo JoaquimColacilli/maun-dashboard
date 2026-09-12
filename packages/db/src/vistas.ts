@@ -57,9 +57,6 @@ export interface TotalesDelProyecto {
   gastos: Money;
 }
 
-// Lo cobrado y lo gastado de cada proyecto, en una sola pasada sobre la réplica. Vive acá y no en
-// cada pantalla porque son los dos números que la app le manda a cobrar_proyecto: si divergen de la
-// suma de la base, el cobro rebota con MN006. Las filas borradas no están en la réplica.
 export function totalesPorProyecto(replica: Replica): Map<string, TotalesDelProyecto> {
   const cobrado = new Map<string, number>();
   const gastos = new Map<string, number>();
@@ -94,6 +91,7 @@ function liquidacionDe(proyecto: FilaDe<'proyectos'>): LiquidacionRegistrada | u
     dist_fijos_centavos: fijos,
     dist_objetivo_sueldo_centavos: objetivoSueldo,
     dist_objetivo_fijos_centavos: objetivoFijos,
+    dist_sueldo_mensual: sueldoMensual,
   } = proyecto;
 
   if (estado !== 'cobrado' && estado !== 'perdido') return undefined;
@@ -103,7 +101,8 @@ function liquidacionDe(proyecto: FilaDe<'proyectos'>): LiquidacionRegistrada | u
     sueldo === null ||
     fijos === null ||
     objetivoSueldo === null ||
-    objetivoFijos === null
+    objetivoFijos === null ||
+    sueldoMensual === null
   ) {
     return undefined;
   }
@@ -116,11 +115,10 @@ function liquidacionDe(proyecto: FilaDe<'proyectos'>): LiquidacionRegistrada | u
     fijos: dinero(fijos),
     objetivoSueldo: dinero(objetivoSueldo),
     objetivoFijos: dinero(objetivoFijos),
+    sueldoMensual,
   };
 }
 
-// `excepto` es el proyecto que se está por liquidar: el tope del mes sale de lo que ya llevan los
-// otros, sin contarse a sí mismo. Es la misma exclusión que hace private.liquidar.
 export function liquidacionesDeLaReplica(
   replica: Replica,
   excepto?: string,
