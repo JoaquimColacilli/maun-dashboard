@@ -68,6 +68,8 @@ export {
   guardarNombreDelTaller,
   guardarProyecto,
   leerProyectoGuardado,
+  liquidarProyecto,
+  revertirLiquidacion,
   traerBootstrap,
   traerDelta,
   type CambiosDeAjustes,
@@ -83,6 +85,8 @@ export {
   type GastoParaGuardar,
   type MovimientoNuevo,
   type PagoParaGuardar,
+  type PedidoDeLiquidacion,
+  type PedidoDeReversion,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
 } from './sincronizacion.ts';

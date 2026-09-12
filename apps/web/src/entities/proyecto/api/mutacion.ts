@@ -154,8 +154,14 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
   return siguiente;
 }
 
+function aplicarSiNoEsVieja(replica: Replica, fila: FilaDe<'proyectos'>): Replica {
+  const actual = filaPorId(replica, 'proyectos', fila.id);
+  if (actual && actual.version > fila.version) return replica;
+  return aplicarFilaLocal(replica, 'proyectos', fila);
+}
+
 function conLoQueVolvio(replica: Replica, guardado: ProyectoGuardado): Replica {
-  let siguiente = aplicarFilaLocal(replica, 'proyectos', guardado.proyecto);
+  let siguiente = aplicarSiNoEsVieja(replica, guardado.proyecto);
   for (const pago of guardado.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
   for (const gasto of guardado.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
   return siguiente;
@@ -210,7 +216,7 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
     cambiarReplicas(client, (replica) => conCambios(replica, id, cambios));
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
-    cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', fila));
+    cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
   },
   onError: (_error, { id, previos }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => conCambios(replica, id, previos));

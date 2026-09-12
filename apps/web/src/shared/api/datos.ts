@@ -9,8 +9,10 @@ import {
   guardarMovimiento,
   guardarNombreDelTaller,
   guardarProyecto,
+  liquidarProyecto,
   necesitaReconcile,
   replicaVacia,
+  revertirLiquidacion,
   traerBootstrap,
   traerDelta,
   type CambiosDeAjustes,
@@ -19,6 +21,8 @@ import {
   type ClienteNuevo,
   type FilaDe,
   type MovimientoNuevo,
+  type PedidoDeLiquidacion,
+  type PedidoDeReversion,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
   type Replica,
@@ -107,4 +111,16 @@ export async function darDeBajaProyecto(
   borradoEn: string,
 ): Promise<FilaDe<'proyectos'>> {
   return borrarProyecto(clienteMaun(), id, borradoEn);
+}
+
+export async function liquidarElProyecto(
+  pedido: PedidoDeLiquidacion,
+): Promise<FilaDe<'proyectos'>> {
+  return liquidarProyecto(clienteMaun(), pedido);
+}
+
+export async function revertirLaLiquidacion(
+  pedido: PedidoDeReversion,
+): Promise<FilaDe<'proyectos'>> {
+  return revertirLiquidacion(clienteMaun(), pedido);
 }

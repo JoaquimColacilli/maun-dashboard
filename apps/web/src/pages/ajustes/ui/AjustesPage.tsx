@@ -1,4 +1,5 @@
 import { useMutationState } from '@tanstack/react-query';
+import { Link } from 'react-router';
 
 import { useReplicaDelTaller } from '@/entities/replica';
 import { BotonSalir } from '@/features/cerrar-sesion';
@@ -11,22 +12,21 @@ import {
   mensajeDeSincronizacion,
   TABLAS_REPLICADAS,
 } from '@/shared/api';
-import { describirEstadoSync, useEstadoSync } from '@/shared/lib';
+import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
+import { PanelDeAvisos } from '@/shared/ui';
 
 function Fecha({ valor }: { valor: string }) {
   const marca = Date.parse(valor);
   return <>{Number.isNaN(marca) ? '—' : new Date(marca).toLocaleString('es-AR')}</>;
 }
 
-function Rechazos() {
+function RechazosDeLaCola() {
   const rechazos = useMutationState({
     filters: { status: 'error' },
     select: (mutacion) => ({ id: mutacion.mutationId, error: mutacion.state.error }),
   });
 
-  if (rechazos.length === 0) {
-    return <p className="text-body text-text-2">No hay cambios rechazados.</p>;
-  }
+  if (rechazos.length === 0) return null;
 
   return (
     <ul className="flex flex-col">
@@ -39,6 +39,33 @@ function Rechazos() {
         </li>
       ))}
     </ul>
+  );
+}
+
+function Avisos() {
+  const avisos = useAvisos();
+  const rechazos = useMutationState({ filters: { status: 'error' }, select: () => true });
+
+  if (avisos.length === 0 && rechazos.length === 0) {
+    return <p className="text-body text-text-2">No hay nada rechazado ni ajustado.</p>;
+  }
+
+  return (
+    <>
+      <PanelDeAvisos avisos={avisos}>
+        {(aviso) =>
+          aviso.ruta === null ? null : (
+            <Link
+              to={aviso.ruta}
+              className="mt-1 inline-block text-label font-semibold underline underline-offset-3"
+            >
+              Ver «{aviso.sujeto}»
+            </Link>
+          )
+        }
+      </PanelDeAvisos>
+      <RechazosDeLaCola />
+    </>
   );
 }
 
@@ -64,9 +91,12 @@ export function AjustesPage() {
 
       <section aria-labelledby="titulo-rechazos" className="flex max-w-[520px] flex-col gap-2.5">
         <h2 id="titulo-rechazos" className="text-section font-semibold">
-          Cambios que la base no aceptó
+          Lo que la base rechazó o ajustó
         </h2>
-        <Rechazos />
+        <p className="text-label leading-relaxed text-text-2">
+          Queda acá hasta que lo descartes, aunque cierres la app.
+        </p>
+        <Avisos />
       </section>
 
       <section aria-labelledby="titulo-dispositivo" className="flex flex-col gap-3.5">

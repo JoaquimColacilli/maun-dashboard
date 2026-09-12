@@ -20,7 +20,12 @@ import {
   hijosDelProyecto,
   MUTACION_DE_PROYECTO,
   pagosDelProyecto,
+  filaRevertida,
+  MUTACION_DE_REVERSION,
   pedidoDeGuardado,
+  pedidoDeReversion,
+  rutaDeCierre,
+  rutaDeCobro,
   rutaDelProyecto,
   totalDeLasFilas,
   valoresDelFormulario,
@@ -39,6 +44,12 @@ import {
 import { Button, Campo, Icono } from '@/shared/ui';
 
 import { FilasDinamicas } from './FilasDinamicas';
+
+function rutaAlTerminar(id: string, volverALiquidar: 'cierre' | 'cobro' | null): string {
+  if (volverALiquidar === 'cierre') return rutaDeCierre(id);
+  if (volverALiquidar === 'cobro') return rutaDeCobro(id);
+  return rutaDelProyecto(id);
+}
 
 export interface PantallaDeProyectoProps {
   proyectoId?: string;
@@ -68,6 +79,8 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const [rechazo, setRechazo] = useState<unknown>(null);
+  const [volverALiquidar, setVolverALiquidar] = useState<'cierre' | 'cobro' | null>(null);
+  const revertir = useMutation(MUTACION_DE_REVERSION);
 
   const clienteDeArranque =
     clienteInicial === undefined ? undefined : filaPorId(replica, 'clientes', clienteInicial);
@@ -144,9 +157,22 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
   // lo que hace que el taller pueda cargar un proyecto en modo avión. Con señal se espera la
   // respuesta, porque un rechazo (una versión vieja, un proyecto ya cobrado) tiene que verse acá,
   // con todo lo que el usuario escribió todavía en pantalla.
+  function reabrirParaEditar(fila: NonNullable<typeof proyecto>): void {
+    const hacia = fila.estado === 'perdido' ? 'presupuesto_enviado' : 'entregado';
+    revertir.mutate({
+      pedido: pedidoDeReversion(fila, hacia),
+      optimista: filaRevertida(fila, hacia, new Date().toISOString()),
+      previo: fila,
+      titulo: fila.titulo,
+    });
+    alAbrir.current.version = fila.version + 1;
+    setValue('estado', hacia);
+    setVolverALiquidar(fila.estado === 'perdido' ? 'cierre' : 'cobro');
+  }
+
   useEffect(() => {
-    if (guardar.isPaused) void navegar(rutaDelProyecto(alAbrir.current.id));
-  }, [guardar.isPaused, navegar]);
+    if (guardar.isPaused) void navegar(rutaAlTerminar(alAbrir.current.id, volverALiquidar));
+  }, [guardar.isPaused, navegar, volverALiquidar]);
 
   const enviar: SubmitHandler<FormularioDeProyecto> = (valores) => {
     const previos = hijosDelProyecto(replica, alAbrir.current.id);
@@ -160,7 +186,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
       { pedido, previos: { proyecto: proyecto ?? null, ...previos } },
       {
         onSuccess: () => {
-          void navegar(rutaDelProyecto(alAbrir.current.id));
+          void navegar(rutaAlTerminar(alAbrir.current.id, volverALiquidar));
         },
         onError: setRechazo,
       },
@@ -404,14 +430,33 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
           <div className="flex min-w-0 flex-col gap-7">
             {liquidado && (
-              <p
+              <div
                 role="alert"
                 className="rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2"
               >
-                Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()} y su
-                distribución quedó congelada: sus pagos y sus gastos no se tocan. Para corregirlos
-                hay que reabrirlo.
-              </p>
+                <p>
+                  Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()} y su reparto
+                  quedó cerrado: sus pagos y sus gastos no se tocan.
+                </p>
+                <Button
+                  variant="secundario"
+                  size="chico"
+                  className="mt-2"
+                  onClick={() => {
+                    reabrirParaEditar(proyecto);
+                  }}
+                >
+                  <Icono nombre="arrow-left-right" tamano={16} />
+                  {proyecto.estado === 'perdido'
+                    ? 'Reactivarlo para poder cargarlo'
+                    : 'Reabrir el cobro para corregirlo'}
+                </Button>
+                <p className="mt-1.5 text-meta text-text-3">
+                  {proyecto.estado === 'perdido'
+                    ? 'Los campos se desbloquean acá mismo. Al guardar te llevo a cerrarlo de nuevo, con la seña repartida contando lo que cargaste.'
+                    : 'Los campos se desbloquean acá mismo. Al guardar te llevo a cobrarlo de nuevo, con el reparto rehecho.'}
+                </p>
+              </div>
             )}
             <FilasDinamicas
               lista="pagos"
@@ -467,7 +512,11 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
             role="alert"
             className="px-(--page-pad-mobile) pb-3 text-label font-medium text-alerta"
           >
-            {mensajeDeSincronizacion(rechazo)}
+            {mensajeDeSincronizacion(rechazo, {
+              operacion: 'proyecto',
+              sujeto: proyecto?.titulo,
+              estado: proyecto?.estado === 'perdido' ? 'perdido' : 'cobrado',
+            })}
           </p>
         )}
       </form>

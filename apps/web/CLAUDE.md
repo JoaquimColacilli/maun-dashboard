@@ -106,6 +106,27 @@ src/
 - El select de estado ofrece solo el estado actual y sus transiciones válidas (`estadosDisponibles`): un estado inválido rebota con `MN007`, que es definitivo y tapa la cola.
 - **El foco de una fila nueva lo pone `shouldFocus` de `useFieldArray`.** No agregues otro foco propio: compiten y el que llega tarde escribe en el campo equivocado.
 - Las tres pestañas (`Seguimiento · Activos · Historial`) son rutas, no estado local: `/seguimiento` y `/proyectos` montan la misma pantalla. No hay `pages/seguimiento`.
-- `despieceDelProyecto` y `DistribucionDespiece` son los que va a usar la pantalla de cobro: lo que cambia entre las dos es el modo (`real` o `proyeccion`), no la cuenta. La proyección sale de `calcularLiquidacion` del dominio, nunca del `despiece` del diseño, que reparte sobre el presupuesto.
+- `despieceDelProyecto` y `DistribucionDespiece` los comparten la ficha y la pantalla de cobro: lo que cambia entre las dos es el modo (`real` o `proyeccion`), no la cuenta. La proyección sale de `calcularLiquidacion` del dominio, nunca del `despiece` del diseño, que reparte sobre el presupuesto.
 - **El ordenamiento de listas es `shared/lib/orden.ts`**, compartido con Clientes. Lo que falta va al final en los dos sentidos y el desempate es estable. Si agregás una columna, es un `Criterio` más, no otro `sort`.
 - `entregaEstimada` cuenta solo días de semana: acepta feriados por parámetro, pero **nadie le pasa una lista todavía**.
+
+## Cobrar y liquidar (ADR 0016)
+
+- **Cobrar y dar por perdido son pantallas propias** (`/proyectos/:id/cobrar` y `/cerrar`), no un botón con un modal. **No agregues un «¿estás seguro?»**: lo que confirma es el despiece con los importes reales, y el botón dice el verbo. Reabrir sí lleva confirmación liviana, porque deshace un reparto cerrado.
+- **Toda liquidación se aplica optimista a la réplica con la fila entera congelada** (`filaLiquidada`), no solo con el estado. Si no, `liquidacionesDeLaReplica` deja de contarla, el acumulado del mes queda corto y el cobro siguiente rebota con `MN006`. Es el requisito que el ADR 0011 le dejaba al 2C.
+- **La fila optimista sube la `version`.** Reabrir un cobro que todavía está en la cola manda la versión que el servidor va a tener cuando drene, no la que había antes.
+- **La respuesta de un guardado no pisa una liquidación optimista** (`aplicarSiNoEsVieja`): al cobrar con pago final salen dos mutaciones y la primera vuelve con el proyecto todavía en `entregado`.
+- **Un cobro encolado no está cobrado.** El indicador global no alcanza para plata: `MarcaDeLiquidacion` da el estado por fila y la distribución se muestra marcada como provisoria (`provisoria` de `DistribucionDespiece`). Los saldos de Inicio son los optimistas, con `LiquidacionesSinConfirmar` debajo diciendo cuántas faltan confirmar.
+- **Los rechazos y los ajustes van a la bandeja de avisos** (`shared/lib/avisos`), que se persiste y **dura hasta que el usuario la descarta**. No uses el `gcTime` de la mutación para eso: una mutación en `error` no se persiste (`esPersistible` solo deja pasar `pending`), así que cerrar la app se la lleva.
+- **Nunca muestres un `MNxxx` ni la palabra «versión».** `traducirRechazo(error, contexto)` de `@/shared/api` devuelve qué pasó y qué hacer; el contexto (la operación y el proyecto) es lo que distingue un `MN001` al cobrar de un `MN001` al guardar un gasto.
+- **La app manda el acumulado del mes que vio** (`liquidacion.previo`). Si no es el de la base, la liquidación vuelve **ajustada**, no rechazada: se compara `dist_sueldo_previo_centavos` contra lo que se mandó (`ajusteDeLaLiquidacion`) y se explica la diferencia en plata.
+- **El formulario bloquea los pagos y los gastos de un proyecto liquidado, y ese aviso lleva el botón para descongelarlo.** No es un adorno: sin él es un callejón sin salida, que es lo que el ADR 0011 prohíbe. Al descongelar desde ahí hay que mover tres cosas o el guardado siguiente rebota: la versión que se va a mandar (la reversión la subió), el `estado` del formulario (seguía en `perdido`, y eso sale `MN007`) y a dónde ir al guardar, que pasa a ser la pantalla de liquidación.
+- El corte se anima con `clip-path` y un retraso por pieza, una sola vez, por el `state` de la navegación. `prefers-reduced-motion` ya lo neutraliza `theme.css`: no agregues un caso especial.
+- **`vaciarTaller` del e2e descongela antes de borrar** (`descongelarProyectos`): un liquidado con pagos o gastos no se borra (`MN001`) y sin borrarlo tampoco se borra su cliente (`MN003`).
+- `useLiquidacionEnVuelo` filtra **todas** las mutaciones pendientes, y el guardado del agregado también lleva un `pedido`: lo que distingue a una liquidación es que el suyo trae `proyectoId`. Si agregás otra mutación con esa forma, ajustá el filtro.
+
+## Cosas que muerden en el e2e
+
+- **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
+- **PostgREST rechaza un `PATCH` sin filtro** con un `21000` («UPDATE requires a WHERE clause»), aunque la RLS ya deje una sola fila a la vista: los helpers que editan por REST llevan el filtro igual.
+- El navegador **normaliza `0ms` a `0s`** al leer una custom property computada: para afirmar sobre una duración, comparar el número y no el texto.

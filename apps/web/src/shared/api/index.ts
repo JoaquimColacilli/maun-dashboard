@@ -1,6 +1,12 @@
 export { clienteMaun } from './cliente';
 export { esFalloDeRed, mensajeDeAcceso, mensajeDeSincronizacion } from './errores';
 export {
+  traducirRechazo,
+  type ContextoDelRechazo,
+  type OperacionRechazada,
+  type RechazoTraducido,
+} from './rechazos';
+export {
   cambiarContrasena,
   crearCuenta,
   entrar,
@@ -19,8 +25,10 @@ export {
   editarCliente,
   editarProyecto,
   guardarElProyecto,
+  liquidarElProyecto,
   registrarMovimiento,
   renombrarTaller,
+  revertirLaLiquidacion,
   sincronizar,
   type PedidoDeSincronizacion,
 } from './datos';
@@ -61,6 +69,8 @@ export {
   type GastoParaGuardar,
   type MovimientoNuevo,
   type PagoParaGuardar,
+  type PedidoDeLiquidacion,
+  type PedidoDeReversion,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
   type RechazoDeLaBase,

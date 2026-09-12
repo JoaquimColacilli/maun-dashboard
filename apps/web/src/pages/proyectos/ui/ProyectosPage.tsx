@@ -9,6 +9,7 @@ import {
   EntregaRelativa,
   ESTADO,
   EstadoBadge,
+  MarcaDeLiquidacion,
   ETAPAS,
   FILTROS_POR_ETAPA,
   filtrarPorEstado,
@@ -68,6 +69,8 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
         )}
         <EstadoBadge estado={proyecto.estado} />
       </div>
+
+      <MarcaDeLiquidacion proyectoId={proyecto.id} />
 
       <Link
         to={rutaDelProyecto(proyecto.id)}
@@ -204,7 +207,10 @@ function Tabla({
               />
             </td>
             <td className="px-2.5 whitespace-nowrap">
-              <EstadoBadge estado={resumen.proyecto.estado} />
+              <span className="flex flex-col items-start gap-1">
+                <EstadoBadge estado={resumen.proyecto.estado} />
+                <MarcaDeLiquidacion proyectoId={resumen.proyecto.id} />
+              </span>
             </td>
           </tr>
         ))}

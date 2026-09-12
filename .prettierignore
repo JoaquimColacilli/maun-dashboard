@@ -1,4 +1,5 @@
 pnpm-lock.yaml
 design-reference/
+docs/referencia/
 supabase/.temp/
 packages/db/src/database.types.ts

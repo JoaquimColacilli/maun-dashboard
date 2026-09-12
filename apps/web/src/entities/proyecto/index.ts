@@ -1,4 +1,18 @@
 export {
+  CLAVE_DE_LIQUIDACION,
+  CLAVE_DE_REVERSION,
+  MUTACION_DE_LIQUIDACION,
+  MUTACION_DE_REVERSION,
+  operacionDeLiquidacion,
+  operacionDeReversion,
+  useLiquidacionEnVuelo,
+  useLiquidacionesEnVuelo,
+  type LiquidacionDeProyecto,
+  type LiquidacionEnVuelo,
+  type OperacionDeLiquidacion,
+  type ReversionDeProyecto,
+} from './api/liquidacion';
+export {
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
@@ -37,11 +51,24 @@ export {
 } from './model/catalogos';
 export {
   ajustesDeLaReplica,
+  despieceDeLaLiquidacion,
   despieceDelProyecto,
   liquidacionProyectada,
+  reaperturaDe,
   type Despiece,
+  type OpcionesDeProyeccion,
   type PiezaDelDespiece,
 } from './model/despiece';
+export {
+  ajusteDeLaLiquidacion,
+  datosActualesDelProyecto,
+  filaLiquidada,
+  filaRevertida,
+  pedidoDeLiquidacion,
+  pedidoDeReversion,
+  type AjusteDeLaLiquidacion,
+  type DiferenciaDelAjuste,
+} from './model/liquidacion';
 export {
   CLASE_DE_ENTREGA,
   urgenciaDeEntrega,
@@ -68,7 +95,19 @@ export {
   type MetricasDeProyectos,
   type ResumenDeProyecto,
 } from './model/resumen';
-export { RUTA_DE_PROYECTO_NUEVO, rutaDeEdicion, rutaDelProyecto } from './model/rutas';
+export {
+  RUTA_DE_PROYECTO_NUEVO,
+  rutaDeCierre,
+  rutaDeCobro,
+  rutaDeEdicion,
+  rutaDelProyecto,
+} from './model/rutas';
 export { DistribucionDespiece, type DistribucionDespieceProps } from './ui/DistribucionDespiece';
 export { EntregaRelativa, type EntregaRelativaProps } from './ui/EntregaRelativa';
 export { EstadoBadge } from './ui/EstadoBadge';
+export {
+  LiquidacionesSinConfirmar,
+  type LiquidacionesSinConfirmarProps,
+} from './ui/LiquidacionesSinConfirmar';
+export { marcaDeLiquidacion, type MarcaDeSincronizacion } from './model/marca';
+export { MarcaDeLiquidacion, type MarcaDeLiquidacionProps } from './ui/MarcaDeLiquidacion';

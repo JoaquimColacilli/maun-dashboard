@@ -1,5 +1,7 @@
 import { onlineManager, QueryClient } from '@tanstack/react-query';
 
+import { CLAVE_DE_AVISOS } from '@/shared/lib';
+
 import { registrarMutacionesPersistibles } from './mutaciones-persistibles';
 
 export const DURACION_CACHE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -30,6 +32,12 @@ export function crearQueryClient(): QueryClient {
       },
     },
   });
+
+  queryClient.setQueryDefaults(CLAVE_DE_AVISOS, {
+    gcTime: Infinity,
+    staleTime: Infinity,
+  });
+
   registrarMutacionesPersistibles(queryClient);
   return queryClient;
 }
