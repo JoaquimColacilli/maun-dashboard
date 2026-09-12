@@ -24,7 +24,8 @@ const FORMATO_DE_LA_SINCRONIZACION = new Intl.DateTimeFormat('es-AR', {
 function ultimaSincronizacion(valor: string): string {
   const marca = Date.parse(valor);
   if (Number.isNaN(marca)) return 'Todavía no se sincronizó con el servidor.';
-  return `Última sincronización: ${FORMATO_DE_LA_SINCRONIZACION.format(new Date(marca))}.`;
+  const cuando = FORMATO_DE_LA_SINCRONIZACION.format(new Date(marca));
+  return `Última sincronización: ${cuando}${cuando.endsWith('.') ? '' : '.'}`;
 }
 
 function RechazosDeLaCola() {
@@ -84,7 +85,7 @@ export function AjustesPage() {
 
   return (
     <Pagina className="gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex min-h-button flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
       </header>
 

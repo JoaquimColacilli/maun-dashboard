@@ -70,7 +70,7 @@ export function Marco() {
         id="contenido"
         ref={principal}
         tabIndex={-1}
-        className={`min-h-0 flex-1 overflow-y-auto outline-none ${
+        className={`min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable] ${
           ancho === 'movil'
             ? 'pb-[calc(var(--bottom-nav-clearance)+env(safe-area-inset-bottom))]'
             : ''
