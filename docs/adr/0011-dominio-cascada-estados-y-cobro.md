@@ -1,6 +1,6 @@
 # 0011. Dominio: la cascada, la máquina de estados y el cobro, en dos lugares que no pueden divergir
 
-Estado: aceptada, 2026-09-11. Actualizada el mismo día con los topes mensuales, el sueldo con tope por proyecto o por mes y el cierre de un perdido como liquidación, que resuelven las preguntas que este ADR dejaba abiertas.
+Estado: aceptada, 2026-09-11. Actualizada el mismo día con los topes mensuales, el sueldo con tope por proyecto o por mes y el cierre de un perdido como liquidación, que resuelven las preguntas que este ADR dejaba abiertas. Actualizada el 2026-09-12 (paso 12) con las respuestas del dueño: la seña retenida paga diezmo y no paga sueldo, el tope de sueldo se queda por proyecto, y la barra "Sueldo del mes" mide lo que promete esa regla.
 
 ## Contexto
 
@@ -90,7 +90,7 @@ Los dos topes estaban documentados como "por proyecto" en el HTML viejo: el del 
   - **El motivo de la decisión es información falsa, no pérdida de plata.** La plata que se evaporaba era la del HTML, que descontaba esa diferencia de MAUN sin mandarla a ningún tesoro.
   - En esta base eso no pasa: los fijos no generan asientos (ADR 0003) y ningún saldo quedaba mal. Lo que quedaba mal era el reparto: el escalón de fijos exageraba lo cubierto y el remanente escondía lo que el taller ganó de verdad.
   - El HTML traía el valor en 0, así que no hay historia que cambie.
-- **El sueldo por proyecto es una política, y se queda como está.** Es una transferencia real, que el dueño elige hacerse en cada trabajo. "Cada trabajo me paga un retiro" es una regla legítima sobre su plata, aunque la teoría contable prefiera el tope mensual. Se le consulta antes de cambiarla, y el cambio es un parámetro (ver "Pasar el sueldo a tope mensual").
+- **El sueldo por proyecto es una política, y se queda como está.** Es una transferencia real, que el dueño elige hacerse en cada trabajo. "Cada trabajo me paga un retiro" es una regla legítima sobre su plata, aunque la teoría contable prefiera el tope mensual. **El dueño lo confirmó: se queda por proyecto** (ver "El tope de sueldo se queda por proyecto").
 - **El perdido con seña no tenía comportamiento previo.** El HTML no tenía estados de prospecto ni de perdido.
 
 ## (a) Concurrencia: el acumulado se calcula bajo un lock, no se guarda
@@ -135,13 +135,27 @@ Un anticipo de cliente es un pasivo mientras el trabajo puede pasar: plata que e
 - **Por defecto, la seña retenida paga diezmo y no paga sueldo:**
   - **Diezmo**, porque es ingreso reconocido y sigue la misma regla que cualquier otro (`ajustes.perdido_con_diezmo`, prendido).
   - **Sueldo no**, porque "cada trabajo me paga un retiro" habla de trabajos, y un lead que no prosperó no es uno. Reusar la cascada tal cual mandaría una seña de $200.000 casi entera al hogar sin dejar nada en el taller: es un efecto colateral, no la regla. Se implementa como objetivo de sueldo en cero para esa liquidación (`ajustes.perdido_con_sueldo`, apagado), no como una segunda cascada.
-  - **Los dos son parámetros.** El dueño los confirma, y la estructura no cambia con su respuesta.
+  - **Los dos son parámetros, y el dueño confirmó los valores de hoy** (2026-09-12): la seña retenida paga diezmo y no paga sueldo. Para el sueldo, el fundamento es el de arriba y es el correcto: "cada trabajo me paga un retiro" habla de trabajos, y un presupuesto que no prosperó no es uno.
 - **Liquida siempre, tenga pagos o no.** Sin pagos, la neta es menos los gastos: todo en cero, la pérdida en el remanente y ningún asiento de distribución. Así la regla es una sola: un proyecto está cobrado o perdido si y solo si tiene la distribución congelada (`proyectos_liquidado_con_distribucion`).
 - **Reactivar un perdido no guarda nada.** Un lead que revive vuelve a estar vivo, la seña vuelve a ser un anticipo, y un cierre posterior es un evento nuevo, con su fecha. Por lo mismo, cerrar como perdido ignora la foto de una reapertura.
 - **Un perdido queda cerrado como un cobrado.** Sus pagos y gastos no se tocan (`MN001`). Si la nafta se carga tarde, se reactiva y se vuelve a cerrar. El rechazo lo dice en el hint: "Para cargarlo hay que reactivar el perdido y volver a cerrarlo".
 - **Lo liquidado no se borra si tiene pagos o gastos vivos**, porque borrarlo sacaría plata del libro mayor. Un perdido sin pagos ni gastos, que es el caso común, se borra como antes. Para un cobrado es una relajación: uno sin pagos ni gastos ahora se puede borrar.
 
 **Requisito para la interfaz (2C en adelante).** Cuando el usuario carga un gasto o un pago contra un perdido cerrado, la app no puede quedarse en el rechazo: tiene que ofrecer ahí mismo el camino de reactivar, cargar y volver a cerrar. Un "no" sin salida deja al usuario trabado y lo empuja al workaround que esta decisión quiere evitar.
+
+## El tope de sueldo se queda por proyecto
+
+Decisión del dueño, 2026-09-12. `ajustes.sueldo_tope_mensual` sigue apagado y no se prende, y el cliente sigue sin grant para prenderlo.
+
+Este ADR se inclinaba para el otro lado: presentaba el tope mensual como lo que prefiere la teoría contable y dejaba armado el camino para pasarse. Queda escrito por qué no:
+
+- **El sistema viejo lo hacía así y lo documentaba en su propia pantalla de configuración**: "Lo que se transfiere al tesoro HOGAR por proyecto cobrado". Fue una decisión, no un descuido.
+- **La regla de este proyecto es que la app nueva sea al menos tan funcional como la que el dueño usa hoy.** Cambiarle una regla sobre su propia plata porque la teoría contable prefiere otra cosa no entra ahí.
+- **Los costos fijos fueron distintos, y por eso sí se cambiaron.** Ahí el reparto **afirmaba algo falso**: que se habían cubierto cuatro veces los fijos del mismo mes. Un sueldo cobrado cuatro veces no es falso: es una política.
+
+Lo que sí estaba mal era la pantalla, y se arregló (ver "La barra "Sueldo del mes"").
+
+La sección que sigue queda como descripción del mecanismo, por si algún día el dueño cambia de opinión. No es un plan.
 
 ## Pasar el sueldo a tope mensual
 
@@ -188,9 +202,28 @@ Lo que cuesta:
 
 ## La barra "Sueldo del mes"
 
-El diseño muestra "Sueldo del mes — $X de $1.800.000". Mide contra un objetivo mensual, pero la distribución topea el sueldo por proyecto. Con más de un cobro en el mes la barra se llena, sigue sumando y deja de decir algo.
+El diseño mostraba "Sueldo del mes — $X de $1.800.000". Medía contra un objetivo mensual, pero la distribución topea el sueldo por proyecto. Con dos cobros en el mes decía "$3.600.000 de $1.800.000": llena, y sin decir nada que no pareciera un error.
 
-Es un síntoma de la inconsistencia entre la regla y la pantalla, no un bug de la barra. `resumenDelMes` informa lo liquidado aunque pase el objetivo, y lo que falta nunca da negativo. Se resuelve cuando el dueño decida el tope del sueldo.
+**Se arregló lo que muestra, no la regla** (2026-09-12). La barra mide lo que la regla promete: **cada cobro del mes espera su propio sueldo**, con el objetivo con el que se liquidó.
+
+- Con dos cobros enteros dice "$3.600.000 de $3.600.000", y abajo "2 cobros este mes, y cada uno paga su propio sueldo."
+- Si a uno de los dos no le alcanzó la ganancia, dice "$2.700.000 de $3.600.000" y queda al 75%.
+- Sin cobros espera un sueldo, el de los ajustes, como antes.
+
+Por qué así:
+
+- **Nunca pasa del 100% y sigue diciendo algo** con cualquier cantidad de cobros. Lo que falta es sueldo que un trabajo no llegó a pagar, que es lo que al dueño le sirve ver.
+- **Es la regla del dueño puesta en la pantalla**: "cada trabajo me paga un retiro" cuenta trabajos, no meses.
+- **Con el tope mensual**, si algún día se prende, el mes espera un solo sueldo, como antes. `sueldoDelMes` lo distingue por `dist_sueldo_mensual`, que ahora viaja en `LiquidacionRegistrada`.
+
+`sueldoDelMes` vive en el dominio al lado de `resumenDelMes` y no tiene gemela en SQL: nada en la base la consume.
+
+Descartadas:
+
+- **Dejar el objetivo mensual y escribir "cubierto" cuando se pasa.** Tapa el síntoma y deja la barra midiendo contra una regla que no existe.
+- **Una barra partida en un tramo por cobro.** Dice lo mismo con más dibujo, y para un lector de pantalla es la misma frase.
+
+**Objeción que queda.** El mensaje de arriba de la barra ("El sueldo de septiembre ya está cubierto", "Faltan $X para cubrir el sueldo") sigue leyendo el mes contra **un** sueldo, que es la necesidad del hogar. Con un cobro entero y otro a medias, el mensaje dice "cubierto" y la barra dice 75%. Las dos cosas son ciertas y miden cosas distintas. Se dejó así porque el mensaje viene del sistema viejo ("¡Sueldo del mes cubierto!") y es lo que el dueño está acostumbrado a leer.
 
 ## La devolución
 
@@ -217,13 +250,6 @@ Lo que implicaría, para cuando se haga:
 - **Lo congelado no se toca.** `proyectos.dist_diezmo_bp` guarda el porcentaje de cada liquidación: cambiar la tasa no reescribe ninguna, y cada distribución se sigue explicando sola (ADR 0003).
 - **El libro mayor y los tesoros tampoco.** El asiento de diezmo sale del importe congelado, no de la tasa. Con tasa en cero no hay asiento, que es exactamente lo que hoy pasa con un perdido sin diezmo.
 - **Lo que sí hay que decidir es la pantalla.** El tesoro DIEZMO y `Diezmo.dc.html` están dibujados asumiendo que existe: con la tasa en cero hay que elegir entre esconderlo o mostrarlo vacío.
-
-## Pendiente de confirmar con el dueño
-
-La estructura no cambia con estas respuestas: son los dos parámetros del perdido, en `ajustes`.
-
-- **¿La seña retenida paga diezmo?** Por defecto sí.
-- **¿La seña retenida paga sueldo?** Por defecto no.
 
 ## Lo que impide que las dos implementaciones diverjan
 

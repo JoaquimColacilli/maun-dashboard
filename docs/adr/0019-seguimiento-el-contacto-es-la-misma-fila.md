@@ -44,12 +44,25 @@ Implementado como pedía el brief, por sus motivos: una persona, pocos contactos
 depende de que alguien arrastre tarjetas y un bundle bajo la lupa. Los estados se ven (insignia, filtro
 y un selector de etapa en la ficha) pero no organizan la pantalla.
 
-### 3. El orden es "lo que hace más que espera", y la espera sale de `updated_at`
+### 3. El orden es "lo que hace más que espera", y la espera sale del último contacto
 
-`contactosEnOrden` ordena por la **última actividad**: el `updated_at` más nuevo entre la fila, sus
-pagos y sus gastos (`ultimasActividades`). Los hijos cuentan porque cargar la seña es tocar el
-contacto, y `proyectos.updated_at` no se mueve cuando solo cambia un pago. Más vieja, más arriba. El
-desempate es por id.
+`contactosEnOrden` ordena por el **día del último contacto**, y dentro del mismo día por la **última
+actividad**: el `updated_at` más nuevo entre la fila, sus pagos y sus gastos (`ultimasActividades`).
+Los hijos cuentan porque cargar la seña es tocar el contacto, y `proyectos.updated_at` no se mueve
+cuando solo cambia un pago. Más vieja, más arriba. El desempate final es por id.
+
+**Actualizado en el paso 12: `proyectos.ultimo_contacto` se llena.** Existía desde la 2A y ninguna
+pantalla la escribía. La escriben los pasos, con `ultimoContactoAlGuardar`:
+
+- **Cargar el contacto** la anota hoy, o el día de la visita si ya pasó (el caso del audio).
+- **Cambiar de etapa** la anota hoy, con el botón del paso o con el selector. «Ya fui a relevar» anota
+  el día de la visita, si no es futuro.
+- **Aprobarlo** la anota hoy.
+- **Editar sin cambiar de etapa no la toca.** Corregir las notas o el título ya no reinicia la espera.
+
+Si está vacía, cuenta el día de la última actividad, como antes. Pasa con los contactos cargados antes
+de este paso y con los que se crean por RPC en el e2e. Los presupuestados del sistema viejo entran con
+el día de su alta (ADR 0017).
 
 **Decisión propia:** un contacto con la visita agendada para más adelante **va al final**, ordenado
 por fecha de visita. No está esperando nada de él: tiene fecha. Mezclarlo por antigüedad lo pondría
@@ -143,27 +156,28 @@ navegación), y ese componente ya existe como `DistribucionDespiece`, en la fich
 los pasos 8 y 9. Además calcula sobre el **presupuesto** (`M.despiece(p)`), que es el error 1 del ADR 0003. Lo único que tiene y no se portó son las cotas de carpintería arriba y abajo del tablero y la
 franja rayada de "no alcanza". Son decoración: el dato, "faltan $X", ya está en la leyenda.
 
-## Lo que queda para decidir
+## Decidido después: los gastos de un contacto mueven la caja desde que se cargan
 
-**Los gastos de un contacto mueven la caja desde que se cargan.** El HTML los postergaba hasta que el
-trabajo dejaba de estar presupuestado. La base de hoy los cuenta al cargarlos, y el e2e lo deja escrito
-así. Lo mantengo por tres razones:
+El HTML los postergaba hasta que el trabajo dejaba de estar presupuestado. La base de hoy los cuenta
+al cargarlos, y el e2e lo deja escrito así.
 
-- la plata salió de verdad;
-- el cierre como perdido ya los descuenta de la seña (ADR 0011);
-- postergarlos haría que un gasto se mueva de mes según cuándo se apruebe el trabajo.
+**Se queda como está la base, por decisión del dueño (paso 12), y es una diferencia deliberada con el
+sistema viejo.** El motivo:
 
-Si el dueño prefiere lo del HTML, es un cambio en la vista `libro_mayor`, en `lineasDelLibro` y en el
-comparador, con migración.
+- **En el sistema viejo `presupuestado` era el estacionamiento de todo lo que todavía no era un
+  trabajo**, porque no existía Seguimiento. Ahora existe, el estado tiene sentido propio, y la plata de
+  la nafta salió de verdad.
+- **`cerrar_perdido` ya neteaba esos gastos contra la seña retenida** (ADR 0011), así que la cuenta
+  cierra.
+- **Volver al comportamiento viejo sería replicar un rodeo** que resolvía un problema que ya no existe.
+  Encima haría que un gasto cambie de mes según cuándo se aprueba el trabajo.
 
 ## Objeciones
 
-- **`updated_at` no es "último contacto con el cliente".** Cualquier edición reinicia el reloj.
-  Corregir un error de tipeo en las notas hace que un presupuesto enviado hace nueve días diga "hoy".
-  La base ya tiene `proyectos.ultimo_contacto` (una fecha, con su `comment on`) que ninguna pantalla
-  llena. La salida sin campo nuevo para el usuario sería que los pasos ("Ya fui a relevar", "Mandé el
-  presupuesto") la escriban solos y que la espera se cuente desde ahí. No lo hice porque el brief pedía
-  `updated_at` explícitamente.
+- **Resuelta en el paso 12: `updated_at` no era "último contacto con el cliente".** Corregir un error
+  de tipeo en las notas hacía que un presupuesto enviado hace nueve días dijera "hoy". Ahora los pasos
+  escriben `proyectos.ultimo_contacto` y la espera se cuenta desde ahí (decisión 3). Queda un resto:
+  dentro del mismo día, editar todavía reordena, porque la última actividad es el desempate.
 - **Un relevamiento con la visita ya pasada es ambiguo.** No se sabe si fue. La app asume que sí y
   pide pasarlo a presupuestar. Sin un campo más no hay forma de distinguirlo.
 - **El orden en el e2e se prueba con segundos de diferencia, no con días.** La base pone `updated_at`
