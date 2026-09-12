@@ -1,0 +1,151 @@
+import {
+  cambiaLaFila,
+  datosActualesDelProyecto,
+  etapaAlGuardarElContacto,
+  type Pago,
+  type Proyecto,
+} from '@/entities/proyecto';
+import type { DatosDeProyecto, PagoParaGuardar, ProyectoParaGuardar } from '@/shared/api';
+import { parsearPesosDesdeCero, pesosEditables } from '@/shared/lib';
+
+export const CONCEPTO_DE_LA_SENA = 'Seña de la visita';
+
+export interface ValoresDelContacto {
+  clienteId: string;
+  titulo: string;
+  visita: string;
+  sena: string;
+  notas: string;
+}
+
+export interface ErroresDelContacto {
+  cliente?: string;
+  titulo?: string;
+  sena?: string;
+  telefono?: string;
+  notas?: string;
+}
+
+export function senaEditable(pagos: readonly Pago[]): Pago | undefined {
+  return pagos.length === 1 ? pagos[0] : undefined;
+}
+
+export function valoresDelContacto(
+  proyecto: Proyecto | undefined,
+  sena: Pago | undefined,
+): ValoresDelContacto {
+  return {
+    clienteId: proyecto?.cliente_id ?? '',
+    titulo: proyecto?.titulo ?? '',
+    visita: proyecto?.fecha_visita ?? '',
+    sena: sena === undefined ? '' : pesosEditables(sena.monto_centavos),
+    notas: proyecto?.notas ?? '',
+  };
+}
+
+export function erroresDelContacto(
+  valores: ValoresDelContacto,
+  telefono: string,
+): ErroresDelContacto {
+  const errores: ErroresDelContacto = {};
+  const titulo = valores.titulo.trim();
+
+  if (valores.clienteId === '') {
+    errores.cliente = 'Elegí un cliente, o escribí su nombre para crearlo.';
+  }
+  if (titulo === '') errores.titulo = 'Contá qué pide, aunque sea en dos palabras.';
+  else if (titulo.length > 200) errores.titulo = 'No puede pasar de 200 caracteres.';
+  if (valores.sena.trim() !== '' && parsearPesosDesdeCero(valores.sena) === undefined) {
+    errores.sena = 'Revisá la seña: va en pesos, por ejemplo 150.000.';
+  }
+  if (telefono.trim().length > 200) errores.telefono = 'No puede pasar de 200 caracteres.';
+  if (valores.notas.trim().length > 10_000) errores.notas = 'Las notas son demasiado largas.';
+  return errores;
+}
+
+const DATOS_DE_UN_CONTACTO_NUEVO: DatosDeProyecto = {
+  cliente_id: '',
+  titulo: '',
+  descripcion: '',
+  estado: 'contacto',
+  presupuesto_centavos: null,
+  forma_pago: null,
+  comprobante: 'sin_comprobante',
+  fecha_visita: null,
+  ultimo_contacto: null,
+  fecha_inicio: null,
+  entrega_estimada: null,
+  fecha_entrega: null,
+  direccion_entrega: '',
+  notas: '',
+};
+
+function pagosDeLaSena(
+  valores: ValoresDelContacto,
+  sena: Pago | undefined,
+  idDeSenaNueva: string,
+  hoy: string,
+): PagoParaGuardar[] {
+  const monto = parsearPesosDesdeCero(valores.sena) ?? 0;
+
+  if (sena !== undefined) {
+    if (monto === 0) return [{ id: sena.id, borrado: true }];
+    if (monto === sena.monto_centavos) return [];
+    return [{ id: sena.id, fecha: sena.fecha, concepto: sena.concepto, monto_centavos: monto }];
+  }
+
+  if (monto === 0) return [];
+  const visita = valores.visita.trim();
+  return [
+    {
+      id: idDeSenaNueva,
+      fecha: visita !== '' && visita <= hoy ? visita : hoy,
+      concepto: CONCEPTO_DE_LA_SENA,
+      monto_centavos: monto,
+    },
+  ];
+}
+
+export interface EntradaDelContacto {
+  id: string;
+  proyecto: Proyecto | undefined;
+  valores: ValoresDelContacto;
+  sena: Pago | undefined;
+  idDeSenaNueva: string;
+  hoy: string;
+}
+
+export function pedidoDelContacto({
+  id,
+  proyecto,
+  valores,
+  sena,
+  idDeSenaNueva,
+  hoy,
+}: EntradaDelContacto): ProyectoParaGuardar {
+  const base =
+    proyecto === undefined ? DATOS_DE_UN_CONTACTO_NUEVO : datosActualesDelProyecto(proyecto);
+  const visita = valores.visita.trim();
+
+  return {
+    id,
+    version: proyecto?.version ?? null,
+    datos: {
+      ...base,
+      cliente_id: valores.clienteId,
+      titulo: valores.titulo.trim(),
+      estado: etapaAlGuardarElContacto(proyecto?.estado, visita, hoy),
+      fecha_visita: visita === '' ? null : visita,
+      notas: valores.notas.trim(),
+    },
+    pagos: pagosDeLaSena(valores, sena, idDeSenaNueva, hoy),
+    gastos: [],
+  };
+}
+
+export function hayQueGuardar(
+  proyecto: Proyecto | undefined,
+  pedido: ProyectoParaGuardar,
+): boolean {
+  return proyecto === undefined || pedido.pagos.length > 0 || cambiaLaFila(proyecto, pedido.datos);
+}
