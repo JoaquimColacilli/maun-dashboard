@@ -53,12 +53,19 @@ export {
 
 export {
   COLUMNAS_DE_AJUSTES,
+  COLUMNAS_DE_CLIENTE,
   guardarAjustes,
+  guardarCambiosDeCliente,
+  guardarClienteNuevo,
   guardarMovimiento,
   guardarNombreDelTaller,
   traerBootstrap,
   traerDelta,
   type CambiosDeAjustes,
+  type CambiosDeCliente,
+  type ClienteNuevo,
   type ColumnaDeAjustes,
+  type ColumnaDeCliente,
+  type DatosDeCliente,
   type MovimientoNuevo,
 } from './sincronizacion.ts';

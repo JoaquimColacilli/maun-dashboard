@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, la pantalla de Inicio y la de Ajustes. Las secciones que faltan (Proyectos, Clientes, Seguimiento, Diezmo, Finanzas) son pantallas que dicen qué llega y cuándo, no rutas muertas.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes y **Clientes** (lista, ficha y formulario), que es el primer camino de escritura. Las secciones que faltan (Proyectos, Seguimiento, Diezmo, Finanzas) son pantallas que dicen qué llega y cuándo, no rutas muertas.
 
 ## Capas (FSD, ADR 0006)
 
@@ -10,10 +10,9 @@ src/
   app/         arranque, providers, router con sus guardas y layout del shell
   pages/       una carpeta por ruta, finas: componen features y entidades
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
-               cerrar-sesion, configurar-taller, registrar-movimiento)
-  entities/    sesion, replica (la copia del household y su contexto) y tesoro
-  entities/    sesion (estado y contexto) y replica (la copia del household)
-  shared/      api (Supabase), config, lib (cache, plata, fechas, uuid, sync) y ui
+               cerrar-sesion, configurar-taller, registrar-movimiento, editar-cliente)
+  entities/    sesion, replica (la copia del household y su contexto), tesoro y cliente
+  shared/      api (Supabase), config, lib (cache, claves, plata, fechas, uuid, sync) y ui
 ```
 
 - Solo se importa hacia capas de abajo, y un slice no importa a otro de su misma capa.
@@ -23,6 +22,7 @@ src/
 - Supabase (`@maun/db`, `@supabase/supabase-js`) se importa solo desde `shared/api`, que es la única puerta: ahí viven el cliente, las operaciones de auth, `sincronizar()` y las mutaciones.
 - `@/` apunta a `src/`. Está definido en `tsconfig.app.json` y en `vite.config.ts`: si cambia, cambia en los dos.
 - El estado del servidor vive en TanStack Query, dentro de `entities/*/api`. Las query keys llevan ids. El resto es estado local de React; no hay state manager global.
+- **Las claves de la réplica viven en `shared/lib/claves.ts`**, no en `entities/replica`: la mutación de cada entidad las necesita para aplicarse optimista, y un slice de `entities` no puede importar a otro. `entities/replica` las re-exporta, así que su API pública no cambió (ADR 0014).
 - La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002). Para mostrarla y leerla, `formatearPesos` y `parsearPesos` de `@/shared/lib`.
 
 ## Acceso y sesión (ADR 0012)
@@ -57,7 +57,9 @@ src/
 - Forma de las mutaciones (ADR 0010): alta, upsert de la fila completa por id (UUIDv7 generado en el cliente con `uuidv7()`); edición, update por id con solo las columnas que cambiaron; baja, update de `deleted_at` con la marca fijada al encolar. `ajustes` solo se edita.
 - Cada mutación se aplica optimista a la réplica con `aplicarFilaLocal` y, si la base la rechaza, se saca con `quitarFilaLocal`.
 - Los rechazos con SQLSTATE `MNxxx` y `42501` no se reintentan: se le muestran al usuario. Tampoco se reintenta ningún otro SQLSTATE definitivo (una violación de check nunca va a andar y tapa la cola, que drena de a una). La red, los timeouts y las clases transitorias sí.
-- Nunca muestres "guardado" para una mutación en cola. Para el estado real usá `useEstadoSync` y `describirEstadoSync` de `@/shared/lib`.
+- Nunca muestres "guardado" para una mutación en cola. Para el estado real usá `useEstadoSync` y `describirEstadoSync` de `@/shared/lib`. El `IndicadorSync` global es el que lo dice y **desaparece cuando no hay nada pendiente**: en un test, que no esté es la señal de que ya llegó a la base.
+- `crearQueryClient()` siembra `onlineManager` con `navigator.onLine`. **No lo saques**: `onlineManager` arranca en `true` fijo y solo cambia con los eventos de `window`, así que abrir la app ya sin señal la dejaba creyendo que hay red, con las mutaciones fallando en vez de encolarse (ADR 0014).
+- Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
 - El service worker precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
 
@@ -82,7 +84,10 @@ src/
 
 - Vitest y Testing Library, al lado del archivo (`*.test.ts[x]`).
 - `shared/lib/cache/cola.test.ts` es el test de la cola: usa IndexedDB de verdad (`fake-indexeddb`) y prueba que sin red la mutación queda en pausa, sobrevive a cerrar la app y se aplica en orden al volver la señal.
-- Playwright en `e2e/`, con dos proyectos: celular (390) y escritorio (1440).
+- Playwright en `e2e/`, con cinco proyectos: `setup`, `acceso-celular` y `acceso-escritorio` (sin sesión, en `e2e/sin-sesion/`), y `celular` y `escritorio` (con sesión, en `e2e/con-sesion/`).
   - La primera vez hay que instalar chromium: `pnpm --filter @maun/web exec playwright install chromium`.
-  - El dev server necesita `apps/web/.env`.
-  - Cubre lo que no necesita credenciales: la redirección al login, la validación del formulario y la navegación entre las pantallas de acceso. Entrar de verdad necesita un usuario y mails reales.
+  - Necesita `apps/web/.env` con `VITE_SUPABASE_URL`, la publishable key y **`E2E_EMAIL` / `E2E_PASSWORD`**, que van sin prefijo `VITE_` porque no entran al bundle. Están en `.env.example`.
+  - `setup` entra una vez por el formulario de verdad y guarda el `storageState`; los dos proyectos con sesión lo reusan.
+  - **Corre contra el build (`vite build && vite preview`), no contra el dev server**: el service worker solo existe en el artefacto real, y sin él no se puede probar cerrar la app y reabrirla sin señal.
+  - `workers: 1`: los proyectos comparten el household de la cuenta de prueba y cada test con sesión lo vacía antes de empezar (`e2e/apoyo/taller.ts`).
+  - Ese taller se vacía en cada corrida: no lo uses para mirar datos a mano.

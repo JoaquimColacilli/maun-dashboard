@@ -43,6 +43,14 @@ function porcentaje(parte: Money, total: Money): number {
   return total <= 0 ? 0 : Math.round((parte / total) * 100);
 }
 
+// Sin mes previo contra el cual comparar no hay comparación: un "+100%" contra cero no dice nada.
+function comparacion(valor: Money, previo: Money, mes: string): string {
+  if (previo <= 0) return '';
+  const variacion = Math.round(((valor - previo) / previo) * 100);
+  const signo = variacion >= 0 ? '+' : '−';
+  return `${signo}${String(Math.abs(variacion))}% vs. ${nombreDelMes(mesAnterior(mes)).toLowerCase()}`;
+}
+
 function facturado(asientos: readonly Asiento[]): Money {
   return sumarTodos(
     asientos.filter((asiento) => asiento.origen === 'pago').map((asiento) => asiento.monto),
@@ -295,14 +303,24 @@ export function InicioPage() {
                 </span>
               </div>
               <dl className="grid grid-cols-3 gap-3">
-                {estadisticas.map((estadistica) => (
-                  <div key={estadistica.etiqueta} className="min-w-0">
-                    <dt className="text-meta leading-tight text-text-2">{estadistica.etiqueta}</dt>
-                    <dd className="mt-0.5 text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
-                      {formatearPesos(estadistica.valor)}
-                    </dd>
-                  </div>
-                ))}
+                {estadisticas.map((estadistica) => {
+                  const vs = comparacion(estadistica.valor, estadistica.previo, mes);
+                  return (
+                    <div key={estadistica.etiqueta} className="min-w-0">
+                      <dt className="text-meta leading-tight text-text-2">
+                        {estadistica.etiqueta}
+                      </dt>
+                      <dd className="mt-0.5">
+                        <span className="block text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
+                          {formatearPesos(estadistica.valor)}
+                        </span>
+                        {vs !== '' && (
+                          <span className="mt-0.5 block text-badge text-text-3">{vs}</span>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
               </dl>
             </section>
 

@@ -12,7 +12,9 @@ export {
   type Claims,
 } from './sesion';
 export {
+  crearCliente,
   editarAjustes,
+  editarCliente,
   registrarMovimiento,
   renombrarTaller,
   sincronizar,
@@ -23,6 +25,7 @@ export {
   aplicarFilaLocal,
   cantidadDe,
   COLUMNAS_DE_AJUSTES,
+  COLUMNAS_DE_CLIENTE,
   datosDelLibro,
   debeReintentarse,
   liquidacionesDeLaReplica,
@@ -41,6 +44,9 @@ export {
   tieneAcceso,
   TIPOS_DE_MOVIMIENTO,
   type CambiosDeAjustes,
+  type CambiosDeCliente,
+  type ClienteNuevo,
+  type DatosDeCliente,
   type FilaDe,
   type MovimientoNuevo,
   type RechazoDeLaBase,

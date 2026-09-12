@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import type pg from 'pg';
 
-import { compararDominioYSql, compararSeed } from './comparacion.ts';
+import { compararDominioYSql, compararLibroDelSeed, compararSeed } from './comparacion.ts';
 import { conectar, DIR_SUPABASE } from './conexion.ts';
 import {
   archivosDeTest,
@@ -91,6 +91,7 @@ async function ensayar(cliente: pg.Client, seed: ModoSeed): Promise<number> {
   const diferencias = [
     ...(await compararDominioYSql(cliente)),
     ...(seed === 'sin' ? [] : await compararSeed(cliente)),
+    ...(seed === 'sin' ? [] : await compararLibroDelSeed(cliente)),
   ];
   await cliente.query('rollback to savepoint ensayo_comparacion');
   if (diferencias.length > 0) {
@@ -99,7 +100,7 @@ async function ensayar(cliente: pg.Client, seed: ModoSeed): Promise<number> {
     for (const diferencia of diferencias.slice(0, 20)) console.log(`      ${diferencia}`);
   } else {
     console.log(
-      `  ok  @maun/domain contra SQL: cascada, topes, rangos, estados, transiciones y liquidaciones${seed === 'sin' ? '' : ', y el seed'}`,
+      `  ok  @maun/domain contra SQL: cascada, topes, rangos, estados, transiciones, liquidaciones y libro mayor${seed === 'sin' ? '' : ', y el seed'}`,
     );
   }
 

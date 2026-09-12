@@ -21,6 +21,8 @@ La app consume `@maun/ui/theme.css` y `@maun/ui/fonts.css` (IBM Plex Sans 400/50
 ## Componentes
 
 - Props en inglés, valores en español (`variant="primario"`, `size="chico"`, `cargando`).
+- `Campo` acepta `ref` (sus props extienden `ComponentPropsWithRef<'input'>`): es lo que React Hook Form necesita para registrar el input.
+- `Icono` importa de `lucide-react` uno por uno. Se verificó sobre el build que Vite lo tree-shakea: en el bundle están los paths de los íconos que se usan, no la librería (ADR 0014).
 - Área táctil mínima de 44px (`--tap-min`), foco visible y estados de carga, vacío y error según `Tokens.dc.html`.
 - Imports relativos con extensión (`./Button.tsx`).
 - Test con Testing Library al lado del componente.

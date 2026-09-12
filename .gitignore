@@ -10,6 +10,7 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+apps/web/e2e/.sesion/
 
 # entorno: solo se versiona el ejemplo
 .env
