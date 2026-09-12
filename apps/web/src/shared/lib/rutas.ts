@@ -30,21 +30,14 @@ export const RUTA_DE_FINANZAS = '/finanzas';
 
 export const RUTA_DE_MOVIMIENTO_NUEVO = '/finanzas/nuevo';
 
-function conVuelta(base: string, extras: Record<string, string | undefined>): string {
-  const parametros = new URLSearchParams();
-  for (const [clave, valor] of Object.entries(extras)) {
-    if (valor !== undefined) parametros.set(clave, valor);
-  }
-  const cola = parametros.toString();
-  return cola === '' ? base : `${base}?${cola}`;
+export function rutaDeMovimientoNuevo(opciones: { clase?: string } = {}): string {
+  return opciones.clase === undefined
+    ? RUTA_DE_MOVIMIENTO_NUEVO
+    : `${RUTA_DE_MOVIMIENTO_NUEVO}?${new URLSearchParams({ clase: opciones.clase }).toString()}`;
 }
 
-export function rutaDeMovimientoNuevo(opciones: { clase?: string; volverA?: string } = {}): string {
-  return conVuelta(RUTA_DE_MOVIMIENTO_NUEVO, opciones);
-}
-
-export function rutaDelMovimiento(id: string, volverA?: string): string {
-  return conVuelta(`/finanzas/${id}`, { volverA });
+export function rutaDelMovimiento(id: string): string {
+  return `/finanzas/${id}`;
 }
 
 export const RUTA_DE_DIEZMO = '/diezmo';

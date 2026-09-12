@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router';
 
-import { useAnchoDePantalla } from '@/shared/lib';
+import { conFondo, esRutaDeHoja, useAnchoDePantalla, useUbicacionVisible } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 import { conTransicion } from '../router/transicion';
@@ -20,11 +20,13 @@ import {
 function useIrA(): (ruta: string) => void {
   const navegar = useNavigate();
   const location = useLocation();
+  const visible = useUbicacionVisible();
   return (ruta) => {
     if (ruta === location.pathname) return;
+    const opciones = esRutaDeHoja(ruta) ? { state: conFondo(visible) } : undefined;
     conTransicion(() => {
       flushSync(() => {
-        void navegar(ruta);
+        void navegar(ruta, opciones);
       });
     });
   };
@@ -321,9 +323,9 @@ function Sidebar({
 
 export function Navegacion({ email, sincronizacion }: { email: string; sincronizacion: string }) {
   const ancho = useAnchoDePantalla();
-  const location = useLocation();
+  const visible = useUbicacionVisible();
   const irA = useIrA();
-  const seccion = seccionDeLaRuta(location.pathname);
+  const seccion = seccionDeLaRuta(visible.pathname);
 
   if (ancho === 'movil') {
     return <BarraInferior activo={destinoResaltado(seccion, NAV_MOVIL)} irA={irA} />;

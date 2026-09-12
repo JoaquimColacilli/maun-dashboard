@@ -77,7 +77,7 @@ async function esperarMovimientos(cuantos: number): Promise<void> {
 }
 
 async function pagarDiezmo(page: Page, monto: string, descripcion: string): Promise<void> {
-  await page.getByRole('link', { name: 'Registrar un pago' }).click();
+  await page.getByRole('link', { name: 'Registrar diezmo' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByLabel('Cuánta plata').fill(monto);
   await page.getByLabel('Qué fue').fill(descripcion);
@@ -260,6 +260,29 @@ test('el pago de diezmo se registra desde su pantalla y el texto cambia con el s
   await expect(estado).toContainText('Debés');
   await expect(estado).toContainText('$ 20.000');
   await expect(page.getByRole('button', { name: /Pago parcial/ })).toBeVisible();
+});
+
+test('registrar diezmo abre la hoja encima de Diezmo y el botón atrás la cierra sin salir de ahí', async ({
+  page,
+}) => {
+  await page.goto('/diezmo');
+  await page.getByRole('link', { name: 'Registrar diezmo' }).click();
+
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page).toHaveURL(/\/finanzas\/nuevo\?clase=pago_diezmo$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
+  await expect(page.getByRole('radio', { name: 'Diezmo' })).toHaveAttribute('aria-checked', 'true');
+
+  await page.goBack();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page).toHaveURL(/\/diezmo$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
+
+  await page.goto('/finanzas/nuevo?clase=pago_diezmo');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Finanzas');
+  await page.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(page).toHaveURL(/\/finanzas$/);
 });
 
 test('los tres estados del diezmo: con deuda, al día y pagado de más', async ({ page }) => {
@@ -469,6 +492,6 @@ test('finanzas y diezmo se recorren enteros con el teclado', async ({ page }) =>
 
   await page.goto('/diezmo');
   const enDiezmo = await recorrerConTab(page, 40);
-  expect(enDiezmo.some((foco) => foco.includes('Registrar un pago'))).toBe(true);
+  expect(enDiezmo.some((foco) => foco.includes('Registrar diezmo'))).toBe(true);
   expect(enDiezmo.some((foco) => foco.includes('Farmacia'))).toBe(false);
 });

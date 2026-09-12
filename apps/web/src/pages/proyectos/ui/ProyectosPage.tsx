@@ -1,6 +1,6 @@
 import { type EstadoProyecto, type Fase } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import { EnlaceACliente } from '@/entities/cliente';
 import {
@@ -24,7 +24,14 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { alternar, formatearPesos, hoyLocal, useAnchoDePantalla, type Sentido } from '@/shared/lib';
+import {
+  alternar,
+  conFondo,
+  formatearPesos,
+  hoyLocal,
+  useAnchoDePantalla,
+  type Sentido,
+} from '@/shared/lib';
 import { Button, Icono, Pagina } from '@/shared/ui';
 
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
@@ -306,7 +313,8 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'seguimiento'> }) {
 export function ProyectosPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const [busqueda] = useSearchParams();
   const ancho = useAnchoDePantalla();
 
@@ -351,7 +359,7 @@ export function ProyectosPage() {
         {etapa === 'seguimiento' ? (
           <Button
             onClick={() => {
-              void navegar(RUTA_DE_CONTACTO_NUEVO);
+              void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
             }}
           >
             <Icono nombre="user-plus" tamano={18} />
@@ -496,8 +504,6 @@ export function ProyectosPage() {
           }}
         />
       )}
-
-      <Outlet />
     </Pagina>
   );
 }

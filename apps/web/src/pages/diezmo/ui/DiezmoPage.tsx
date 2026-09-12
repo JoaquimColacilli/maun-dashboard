@@ -1,6 +1,6 @@
 import { asientosDelLibro, estadoDelDiezmo } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
 import {
   agruparPorDia,
@@ -15,19 +15,20 @@ import { useLiquidacionesEnVuelo } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { datosDelLibro } from '@/shared/api';
 import {
+  conFondo,
   formatearPesos,
   hoyLocal,
   rutaDeMovimientoNuevo,
   rutaDelMovimiento,
-  RUTA_DE_DIEZMO,
 } from '@/shared/lib';
 import { Icono, Pagina } from '@/shared/ui';
 
-const RUTA_DEL_PAGO = rutaDeMovimientoNuevo({ clase: 'pago_diezmo', volverA: RUTA_DE_DIEZMO });
+const RUTA_DEL_PAGO = rutaDeMovimientoNuevo({ clase: 'pago_diezmo' });
 
 export function DiezmoPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
+  const location = useLocation();
   const hoy = hoyLocal();
   const [ficha, setFicha] = useState<LineaDelTaller | null>(null);
 
@@ -55,10 +56,11 @@ export function DiezmoPage() {
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Diezmo</h1>
         <Link
           to={RUTA_DEL_PAGO}
+          state={conFondo(location)}
           className="flex h-button items-center gap-2 rounded-field bg-diezmo px-[18px] text-body font-medium text-paper"
         >
           <Icono nombre="hand-coins" tamano={18} />
-          Registrar un pago
+          Registrar diezmo
         </Link>
       </header>
 
@@ -148,7 +150,9 @@ export function DiezmoPage() {
               }
               alAbrir={(linea) => {
                 if (linea.bloqueo === null) {
-                  void navegar(rutaDelMovimiento(linea.asientoId, RUTA_DE_DIEZMO));
+                  void navegar(rutaDelMovimiento(linea.asientoId), {
+                    state: conFondo(location),
+                  });
                   return;
                 }
                 setFicha(linea);

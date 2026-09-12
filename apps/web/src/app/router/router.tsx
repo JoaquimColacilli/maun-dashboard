@@ -1,25 +1,12 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AccesoPage } from '@/pages/acceso';
-import { AjustesPage } from '@/pages/ajustes';
-import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
-import { DiezmoPage } from '@/pages/diezmo';
-import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/pages/finanzas';
-import { InicioPage } from '@/pages/inicio';
-import {
-  ContactoNuevoPage,
-  ProyectoEdicionPage,
-  ProyectoFichaPage,
-  ProyectoLiquidacionPage,
-  ProyectoNuevoPage,
-  ProyectoPasajePage,
-  ProyectosPage,
-} from '@/pages/proyectos';
 
 import { Marco } from '../layout/Marco';
 import { Shell } from '../layout/Shell';
 import { RutaConAcceso, RutaConSesion, RutaPublica } from './guardas';
 import { CrearCuentaPage, NuevaContrasenaPage, RecuperarPage } from './paginas';
+import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from './rutas';
 
 export const router = createBrowserRouter([
   {
@@ -42,39 +29,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 element: <Marco />,
-                children: [
-                  { index: true, element: <InicioPage /> },
-                  {
-                    path: '/seguimiento',
-                    element: <ProyectosPage />,
-                    children: [{ path: 'nuevo', element: <ContactoNuevoPage /> }],
-                  },
-                  { path: '/proyectos', element: <ProyectosPage /> },
-                  { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
-                  { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
-                  { path: '/proyectos/:id/editar', element: <ProyectoEdicionPage /> },
-                  { path: '/proyectos/:id/aprobar', element: <ProyectoPasajePage /> },
-                  {
-                    path: '/proyectos/:id/cobrar',
-                    element: <ProyectoLiquidacionPage destino="cobrado" />,
-                  },
-                  {
-                    path: '/proyectos/:id/cerrar',
-                    element: <ProyectoLiquidacionPage destino="perdido" />,
-                  },
-                  { path: '/clientes', element: <ClientesPage /> },
-                  { path: '/clientes/:id', element: <ClienteFichaPage /> },
-                  {
-                    path: '/finanzas',
-                    element: <FinanzasPage />,
-                    children: [
-                      { path: 'nuevo', element: <MovimientoNuevoPage /> },
-                      { path: ':id', element: <MovimientoEdicionPage /> },
-                    ],
-                  },
-                  { path: '/diezmo', element: <DiezmoPage /> },
-                  { path: '/ajustes', element: <AjustesPage /> },
-                ],
+                children: [...RUTAS_DE_PANTALLA, ...RUTAS_DE_HOJA],
               },
             ],
           },

@@ -22,6 +22,17 @@ export {
   type Sentido,
   type TipoDeOrden,
 } from './orden';
+export {
+  conFondo,
+  esRutaDeHoja,
+  fondoDelEstado,
+  fondoPorDefecto,
+  HOJAS_POR_RUTA,
+  useCerrarHoja,
+  useUbicacionVisible,
+  type EstadoConFondo,
+  type PatronDeHoja,
+} from './hojas';
 export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible } from './teclado';
 export { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';

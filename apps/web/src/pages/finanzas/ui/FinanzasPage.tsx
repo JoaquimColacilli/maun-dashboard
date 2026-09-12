@@ -1,6 +1,6 @@
 import { asientosDelLibro, type Tesoro } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import {
   agruparPorDia,
@@ -22,6 +22,7 @@ import { useLiquidacionesEnVuelo } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { datosDelLibro } from '@/shared/api';
 import {
+  conFondo,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
@@ -71,8 +72,13 @@ function Chip({
 export function FinanzasPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
+  const location = useLocation();
   const hoy = hoyLocal();
   const mes = mesDeLaFecha(hoy);
+
+  function abrirHoja(ruta: string) {
+    void navegar(ruta, { state: conFondo(location) });
+  }
 
   const [filtro, setFiltro] = useState<FiltroDelLibro>(() => filtroInicial(mes));
   const [ficha, setFicha] = useState<LineaDelTaller | null>(null);
@@ -96,7 +102,7 @@ export function FinanzasPage() {
 
   function abrir(linea: LineaDelTaller) {
     if (linea.bloqueo === null) {
-      void navegar(rutaDelMovimiento(linea.asientoId));
+      abrirHoja(rutaDelMovimiento(linea.asientoId));
       return;
     }
     setFicha(linea);
@@ -114,7 +120,7 @@ export function FinanzasPage() {
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Finanzas</h1>
         <Button
           onClick={() => {
-            void navegar(RUTA_DE_MOVIMIENTO_NUEVO);
+            abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
           }}
         >
           <Icono nombre="plus" tamano={18} />
@@ -216,7 +222,7 @@ export function FinanzasPage() {
               ) : (
                 <Button
                   onClick={() => {
-                    void navegar(RUTA_DE_MOVIMIENTO_NUEVO);
+                    abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
                   }}
                 >
                   Cargar el primero
@@ -276,7 +282,6 @@ export function FinanzasPage() {
           }}
         />
       )}
-      <Outlet />
     </Pagina>
   );
 }
