@@ -45,8 +45,14 @@ function Trio({ resumen }: { resumen: ResumenDeProyecto }) {
     { clave: 'Cobrado', valor: formatearPesos(resumen.cobrado), tono: 'text-hogar' },
     {
       clave: 'Saldo',
-      valor: resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo',
-      tono: resumen.saldo > 0 ? 'text-atencion' : 'text-hogar',
+      valor:
+        resumen.saldo === null
+          ? '—'
+          : resumen.saldo > 0
+            ? formatearPesos(resumen.saldo)
+            : 'Sin saldo',
+      tono:
+        resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-atencion' : 'text-hogar',
     },
   ];
 
@@ -83,7 +89,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const liquidar = useMutation(MUTACION_DE_LIQUIDACION);
 
-  const faltaCobrar = destino === 'cobrado' && resumen.saldo > 0;
+  const faltaCobrar = destino === 'cobrado' && resumen.saldo !== null && resumen.saldo > 0;
   const [conPagoFinal, setConPagoFinal] = useState(faltaCobrar);
   const [monto, setMonto] = useState<number | null>(resumen.saldo);
   const [fecha, setFecha] = useState(hoyLocal);
@@ -161,7 +167,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
               }}
               className="size-4 accent-ink"
             />
-            Registrar el pago final de {formatearPesos(resumen.saldo)}
+            Registrar el pago final de {formatearPesos(centavos(resumen.saldo ?? 0))}
           </label>
           <p className="mt-1 text-meta leading-normal text-text-3">
             Queda cargado como un pago más del proyecto, y entra en la cuenta de abajo. Si el

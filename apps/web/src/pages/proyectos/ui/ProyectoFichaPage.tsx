@@ -221,10 +221,14 @@ export function ProyectoFichaPage() {
           <dt className="text-meta text-text-2">Saldo</dt>
           <dd
             className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${
-              resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
+              resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
             }`}
           >
-            {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+            {resumen.saldo === null
+              ? '—'
+              : resumen.saldo > 0
+                ? formatearPesos(resumen.saldo)
+                : 'Sin saldo'}
           </dd>
         </div>
       </dl>
@@ -238,7 +242,7 @@ export function ProyectoFichaPage() {
             }}
           >
             <Icono nombre="hand-coins" tamano={18} />
-            {resumen.saldo > 0
+            {resumen.saldo !== null && resumen.saldo > 0
               ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
               : 'Cobrar y repartir'}
           </Button>

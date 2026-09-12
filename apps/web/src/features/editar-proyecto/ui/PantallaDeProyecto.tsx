@@ -146,8 +146,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
   const totalCobrado = totalDeLasFilas(filasDePagos);
   const totalGastos = totalDeLasFilas(filasDeGastos);
-  const presupuestoEnPesos = presupuesto ?? 0;
-  const saldo = Math.max(0, presupuestoEnPesos - totalCobrado);
+  const saldo = presupuesto === null ? null : Math.max(0, presupuesto - totalCobrado);
   const neta = totalCobrado - totalGastos;
 
   function reabrirParaEditar(fila: NonNullable<typeof proyecto>): void {
@@ -491,9 +490,12 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
         <footer className="flex flex-none flex-wrap items-center gap-3 border-t border-hairline bg-paper px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
           <dl className="flex min-w-[210px] flex-1 gap-4 tabular-nums">
-            <Total etiqueta="Presupuesto" valor={formatearPesos(presupuestoEnPesos)} />
+            <Total
+              etiqueta="Presupuesto"
+              valor={presupuesto === null ? '—' : formatearPesos(presupuesto)}
+            />
             <Total etiqueta="Cobrado" valor={formatearPesos(totalCobrado)} tono="text-hogar" />
-            <Total etiqueta="Saldo" valor={formatearPesos(saldo)} />
+            <Total etiqueta="Saldo" valor={saldo === null ? '—' : formatearPesos(saldo)} />
             <Total
               etiqueta="Neta"
               valor={formatearPesos(neta)}

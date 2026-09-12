@@ -103,9 +103,15 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
         <div>
           <dt className="text-meta text-text-3">Saldo</dt>
           <dd
-            className={`text-body font-semibold ${resumen.saldo > 0 ? 'text-ink' : 'text-hogar'}`}
+            className={`text-body font-semibold ${
+              resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
+            }`}
           >
-            {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+            {resumen.saldo === null
+              ? '—'
+              : resumen.saldo > 0
+                ? formatearPesos(resumen.saldo)
+                : 'Sin saldo'}
           </dd>
         </div>
       </dl>
@@ -203,10 +209,18 @@ function Tabla({
             </td>
             <td
               className={`px-2.5 text-right font-semibold tabular-nums whitespace-nowrap ${
-                resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
+                resumen.saldo === null
+                  ? 'text-text-3'
+                  : resumen.saldo > 0
+                    ? 'text-ink'
+                    : 'text-hogar'
               }`}
             >
-              {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+              {resumen.saldo === null
+                ? '—'
+                : resumen.saldo > 0
+                  ? formatearPesos(resumen.saldo)
+                  : 'Sin saldo'}
             </td>
             <td className="px-2.5 whitespace-nowrap">
               <EntregaRelativa

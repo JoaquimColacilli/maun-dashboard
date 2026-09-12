@@ -13,14 +13,14 @@ export interface ResumenDeProyecto {
   presupuesto: Money;
   cobrado: Money;
   gastos: Money;
-  saldo: Money;
+  saldo: Money | null;
   urgencia: Urgencia | undefined;
 }
 
 const SIN_CLIENTE = 'Cliente borrado';
 
-function saldoDe(presupuesto: number | null, cobrado: number): Money {
-  return centavos(presupuesto === null ? 0 : Math.max(0, presupuesto - cobrado));
+function saldoDe(presupuesto: number | null, cobrado: number): Money | null {
+  return presupuesto === null ? null : centavos(Math.max(0, presupuesto - cobrado));
 }
 
 export function resumenesDeProyectos(replica: Replica, hoy: string): ResumenDeProyecto[] {
@@ -88,7 +88,9 @@ export function metricasDeProyectos(resumenes: readonly ResumenDeProyecto[]): Me
   for (const resumen of resumenes) {
     if (resumen.fase !== 'seguimiento') total += 1;
     if (resumen.proyecto.estado === 'en_curso') enCurso += 1;
-    if (resumen.proyecto.estado === 'entregado' && resumen.saldo > 0) entregadosConSaldo += 1;
+    if (resumen.proyecto.estado === 'entregado' && (resumen.saldo ?? 0) > 0) {
+      entregadosConSaldo += 1;
+    }
     if (resumen.proyecto.estado === 'cobrado') cobrados += 1;
   }
 
