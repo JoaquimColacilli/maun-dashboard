@@ -1,0 +1,211 @@
+import { estaLiquidado, type EstadoProyecto } from './estados.ts';
+import { mesDe } from './fechas.ts';
+import { BASE_PUNTOS_BASICOS, CERO, centavos, restar, sumar, type Money } from './money.ts';
+
+export const TESOROS = ['hogar', 'maun', 'diezmo', 'cocos'] as const;
+
+export type Tesoro = (typeof TESOROS)[number];
+
+export type OrigenDeAsiento = 'manual' | 'pago' | 'gasto_proyecto' | 'distribucion';
+
+export interface MovimientoDelLibro {
+  id: string;
+  fecha: string;
+  tipo: string;
+  tesoroOrigen: Tesoro | null;
+  tesoroDestino: Tesoro | null;
+  monto: Money;
+  categoria: string;
+  descripcion: string;
+  proyectoId: string | null;
+}
+
+export interface PagoDelLibro {
+  id: string;
+  proyectoId: string;
+  fecha: string;
+  concepto: string;
+  monto: Money;
+}
+
+export interface GastoDelLibro {
+  id: string;
+  proyectoId: string;
+  fecha: string;
+  descripcion: string;
+  monto: Money;
+}
+
+export interface ProyectoDelLibro {
+  id: string;
+  titulo: string;
+  estado: EstadoProyecto;
+  fechaCobro: string | null;
+  diezmo: Money;
+  sueldo: Money;
+}
+
+export interface DatosDelLibro {
+  movimientos: readonly MovimientoDelLibro[];
+  pagos: readonly PagoDelLibro[];
+  gastos: readonly GastoDelLibro[];
+  proyectos: readonly ProyectoDelLibro[];
+}
+
+export interface Asiento {
+  origen: OrigenDeAsiento;
+  asientoId: string;
+  fecha: string;
+  tesoro: Tesoro;
+  contrapartida: Tesoro | null;
+  monto: Money;
+  concepto: string;
+  categoria: string;
+  descripcion: string;
+  proyectoId: string | null;
+}
+
+export type SaldosPorTesoro = Readonly<Record<Tesoro, Money>>;
+
+function negativo(importe: Money): Money {
+  return restar(CERO, importe);
+}
+
+export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
+  const asientos: Asiento[] = [];
+
+  for (const movimiento of datos.movimientos) {
+    const comun = {
+      origen: 'manual',
+      asientoId: movimiento.id,
+      fecha: movimiento.fecha,
+      concepto: movimiento.tipo,
+      categoria: movimiento.categoria,
+      descripcion: movimiento.descripcion,
+      proyectoId: movimiento.proyectoId,
+    } as const;
+
+    if (movimiento.tesoroDestino !== null) {
+      asientos.push({
+        ...comun,
+        tesoro: movimiento.tesoroDestino,
+        contrapartida: movimiento.tesoroOrigen,
+        monto: movimiento.monto,
+      });
+    }
+    if (movimiento.tesoroOrigen !== null) {
+      asientos.push({
+        ...comun,
+        tesoro: movimiento.tesoroOrigen,
+        contrapartida: movimiento.tesoroDestino,
+        monto: negativo(movimiento.monto),
+      });
+    }
+  }
+
+  const proyectos = new Map(datos.proyectos.map((proyecto) => [proyecto.id, proyecto]));
+
+  for (const pago of datos.pagos) {
+    if (!proyectos.has(pago.proyectoId)) continue;
+    asientos.push({
+      origen: 'pago',
+      asientoId: pago.id,
+      fecha: pago.fecha,
+      tesoro: 'maun',
+      contrapartida: null,
+      monto: pago.monto,
+      concepto: 'cobro',
+      categoria: 'Cobro',
+      descripcion: pago.concepto,
+      proyectoId: pago.proyectoId,
+    });
+  }
+
+  for (const gasto of datos.gastos) {
+    if (!proyectos.has(gasto.proyectoId)) continue;
+    asientos.push({
+      origen: 'gasto_proyecto',
+      asientoId: gasto.id,
+      fecha: gasto.fecha,
+      tesoro: 'maun',
+      contrapartida: null,
+      monto: negativo(gasto.monto),
+      concepto: 'gasto',
+      categoria: 'Materiales',
+      descripcion: gasto.descripcion,
+      proyectoId: gasto.proyectoId,
+    });
+  }
+
+  for (const proyecto of datos.proyectos) {
+    if (!estaLiquidado(proyecto.estado) || proyecto.fechaCobro === null) continue;
+
+    const lados: readonly [Tesoro, Tesoro, Money, string][] = [
+      ['diezmo', 'maun', proyecto.diezmo, 'diezmo'],
+      ['maun', 'diezmo', negativo(proyecto.diezmo), 'diezmo'],
+      ['hogar', 'maun', proyecto.sueldo, 'sueldo'],
+      ['maun', 'hogar', negativo(proyecto.sueldo), 'sueldo'],
+    ];
+
+    for (const [tesoro, contrapartida, monto, concepto] of lados) {
+      if (monto === 0) continue;
+      asientos.push({
+        origen: 'distribucion',
+        asientoId: proyecto.id,
+        fecha: proyecto.fechaCobro,
+        tesoro,
+        contrapartida,
+        monto,
+        concepto,
+        categoria: 'Distribución',
+        descripcion: proyecto.titulo,
+        proyectoId: proyecto.id,
+      });
+    }
+  }
+
+  return asientos;
+}
+
+export function saldosPorTesoro(asientos: readonly Asiento[]): SaldosPorTesoro {
+  const saldos: Record<Tesoro, Money> = { hogar: CERO, maun: CERO, diezmo: CERO, cocos: CERO };
+  for (const asiento of asientos) {
+    saldos[asiento.tesoro] = sumar(saldos[asiento.tesoro], asiento.monto);
+  }
+  return saldos;
+}
+
+export function saldosDelLibro(datos: DatosDelLibro): SaldosPorTesoro {
+  return saldosPorTesoro(asientosDelLibro(datos));
+}
+
+export function asientosDelMes(asientos: readonly Asiento[], mes: string): Asiento[] {
+  return asientos.filter((asiento) => mesDe(asiento.fecha) === mes);
+}
+
+export interface EntradasYSalidas {
+  entro: Money;
+  salio: Money;
+}
+
+export function entradasYSalidas(asientos: readonly Asiento[], tesoro: Tesoro): EntradasYSalidas {
+  let entro = CERO;
+  let salio = CERO;
+
+  for (const asiento of asientos) {
+    if (asiento.tesoro !== tesoro) continue;
+    if (asiento.monto >= 0) entro = sumar(entro, asiento.monto);
+    else salio = sumar(salio, negativo(asiento.monto));
+  }
+
+  return { entro, salio };
+}
+
+export function proyeccionCocos(saldo: Money, tasaAnualBp: number, dias: number): Money {
+  if (!Number.isInteger(tasaAnualBp) || tasaAnualBp < 0) {
+    throw new RangeError(`La tasa anual va en puntos básicos enteros: ${String(tasaAnualBp)} no.`);
+  }
+  if (dias <= 0 || tasaAnualBp === 0) return saldo;
+  const factor = (1 + tasaAnualBp / BASE_PUNTOS_BASICOS) ** (dias / 365);
+  return centavos(Math.round(saldo * factor));
+}
