@@ -1,3 +1,5 @@
+import type { EstadoLiquidado, EstadoProyecto } from '@maun/domain';
+
 import type { ClienteMaun } from './cliente.ts';
 import type { Database, Json } from './database.types.ts';
 import { leerLote, RespuestaInvalidaError, type FilaDe, type Lote } from './replica.ts';
@@ -290,6 +292,89 @@ export async function borrarProyecto(
     .eq('id', id)
     .select()
     .single();
+  if (error) throw error;
+  return data;
+}
+
+// La liquidación y la reversión no escriben columnas: llaman a las cuatro funciones de la base, que
+// son las únicas que tocan la distribución congelada (ADR 0003 y 0011). La app manda la versión que
+// vio, los totales, los topes, la fecha, los cuatro escalones y el acumulado del mes que vio: si ese
+// acumulado no es el de la base, la liquidación vuelve ajustada en vez de rechazada.
+export interface PedidoDeLiquidacion {
+  proyectoId: string;
+  version: number;
+  destino: EstadoLiquidado;
+  fecha: string;
+  cobradoCentavos: number;
+  gastosCentavos: number;
+  topeSueldoCentavos: number;
+  topeFijosCentavos: number;
+  diezmoBp: number;
+  diezmoCentavos: number;
+  sueldoCentavos: number;
+  fijosCentavos: number;
+  remanenteCentavos: number;
+  sueldoPrevioCentavos: number;
+  fijosPrevioCentavos: number;
+}
+
+export interface PedidoDeReversion {
+  proyectoId: string;
+  version: number;
+  desde: EstadoLiquidado;
+  hacia: EstadoProyecto;
+}
+
+export async function liquidarProyecto(
+  cliente: ClienteMaun,
+  pedido: PedidoDeLiquidacion,
+): Promise<FilaDe<'proyectos'>> {
+  const comun = {
+    p_proyecto_id: pedido.proyectoId,
+    p_version: pedido.version,
+    p_cobrado_centavos: pedido.cobradoCentavos,
+    p_gastos_centavos: pedido.gastosCentavos,
+    p_tope_sueldo_centavos: pedido.topeSueldoCentavos,
+    p_tope_fijos_centavos: pedido.topeFijosCentavos,
+    p_diezmo_centavos: pedido.diezmoCentavos,
+    p_sueldo_centavos: pedido.sueldoCentavos,
+    p_fijos_centavos: pedido.fijosCentavos,
+    p_remanente_centavos: pedido.remanenteCentavos,
+    p_sueldo_previo_centavos: pedido.sueldoPrevioCentavos,
+    p_fijos_previo_centavos: pedido.fijosPrevioCentavos,
+  };
+
+  // El diezmo de un perdido es un dato de los ajustes y viaja con el pedido; en un cobro es la regla
+  // y lo pone la base, así que cobrar_proyecto no lo recibe.
+  const { data, error } =
+    pedido.destino === 'cobrado'
+      ? await cliente.rpc('cobrar_proyecto', { ...comun, p_fecha_cobro: pedido.fecha })
+      : await cliente.rpc('cerrar_perdido', {
+          ...comun,
+          p_fecha: pedido.fecha,
+          p_diezmo_bp: pedido.diezmoBp,
+        });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function revertirLiquidacion(
+  cliente: ClienteMaun,
+  pedido: PedidoDeReversion,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } =
+    pedido.desde === 'cobrado'
+      ? await cliente.rpc('reabrir_proyecto', {
+          p_proyecto_id: pedido.proyectoId,
+          p_version: pedido.version,
+        })
+      : await cliente.rpc('reactivar_perdido', {
+          p_proyecto_id: pedido.proyectoId,
+          p_version: pedido.version,
+          p_estado: pedido.hacia,
+        });
+
   if (error) throw error;
   return data;
 }
