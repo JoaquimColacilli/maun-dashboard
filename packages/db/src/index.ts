@@ -24,6 +24,8 @@ export {
   aplicarFilaLocal,
   aplicarLote,
   cantidadDe,
+  faltaConfigurar,
+  filaPorId,
   filasDe,
   HORAS_ENTRE_RECONCILES,
   householdDe,
@@ -43,8 +45,13 @@ export {
 } from './replica.ts';
 
 export {
+  COLUMNAS_DE_AJUSTES,
+  guardarAjustes,
   guardarMovimiento,
+  guardarNombreDelTaller,
   traerBootstrap,
   traerDelta,
+  type CambiosDeAjustes,
+  type ColumnaDeAjustes,
   type MovimientoNuevo,
 } from './sincronizacion.ts';

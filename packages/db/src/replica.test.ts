@@ -5,6 +5,8 @@ import {
   aplicarFilaLocal,
   aplicarLote,
   cantidadDe,
+  faltaConfigurar,
+  filaPorId,
   filasDe,
   householdDe,
   leerLote,
@@ -51,6 +53,15 @@ function conClientes(
 
 function ids(replica: Replica, tabla: TablaReplicada): string[] {
   return filasDe(replica, tabla).map((fila) => (fila as { id: string }).id);
+}
+
+function ajustesCon(valores: Record<string, number>): Replica {
+  return aplicarLote(
+    replicaVacia(USUARIO),
+    lote('t1', { ajustes: [cruda('a1', 1, valores)] }),
+    'reconcile',
+    AHORA,
+  );
 }
 
 describe('leerLote', () => {
@@ -224,6 +235,33 @@ describe('lecturas de la réplica', () => {
     expect(tieneAcceso(replica)).toBe(true);
     expect(householdDe(replica)).toMatchObject({ nombre: 'Taller' });
     expect(ajustesDe(replica)).toMatchObject({ sueldo_mensual_centavos: 180000000 });
+  });
+
+  it('filaPorId encuentra la fila y no inventa una que no está', () => {
+    const replica = conClientes('t1', [cruda('c1', 1), cruda('c2', 1)]);
+    expect(filaPorId(replica, 'clientes', 'c1')).toMatchObject({ id: 'c1' });
+    expect(filaPorId(replica, 'clientes', 'c9')).toBeUndefined();
+  });
+
+  it('un taller recién creado tiene los ajustes en cero, que es lo que la app pregunta', () => {
+    const enCero = ajustesCon({
+      sueldo_mensual_centavos: 0,
+      costos_fijos_centavos: 0,
+      meta_cocos_centavos: 0,
+      tasa_cocos_anual_bp: 0,
+    });
+    expect(faltaConfigurar(ajustesDe(enCero))).toBe(true);
+
+    // Sin ajustes todavía no se sabe: no es lo mismo que saber que están en cero.
+    expect(faltaConfigurar(undefined)).toBe(false);
+
+    const conTasa = ajustesCon({
+      sueldo_mensual_centavos: 0,
+      costos_fijos_centavos: 0,
+      meta_cocos_centavos: 0,
+      tasa_cocos_anual_bp: 4000,
+    });
+    expect(faltaConfigurar(ajustesDe(conTasa))).toBe(false);
   });
 });
 

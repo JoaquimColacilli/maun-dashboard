@@ -167,6 +167,14 @@ export function filasDe<T extends TablaReplicada>(replica: Replica, tabla: T): F
   });
 }
 
+export function filaPorId<T extends TablaReplicada>(
+  replica: Replica,
+  tabla: T,
+  id: string,
+): FilaDe<T> | undefined {
+  return replica.tablas[tabla][id];
+}
+
 export function cantidadDe(replica: Replica, tabla: TablaReplicada): number {
   return Object.keys(replica.tablas[tabla]).length;
 }
@@ -181,6 +189,18 @@ export function householdDe(replica: Replica): FilaDe<'households'> | undefined 
 
 export function ajustesDe(replica: Replica): FilaDe<'ajustes'> | undefined {
   return filasDe(replica, 'ajustes')[0];
+}
+
+// Un taller recién creado trae los ajustes en cero: la cascada no tiene con qué repartir y la app
+// tiene que pedirlos. Es la misma condición que dibuja el estado vacío del diseño.
+export function faltaConfigurar(ajustes: FilaDe<'ajustes'> | undefined): boolean {
+  if (!ajustes) return false;
+  return (
+    ajustes.sueldo_mensual_centavos === 0 &&
+    ajustes.costos_fijos_centavos === 0 &&
+    ajustes.meta_cocos_centavos === 0 &&
+    ajustes.tasa_cocos_anual_bp === 0
+  );
 }
 
 export function necesitaReconcile(replica: Replica | undefined, ahora: number): boolean {
