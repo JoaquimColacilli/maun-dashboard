@@ -5,13 +5,13 @@ import {
   estadoDelDiezmo,
   proyeccionCocos,
   restar,
-  resumenDelMes,
   sueldoDelMes,
   type Money,
 } from '@maun/domain';
 import { useNavigate } from 'react-router';
 
 import {
+  faltaDelSueldo,
   fraseDelDiezmo,
   fraseDelSueldo,
   resumenMensual,
@@ -274,11 +274,10 @@ export function InicioPage() {
 
   const liquidaciones = liquidacionesDeLaReplica(replica);
   const objetivos = objetivosDeLaReplica(replica);
-  const resumen = resumenDelMes(liquidaciones, mes, objetivos, mes);
   const sueldo = sueldoDelMes(liquidaciones, mes, objetivos, mes);
   const fraseSueldo = fraseDelSueldo(sueldo);
   const metaCocos = centavos(ajustes?.meta_cocos_centavos ?? 0);
-  const mensaje = mensajeDelMes(mes, saldos.hogar, del, resumen.sueldo.falta);
+  const mensaje = mensajeDelMes(mes, saldos.hogar, del, faltaDelSueldo(sueldo));
 
   const proyectos = filasDe(replica, 'proyectos');
   const pendientes = proyectos.filter(
