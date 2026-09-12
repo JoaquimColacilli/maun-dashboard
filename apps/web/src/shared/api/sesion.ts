@@ -17,10 +17,6 @@ function claimsDeSesion(sesion: SesionMinima | null): Claims | undefined {
   return { usuarioId: sesion.user.id, email: sesion.user.email ?? '' };
 }
 
-// Sin red y con el access token vencido (dura una hora), getSession() devuelve sesión nula porque
-// no pudo refrescar. Echar al usuario al login ahí sería romper el offline-first: la contraseña
-// tampoco viaja. Leemos la sesión guardada para saber quién es y mostrarle su copia local; el
-// token lo revalida Postgres en cuanto vuelva la señal.
 function sesionGuardada(): Claims | undefined {
   try {
     const crudo = globalThis.localStorage.getItem(CLAVE_DE_SESION);

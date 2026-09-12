@@ -30,8 +30,6 @@ function texto(maximo: number) {
     .max(maximo, { error: `No puede pasar de ${String(maximo)} caracteres.` });
 }
 
-// Cada fila de pagos y gastos es su propio bloque en el celular, y su propio error: si el usuario
-// dejó una fila a medias, el mensaje tiene que caer en esa fila y no arriba de todo.
 const filaDinamica = z.object({
   id: z.string(),
   fecha: z.string().min(1, { error: 'Poné la fecha.' }),
@@ -155,8 +153,6 @@ export function datosDelFormulario(valores: FormularioDeProyecto): DatosDeProyec
   };
 }
 
-// Las bajas son las filas que estaban y ya no: se mandan marcadas en el mismo array, y solo las que
-// existían de verdad. Una fila que el usuario agregó y sacó sin guardar nunca llegó a la base.
 function bajasDe(
   vivas: readonly { id: string }[],
   existentes: readonly string[],
@@ -196,8 +192,6 @@ export function pedidoDeGuardado(
   };
 }
 
-// El select de estado ofrece solo lo que la base acepta: el estado actual y las transiciones que
-// valen desde ahí. Un estado inválido rebota con MN007, que es un rechazo definitivo y tapa la cola.
 export function estadosDisponibles(actual: EstadoProyecto): EstadoProyecto[] {
   return ESTADOS.filter((estado) => estado === actual || puedeCambiarEstado(actual, estado));
 }

@@ -28,8 +28,6 @@ export async function traerDelta(cliente: ClienteMaun, cursor: string): Promise<
   return leerLote(data);
 }
 
-// Las cuatro columnas de ajustes que el usuario escribe, y que tienen grant en la base. Salen del
-// tipo generado (no de una copia a mano) y se mandan de a las que cambiaron, no la fila entera.
 export const COLUMNAS_DE_AJUSTES = [
   'sueldo_mensual_centavos',
   'costos_fijos_centavos',
@@ -84,8 +82,6 @@ export async function guardarMovimiento(
   return data;
 }
 
-// Las columnas de movimientos que el usuario escribe, y que tienen grant en la base. Salen del tipo
-// generado, no de una copia a mano.
 export const COLUMNAS_DE_MOVIMIENTO = [
   'fecha',
   'tipo',
@@ -132,8 +128,6 @@ export async function borrarMovimiento(
   return data;
 }
 
-// Las columnas de clientes que el usuario escribe, y que tienen grant en la base. Salen del tipo
-// generado, no de una copia a mano.
 export const COLUMNAS_DE_CLIENTE = [
   'nombre',
   'zona',
@@ -185,8 +179,6 @@ export async function guardarCambiosDeCliente(
   return data;
 }
 
-// Las columnas de proyectos que el usuario escribe, y que tienen grant en la base. Salen del tipo
-// generado, no de una copia a mano. Las de la distribución no están: las escribe private.liquidar.
 export const COLUMNAS_DE_PROYECTO = [
   'cliente_id',
   'titulo',
@@ -217,8 +209,6 @@ interface FilaHijaViva {
   borrado?: false;
 }
 
-// La baja de una fila hija lleva solo su id: la base no mira nada más, y mandar el resto en blanco
-// haría que jsonb_to_recordset intente castear una fecha vacía a date y corte la llamada entera.
 export interface BajaDeFilaHija {
   id: string;
   borrado: true;
@@ -228,9 +218,6 @@ export type PagoParaGuardar = (FilaHijaViva & { concepto: string }) | BajaDeFila
 
 export type GastoParaGuardar = (FilaHijaViva & { descripcion: string }) | BajaDeFilaHija;
 
-// El proyecto es el agregado: sus pagos y sus gastos no se guardan sueltos. `version` es la que vio
-// el cliente y va null en un alta. Las filas hijas que el usuario sacó del formulario viajan en el
-// mismo array con `borrado`, y solo las que existían: la base nunca borra lo que el cliente no vio.
 export interface ProyectoParaGuardar {
   id: string;
   version: number | null;
@@ -294,9 +281,6 @@ export async function guardarProyecto(
   return leerProyectoGuardado(data);
 }
 
-// La edición suelta de un proyecto, para lo que no toca la plata ni sus hijos: hoy, las notas de
-// obra que se escriben en línea desde el detalle. Manda solo las columnas que cambiaron (ADR 0010),
-// y gana la última escritura, que para texto libre es lo que corresponde.
 export async function guardarCambiosDeProyecto(
   cliente: ClienteMaun,
   id: string,
@@ -312,8 +296,6 @@ export async function guardarCambiosDeProyecto(
   return data;
 }
 
-// La baja de un proyecto y la de un cliente son lógicas y con la marca fijada al encolar, así el
-// reenvío conserva la primera (ADR 0010). No hay grant de delete para el cliente.
 export async function borrarCliente(
   cliente: ClienteMaun,
   id: string,

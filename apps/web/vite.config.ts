@@ -46,12 +46,6 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          // El vendor va en su propio chunk. No baja un byte del primer arranque —los dos chunks
-          // están en el precache y entran con modulepreload, así que no aparece ningún spinner—,
-          // pero la app es una PWA que precachea el shell: con todo junto, cambiar una pantalla
-          // obliga a volver a bajar el bundle entero. Separado, un cambio de código son unos pocos
-          // kilobytes, que desde un celular con mala señal es la diferencia entre una actualización
-          // invisible y una espera (ADR 0015).
           manualChunks: (id) => (id.includes('node_modules') ? 'vendor' : undefined),
         },
       },

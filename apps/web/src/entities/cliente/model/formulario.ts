@@ -7,8 +7,6 @@ import { CONDICIONES_EN_ORDEN, ORIGENES_EN_ORDEN, type Cliente } from './catalog
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-// El único motivo que frena: la base tiene un check de formato (NN-NNNNNNNN-N) y un rechazo
-// definitivo tapa la cola, que drena de a una. El checksum, en cambio, solo advierte.
 function largoDeCuitAceptable(cuit: string): boolean {
   const revision = revisarCuit(cuit);
   return revision.estado !== 'invalido' || revision.motivo !== 'largo';
@@ -36,9 +34,6 @@ function texto(maximo: number) {
     .max(maximo, { error: `No puede pasar de ${String(maximo)} caracteres.` });
 }
 
-// Solo el nombre es obligatorio: cuando lo llama un desconocido por teléfono no tiene el CUIT a
-// mano, y la app no puede frenarlo por eso. Lo que sí frena son los dos checks de la base (el
-// formato del CUIT y el del email), porque un rechazo definitivo tapa la cola, que drena de a una.
 export const esquemaDeCliente = z.object({
   nombre: texto(200).min(1, { error: 'El nombre es lo único que no puede faltar.' }),
   zona: texto(200),
@@ -60,8 +55,6 @@ export const esquemaDeCliente = z.object({
 
 export type FormularioDeCliente = z.infer<typeof esquemaDeCliente>;
 
-// El checksum avisa y no bloquea: el caso del módulo 10 no tiene convención única y un CUIT
-// matemáticamente válido tampoco garantiza que esté inscripto.
 export function advertenciaDeCuit(cuit: string): string | undefined {
   const revision = revisarCuit(cuit);
   if (revision.estado === 'ambiguo') {
@@ -98,7 +91,6 @@ export function datosDelFormulario(valores: FormularioDeCliente): DatosDeCliente
   return { ...valores, cuit: formatearCuit(valores.cuit) };
 }
 
-// La edición manda solo las columnas que cambió el usuario, nunca la fila entera (ADR 0010).
 export function cambiosDeCliente(
   antes: DatosDeCliente,
   ahora: DatosDeCliente,

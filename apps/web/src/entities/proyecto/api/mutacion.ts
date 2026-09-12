@@ -28,8 +28,6 @@ const REINTENTOS = 5;
 
 const DURACION_DEL_RECHAZO_MS = 24 * 60 * 60 * 1000;
 
-// Los valores previos viajan en las variables y no en el contexto: el contexto no se persiste, así
-// que un rechazo después de cerrar y abrir la app no tendría con qué volver atrás (ADR 0014).
 export interface GuardadoDeProyecto {
   pedido: ProyectoParaGuardar;
   previos: {
@@ -72,8 +70,6 @@ export function hijosDelProyecto(
   };
 }
 
-// El agregado se aplica entero al cache, igual que entra entero a la base: el proyecto, las filas
-// hijas que quedan y la baja de las que el usuario sacó.
 function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
   const household = householdDe(replica);
   if (!household) return replica;
@@ -258,8 +254,6 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   },
 };
 
-// Borrar un proyecto se lleva sus pagos y sus gastos con la misma marca: la base lo hace con un
-// trigger, y el cache tiene que hacer lo mismo o quedarían hijos huérfanos hasta el próximo delta.
 function sinElProyecto(replica: Replica, id: string): Replica {
   const { pagos, gastos } = hijosDelProyecto(replica, id);
   let siguiente = quitarFilaLocal(replica, 'proyectos', id);

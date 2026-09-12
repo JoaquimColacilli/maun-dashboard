@@ -1,8 +1,3 @@
-// Diagnóstico y reparación del alta de cuentas. El camino normal no pasa por acá: el taller lo crea
-// el trigger de auth.users al confirmar el mail (ADR 0012). `--listar` muestra quién se registró y
-// con qué taller quedó; el alta a mano queda para una cuenta que, por lo que sea, quedó sin taller,
-// y es el punto de extensión de las invitaciones cuando existan.
-
 import { parseArgs } from 'node:util';
 
 import { conectar } from './conexion.ts';
@@ -77,8 +72,6 @@ try {
       );
     }
 
-    // Incluye las membresías borradas: si a la cuenta le revocaron el acceso, crear un household
-    // nuevo dejaría el anterior con datos y sin ningún miembro vivo, invisible por RLS.
     const { rows: existentes } = await cliente.query<{ nombre: string; revocada: boolean }>(
       `select h.nombre, m.deleted_at is not null as revocada
        from public.household_members m

@@ -36,7 +36,6 @@ function sinAcentos(texto: string): string {
     .toLowerCase();
 }
 
-// La réplica está en memoria: la búsqueda responde desde la primera letra y no hay debounce.
 export function buscarClientes(
   resumenes: readonly ResumenDeCliente[],
   consulta: string,
@@ -65,8 +64,6 @@ export interface CorteDeOrigen extends DatosDelOrigen {
   cantidad: number;
 }
 
-// De dónde vienen los trabajos: el único dato agregado de esta pantalla que sirve para decidir
-// dónde poner esfuerzo. Los orígenes sin clientes no ocupan lugar.
 export function corteDeOrigenes(resumenes: readonly ResumenDeCliente[]): CorteDeOrigen[] {
   return ORIGENES_EN_ORDEN.map((id) => ({
     ...ORIGEN[id],

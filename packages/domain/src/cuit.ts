@@ -26,8 +26,6 @@ export function formatearCuit(texto: string): string {
   return `${digitos.slice(0, 2)}-${digitos.slice(2, 10)}-${digitos.slice(10)}`;
 }
 
-// El módulo 11 puede dar 10, y ahí las convenciones en uso difieren entre tratarlo como inválido y
-// mapearlo a 9. Devolver null en vez de elegir una es lo que deja que la app avise sin bloquear.
 export function verificadorDeCuit(texto: string): number | null {
   const digitos = digitosDeCuit(texto);
   if (digitos.length < 10) return null;

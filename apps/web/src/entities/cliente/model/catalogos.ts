@@ -88,7 +88,6 @@ export const CONDICION: Readonly<Record<CondicionFiscal, DatosDeLaCondicion>> = 
   exento: { id: 'exento', etiqueta: 'Exento', corto: 'EX', comprobante: 'factura B' },
 };
 
-// Un monotributista puede facturar con su CUIL, así que el label del campo cambia con la condición.
 export function etiquetaDeCuit(condicion: CondicionFiscal): string {
   return condicion === 'monotributo' ? 'CUIT o CUIL' : 'CUIT';
 }

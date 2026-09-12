@@ -12,7 +12,6 @@ const FORMATO_CON_CENTAVOS = new Intl.NumberFormat('es-AR', {
 
 const FORMATO_LLANO = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 });
 
-// Para un input: los mismos separadores que lee parsearPesos, sin el símbolo de moneda.
 export function pesosEditables(centavos: number): string {
   return FORMATO_LLANO.format(centavos / 100);
 }
@@ -42,8 +41,6 @@ export function parsearPesos(texto: string): number | undefined {
   return centavos === undefined || centavos === 0 ? undefined : centavos;
 }
 
-// Un movimiento de cero no existe, pero un objetivo de cero sí: "no me pago sueldo" o "todavía no
-// tengo meta" son respuestas válidas de la primera configuración.
 export function parsearPesosDesdeCero(texto: string): number | undefined {
   return leerPesos(texto);
 }

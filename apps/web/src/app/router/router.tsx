@@ -44,9 +44,6 @@ export const router = createBrowserRouter([
                 element: <Marco />,
                 children: [
                   { index: true, element: <InicioPage /> },
-                  // Seguimiento es la primera pestaña de Proyectos y no una pantalla aparte: el
-                  // control segmentado es el modelo mental del dueño, y en escritorio Seguimiento
-                  // es además un destino propio, así que la pestaña tiene que ser una ruta.
                   {
                     path: '/seguimiento',
                     element: <ProyectosPage />,

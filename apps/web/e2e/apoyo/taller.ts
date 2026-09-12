@@ -48,9 +48,6 @@ export async function iniciarSesionDePrueba(): Promise<SesionDePrueba> {
   return { entorno, accessToken, usuarioId };
 }
 
-// El taller de la cuenta de prueba existe para esto: cada corrida arranca sin clientes, así la
-// lista vacía y los contadores de la lista son los mismos siempre. No hay grant de delete: la baja
-// es lógica, igual que en la app.
 export async function vaciarClientes({ entorno, accessToken }: SesionDePrueba): Promise<number> {
   const vivos = (await pedir(entorno, '/rest/v1/clientes?select=id&deleted_at=is.null', {
     accessToken,
@@ -85,7 +82,6 @@ export async function contarClientes(
   return filas.length;
 }
 
-// El mismo upsert por id que manda la cola de salida: reenviarlo tiene que ser inofensivo.
 export async function upsertCliente(
   { entorno, accessToken }: SesionDePrueba,
   datos: { id: string; nombre: string; zona?: string },
@@ -146,8 +142,6 @@ export async function descongelarProyectos({
   return liquidados.length;
 }
 
-// Los proyectos se borran antes que los clientes: la base rechaza con MN003 la baja de un cliente
-// que todavía tiene proyectos vivos.
 export async function vaciarProyectos(sesion: SesionDePrueba): Promise<number> {
   const { entorno, accessToken } = sesion;
   await descongelarProyectos(sesion);
@@ -390,7 +384,6 @@ export async function ajustarTaller(
   });
 }
 
-// El mismo pedido que manda la cola de salida, para probar el conflicto de versión desde afuera.
 export async function guardarProyectoPorRpc(
   { entorno, accessToken }: SesionDePrueba,
   pedido: { proyecto: Record<string, unknown>; pagos: unknown[]; gastos: unknown[] },

@@ -21,12 +21,8 @@ export const CLAVE_DE_CLIENTE = ['clientes', 'editar'] as const;
 
 const REINTENTOS = 5;
 
-// La mutación rechazada es lo único que queda del cambio que el usuario cargó: con el gcTime por
-// defecto, a los cinco minutos desaparece y el aviso de "no se pudo guardar" con ella.
 const DURACION_DEL_RECHAZO_MS = 24 * 60 * 60 * 1000;
 
-// Los valores previos viajan en las variables y no en el contexto: el contexto no se persiste, así
-// que un rechazo después de cerrar y abrir la app no tendría con qué volver atrás.
 export interface EdicionDeCliente {
   id: string;
   cambios: CambiosDeCliente;
@@ -73,7 +69,6 @@ export const MUTACION_DE_CLIENTE_NUEVO: MutationOptions<
   gcTime: DURACION_DEL_RECHAZO_MS,
   retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
   onMutate: async (nuevo, { client }) => {
-    // Una sincronización en vuelo terminaría escribiendo la réplica que leyó antes de esta fila.
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conClienteNuevo(replica, nuevo));
     await guardarCacheAhora();
@@ -113,8 +108,6 @@ export interface BajaDeCliente {
   previo: FilaDe<'clientes'>;
 }
 
-// La marca de borrado se fija al encolar y no al ejecutar, así reenviar la baja conserva la primera
-// (ADR 0010). La base rechaza con MN003 si el cliente todavía tiene proyectos vivos.
 export const MUTACION_DE_BAJA_DE_CLIENTE: MutationOptions<
   FilaDe<'clientes'>,
   unknown,

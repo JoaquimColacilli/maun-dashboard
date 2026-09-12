@@ -76,10 +76,6 @@ export function reaperturaDe(proyecto: Proyecto): Reapertura | null {
   };
 }
 
-// La proyección se calcula como la va a calcular el cobro: con calcularLiquidacion del dominio, y
-// contando las liquidaciones que ya lleva el mes (incluidas las que todavía están en la cola, que
-// la réplica ya tiene aplicadas). No se porta el despiece del diseño, que reparte sobre el
-// presupuesto en vez de sobre lo cobrado (ADR 0003 y 0011).
 export interface OpcionesDeProyeccion {
   destino?: EstadoLiquidado;
   pagoExtra?: Money;
@@ -153,8 +149,6 @@ function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
   ];
 }
 
-// Un proyecto liquidado muestra lo que quedó congelado, no una cuenta nueva: los ajustes de hoy no
-// reescriben un cobro viejo (ADR 0003). El resto muestra la proyección, atenuada.
 export function despieceDelProyecto(replica: Replica, proyecto: Proyecto, hoy: string): Despiece {
   if (estaLiquidado(proyecto.estado) && proyecto.dist_cobrado_centavos !== null) {
     const congelada: Distribucion = {

@@ -64,8 +64,6 @@ export function NuevaContrasenaPage() {
     );
   }
 
-  // Una sesión abierta no alcanza para cambiar la contraseña sin saber la anterior: esta pantalla
-  // solo vale cuando la sesión vino del enlace de recuperación.
   if (!sesion.porRecuperacion) {
     return (
       <PantallaDeAcceso

@@ -69,8 +69,6 @@ export const COMPROBANTES_EN_ORDEN = [
   'sin_comprobante',
 ] as const satisfies readonly Comprobante[];
 
-// El comprobante que corresponde a la condición fiscal del cliente. Es el valor con el que arranca
-// el formulario: el dueño lo puede pisar, pero no tiene que acordarse el día de la entrega.
 const POR_CONDICION: Readonly<Record<string, Comprobante>> = {
   consumidor_final: 'remito',
   monotributo: 'factura_c',
@@ -88,9 +86,6 @@ export interface Etapa {
   ruta: string;
 }
 
-// El control segmentado de arriba de Proyectos. Cada etapa es una ruta y no solo estado local: el
-// dueño describió su flujo con estas tres palabras, y Seguimiento es además un destino propio en
-// escritorio, así que la pestaña tiene que ser enlazable y marcar bien la navegación (ADR 0013).
 export const ETAPAS: readonly Etapa[] = [
   { id: 'seguimiento', etiqueta: 'Seguimiento', ruta: '/seguimiento' },
   { id: 'activos', etiqueta: 'Activos', ruta: '/proyectos' },

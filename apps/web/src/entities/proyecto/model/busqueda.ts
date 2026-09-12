@@ -12,8 +12,6 @@ function sinAcentos(texto: string): string {
     .toLowerCase();
 }
 
-// La réplica está en memoria: la búsqueda responde desde la primera letra y no hay debounce, igual
-// que en Clientes. Busca por cliente, que es como el dueño se acuerda de un trabajo, y por título.
 export function buscarProyectos(
   resumenes: readonly ResumenDeProyecto[],
   consulta: string,
@@ -44,8 +42,6 @@ export function filtrarPorEstado(
     : resumenes.filter((resumen) => resumen.proyecto.estado === estado);
 }
 
-// Las columnas de la tabla de escritorio son las mismas que las opciones de la hoja del celular:
-// una sola lista de criterios para los dos anchos, o son dos ordenamientos que se desincronizan.
 export const CRITERIOS: readonly Criterio<ResumenDeProyecto>[] = [
   {
     id: 'cliente',

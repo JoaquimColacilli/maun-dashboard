@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 
 import { crearCliente, iniciarSesionDePrueba, vaciarTaller } from '../apoyo/taller';
 
-// El alto que deja un teclado abierto en un celular de 844 de alto ronda los 380.
 const ALTO_CON_TECLADO = 380;
 
 test.skip(({ isMobile }) => !isMobile, 'solo tiene sentido en el viewport de celular');
@@ -21,11 +20,9 @@ test('con el formulario abierto la barra inferior se esconde y el botón de guar
   const guardar = page.getByRole('button', { name: 'Guardar cliente' });
   await expect(guardar).toBeInViewport();
 
-  // Escribir en el último campo es lo que abre el teclado y esconde la barra.
   await page.getByLabel('Notas').fill('Portón de dos hojas');
   await expect(page.getByRole('navigation', { name: 'Principal' })).toBeHidden();
 
-  // El teclado no se puede abrir de verdad en Chromium: se emula el alto visible que deja.
   await page.setViewportSize({ width: 390, height: ALTO_CON_TECLADO });
 
   await expect(guardar).toBeInViewport();
@@ -90,7 +87,6 @@ test('la hoja de ordenar del celular cambia el orden de las cards', async ({ pag
   }
 
   await page.goto('/proyectos');
-  // En el celular no hay tabla: son cards con un chip de ordenar.
   await expect(page.getByRole('table')).toHaveCount(0);
 
   await page.getByRole('button', { name: /Entrega estimada|Ordenar/ }).click();
@@ -99,7 +95,6 @@ test('la hoja de ordenar del celular cambia el orden de las cards', async ({ pag
   await hoja.getByRole('button', { name: 'Presupuesto' }).click();
   await expect(hoja).toBeHidden();
 
-  // De mayor a menor, que es el sentido con el que arranca la plata.
   await expect(page.getByRole('article').first()).toContainText('Zapatero');
 
   await page
@@ -130,7 +125,6 @@ test('agregar tres pagos seguidos deja el foco en la fila nueva y el guardar alc
   const pagos = page.getByRole('region', { name: 'Pagos recibidos' });
   for (const numero of [1, 2, 3]) {
     await pagos.getByRole('button', { name: 'Agregar un pago' }).click();
-    // El foco cae en el primer campo de la fila recién agregada, no en ningún otro lado.
     await expect(pagos.getByLabel(`Concepto ${String(numero)}`, { exact: true })).toBeFocused();
     await page.keyboard.type(`Pago ${String(numero)}`);
     await pagos.getByLabel(`Monto ${String(numero)}`, { exact: true }).fill('100000');
@@ -138,17 +132,14 @@ test('agregar tres pagos seguidos deja el foco en la fila nueva y el guardar alc
 
   await expect(pagos.getByRole('button', { name: /^Quitar concepto/ })).toHaveCount(3);
 
-  // El total va arriba de la sección y se ve sin scrollear hasta el fondo.
   await expect(pagos.getByRole('status').first()).toContainText('300.000');
 
-  // Con el teclado abierto (emulado achicando el viewport), el botón de guardar sigue alcanzable.
   await page.setViewportSize({ width: 390, height: ALTO_CON_TECLADO });
   const guardar = page.getByRole('button', { name: 'Guardar proyecto' });
   await expect(guardar).toBeInViewport();
   const caja = await guardar.boundingBox();
   expect((caja?.y ?? 0) + (caja?.height ?? 0)).toBeLessThanOrEqual(ALTO_CON_TECLADO);
 
-  // Y los montos abren el teclado numérico, las fechas el de fecha.
   await expect(pagos.getByLabel('Monto 1', { exact: true })).toHaveAttribute(
     'inputmode',
     'decimal',

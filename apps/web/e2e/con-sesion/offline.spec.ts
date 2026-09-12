@@ -22,7 +22,6 @@ test('en modo avión el cliente aparece al instante, sobrevive a cerrar la app y
 
   await page.goto('/clientes');
   await expect(page.getByRole('button', { name: 'Cargá tu primer cliente' })).toBeVisible();
-  // El service worker tiene que estar activo antes de cortar la red: es el que sirve el shell.
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
 
   await context.setOffline(true);
@@ -31,13 +30,11 @@ test('en modo avión el cliente aparece al instante, sobrevive a cerrar la app y
   await page.getByLabel('Nombre', { exact: true }).fill('Sin señal');
   await page.getByRole('button', { name: 'Guardar cliente' }).click();
 
-  // Aparece al instante, sin haber tocado la red.
   await expect(page.getByRole('button', { name: /Sin señal/ })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('Sin conexión');
   await expect(page.getByRole('status')).toContainText('1 cambio');
   expect(await contarClientes(sesion, 'Sin señal')).toBe(0);
 
-  // Cerrar la app y volver a abrirla, todavía sin señal.
   await page.close();
   const reabierta = await context.newPage();
   await reabierta.goto('/clientes');
@@ -47,7 +44,6 @@ test('en modo avión el cliente aparece al instante, sobrevive a cerrar la app y
   await expect(reabierta.getByRole('status')).toContainText('1 cambio');
   expect(await contarClientes(sesion, 'Sin señal')).toBe(0);
 
-  // Vuelve la señal: la cola drena y no duplica.
   await context.setOffline(false);
   await expect(reabierta.getByRole('status')).toBeHidden({ timeout: 20_000 });
 
@@ -68,7 +64,6 @@ test('drenar la cola dos veces con la misma mutación no duplica ni vuelve a toc
 
   expect(await contarClientes(sesion, 'Dos veces')).toBe(1);
   expect(segunda.id).toBe(primera.id);
-  // Un upsert que no cambia ningún valor no toca updated_at ni version, así que no genera delta.
   expect(segunda.version).toBe(primera.version);
   expect(segunda.updated_at).toBe(primera.updated_at);
 });
@@ -81,9 +76,6 @@ test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente,
   await crearCliente(sesion, 'Marcela Sosa');
 
   await page.goto('/proyectos');
-  // Antes de cortar la red hay que esperar dos cosas: que el service worker esté activo, porque es
-  // el que sirve el shell, y que la réplica ya esté guardada en IndexedDB. Sin lo segundo, reabrir
-  // sin señal encuentra el dispositivo vacío.
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await expect(page.getByRole('button', { name: 'Nuevo proyecto' })).toBeVisible();
   await expect(page.getByRole('status')).toBeHidden({ timeout: 20_000 });
@@ -118,14 +110,11 @@ test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente,
 
   await page.getByRole('button', { name: 'Guardar proyecto' }).click();
 
-  // Aparece al instante, sin haber tocado la red, y la cola cuenta UN cambio: el proyecto entero
-  // es una sola mutación, no una por fila.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Placard sin señal');
   await expect(page.getByRole('status').first()).toContainText('Sin conexión');
   await expect(page.getByRole('status').first()).toContainText('1 cambio');
   expect(await leerProyecto(sesion, 'Placard sin señal')).toBeUndefined();
 
-  // Cerrar la app y volver a abrirla, todavía sin señal: sigue entero.
   await page.close();
   const reabierta = await context.newPage();
   await reabierta.goto('/proyectos');
@@ -137,7 +126,6 @@ test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente,
     'Gasto 2',
   );
 
-  // Vuelve la señal: la cola drena y no duplica nada.
   await context.setOffline(false);
   await expect(reabierta.getByRole('status').first()).toBeHidden({ timeout: 20_000 });
 

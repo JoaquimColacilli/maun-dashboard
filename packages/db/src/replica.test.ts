@@ -252,7 +252,6 @@ describe('lecturas de la réplica', () => {
     });
     expect(faltaConfigurar(ajustesDe(enCero))).toBe(true);
 
-    // Sin ajustes todavía no se sabe: no es lo mismo que saber que están en cero.
     expect(faltaConfigurar(undefined)).toBe(false);
 
     const conTasa = ajustesCon({
@@ -284,7 +283,6 @@ describe('necesitaReconcile', () => {
 
     expect(replica.reconciliadoEn).toBe(new Date(AHORA).toISOString());
     expect(replica.cursor).toBe('2020-01-01T00:00:00Z');
-    // Con el cursor del servidor como marca, esto pediría un bootstrap en cada sincronización.
     expect(necesitaReconcile(replica, AHORA + 60_000)).toBe(false);
   });
 });
