@@ -11,14 +11,23 @@ export {
   type CambioDeSesion,
   type Claims,
 } from './sesion';
-export { registrarMovimiento, sincronizar, type PedidoDeSincronizacion } from './datos';
+export {
+  editarAjustes,
+  registrarMovimiento,
+  renombrarTaller,
+  sincronizar,
+  type PedidoDeSincronizacion,
+} from './datos';
 export {
   ajustesDe,
   aplicarFilaLocal,
   cantidadDe,
+  COLUMNAS_DE_AJUSTES,
   debeReintentarse,
   dinero,
   esRechazoDeNegocio,
+  faltaConfigurar,
+  filaPorId,
   filasDe,
   householdDe,
   quitarFilaLocal,
@@ -27,6 +36,7 @@ export {
   TESOROS,
   tieneAcceso,
   TIPOS_DE_MOVIMIENTO,
+  type CambiosDeAjustes,
   type FilaDe,
   type MovimientoNuevo,
   type RechazoDeLaBase,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatearPesos, parsearPesos } from './plata';
+import { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';
 
 const sinEspacios = (texto: string) => texto.replace(/\s/gu, '');
 
@@ -39,5 +39,26 @@ describe('parsearPesos', () => {
     expect(parsearPesos('-100')).toBeUndefined();
     expect(parsearPesos('1,234')).toBeUndefined();
     expect(parsearPesos('12,,5')).toBeUndefined();
+  });
+});
+
+describe('pesosEditables', () => {
+  it('escribe en el input lo que parsearPesos sabe volver a leer', () => {
+    expect(sinEspacios(pesosEditables(180000000))).toBe('1.800.000');
+    expect(pesosEditables(0)).toBe('0');
+    expect(parsearPesosDesdeCero(pesosEditables(123456))).toBe(123456);
+  });
+});
+
+describe('parsearPesosDesdeCero', () => {
+  it('acepta el cero, que en un objetivo es una respuesta', () => {
+    expect(parsearPesosDesdeCero('0')).toBe(0);
+    expect(parsearPesosDesdeCero('1.800.000')).toBe(180000000);
+  });
+
+  it('sigue rechazando lo que no es un importe', () => {
+    expect(parsearPesosDesdeCero('')).toBeUndefined();
+    expect(parsearPesosDesdeCero('-100')).toBeUndefined();
+    expect(parsearPesosDesdeCero('abc')).toBeUndefined();
   });
 });

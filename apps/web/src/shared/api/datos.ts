@@ -1,10 +1,13 @@
 import {
   aplicarLote,
+  guardarAjustes,
   guardarMovimiento,
+  guardarNombreDelTaller,
   necesitaReconcile,
   replicaVacia,
   traerBootstrap,
   traerDelta,
+  type CambiosDeAjustes,
   type FilaDe,
   type MovimientoNuevo,
   type Replica,
@@ -49,4 +52,15 @@ export async function registrarMovimiento(
   movimiento: MovimientoNuevo,
 ): Promise<FilaDe<'movimientos'>> {
   return guardarMovimiento(clienteMaun(), movimiento);
+}
+
+export async function editarAjustes(
+  id: string,
+  cambios: CambiosDeAjustes,
+): Promise<FilaDe<'ajustes'>> {
+  return guardarAjustes(clienteMaun(), id, cambios);
+}
+
+export async function renombrarTaller(id: string, nombre: string): Promise<FilaDe<'households'>> {
+  return guardarNombreDelTaller(clienteMaun(), id, nombre);
 }

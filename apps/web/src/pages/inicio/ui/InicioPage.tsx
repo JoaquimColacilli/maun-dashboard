@@ -1,10 +1,12 @@
 import { useReplica } from '@/entities/replica';
 import { useSesionActiva } from '@/entities/sesion';
 import { BotonSalir } from '@/features/cerrar-sesion';
+import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { FormularioDeMovimiento } from '@/features/registrar-movimiento';
 import {
   ajustesDe,
   cantidadDe,
+  faltaConfigurar,
   filasDe,
   householdDe,
   TABLAS_REPLICADAS,
@@ -21,7 +23,9 @@ function Fecha({ valor }: { valor: string }) {
 }
 
 function Replicado({ replica }: { replica: Replica }) {
+  const household = householdDe(replica);
   const ajustes = ajustesDe(replica);
+  const primeraVez = faltaConfigurar(ajustes);
   const movimientos = filasDe(replica, 'movimientos').slice(-ULTIMOS).reverse();
 
   return (
@@ -56,30 +60,18 @@ function Replicado({ replica }: { replica: Replica }) {
         </dl>
       </section>
 
-      {ajustes && (
-        <section aria-labelledby="titulo-ajustes" className="flex flex-col gap-3.5">
-          <h2 id="titulo-ajustes" className="text-section font-semibold">
-            Ajustes del taller
+      {household && ajustes && (
+        <section aria-labelledby="titulo-configuracion" className="flex flex-col gap-3.5">
+          <h2 id="titulo-configuracion" className="text-section font-semibold">
+            {primeraVez ? 'El taller arranca acá' : 'Ajustes del taller'}
           </h2>
-          <dl className="flex flex-col text-label">
-            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-              <dt className="text-text-2">Sueldo</dt>
-              <dd className="tabular-nums">
-                {formatearPesos(ajustes.sueldo_mensual_centavos)}
-                {ajustes.sueldo_tope_mensual ? ' por mes' : ' por proyecto'}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-              <dt className="text-text-2">Costos fijos</dt>
-              <dd className="tabular-nums">
-                {formatearPesos(ajustes.costos_fijos_centavos)} por mes
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-              <dt className="text-text-2">Meta de Cocos</dt>
-              <dd className="tabular-nums">{formatearPesos(ajustes.meta_cocos_centavos)}</dd>
-            </div>
-          </dl>
+          {primeraVez && (
+            <p className="text-body leading-relaxed text-text-2">
+              Cargá el sueldo que te asignás y tus costos fijos: son los topes con los que la app
+              reparte cada trabajo que cobrás. Mientras estén en cero, no hay nada que repartir.
+            </p>
+          )}
+          <FormularioDeConfiguracion household={household} ajustes={ajustes} />
         </section>
       )}
 
@@ -154,8 +146,9 @@ export function InicioPage() {
       </header>
 
       <p className="rounded-panel bg-surface p-3.5 text-label leading-relaxed text-text-2">
-        Pantalla técnica del tramo 2C: acá se ve lo que la app replicó del taller y se puede cargar
-        un movimiento, con o sin señal. Las pantallas de negocio llegan en el tramo que sigue.
+        Pantalla técnica del tramo 2C: acá se ve lo que la app replicó del taller, se configura el
+        reparto y se puede cargar un movimiento, con o sin señal. Las pantallas de negocio llegan en
+        el tramo que sigue.
       </p>
 
       {replica.data && <Replicado replica={replica.data} />}
