@@ -13,14 +13,17 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@hookform/resolvers": "catalog:",
     "@maun/db": "workspace:*",
     "@maun/domain": "workspace:*",
     "@maun/ui": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
+    "downshift": "catalog:",
     "idb-keyval": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "react-router": "catalog:",
     "workbox-window": "catalog:",
     "zod": "catalog:"
