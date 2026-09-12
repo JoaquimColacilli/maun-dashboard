@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
 import { conFondo, esRutaDeHoja, useAnchoDePantalla, useUbicacionVisible } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
@@ -30,6 +30,30 @@ function useIrA(): (ruta: string) => void {
       });
     });
   };
+}
+
+function LogoAInicio({
+  irA,
+  className,
+  children,
+}: {
+  irA: (ruta: string) => void;
+  className: string;
+  children: string;
+}) {
+  return (
+    <Link
+      to={DESTINOS.inicio.ruta}
+      aria-label="MAUN, ir a Inicio"
+      className={className}
+      onClick={(evento) => {
+        evento.preventDefault();
+        irA(DESTINOS.inicio.ruta);
+      }}
+    >
+      {children}
+    </Link>
+  );
 }
 
 function useEditando(): boolean {
@@ -193,7 +217,12 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
       aria-label="Principal"
       className="relative flex w-[76px] flex-none flex-col items-center gap-1.5 border-r border-hairline bg-surface-3 py-4.5"
     >
-      <span className="mb-3.5 font-display text-h1">M</span>
+      <LogoAInicio
+        irA={irA}
+        className="mb-3.5 flex size-tap items-center justify-center rounded-panel font-display text-h1 hover:bg-surface-2"
+      >
+        M
+      </LogoAInicio>
       <button
         type="button"
         aria-label="Cargar algo nuevo"
@@ -269,8 +298,13 @@ function Sidebar({
       aria-label="Principal"
       className="relative flex w-[232px] flex-none flex-col gap-0.5 border-r border-hairline bg-surface-3 px-3.5 pt-5.5 pb-4.5"
     >
-      <div className="flex items-baseline justify-between px-2.5 pb-4.5">
-        <span className="font-display text-h1-lg">MAUN</span>
+      <div className="flex items-baseline justify-between pb-4.5">
+        <LogoAInicio
+          irA={irA}
+          className="rounded-field px-2.5 font-display text-h1-lg hover:bg-surface-2"
+        >
+          MAUN
+        </LogoAInicio>
         <span className="text-meta text-text-3">Taller</span>
       </div>
       <button

@@ -98,6 +98,15 @@ describe('en el celular', () => {
   });
 });
 
+describe('en la tablet', () => {
+  it('la M del riel también lleva a Inicio', () => {
+    pantallaDe(900);
+    montar('/proyectos');
+
+    expect(screen.getByRole('link', { name: 'MAUN, ir a Inicio' })).toHaveAttribute('href', '/');
+  });
+});
+
 describe('en el escritorio', () => {
   it('Seguimiento, Diezmo y Ajustes son destinos propios', () => {
     pantallaDe(1440);
@@ -118,6 +127,13 @@ describe('en el escritorio', () => {
       'aria-current',
       'page',
     );
+  });
+
+  it('el logo es un link a Inicio con un nombre que lo dice', () => {
+    pantallaDe(1440);
+    montar('/clientes');
+
+    expect(screen.getByRole('link', { name: 'MAUN, ir a Inicio' })).toHaveAttribute('href', '/');
   });
 
   it('muestra el mail y el estado de sincronización', () => {
