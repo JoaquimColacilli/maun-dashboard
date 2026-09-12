@@ -121,17 +121,47 @@ export interface FilaDeProyecto {
   presupuesto_centavos: number | null;
 }
 
+// Un proyecto liquidado no se borra si tiene pagos o gastos (MN001), y sin borrarlo tampoco se
+// puede borrar su cliente (MN003). Desde que existe la pantalla de cobro la suite los crea, así que
+// el vaciado los descongela primero: reabre los cobrados y reactiva los perdidos. Es lo mismo que
+// hace el usuario desde la ficha, por las mismas dos funciones.
+export async function descongelarProyectos({
+  entorno,
+  accessToken,
+}: SesionDePrueba): Promise<number> {
+  const liquidados = (await pedir(
+    entorno,
+    '/rest/v1/proyectos?select=id,estado,version&deleted_at=is.null&estado=in.(cobrado,perdido)',
+    { accessToken },
+  )) as { id: string; estado: string; version: number }[];
+
+  for (const proyecto of liquidados) {
+    const esCobro = proyecto.estado === 'cobrado';
+    await pedir(entorno, `/rest/v1/rpc/${esCobro ? 'reabrir_proyecto' : 'reactivar_perdido'}`, {
+      method: 'POST',
+      accessToken,
+      body: JSON.stringify({
+        p_proyecto_id: proyecto.id,
+        p_version: proyecto.version,
+        ...(esCobro ? {} : { p_estado: 'contacto' }),
+      }),
+    });
+  }
+  return liquidados.length;
+}
+
 // Los proyectos se borran antes que los clientes: la base rechaza con MN003 la baja de un cliente
-// que todavía tiene proyectos vivos. Un proyecto liquidado con pagos o gastos no se puede borrar
-// (MN001); hoy nada de la suite los crea, y si aparecieran, el vaciado de clientes fallaría con un
-// mensaje claro en vez de en silencio.
-export async function vaciarProyectos({ entorno, accessToken }: SesionDePrueba): Promise<number> {
+// que todavía tiene proyectos vivos.
+export async function vaciarProyectos(sesion: SesionDePrueba): Promise<number> {
+  const { entorno, accessToken } = sesion;
+  await descongelarProyectos(sesion);
+
   const vivos = (await pedir(entorno, '/rest/v1/proyectos?select=id&deleted_at=is.null', {
     accessToken,
   })) as { id: string }[];
   if (vivos.length === 0) return 0;
 
-  await pedir(entorno, '/rest/v1/proyectos?deleted_at=is.null&estado=not.in.(cobrado,perdido)', {
+  await pedir(entorno, '/rest/v1/proyectos?deleted_at=is.null', {
     method: 'PATCH',
     accessToken,
     headers: { Prefer: 'return=minimal' },
@@ -196,6 +226,60 @@ export async function montosDe(
     { accessToken },
   )) as { monto_centavos: number }[];
   return filas.map((fila) => fila.monto_centavos);
+}
+
+export interface DistribucionCongelada {
+  estado: string;
+  version: number;
+  fecha_cobro: string | null;
+  dist_cobrado_centavos: number | null;
+  dist_gastos_centavos: number | null;
+  dist_diezmo_centavos: number | null;
+  dist_sueldo_centavos: number | null;
+  dist_fijos_centavos: number | null;
+  dist_remanente_centavos: number | null;
+  dist_tope_fijos_centavos: number | null;
+  dist_fijos_previo_centavos: number | null;
+  dist_sueldo_previo_centavos: number | null;
+}
+
+export async function distribucionDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<DistribucionCongelada | undefined> {
+  const filas = (await pedir(
+    entorno,
+    `/rest/v1/proyectos?select=estado,version,fecha_cobro,dist_cobrado_centavos,dist_gastos_centavos,dist_diezmo_centavos,dist_sueldo_centavos,dist_fijos_centavos,dist_remanente_centavos,dist_tope_fijos_centavos,dist_fijos_previo_centavos,dist_sueldo_previo_centavos&id=eq.${proyectoId}`,
+    { accessToken },
+  )) as DistribucionCongelada[];
+  return filas[0];
+}
+
+// Cobrar desde afuera de la app: sirve para dejar el mes con algo adentro antes de cobrar por la
+// interfaz, que es como se prueba el acumulado desactualizado.
+export async function cobrarPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  argumentos: Record<string, unknown>,
+): Promise<unknown> {
+  return pedir(entorno, '/rest/v1/rpc/cobrar_proyecto', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify(argumentos),
+  });
+}
+
+// PostgREST rechaza un PATCH sin filtro con un 21000, aunque la RLS ya deje una sola fila a la
+// vista: el filtro tiene que estar igual.
+export async function ajustarTaller(
+  { entorno, accessToken }: SesionDePrueba,
+  cambios: Record<string, number>,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/ajustes?deleted_at=is.null', {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(cambios),
+  });
 }
 
 // El mismo pedido que manda la cola de salida, para probar el conflicto de versión desde afuera.
