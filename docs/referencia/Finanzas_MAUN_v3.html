@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MAUN — Sistema de Gestión v3</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-size: 13px;
+        color: #1a1a1a;
+        background: #f5f4f0;
+        min-height: 100vh;
+        padding: 1.5rem;
+      }
+      .app {
+        max-width: 960px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e0dfd8;
+        padding: 1.5rem;
+      }
+      .app-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #e0dfd8;
+      }
+      .logo {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+      .logo span {
+        color: #8b6f3a;
+      }
+      .nav {
+        display: flex;
+        gap: 2px;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .nb {
+        padding: 7px 14px;
+        font-size: 13px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        background: transparent;
+        color: #666;
+      }
+      .nb:hover {
+        background: #f5f4f0;
+        color: #1a1a1a;
+      }
+      .nb.on {
+        background: #fff;
+        border-color: #d0cfc8;
+        color: #1a1a1a;
+        font-weight: 500;
+      }
+      .page {
+        display: none;
+      }
+      .page.on {
+        display: block;
+      }
+      .sub {
+        display: none;
+      }
+      .sub.on {
+        display: block;
+      }
+      .hrow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .ptitle {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .bp {
+        padding: 7px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        background: #1a1a1a;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .bp:hover {
+        background: #333;
+      }
+      .bs {
+        padding: 6px 12px;
+        font-size: 12px;
+        border: 1px solid #d0cfc8;
+        border-radius: 8px;
+        background: transparent;
+        color: #666;
+        cursor: pointer;
+      }
+      .bs:hover {
+        background: #f5f4f0;
+      }
+      .bd {
+        padding: 6px 12px;
+        font-size: 12px;
+        border: 1px solid #e24b4a;
+        border-radius: 8px;
+        background: transparent;
+        color: #e24b4a;
+        cursor: pointer;
+      }
+      /* Tesoros */
+      .tesoros {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 1.5rem;
+      }
+      @media (max-width: 650px) {
+        .tesoros {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .tesoro {
+        border-radius: 10px;
+        padding: 14px 16px;
+        border: 1px solid transparent;
+      }
+      .tesoro-icon {
+        font-size: 20px;
+        margin-bottom: 6px;
+      }
+      .tesoro-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+        margin-bottom: 4px;
+        opacity: 0.7;
+      }
+      .tesoro-valor {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 2px;
+        line-height: 1.1;
+      }
+      .tesoro-sub {
+        font-size: 11px;
+        opacity: 0.6;
+        margin-top: 3px;
+      }
+      .t-hogar {
+        background: #e8f7f0;
+        border-color: #9fe1cb;
+        color: #085041;
+      }
+      .t-maun {
+        background: #faeeda;
+        border-color: #fac775;
+        color: #412402;
+      }
+      .t-diezmo {
+        background: #eeedfe;
+        border-color: #afa9ec;
+        color: #26215c;
+      }
+      .t-cocos {
+        background: #e6f1fb;
+        border-color: #85b7eb;
+        color: #042c53;
+      }
+      .tesoro-neg {
+        opacity: 0.8;
+        background: #fcebeb !important;
+        border-color: #f09595 !important;
+        color: #501313 !important;
+      }
+      /* Metricas */
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 1.25rem;
+      }
+      @media (max-width: 600px) {
+        .metrics {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .mc {
+        background: #f5f4f0;
+        border-radius: 8px;
+        padding: 12px 14px;
+      }
+      .ml {
+        font-size: 11px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 5px;
+      }
+      .mv {
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .ms {
+        font-size: 11px;
+        color: #888;
+        margin-top: 3px;
+      }
+      /* Tabla */
+      .tw {
+        border: 1px solid #e0dfd8;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        font-size: 11px;
+        font-weight: 500;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 9px 13px;
+        background: #f9f8f5;
+        text-align: left;
+        border-bottom: 1px solid #e0dfd8;
+      }
+      td {
+        padding: 10px 13px;
+        border-bottom: 1px solid #e0dfd8;
+        vertical-align: middle;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr.cl:hover td {
+        background: #fafaf8;
+        cursor: pointer;
+      }
+      /* Badges */
+      .badge {
+        display: inline-flex;
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .bg {
+        background: #e8f7f0;
+        color: #0f6e56;
+      }
+      .bb {
+        background: #e6f1fb;
+        color: #185fa5;
+      }
+      .ba {
+        background: #faeeda;
+        color: #854f0b;
+      }
+      .bgr {
+        background: #f0efe8;
+        color: #5f5e5a;
+        border: 1px solid #d0cfc8;
+      }
+      .bpu {
+        background: #eeedfe;
+        color: #534ab7;
+      }
+      .br2 {
+        background: #fcebeb;
+        color: #e24b4a;
+      }
+      /* Forms */
+      .empty {
+        text-align: center;
+        padding: 2.5rem;
+        color: #aaa;
+      }
+      .fcard {
+        background: #f9f8f5;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .fct {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      .fg {
+        margin-bottom: 0.875rem;
+      }
+      .fl {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 4px;
+        display: block;
+      }
+      .fi {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid #d0cfc8;
+        border-radius: 8px;
+        background: #fff;
+        color: #1a1a1a;
+        font-family: inherit;
+      }
+      .fi:focus {
+        outline: none;
+        border-color: #8b6f3a;
+        box-shadow: 0 0 0 3px rgba(139, 111, 58, 0.1);
+      }
+      .frow {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      @media (max-width: 500px) {
+        .frow {
+          grid-template-columns: 1fr;
+        }
+      }
+      .hint-box {
+        font-size: 11px;
+        color: #8b6f3a;
+        margin-top: 4px;
+        padding: 6px 10px;
+        background: #fdf8f0;
+        border-radius: 6px;
+        border: 1px solid #f0e0c0;
+      }
+      .fact {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        padding-top: 0.875rem;
+        border-top: 1px solid #e0dfd8;
+        margin-top: 0.25rem;
+      }
+      .pago-row {
+        display: grid;
+        grid-template-columns: 110px 1fr 110px 28px;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .irow {
+        display: grid;
+        grid-template-columns: 110px 1fr 110px 28px;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .bx {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        color: #aaa;
+        font-size: 18px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .bx:hover {
+        color: #e24b4a;
+        background: #fdf0f0;
+      }
+      /* Cards */
+      .dc {
+        background: #fff;
+        border: 1px solid #e0dfd8;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .dt {
+        font-size: 11px;
+        font-weight: 500;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.875rem;
+      }
+      .dr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-bottom: 1px solid #f0efe8;
+        font-size: 13px;
+      }
+      .dr:last-child {
+        border-bottom: none;
+      }
+      .dlb {
+        color: #666;
+      }
+      .totbar {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: #f9f8f5;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-size: 13px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .section-title {
+        font-size: 11px;
+        font-weight: 500;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin: 1rem 0 0.5rem;
+      }
+      /* Barras */
+      .barra-wrap {
+        margin-bottom: 0.875rem;
+      }
+      .barra-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+      .pb {
+        height: 8px;
+        background: #e0dfd8;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .pf {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+      .pf.verde {
+        background: #0f6e56;
+      }
+      .pf.azul {
+        background: #185fa5;
+      }
+      .pf.purple {
+        background: #534ab7;
+      }
+      .pf.amarillo {
+        background: #854f0b;
+      }
+      /* Panel mensual */
+      .mes-header {
+        background: #1a1a1a;
+        color: #fff;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .mes-titulo {
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 3px;
+      }
+      .mes-sub {
+        font-size: 12px;
+        opacity: 0.5;
+        margin-bottom: 1rem;
+      }
+      .mes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      @media (max-width: 500px) {
+        .mes-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .mes-kpi {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .mes-kpi-l {
+        font-size: 10px;
+        opacity: 0.6;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+      }
+      .mes-kpi-v {
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .mes-kpi-v.ok {
+        color: #4ade80;
+      }
+      .mes-kpi-v.warn {
+        color: #fbbf24;
+      }
+      .mes-kpi-v.muted {
+        opacity: 0.35;
+      }
+      .motivacion {
+        border-radius: 8px;
+        padding: 11px 14px;
+        margin-bottom: 1rem;
+        font-size: 13px;
+        line-height: 1.5;
+        border: 1px solid;
+      }
+      .motivacion.ok {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #166534;
+      }
+      .motivacion.warn {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #92400e;
+      }
+      .motivacion.neutral {
+        background: #f9f8f5;
+        border-color: #e0dfd8;
+        color: #666;
+      }
+      /* Diezmo */
+      .diezmo-card {
+        background: #eeedfe;
+        border: 1px solid #afa9ec;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .dh-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin-bottom: 4px;
+        font-size: 12px;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .dh-debe {
+        background: rgba(226, 75, 74, 0.08);
+        color: #a32d2d;
+        border: 1px solid rgba(226, 75, 74, 0.15);
+      }
+      .dh-pago {
+        background: rgba(15, 110, 86, 0.08);
+        color: #085041;
+        border: 1px solid rgba(15, 110, 86, 0.15);
+      }
+      /* Config */
+      .cfg-tesoro {
+        background: #f9f8f5;
+        border: 1px solid #e0dfd8;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .cfg-tesoro-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 1rem;
+      }
+      .cfg-tesoro-titulo {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .crow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0efe8;
+      }
+      .crow:last-child {
+        border-bottom: none;
+      }
+      .clb {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .csb {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 2px;
+      }
+      .ci {
+        width: 160px;
+        padding: 6px 10px;
+        font-size: 13px;
+        border: 1px solid #d0cfc8;
+        border-radius: 8px;
+        background: #fff;
+        color: #1a1a1a;
+        text-align: right;
+        font-family: inherit;
+      }
+      .ci:focus {
+        outline: none;
+        border-color: #8b6f3a;
+      }
+      /* CSV */
+      .csv-btn-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="app-header">
+        <div class="logo">MAUN <span>Muebles</span></div>
+        <span style="font-size: 12px; color: #aaa">Sistema de gestión familiar</span>
+      </div>
+      <div class="nav">
+        <button class="nb on" onclick="goTab('proy', this)">Proyectos</button>
+        <button class="nb" onclick="goTab('fin', this)">Finanzas</button>
+        <button class="nb" onclick="goTab('diezmo', this)">Diezmo</button>
+        <button class="nb" onclick="goTab('cfg', this)">Configuración</button>
+      </div>
+
+      <!-- PROYECTOS -->
+      <div class="page on" id="tab-proy">
+        <div class="sub on" id="sub-lista">
+          <div class="hrow">
+            <span class="ptitle">Proyectos MAUN</span>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap">
+              <button class="bs" onclick="exportarCSV()">↓ Exportar CSV</button>
+              <label class="bs" style="cursor: pointer"
+                >↑ Importar CSV<input
+                  type="file"
+                  accept=".csv"
+                  style="display: none"
+                  onchange="importarCSV(this)"
+              /></label>
+              <button class="bp" onclick="abrirForm(null)">+ Nuevo proyecto</button>
+            </div>
+          </div>
+          <div class="metrics" id="met-proy"></div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Trabajo</th>
+                  <th>Presupuesto</th>
+                  <th>Cobrado</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tb-proy"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="sub" id="sub-form">
+          <div class="hrow"><span class="ptitle" id="form-title">Nuevo proyecto</span></div>
+          <div class="fcard">
+            <div class="frow">
+              <div class="fg">
+                <label class="fl">Cliente *</label
+                ><input class="fi" id="f-cliente" placeholder="Nombre del cliente" />
+              </div>
+              <div class="fg">
+                <label class="fl">Trabajo / descripción *</label
+                ><input class="fi" id="f-trabajo" placeholder="Ej: Placard 3 puertas" />
+              </div>
+            </div>
+            <div class="frow">
+              <div class="fg">
+                <label class="fl">Presupuesto total ($) *</label
+                ><input class="fi" id="f-presup" type="number" min="0" placeholder="0" />
+              </div>
+              <div class="fg">
+                <label class="fl">Forma de pago</label>
+                <select class="fi" id="f-pago">
+                  <option>Efectivo</option>
+                  <option>Transferencia</option>
+                  <option>Cuotas</option>
+                  <option>Mixto</option>
+                </select>
+              </div>
+            </div>
+            <div class="frow">
+              <div class="fg">
+                <label class="fl">Fecha inicio</label
+                ><input class="fi" id="f-inicio" type="date" onchange="onInicioChange(this)" />
+              </div>
+              <div class="fg">
+                <label class="fl">Fecha entrega estimada</label
+                ><input class="fi" id="f-entrega" type="date" />
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">Estado</label>
+              <select class="fi" id="f-estado">
+                <option value="presupuestado">Presupuestado</option>
+                <option value="en_curso">En curso</option>
+                <option value="entregado">Entregado (cobro pendiente)</option>
+                <option value="cobrado">Cobrado (saldado)</option>
+              </select>
+            </div>
+          </div>
+          <div class="fcard">
+            <div class="fct">Pagos recibidos del cliente</div>
+            <div style="font-size: 11px; color: #aaa; margin-bottom: 0.75rem">
+              Seña, adelantos, pagos parciales, saldo final.
+            </div>
+            <div id="pagos-list"></div>
+            <button class="bs" onclick="addPago()">+ Agregar pago</button>
+          </div>
+          <div class="fcard">
+            <div class="fct">Gastos e insumos del proyecto</div>
+            <div id="insumo-list"></div>
+            <button class="bs" onclick="addInsumo()">+ Agregar gasto</button>
+          </div>
+          <div class="fact">
+            <button class="bs" onclick="goSub('lista')">Cancelar</button>
+            <button class="bp" onclick="guardarProy()">Guardar proyecto</button>
+          </div>
+        </div>
+        <div class="sub" id="sub-det"><div id="det-content"></div></div>
+      </div>
+
+      <!-- FINANZAS -->
+      <div class="page" id="tab-fin">
+        <div class="sub on" id="sub-fin-panel">
+          <div class="hrow">
+            <span class="ptitle">Finanzas</span
+            ><button class="bp" onclick="abrirMovForm()">+ Movimiento</button>
+          </div>
+          <div class="tesoros" id="tesoros-panel"></div>
+          <div id="mes-panel"></div>
+          <div id="barras-panel"></div>
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              color: #888;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+              margin-bottom: 0.75rem;
+              margin-top: 0.5rem;
+            "
+          >
+            Historial de movimientos
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Concepto</th>
+                  <th>Tesoro</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody id="tb-mov"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="sub" id="sub-fin-form">
+          <div class="hrow"><span class="ptitle">Registrar movimiento</span></div>
+          <div class="fcard">
+            <div class="fg">
+              <label class="fl">Tipo de movimiento *</label>
+              <select class="fi" id="ie-tipo" onchange="onTipoChange()">
+                <optgroup label="Ingresos">
+                  <option value="ingreso_hogar">Ingreso HOGAR (docencia, otros)</option>
+                  <option value="ingreso_maun">Ingreso MAUN (cobro manual)</option>
+                </optgroup>
+                <optgroup label="Gastos">
+                  <option value="gasto_hogar">Gasto HOGAR (super, servicios, etc.)</option>
+                  <option value="gasto_maun">Gasto MAUN (taller, herramientas, etc.)</option>
+                </optgroup>
+                <optgroup label="Diezmo">
+                  <option value="pago_diezmo">Pago de diezmo</option>
+                </optgroup>
+                <optgroup label="Cocos">
+                  <option value="transfer_cocos">MAUN → Cocos</option>
+                  <option value="gasto_cocos">Gasto desde Cocos</option>
+                  <option value="cocos_a_maun">Cocos → MAUN</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="fg" id="ie-cat-wrap" style="display: none">
+              <label class="fl">Categoría</label>
+              <select class="fi" id="ie-cat"></select>
+            </div>
+            <div class="fg">
+              <label class="fl">Descripción *</label>
+              <input
+                class="fi"
+                id="ie-concepto"
+                placeholder="Ej: Supermercado, sierra de mesa, docencia marzo..."
+              />
+            </div>
+            <div class="frow">
+              <div class="fg">
+                <label class="fl">Monto ($) *</label
+                ><input class="fi" id="ie-monto" type="number" min="0" placeholder="0" />
+              </div>
+              <div class="fg">
+                <label class="fl">Fecha</label><input class="fi" id="ie-fecha" type="date" />
+              </div>
+            </div>
+            <div id="ie-hint-box" style="display: none" class="hint-box"></div>
+            <div class="fact">
+              <button class="bs" onclick="goSub('fin-panel')">Cancelar</button>
+              <button class="bp" onclick="guardarMovimiento()">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIEZMO -->
+      <div class="page" id="tab-diezmo">
+        <div class="hrow">
+          <span class="ptitle">Diezmo</span>
+          <button
+            class="bp"
+            onclick="
+              document.querySelectorAll('.nb')[1].click();
+              abrirMovForm('pago_diezmo');
+            "
+          >
+            Registrar pago
+          </button>
+        </div>
+        <div id="diezmo-page"></div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="page" id="tab-cfg">
+        <div class="hrow">
+          <span class="ptitle">Configuración</span
+          ><button class="bp" onclick="guardarCfg()">Guardar y aplicar</button>
+        </div>
+        <p style="font-size: 12px; color: #aaa; margin-bottom: 1.25rem">
+          Si modificás el saldo de un tesoro, se generará un asiento automático en Finanzas con la
+          diferencia.
+        </p>
+
+        <div class="cfg-tesoro">
+          <div class="cfg-tesoro-header">
+            <span style="font-size: 20px">🏠</span><span class="cfg-tesoro-titulo">HOGAR</span>
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Sueldo mensual asignado ($)</div>
+              <div class="csb">Lo que se transfiere al tesoro HOGAR por proyecto cobrado</div>
+            </div>
+            <input class="ci" id="c-sueldo" type="number" value="1800000" />
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Saldo actual HOGAR ($)</div>
+              <div class="csb">Ajustá si hubo movimientos externos no registrados</div>
+            </div>
+            <input
+              class="ci"
+              id="c-saldo-hogar"
+              type="number"
+              value="0"
+              readonly
+              style="background: #f9f8f5; color: #aaa"
+            />
+          </div>
+        </div>
+
+        <div class="cfg-tesoro">
+          <div class="cfg-tesoro-header">
+            <span style="font-size: 20px">🪵</span><span class="cfg-tesoro-titulo">MAUN</span>
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Costos fijos mensuales ($)</div>
+              <div class="csb">Alquiler galpón u otros. Se descuenta al cobrar cada proyecto.</div>
+            </div>
+            <input class="ci" id="c-fijos" type="number" value="0" />
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Saldo actual MAUN ($)</div>
+              <div class="csb">Ajustá si hubo movimientos externos no registrados</div>
+            </div>
+            <input
+              class="ci"
+              id="c-saldo-maun"
+              type="number"
+              value="0"
+              readonly
+              style="background: #f9f8f5; color: #aaa"
+            />
+          </div>
+        </div>
+
+        <div class="cfg-tesoro">
+          <div class="cfg-tesoro-header">
+            <span style="font-size: 20px">⛪</span><span class="cfg-tesoro-titulo">DIEZMO</span>
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Saldo actual DIEZMO ($)</div>
+              <div class="csb">Saldo pendiente. Puede ser positivo (favor) o negativo (deuda)</div>
+            </div>
+            <input
+              class="ci"
+              id="c-saldo-diezmo"
+              type="number"
+              value="0"
+              readonly
+              style="background: #f9f8f5; color: #aaa"
+            />
+          </div>
+        </div>
+
+        <div class="cfg-tesoro">
+          <div class="cfg-tesoro-header">
+            <span style="font-size: 20px">🏦</span><span class="cfg-tesoro-titulo">COCOS</span>
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Meta del fondo ($)</div>
+              <div class="csb">Objetivo de ahorro para la casa propia</div>
+            </div>
+            <input class="ci" id="c-meta-cocos" type="number" value="10000000" />
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Tasa anual (%)</div>
+              <div class="csb">Rendimiento anual del fondo</div>
+            </div>
+            <input class="ci" id="c-tasa" type="number" value="40" />
+          </div>
+          <div class="crow">
+            <div>
+              <div class="clb">Saldo actual Cocos ($)</div>
+              <div class="csb">Modificar genera un asiento automático por la diferencia</div>
+            </div>
+            <input class="ci" id="c-saldo-cocos" type="number" value="0" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORE = {
+        get(k) {
+          try {
+            const v = localStorage.getItem(k);
+            return v ? JSON.parse(v) : null;
+          } catch (e) {
+            return null;
+          }
+        },
+        set(k, v) {
+          try {
+            localStorage.setItem(k, JSON.stringify(v));
+          } catch (e) {}
+        },
+      };
+      const KP = 'maun3_p',
+        KM = 'maun3_m',
+        KC = 'maun3_c';
+      let P = [],
+        M = [],
+        editId = null,
+        esEdicion = false;
+      let cfg = { sueldo: 1800000, fijos: 0, metaCocos: 10000000, tasa: 40 };
+
+      const fmt = (n) => '$' + Math.round(Math.abs(n)).toLocaleString('es-AR');
+      const fmtS = (n) => (n < 0 ? '-' : '') + fmt(n); // con signo para config
+      const hoy = () => new Date().toISOString().slice(0, 10);
+      const g = (id) => document.getElementById(id);
+      const uid = () => Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+
+      function init() {
+        const sp = STORE.get(KP);
+        if (sp) P = sp;
+        const sm = STORE.get(KM);
+        if (sm) M = sm;
+        const sc = STORE.get(KC);
+        if (sc) Object.assign(cfg, sc);
+        cfgToForm();
+        refreshProy();
+        refreshFin();
+        refreshDiezmo();
+      }
+      const savP = () => STORE.set(KP, P);
+      const savM = () => STORE.set(KM, M);
+      const savC = () => STORE.set(KC, cfg);
+
+      // NAV
+      function goTab(id, btn) {
+        document.querySelectorAll('.page').forEach((el) => el.classList.remove('on'));
+        document.querySelectorAll('.nb').forEach((el) => el.classList.remove('on'));
+        g('tab-' + id).classList.add('on');
+        // Activar botón nav correcto
+        document.querySelectorAll('.nb').forEach((b) => {
+          if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + id + "'"))
+            b.classList.add('on');
+        });
+        if (btn && btn.classList) btn.classList.add('on');
+        if (id === 'proy') goSub('lista');
+        if (id === 'fin') {
+          // Asegurar que la subpágina correcta esté activa
+          document.querySelectorAll('.sub').forEach((el) => el.classList.remove('on'));
+          g('sub-fin-panel').classList.add('on');
+          refreshFin();
+        }
+        if (id === 'diezmo') refreshDiezmo();
+        if (id === 'cfg') cfgToForm();
+      }
+      function goSub(id) {
+        document.querySelectorAll('.sub').forEach((el) => el.classList.remove('on'));
+        g('sub-' + id).classList.add('on');
+        if (id === 'lista') refreshProy();
+        if (id === 'fin-panel') refreshFin();
+      }
+
+      // CALCULO TESOROS
+      function calcTesoros() {
+        let hogar = 0,
+          maun = 0,
+          diezmoAcum = 0,
+          diezmoPagado = 0,
+          cocos = 0;
+        M.forEach((m) => {
+          switch (m.tipo) {
+            case 'ingreso_hogar':
+              hogar += m.monto;
+              break;
+            case 'sueldo_hogar':
+              hogar += m.monto;
+              break;
+            case 'ingreso_maun':
+              maun += m.monto;
+              break;
+            case 'gasto_hogar':
+              hogar -= m.monto;
+              break;
+            case 'gasto_maun':
+              maun -= m.monto;
+              break;
+            case 'fijos_maun':
+              maun -= m.monto;
+              break;
+            case 'diezmo_generado':
+              diezmoAcum += m.monto;
+              maun -= m.monto;
+              break;
+            case 'pago_diezmo':
+              diezmoPagado += m.monto;
+              break;
+            case 'transfer_cocos':
+              maun -= m.monto;
+              cocos += m.monto;
+              break;
+            case 'gasto_cocos':
+              cocos -= m.monto;
+              break;
+            case 'cocos_a_maun':
+              cocos -= m.monto;
+              maun += m.monto;
+              break;
+            case 'ajuste_hogar':
+              hogar += m.monto;
+              break;
+            case 'ajuste_maun':
+              maun += m.monto;
+              break;
+            case 'ajuste_cocos':
+              cocos += m.monto;
+              break;
+          }
+        });
+        // Saldo diezmo: positivo = superávit (pagaron de más), negativo = deuda
+        const diezmoSaldo = diezmoPagado - diezmoAcum;
+        return { hogar, maun, diezmoAcum, diezmoPagado, diezmoSaldo, cocos };
+      }
+
+      // DIAS HABILES
+      function diasHabiles(f, n) {
+        const d = new Date(f + 'T12:00:00');
+        let c = 0;
+        while (c < n) {
+          d.setDate(d.getDate() + 1);
+          const w = d.getDay();
+          if (w !== 0 && w !== 6) c++;
+        }
+        return d.toISOString().slice(0, 10);
+      }
+      function onInicioChange(inp) {
+        if (!esEdicion) g('f-entrega').value = diasHabiles(inp.value, 21);
+      }
+
+      // TIPO MOVIMIENTO
+      const CATS = {
+        gasto_maun: [
+          'Materiales/insumos',
+          'Herramientas/equipamiento',
+          'Flete/traslado',
+          'Servicios taller',
+          'Publicidad',
+          'Otro MAUN',
+        ],
+        gasto_hogar: [
+          'Supermercado',
+          'Servicios hogar (luz, gas, tel)',
+          'Educación/homeschool',
+          'Salud',
+          'Transporte',
+          'Recreación',
+          'Ropa',
+          'Iglesia/comunidad',
+          'Otro hogar',
+        ],
+        gasto_cocos: ['Compra inmueble', 'Gastos de mudanza', 'Otro Cocos'],
+      };
+      const HINTS = {
+        ingreso_hogar: 'Va al tesoro HOGAR. Usalo para docencia, regalos, ventas personales, etc.',
+        ingreso_maun: 'Va al tesoro MAUN. Solo para cobros que no vienen de un proyecto cargado.',
+        gasto_hogar: 'Sale del tesoro HOGAR.',
+        gasto_maun: 'Sale del tesoro MAUN.',
+        pago_diezmo: 'Reduce la deuda de diezmo. Si pagás de más, queda en superávit.',
+        transfer_cocos: 'Sale del tesoro MAUN y va al fondo COCOS.',
+        gasto_cocos: 'Sale directamente del fondo COCOS.',
+        cocos_a_maun: 'Sale de COCOS y vuelve al tesoro MAUN.',
+      };
+      function onTipoChange() {
+        const tipo = g('ie-tipo').value;
+        const hint = g('ie-hint-box');
+        const catWrap = g('ie-cat-wrap');
+        const cat = g('ie-cat');
+        hint.textContent = HINTS[tipo] || '';
+        hint.style.display = HINTS[tipo] ? 'block' : 'none';
+        if (CATS[tipo]) {
+          cat.innerHTML = CATS[tipo].map((c) => `<option>${c}</option>`).join('');
+          catWrap.style.display = 'block';
+        } else {
+          catWrap.style.display = 'none';
+        }
+      }
+      function abrirMovForm(tipoPreset) {
+        // Primero asegurarse de estar en finanzas
+        goTab('fin', null);
+        // Ahora abrir el formulario
+        g('ie-tipo').value = tipoPreset || 'ingreso_hogar';
+        g('ie-concepto').value = '';
+        g('ie-monto').value = '';
+        g('ie-fecha').value = hoy();
+        onTipoChange();
+        document.querySelectorAll('.sub').forEach((el) => el.classList.remove('on'));
+        g('sub-fin-form').classList.add('on');
+      }
+      function guardarMovimiento() {
+        const concepto = g('ie-concepto').value.trim();
+        const monto = parseFloat(g('ie-monto').value) || 0;
+        const tipo = g('ie-tipo').value;
+        const fecha = g('ie-fecha').value || hoy();
+        const cat = g('ie-cat-wrap').style.display !== 'none' ? g('ie-cat').value : '';
+        if (!concepto) {
+          alert('Falta la descripción.');
+          return;
+        }
+        if (!monto) {
+          alert('Falta el monto.');
+          return;
+        }
+        M.unshift({ id: uid(), concepto, tipo, cat, monto, fecha });
+        savM();
+        document.querySelectorAll('.sub').forEach((el) => el.classList.remove('on'));
+        g('sub-fin-panel').classList.add('on');
+        refreshFin();
+      }
+
+      // PROYECTOS — calculo
+      function calcProy(p) {
+        const totalPagado = (p.pagos || []).reduce((a, x) => a + x.monto, 0);
+        const totalGastos = (p.insumos || []).reduce((a, x) => a + (parseFloat(x.monto) || 0), 0);
+        const gananciaNeta = p.presupuesto - totalGastos;
+        const saldoPendiente = Math.max(0, p.presupuesto - totalPagado);
+        const diezmo = Math.round(gananciaNeta * 0.1);
+        const despDiezmo = gananciaNeta - diezmo;
+        const sueldo = Math.min(cfg.sueldo, despDiezmo);
+        const despSueldo = despDiezmo - sueldo;
+        const fijos = Math.min(cfg.fijos, despSueldo);
+        const rem = Math.max(0, despSueldo - fijos);
+        return {
+          totalPagado,
+          totalGastos,
+          gananciaNeta,
+          saldoPendiente,
+          diezmo,
+          sueldo,
+          fijos,
+          rem,
+        };
+      }
+
+      // Genera movimientos en tesoros al cobrar
+      function sincMovsProy(p) {
+        M = M.filter((m) => m.proyId !== p.id);
+        // Pagos → ingreso MAUN
+        (p.pagos || []).forEach((pago) => {
+          M.push({
+            id: uid(),
+            proyId: p.id,
+            concepto: `${pago.concepto || 'Pago'} — ${p.trabajo} (${p.cliente})`,
+            tipo: 'ingreso_maun',
+            monto: pago.monto,
+            fecha: pago.fecha,
+          });
+        });
+        // Gastos proyecto → gasto MAUN
+        if (p.estado !== 'presupuestado') {
+          (p.insumos || []).forEach((ins) => {
+            if (ins.monto > 0)
+              M.push({
+                id: uid(),
+                proyId: p.id,
+                concepto: `Insumo: ${ins.nombre} — ${p.trabajo}`,
+                tipo: 'gasto_maun',
+                cat: 'Materiales/insumos',
+                monto: ins.monto,
+                fecha: ins.fecha || hoy(),
+              });
+          });
+        }
+        // Al cobrar: distribución automática
+        if (p.estado === 'cobrado') {
+          const c = calcProy(p);
+          const f = hoy();
+          if (c.diezmo > 0)
+            M.push({
+              id: uid(),
+              proyId: p.id,
+              concepto: `Diezmo generado — ${p.trabajo}`,
+              tipo: 'diezmo_generado',
+              monto: c.diezmo,
+              fecha: f,
+            });
+          if (c.sueldo > 0)
+            M.push({
+              id: uid(),
+              proyId: p.id,
+              concepto: `Sueldo HOGAR — ${p.trabajo}`,
+              tipo: 'sueldo_hogar',
+              monto: c.sueldo,
+              fecha: f,
+            });
+          if (c.fijos > 0)
+            M.push({
+              id: uid(),
+              proyId: p.id,
+              concepto: `Costos fijos MAUN — ${p.trabajo}`,
+              tipo: 'fijos_maun',
+              monto: c.fijos,
+              fecha: f,
+            });
+          // c.rem queda en MAUN sin movimiento extra
+        }
+        savM();
+      }
+
+      // FORM proyectos
+      function addPago(id = '', concepto = '', monto = '', fecha = '') {
+        const div = document.createElement('div');
+        div.className = 'pago-row';
+        div.dataset.id = id || uid();
+        div.innerHTML =
+          `<input class="fi" type="date" value="${fecha || hoy()}">` +
+          `<input class="fi" placeholder="Concepto (seña, adelanto...)" value="${concepto}">` +
+          `<input class="fi" type="number" min="0" placeholder="$ monto" value="${monto || ''}">` +
+          `<button class="bx" onclick="this.parentElement.remove()">×</button>`;
+        g('pagos-list').appendChild(div);
+      }
+      function getPagos() {
+        return Array.from(document.querySelectorAll('#pagos-list .pago-row'))
+          .map((r) => {
+            const ins = r.querySelectorAll('input');
+            return {
+              id: r.dataset.id,
+              fecha: ins[0].value || hoy(),
+              concepto: ins[1].value.trim(),
+              monto: parseFloat(ins[2].value) || 0,
+            };
+          })
+          .filter((p) => p.monto > 0);
+      }
+      function addInsumo(nombre = '', monto = '', fecha = '') {
+        const div = document.createElement('div');
+        div.className = 'irow';
+        div.innerHTML =
+          `<input class="fi" type="date" value="${fecha || hoy()}">` +
+          `<input class="fi" placeholder="Descripción del gasto" value="${nombre}">` +
+          `<input class="fi" type="number" min="0" placeholder="$ costo" value="${monto || ''}">` +
+          `<button class="bx" onclick="this.parentElement.remove()">×</button>`;
+        g('insumo-list').appendChild(div);
+      }
+      function getInsumos() {
+        return Array.from(document.querySelectorAll('#insumo-list .irow'))
+          .map((r) => {
+            const ins = r.querySelectorAll('input');
+            return {
+              fecha: ins[0].value || hoy(),
+              nombre: ins[1].value.trim(),
+              monto: parseFloat(ins[2].value) || 0,
+            };
+          })
+          .filter((i) => i.nombre);
+      }
+      function abrirForm(id) {
+        esEdicion = !!id;
+        editId = id;
+        const p = id ? P.find((x) => x.id === id) : null;
+        g('form-title').textContent = p ? 'Editar proyecto' : 'Nuevo proyecto';
+        g('f-cliente').value = p ? p.cliente : '';
+        g('f-trabajo').value = p ? p.trabajo : '';
+        g('f-presup').value = p ? p.presupuesto : '';
+        g('f-pago').value = p ? p.pago || 'Efectivo' : 'Efectivo';
+        const iv = p ? p.inicio || hoy() : hoy();
+        g('f-inicio').value = iv;
+        g('f-entrega').value = p ? p.entrega || '' : diasHabiles(iv, 21);
+        g('f-estado').value = p ? p.estado || 'presupuestado' : 'presupuestado';
+        g('pagos-list').innerHTML = '';
+        g('insumo-list').innerHTML = '';
+        (p ? p.pagos || [] : []).forEach((pg) => addPago(pg.id, pg.concepto, pg.monto, pg.fecha));
+        (p ? p.insumos || [] : []).forEach((i) => addInsumo(i.nombre, i.monto, i.fecha));
+        goSub('form');
+      }
+      function guardarProy() {
+        const cliente = g('f-cliente').value.trim();
+        const trabajo = g('f-trabajo').value.trim();
+        const presupuesto = parseFloat(g('f-presup').value) || 0;
+        if (!cliente) {
+          alert('Falta el cliente.');
+          return;
+        }
+        if (!trabajo) {
+          alert('Falta la descripción.');
+          return;
+        }
+        if (!presupuesto) {
+          alert('Falta el presupuesto.');
+          return;
+        }
+        const pagos = getPagos(),
+          insumos = getInsumos(),
+          estado = g('f-estado').value;
+        const estadoFinal = pagos.length > 0 && estado === 'presupuestado' ? 'en_curso' : estado;
+        if (editId) {
+          const idx = P.findIndex((p) => p.id === editId);
+          P[idx] = {
+            ...P[idx],
+            cliente,
+            trabajo,
+            presupuesto,
+            pagos,
+            insumos,
+            estado: estadoFinal,
+            pago: g('f-pago').value,
+            inicio: g('f-inicio').value,
+            entrega: g('f-entrega').value,
+          };
+          sincMovsProy(P[idx]);
+        } else {
+          const proy = {
+            id: uid(),
+            cliente,
+            trabajo,
+            presupuesto,
+            pagos,
+            insumos,
+            estado: estadoFinal,
+            pago: g('f-pago').value,
+            inicio: g('f-inicio').value,
+            entrega: g('f-entrega').value,
+          };
+          P.unshift(proy);
+          sincMovsProy(proy);
+        }
+        savP();
+        editId = null;
+        esEdicion = false;
+        goSub('lista');
+      }
+      function verDetalle(id) {
+        const p = P.find((x) => x.id === id);
+        if (!p) return;
+        const c = calcProy(p);
+        const pagosHTML = (p.pagos || []).length
+          ? `<div class="section-title">Pagos recibidos</div>` +
+            (p.pagos || [])
+              .map(
+                (pg) =>
+                  `<div class="dr"><span class="dlb">${pg.fecha} — ${pg.concepto || 'Pago'}</span><span style="color:#0f6e56;font-weight:500">${fmt(pg.monto)}</span></div>`,
+              )
+              .join('')
+          : `<div style="font-size:12px;color:#aaa;padding:6px 0">Sin pagos registrados.</div>`;
+        const insHTML = (p.insumos || []).length
+          ? `<div class="section-title">Gastos e insumos</div>` +
+            (p.insumos || [])
+              .map(
+                (i) =>
+                  `<div class="dr"><span class="dlb">${i.fecha} — ${i.nombre}</span><span style="color:#e24b4a">-${fmt(i.monto)}</span></div>`,
+              )
+              .join('')
+          : '';
+        g('det-content').innerHTML = `
+    <div class="hrow"><span class="ptitle">${p.cliente} — ${p.trabajo}</span>${badgeE(p.estado)}</div>
+    <div class="totbar">
+      <span>Presupuesto: <strong>${fmt(p.presupuesto)}</strong></span>
+      <span>Cobrado: <strong style="color:#0f6e56">${fmt(c.totalPagado)}</strong></span>
+      <span>Saldo: <strong style="color:${c.saldoPendiente > 0 ? '#854f0b' : '#0f6e56'}">${fmt(c.saldoPendiente)}</strong></span>
+    </div>
+    <div class="dc"><div class="dt">Movimientos del proyecto</div>${pagosHTML}${insHTML}</div>
+    <div class="dc"><div class="dt">Distribución al cobrar</div>
+      <div class="dr"><span class="dlb">Ganancia neta</span><span style="font-weight:500">${fmt(c.gananciaNeta)}</span></div>
+      <div class="dr"><span class="dlb">→ DIEZMO (10%)</span><span style="color:#534ab7">-${fmt(c.diezmo)}</span></div>
+      <div class="dr"><span class="dlb">→ HOGAR (sueldo)</span><span style="color:#0f6e56">${fmt(c.sueldo)}</span></div>
+      ${c.fijos > 0 ? `<div class="dr"><span class="dlb">→ Costos fijos MAUN</span><span style="color:#e24b4a">-${fmt(c.fijos)}</span></div>` : ''}
+      <div class="dr"><span class="dlb">→ Queda en MAUN</span><span style="color:#854f0b;font-weight:500">${fmt(c.rem)}</span></div>
+      ${p.estado !== 'cobrado' ? `<div style="font-size:11px;color:#aaa;padding-top:8px;border-top:1px solid #f0efe8;margin-top:4px">La distribución se aplica al marcar "Cobrado (saldado)".</div>` : ''}
+    </div>
+    <div class="fact">
+      <button class="bd" onclick="eliminarProy('${p.id}')">Eliminar</button>
+      <button class="bs" onclick="abrirForm('${p.id}')">Editar / agregar pago</button>
+      <button class="bs" onclick="goSub('lista')">← Volver</button>
+    </div>`;
+        goSub('det');
+      }
+      function eliminarProy(id) {
+        if (!confirm('¿Eliminar este proyecto?')) return;
+        P = P.filter((p) => p.id !== id);
+        M = M.filter((m) => m.proyId !== id);
+        savP();
+        savM();
+        goSub('lista');
+      }
+
+      // CSV EXPORT / IMPORT
+      function exportarCSV() {
+        const rows = [
+          [
+            'id',
+            'cliente',
+            'trabajo',
+            'presupuesto',
+            'pago',
+            'inicio',
+            'entrega',
+            'estado',
+            'pagos_json',
+            'insumos_json',
+          ],
+        ];
+        P.forEach((p) =>
+          rows.push([
+            p.id,
+            p.cliente,
+            p.trabajo,
+            p.presupuesto,
+            p.pago || '',
+            p.inicio || '',
+            p.entrega || '',
+            p.estado,
+            JSON.stringify(p.pagos || []),
+            JSON.stringify(p.insumos || []),
+          ]),
+        );
+        const csv = rows
+          .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+          .join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        a.download = 'maun_proyectos_' + hoy() + '.csv';
+        a.click();
+      }
+      function importarCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const lines = e.target.result.split('\n').filter((l) => l.trim());
+          const headers = parseCSVRow(lines[0]);
+          let importados = 0,
+            actualizados = 0;
+          for (let i = 1; i < lines.length; i++) {
+            const vals = parseCSVRow(lines[i]);
+            if (vals.length < 8) continue;
+            const obj = {};
+            headers.forEach((h, j) => (obj[h] = vals[j] || ''));
+            const proy = {
+              id: obj.id || uid(),
+              cliente: obj.cliente,
+              trabajo: obj.trabajo,
+              presupuesto: parseFloat(obj.presupuesto) || 0,
+              pago: obj.pago,
+              inicio: obj.inicio,
+              entrega: obj.entrega,
+              estado: obj.estado,
+              pagos: safeJSON(obj.pagos_json, []),
+              insumos: safeJSON(obj.insumos_json, []),
+            };
+            const idx = P.findIndex((p) => p.id === proy.id);
+            if (idx >= 0) {
+              P[idx] = proy;
+              actualizados++;
+            } else {
+              P.unshift(proy);
+              importados++;
+            }
+          }
+          savP();
+          refreshProy();
+          alert(`Importación completa: ${importados} nuevos, ${actualizados} actualizados.`);
+        };
+        reader.readAsText(file);
+        input.value = '';
+      }
+      function parseCSVRow(row) {
+        const res = [];
+        let cur = '',
+          inQ = false;
+        for (let i = 0; i < row.length; i++) {
+          const c = row[i];
+          if (c === '"') {
+            if (inQ && row[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else inQ = !inQ;
+          } else if (c === ',' && !inQ) {
+            res.push(cur);
+            cur = '';
+          } else cur += c;
+        }
+        res.push(cur);
+        return res;
+      }
+      function safeJSON(str, def) {
+        try {
+          return JSON.parse(str);
+        } catch (e) {
+          return def;
+        }
+      }
+
+      // CONFIG
+      function cfgToForm() {
+        const T = calcTesoros();
+        g('c-sueldo').value = cfg.sueldo;
+        g('c-fijos').value = cfg.fijos;
+        g('c-meta-cocos').value = cfg.metaCocos;
+        g('c-tasa').value = cfg.tasa;
+        // Saldos calculados (readonly, solo Cocos editable)
+        g('c-saldo-hogar').value = Math.round(T.hogar);
+        g('c-saldo-maun').value = Math.round(T.maun);
+        g('c-saldo-diezmo').value = Math.round(T.diezmoSaldo);
+        g('c-saldo-cocos').value = Math.round(T.cocos);
+        // Cocos es editable para ajustes de intereses
+        g('c-saldo-cocos').removeAttribute('readonly');
+        g('c-saldo-cocos').style.background = '';
+        g('c-saldo-cocos').style.color = '';
+      }
+      function guardarCfg() {
+        const T = calcTesoros();
+        const nuevoSueldo = parseFloat(g('c-sueldo').value) || 1800000;
+        const nuevoFijos = parseFloat(g('c-fijos').value) || 0;
+        const nuevaMeta = parseFloat(g('c-meta-cocos').value) || 10000000;
+        const nuevaTasa = parseFloat(g('c-tasa').value) || 40;
+        const nuevoCocos = parseFloat(g('c-saldo-cocos').value) || 0;
+        // Si el saldo Cocos cambió, generar asiento automático
+        const diffCocos = Math.round(nuevoCocos - T.cocos);
+        if (diffCocos !== 0) {
+          M.unshift({
+            id: uid(),
+            concepto: `Ajuste COCOS (${diffCocos > 0 ? 'intereses/depósito' : 'retiro/corrección'})`,
+            tipo: 'ajuste_cocos',
+            monto: diffCocos,
+            fecha: hoy(),
+          });
+          savM();
+        }
+        cfg = { sueldo: nuevoSueldo, fijos: nuevoFijos, metaCocos: nuevaMeta, tasa: nuevaTasa };
+        savC();
+        alert(
+          'Configuración guardada.' +
+            (diffCocos !== 0
+              ? ` Se generó un asiento de ajuste Cocos por ${diffCocos > 0 ? '+' : ''}${fmt(diffCocos)}.`
+              : ''),
+        );
+        cfgToForm();
+      }
+
+      // BADGE
+      function badgeE(e) {
+        const m = {
+          presupuestado: ['bgr', 'Presupuestado'],
+          en_curso: ['bb', 'En curso'],
+          entregado: ['ba', 'Entregado'],
+          cobrado: ['bg', 'Cobrado'],
+        };
+        const [c, l] = m[e] || ['bgr', e];
+        return `<span class="badge ${c}">${l}</span>`;
+      }
+
+      // LABEL TESORO para tabla
+      function tesoroLabel(tipo) {
+        const m = {
+          ingreso_hogar: '🏠 HOGAR',
+          sueldo_hogar: '🏠 HOGAR',
+          gasto_hogar: '🏠 HOGAR',
+          ajuste_hogar: '🏠 HOGAR',
+          ingreso_maun: '🪵 MAUN',
+          gasto_maun: '🪵 MAUN',
+          fijos_maun: '🪵 MAUN',
+          ajuste_maun: '🪵 MAUN',
+          diezmo_generado: '⛪ DIEZMO',
+          pago_diezmo: '⛪ DIEZMO',
+          transfer_cocos: '🏦 COCOS',
+          gasto_cocos: '🏦 COCOS',
+          cocos_a_maun: '🏦 COCOS',
+          ajuste_cocos: '🏦 COCOS',
+        };
+        return m[tipo] || '—';
+      }
+      function esEgreso(tipo) {
+        return [
+          'gasto_hogar',
+          'gasto_maun',
+          'fijos_maun',
+          'diezmo_generado',
+          'transfer_cocos',
+          'gasto_cocos',
+        ].includes(tipo);
+      }
+
+      // REFRESH PROYECTOS
+      function refreshProy() {
+        const cobrados = P.filter((p) => p.estado === 'cobrado');
+        const enCurso = P.filter((p) => p.estado === 'en_curso');
+        const entregados = P.filter((p) => p.estado === 'entregado');
+        const pendTotal = entregados.reduce((a, p) => a + calcProy(p).saldoPendiente, 0);
+        g('met-proy').innerHTML = `
+    <div class="mc"><div class="ml">Total</div><div class="mv">${P.length}</div></div>
+    <div class="mc"><div class="ml">En curso</div><div class="mv" style="color:#185fa5">${enCurso.length}</div></div>
+    <div class="mc"><div class="ml">Entregados</div><div class="mv" style="color:#854f0b">${entregados.length}</div><div class="ms">${fmt(pendTotal)} pend.</div></div>
+    <div class="mc"><div class="ml">Cobrados</div><div class="mv" style="color:#0f6e56">${cobrados.length}</div><div class="ms">${fmt(cobrados.reduce((a, p) => a + p.presupuesto, 0))}</div></div>`;
+        g('tb-proy').innerHTML = P.length
+          ? P.map((p) => {
+              const c = calcProy(p);
+              return `<tr class="cl" onclick="verDetalle('${p.id}')">
+      <td><strong>${p.cliente}</strong></td><td>${p.trabajo}</td>
+      <td>${fmt(p.presupuesto)}</td>
+      <td style="color:#0f6e56">${fmt(c.totalPagado)}</td>
+      <td style="color:${c.saldoPendiente > 0 ? '#854f0b' : '#0f6e56'}">${fmt(c.saldoPendiente)}</td>
+      <td>${badgeE(p.estado)}</td>
+      <td><button class="bs" onclick="event.stopPropagation();abrirForm('${p.id}')">Editar</button></td>
+    </tr>`;
+            }).join('')
+          : `<tr><td colspan="7"><div class="empty">Todavía no hay proyectos.</div></td></tr>`;
+      }
+
+      // REFRESH FINANZAS
+      function refreshFin() {
+        const T = calcTesoros();
+        // Tesoros
+        const diezmoNeg = T.diezmoSaldo < 0;
+        const diezmoTexto = diezmoNeg ? 'Deuda pendiente' : 'Superávit / al día';
+        g('tesoros-panel').innerHTML = `
+    <div class="tesoro t-hogar${T.hogar < 0 ? ' tesoro-neg' : ''}">
+      <div class="tesoro-icon">🏠</div>
+      <div class="tesoro-label">HOGAR</div>
+      <div class="tesoro-valor">${T.hogar < 0 ? '-' : ''}${fmt(T.hogar)}</div>
+      <div class="tesoro-sub">Familia y hogar</div>
+    </div>
+    <div class="tesoro t-maun${T.maun < 0 ? ' tesoro-neg' : ''}">
+      <div class="tesoro-icon">🪵</div>
+      <div class="tesoro-label">MAUN</div>
+      <div class="tesoro-valor">${T.maun < 0 ? '-' : ''}${fmt(T.maun)}</div>
+      <div class="tesoro-sub">Taller disponible</div>
+    </div>
+    <div class="tesoro t-diezmo">
+      <div class="tesoro-icon">⛪</div>
+      <div class="tesoro-label">DIEZMO</div>
+      <div class="tesoro-valor" style="color:${diezmoNeg ? '#a32d2d' : '#26215C'}">${diezmoNeg ? '-' : ''}${fmt(Math.abs(T.diezmoSaldo))}</div>
+      <div class="tesoro-sub">${diezmoTexto}</div>
+    </div>
+    <div class="tesoro t-cocos">
+      <div class="tesoro-icon">🏦</div>
+      <div class="tesoro-label">COCOS</div>
+      <div class="tesoro-valor">${fmt(T.cocos)}</div>
+      <div class="tesoro-sub">Reserva casa propia</div>
+    </div>`;
+
+        // Panel mensual
+        const ahora = new Date();
+        const ym = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+        const mMov = M.filter((m) => m.fecha && m.fecha.startsWith(ym));
+        const ingHogarMes = mMov
+          .filter((m) => ['ingreso_hogar', 'sueldo_hogar'].includes(m.tipo))
+          .reduce((a, m) => a + m.monto, 0);
+        const gastHogarMes = mMov
+          .filter((m) => m.tipo === 'gasto_hogar')
+          .reduce((a, m) => a + m.monto, 0);
+        const ingMaunMes = mMov
+          .filter((m) => m.tipo === 'ingreso_maun')
+          .reduce((a, m) => a + m.monto, 0);
+        const nombreMes = ahora.toLocaleString('es-AR', { month: 'long', year: 'numeric' });
+
+        let msg = '',
+          msgTipo = 'neutral';
+        if (ingHogarMes === 0 && ingMaunMes === 0) {
+          msg = 'Este mes arranca de cero. ¡Vamos con todo!';
+          msgTipo = 'neutral';
+        } else if (T.hogar < 0) {
+          msg = `El tesoro HOGAR está en negativo (${T.hogar < 0 ? '-' : ''}${fmt(Math.abs(T.hogar))}). Los gastos superaron los ingresos.`;
+          msgTipo = 'warn';
+        } else if (ingHogarMes >= cfg.sueldo) {
+          msg = `¡Sueldo del mes cubierto! El tesoro HOGAR recibió ${fmt(ingHogarMes)} este mes.${gastHogarMes > 0 ? ' Gastos del hogar: ' + fmt(gastHogarMes) + '.' : ''}`;
+          msgTipo = 'ok';
+        } else if (ingHogarMes > 0) {
+          const falta = cfg.sueldo - ingHogarMes;
+          msg = `El tesoro HOGAR recibió ${fmt(ingHogarMes)} este mes. Faltan ${fmt(falta)} para cubrir el sueldo.`;
+          msgTipo = 'warn';
+        } else {
+          msg = `MAUN tuvo ingresos de ${fmt(ingMaunMes)} este mes, pero aún no se transfirió el sueldo al HOGAR. Cobrá un proyecto para que fluya automático.`;
+          msgTipo = 'warn';
+        }
+
+        g('mes-panel').innerHTML = `
+    <div class="mes-header">
+      <div class="mes-titulo">${nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1)}</div>
+      <div class="mes-sub">Resumen del mes en curso</div>
+      <div class="mes-grid">
+        <div class="mes-kpi"><div class="mes-kpi-l">Ingresó al HOGAR</div><div class="mes-kpi-v ${ingHogarMes >= cfg.sueldo ? 'ok' : ingHogarMes > 0 ? 'warn' : 'muted'}">${fmt(ingHogarMes)}</div></div>
+        <div class="mes-kpi"><div class="mes-kpi-l">Gastos HOGAR</div><div class="mes-kpi-v ${gastHogarMes > 0 ? 'warn' : 'muted'}">${fmt(gastHogarMes)}</div></div>
+        <div class="mes-kpi"><div class="mes-kpi-l">Ingresos MAUN</div><div class="mes-kpi-v ${ingMaunMes > 0 ? 'ok' : 'muted'}">${fmt(ingMaunMes)}</div></div>
+      </div>
+    </div>
+    <div class="motivacion ${msgTipo}">${msg}</div>`;
+
+        // Barras
+        const pctSueldo =
+          cfg.sueldo > 0 ? Math.min(100, Math.round((ingHogarMes / cfg.sueldo) * 100)) : 0;
+        const pctCocos =
+          cfg.metaCocos > 0 ? Math.min(100, Math.round((T.cocos / cfg.metaCocos) * 100)) : 0;
+        const pctDiezmo =
+          T.diezmoAcum > 0 ? Math.min(100, Math.round((T.diezmoPagado / T.diezmoAcum) * 100)) : 100;
+        const hoyD = new Date(),
+          finD = new Date('2026-12-31');
+        const dias = Math.max(0, Math.round((finD - hoyD) / 86400000));
+        const proyFin = T.cocos * Math.pow(1 + cfg.tasa / 100 / 365, dias);
+
+        g('barras-panel').innerHTML = `
+    <div class="barra-wrap">
+      <div class="barra-label"><span>Sueldo HOGAR este mes</span><strong>${pctSueldo}% — ${fmt(ingHogarMes)} de ${fmt(cfg.sueldo)}</strong></div>
+      <div class="pb"><div class="pf verde" style="width:${pctSueldo}%"></div></div>
+    </div>
+    <div class="barra-wrap">
+      <div class="barra-label"><span>COCOS — meta casa propia</span><strong>${pctCocos}% — ${fmt(T.cocos)} de ${fmt(cfg.metaCocos)}</strong></div>
+      <div class="pb"><div class="pf azul" style="width:${pctCocos}%"></div></div>
+    </div>
+    <div class="barra-wrap">
+      <div class="barra-label"><span>Diezmo — pagado vs generado</span><strong>${pctDiezmo}% — ${fmt(T.diezmoPagado)} de ${fmt(T.diezmoAcum)}</strong></div>
+      <div class="pb"><div class="pf purple" style="width:${pctDiezmo}%"></div></div>
+    </div>
+    <div class="dc" style="margin-top:.5rem">
+      <div class="dt">COCOS → proyección al 31/12/2026</div>
+      <div class="dr"><span class="dlb">Saldo actual</span><span style="color:#185fa5;font-weight:500">${fmt(T.cocos)}</span></div>
+      <div class="dr"><span class="dlb">Tasa / días restantes al 31/12</span><span>${cfg.tasa}% / ${dias}d</span></div>
+      <div class="dr"><span class="dlb">Proyección al 31/12/2026</span><span style="color:#0f6e56;font-weight:600">${fmt(proyFin)}</span></div>
+    </div>`;
+
+        // Historial
+        g('tb-mov').innerHTML = M.length
+          ? M.slice()
+              .sort((a, b) => b.fecha.localeCompare(a.fecha))
+              .map((m) => {
+                const lbl = tesoroLabel(m.tipo);
+                const neg =
+                  esEgreso(m.tipo) ||
+                  (m.tipo === 'ajuste_cocos' && m.monto < 0) ||
+                  m.tipo === 'cocos_a_maun';
+                const col = neg ? '#e24b4a' : '#0f6e56';
+                const signo = neg ? '-' : '+';
+                return `<tr>
+        <td style="color:#aaa;white-space:nowrap">${m.fecha}</td>
+        <td>${m.concepto}${m.cat ? ` <span style="font-size:11px;color:#aaa">(${m.cat})</span>` : ''}</td>
+        <td style="white-space:nowrap;font-size:12px">${lbl}</td>
+        <td style="font-weight:500;color:${col};white-space:nowrap">${signo}${fmt(m.monto)}</td>
+      </tr>`;
+              })
+              .join('')
+          : `<tr><td colspan="4"><div class="empty">Sin movimientos todavía.</div></td></tr>`;
+      }
+
+      // REFRESH DIEZMO
+      function refreshDiezmo() {
+        const T = calcTesoros();
+        const historial = M.filter((m) => ['diezmo_generado', 'pago_diezmo'].includes(m.tipo))
+          .slice()
+          .sort((a, b) => a.fecha.localeCompare(b.fecha));
+        const saldoAbs = Math.abs(T.diezmoSaldo);
+        const esSuperavit = T.diezmoSaldo > 0;
+        const esAlDia = T.diezmoSaldo === 0;
+        const pct =
+          T.diezmoAcum > 0 ? Math.min(100, Math.round((T.diezmoPagado / T.diezmoAcum) * 100)) : 100;
+
+        const histHTML = historial.length
+          ? historial
+              .map((m) => {
+                const esPago = m.tipo === 'pago_diezmo';
+                return `<div class="dh-row ${esPago ? 'dh-pago' : 'dh-debe'}">
+        <span>${m.fecha} — ${m.concepto}</span>
+        <span style="font-weight:600">${esPago ? '+ pagado' : ' generado'}: ${fmt(m.monto)}</span>
+      </div>`;
+              })
+              .join('')
+          : `<div style="font-size:12px;color:#aaa;padding:.5rem 0">Todavía no hay movimientos de diezmo.</div>`;
+
+        const estadoMsg = esAlDia
+          ? 'Al día. Sin deuda ni superávit.'
+          : esSuperavit
+            ? `Superávit de ${fmt(saldoAbs)}. Pagaron de más — ese dinero queda a favor para el próximo diezmo.`
+            : `Deuda pendiente: ${fmt(saldoAbs)}. Se irá reduciendo a medida que registren pagos.`;
+
+        g('diezmo-page').innerHTML = `
+    <div class="diezmo-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:1rem">
+        <div>
+          <div style="font-size:11px;color:#534AB7;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:4px">${esSuperavit ? 'Superávit' : 'Deuda pendiente'}</div>
+          <div style="font-size:30px;font-weight:700;color:${esSuperavit ? '#0f6e56' : '#a32d2d'};line-height:1">${fmt(saldoAbs)}</div>
+          <div style="font-size:12px;color:#666;margin-top:6px">${estadoMsg}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#534AB7;margin-bottom:2px">Total generado</div>
+          <div style="font-size:16px;font-weight:600;color:#3C3489">${fmt(T.diezmoAcum)}</div>
+          <div style="font-size:11px;color:#534AB7;margin-top:8px;margin-bottom:2px">Total pagado</div>
+          <div style="font-size:16px;font-weight:600;color:#0f6e56">${fmt(T.diezmoPagado)}</div>
+        </div>
+      </div>
+      <div class="barra-wrap" style="margin-bottom:0">
+        <div class="barra-label" style="color:#534AB7"><span>Pagado vs generado</span><strong style="color:#26215C">${pct}%</strong></div>
+        <div class="pb" style="background:rgba(83,74,183,.2)"><div class="pf purple" style="width:${pct}%"></div></div>
+      </div>
+    </div>
+    <div class="dc">
+      <div class="dt">Historial completo</div>
+      ${histHTML}
+    </div>`;
+      }
+
+      init();
+    </script>
+  </body>
+</html>

@@ -15,6 +15,7 @@ Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la fa
 - La conversión de `bigint` a `Money` vive en `src/dinero.ts`, en un solo lugar.
 - `src/vistas.ts` traduce la réplica para el dominio. `totalesPorProyecto` vive ahí y no en una pantalla: son los dos números que la app le manda a `cobrar_proyecto`, y si divergen de la suma de la base el cobro rebota con `MN006`. El comparador los verifica por el camino real (ADR 0015).
 - `guardarProyecto` llama al RPC `guardar_proyecto`, que guarda el proyecto con sus pagos y sus gastos en una transacción. Es la única forma de escribir pagos y gastos: no hay mutaciones sueltas para ellos (ADR 0015).
+- `liquidarProyecto` y `revertirLiquidacion` son las cuatro operaciones que tocan la distribución congelada. **El pedido lleva el acumulado del mes que vio la app** (`sueldoPrevioCentavos` / `fijosPrevioCentavos`): si no es el de la base, la liquidación vuelve **ajustada** —congelada con el acumulado del servidor— en vez de rechazada con `MN006`. Se detecta comparando `dist_sueldo_previo_centavos` de la fila que vuelve contra lo que se mandó; la respuesta no trae marca (ADR 0016).
 
 ## El alta de una cuenta
 
@@ -73,6 +74,8 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
   - las liquidaciones reales paso a paso, calculadas como las calcula la app;
   - cada liquidación del seed;
   - **el libro mayor**: los asientos de la vista contra `asientosDelLibro`, como multiconjunto, y los cuatro saldos por tesoro. El lado de TypeScript lee por el camino real (`bootstrap()` → réplica → `datosDelLibro`), así que el `where` de la vista no está copiado en el comparador. Corre sobre los escenarios del libro y también sobre los de liquidación, y sobre el seed (ADR 0014).
+    **Los archivos de test corren de a uno** (`fileParallelism: false` en `vitest.config.ts`). Hay una sola base, y el comparador y los tests de concurrencia trabajan los dos sobre el household del seed: en paralelo, la liquidación de uno queda esperando un lock del otro y `una liquidación espera a una edición de los ajustes en curso` falla con un pid que no es el que esperaba. No es flakiness de timing, es la misma fila desde dos archivos, y aparece recién cuando el comparador crece lo suficiente como para solaparse. Los tests de concurrencia abren sus propias conexiones, así que no pierden nada.
+
 - `tests/concurrencia.test.ts`: conexiones reales, y todo lo que escriben termina en rollback. Prueban que:
   - la liquidación toma `for update` sobre el proyecto antes de leer pagos o gastos;
   - la guarda de un pago espera a la liquidación;
@@ -107,5 +110,6 @@ Los scripts y los tests se conectan con `pg` al pooler (`supabase/.temp/pooler-u
 - `jsonb_to_recordset` castea todas las columnas de todas las filas antes de que el `where` filtre nada: una fila que solo necesita su id no puede viajar con un texto vacío en una columna `date`. Leé esas columnas como `text` y casteá donde se usan (ADR 0015).
 - `insert ... on conflict (id) do update` evalúa los `check` de la tabla sobre la fila propuesta antes de resolver el conflicto: si el check depende de columnas que el upsert no manda, el alta y la edición van por separado (ADR 0015).
 - Una guarda que lee otra fila para decidir (el proyecto de un pago, el cliente de un proyecto, los ajustes de una liquidación) la bloquea antes de leerla: sin eso, una operación concurrente pasa con el estado viejo. La liquidación bloquea el proyecto y después los ajustes, en ese orden.
-- Rechazos de negocio con SQLSTATE de la clase `MN` (tabla en ADR 0010). Si el usuario puede hacer algo para destrabarlo, el `hint` lo dice: la app lo muestra.
+- Rechazos de negocio con SQLSTATE de la clase `MN` (tabla en ADR 0010). Si el usuario puede hacer algo para destrabarlo, el `hint` lo dice. **El `detail` no llega nunca a la interfaz**: `rechazoDeLaBase` lee `code`, `message` y `hint`, y nada más. Desde el ADR 0016 la app traduce los `MN00x` por su cuenta (`shared/api/rechazos.ts`) y el texto del `raise` queda como respaldo de lo que no esté traducido.
+- **Cambiarle la firma a una función expuesta es `drop` y `create`, no `create or replace`**: con una lista de argumentos distinta, `or replace` deja las dos y la llamada queda ambigua. Y el `drop` se lleva los grants, así que el `revoke`/`grant` se repite. Agregar parámetros **con default** es lo que hace el cambio retrocompatible: un bundle viejo servido por el service worker sigue llamando con los de antes.
 - `supabase-js` devuelve `bigint` como `number` y los tipos generados lo tipan así: la conversión a `Money` (entero con brand, ADR 0002) se hace acá, en un solo lugar.
