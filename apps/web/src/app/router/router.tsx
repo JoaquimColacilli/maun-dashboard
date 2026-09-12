@@ -9,6 +9,7 @@ import { InicioPage } from '@/pages/inicio';
 import {
   ProyectoEdicionPage,
   ProyectoFichaPage,
+  ProyectoLiquidacionPage,
   ProyectoNuevoPage,
   ProyectosPage,
 } from '@/pages/proyectos';
@@ -49,6 +50,16 @@ export const router = createBrowserRouter([
                   { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
                   { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
                   { path: '/proyectos/:id/editar', element: <ProyectoEdicionPage /> },
+                  // Cobrar y dar por perdido son pantallas propias, no un botón con un modal: lo
+                  // que confirma es el despiece con los importes reales (ADR 0016).
+                  {
+                    path: '/proyectos/:id/cobrar',
+                    element: <ProyectoLiquidacionPage destino="cobrado" />,
+                  },
+                  {
+                    path: '/proyectos/:id/cerrar',
+                    element: <ProyectoLiquidacionPage destino="perdido" />,
+                  },
                   { path: '/clientes', element: <ClientesPage /> },
                   { path: '/clientes/:id', element: <ClienteFichaPage /> },
                   { path: '/finanzas', element: <FinanzasPage /> },

@@ -1,7 +1,7 @@
-import { estaLiquidado } from '@maun/domain';
+import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
 import { enlaceDeMapa } from '@/entities/cliente';
 import {
@@ -13,18 +13,27 @@ import {
   FORMA_DE_PAGO,
   gastosDelProyecto,
   hijosDelProyecto,
+  MarcaDeLiquidacion,
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_NOTAS,
   pagosDelProyecto,
   resumenDeProyecto,
+  rutaDeCierre,
+  rutaDeCobro,
   rutaDeEdicion,
+  useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { fechaLarga, formatearPesos, hoyLocal } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
+import { Button, Icono, PanelDeAvisos } from '@/shared/ui';
 
 const DEMORA_DE_LAS_NOTAS_MS = 900;
+
+function vieneDeLiquidar(estado: unknown): boolean {
+  return typeof estado === 'object' && estado !== null && 'recienLiquidado' in estado;
+}
 
 function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: string }) {
   return (
@@ -45,14 +54,22 @@ export function ProyectoFichaPage() {
   const navegar = useNavigate();
   const { id = '' } = useParams();
 
+  const location = useLocation();
+
   const hoy = hoyLocal();
   const resumen = resumenDeProyecto(replica, id, hoy);
+  const avisos = useAvisosDelProyecto(id);
+  const enVuelo = useLiquidacionEnVuelo(id);
 
   const guardarNotas = useMutation(MUTACION_DE_NOTAS);
   const borrar = useMutation(MUTACION_DE_BAJA_DE_PROYECTO);
   const [notas, setNotas] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState(false);
   const reloj = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // El corte se anima una sola vez, al volver de confirmar el cobro: es el momento orquestado del
+  // brief de diseño. Entrar de nuevo a la ficha muestra el tablero quieto.
+  const recienLiquidado = vieneDeLiquidar(location.state);
 
   useEffect(
     () => () => {
@@ -202,7 +219,10 @@ export function ProyectoFichaPage() {
           <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
             {proyecto.titulo}
           </h1>
-          <EstadoBadge estado={proyecto.estado} />
+          <span className="flex flex-wrap items-center gap-2">
+            <EstadoBadge estado={proyecto.estado} />
+            <MarcaDeLiquidacion proyectoId={proyecto.id} />
+          </span>
         </div>
         {fechas.length > 0 && (
           <dl className="mt-1 flex flex-wrap gap-x-6 gap-y-1.5 text-label">
@@ -215,6 +235,12 @@ export function ProyectoFichaPage() {
           </dl>
         )}
       </header>
+
+      {avisos.length > 0 && (
+        <div className="mt-4">
+          <PanelDeAvisos avisos={avisos} />
+        </div>
+      )}
 
       <dl className="mt-4 grid grid-cols-3 border-t border-b border-ink border-b-hairline">
         <div className="py-3 pr-3">
@@ -241,10 +267,45 @@ export function ProyectoFichaPage() {
         </div>
       </dl>
 
+      <div className="mt-4 max-w-[520px]">
+        {puedeCobrar(proyecto.estado) && (
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => {
+              void navegar(rutaDeCobro(proyecto.id));
+            }}
+          >
+            <Icono nombre="hand-coins" tamano={18} />
+            {resumen.saldo > 0
+              ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
+              : 'Cobrar y repartir'}
+          </Button>
+        )}
+
+        {puedeCerrarPerdido(proyecto.estado) && (
+          <Button
+            variant="secundario"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              void navegar(rutaDeCierre(proyecto.id));
+            }}
+          >
+            <Icono nombre="x" tamano={16} />
+            Dar por perdido
+          </Button>
+        )}
+
+        {liquidado && <BotonDeReversion proyecto={proyecto} />}
+      </div>
+
       <div className="grid gap-0 lg:grid-cols-2 lg:gap-x-11">
         <div className="min-w-0 lg:order-2">
           <div className="mt-5 rounded-panel border border-hairline px-4 pt-4 pb-3.5">
-            <DistribucionDespiece despiece={despiece} />
+            <DistribucionDespiece
+              despiece={despiece}
+              animar={recienLiquidado}
+              provisoria={enVuelo !== undefined && despiece.modo === 'real'}
+            />
           </div>
 
           <section aria-label="Entrega y comprobante" className="mt-5 flex flex-col">
