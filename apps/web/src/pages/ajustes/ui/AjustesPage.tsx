@@ -2,6 +2,7 @@ import { useMutationState } from '@tanstack/react-query';
 import { Link } from 'react-router';
 
 import { useReplicaDelTaller } from '@/entities/replica';
+import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { useSesionActiva } from '@/entities/sesion';
@@ -10,6 +11,7 @@ import {
   cantidadDe,
   householdDe,
   mensajeDeSincronizacion,
+  saldosDeLaReplica,
   TABLAS_REPLICADAS,
 } from '@/shared/api';
 import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
@@ -88,6 +90,13 @@ export function AjustesPage() {
           <FormularioDeConfiguracion household={household} ajustes={ajustes} />
         </section>
       )}
+
+      <section aria-labelledby="titulo-cocos" className="flex max-w-[520px] flex-col gap-3.5">
+        <h2 id="titulo-cocos" className="text-section font-semibold">
+          Corregir el saldo de Cocos
+        </h2>
+        <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
+      </section>
 
       <section aria-labelledby="titulo-rechazos" className="flex max-w-[520px] flex-col gap-2.5">
         <h2 id="titulo-rechazos" className="text-section font-semibold">
