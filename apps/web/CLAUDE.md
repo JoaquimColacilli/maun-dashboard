@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, y una pantalla de inicio técnica que muestra lo replicado y deja cargar un movimiento. Las pantallas de negocio llegan en la fase 2D.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, y una pantalla de inicio técnica que muestra lo replicado, configura el taller y deja cargar un movimiento. Las pantallas de negocio llegan en la fase 2D.
 
 ## Capas (FSD, ADR 0006)
 
@@ -10,7 +10,7 @@ src/
   app/         arranque, providers, router con sus guardas y layout del shell
   pages/       una carpeta por ruta, finas: componen features y entidades
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
-               cerrar-sesion, registrar-movimiento)
+               cerrar-sesion, configurar-taller, registrar-movimiento)
   entities/    sesion (estado y contexto) y replica (la copia del household)
   shared/      api (Supabase), config, lib (cache, plata, fechas, uuid, sync) y ui
 ```
@@ -30,8 +30,10 @@ src/
 - La sesión se valida con `getClaims()` (verificación local del JWT). `getUser()` no va en el camino crítico. Sin red y con el token vencido se cae a la sesión guardada, sin verificar: la barrera real es Postgres, no la app.
 - Hay **una sola suscripción** a `onAuthStateChange` para toda la app (`entities/sesion/model/store.ts`). No agregues otra por componente: remonta el estado y hace parpadear el skeleton. El callback no llama a Supabase, solo escribe estado.
 - `/acceso/nueva-contrasena` exige que la sesión venga del enlace de recuperación: con la sesión abierta alcanzaría para cambiar la contraseña sin saber la anterior.
-- Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso: se muestra un error con reintentar, no la pantalla de "sin acceso".
-- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), `/sin-acceso`, `/` (inicio) y `/verificacion` (pantalla técnica de tokens, pública).
+- **El registro es auto-servicio:** quien confirma su mail sale con su propio taller, creado por un trigger de `auth.users` en la misma transacción que la cuenta. No hay pantalla de "sin acceso" y no la agregues: una sesión sin taller es un alta que quedó a medias, y cae en el error genérico con reintentar.
+- Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso, y al revés tampoco: son mensajes distintos sobre el mismo `ErrorDeCarga`.
+- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), `/` (inicio) y `/verificacion` (pantalla técnica de tokens, pública).
+- **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
 
 ## Offline (ADR 0005 y 0010)

@@ -10,12 +10,18 @@ Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la fa
 - `aplicarLote(replica, lote, modo)` reemplaza entera con `reconcile` y mezcla con `delta`. En la mezcla gana la fila que llega salvo que traiga una `version` más vieja, que es lo que produce el solape de cinco minutos.
 - `aplicarFilaLocal` y `quitarFilaLocal` son la aplicación optimista de la cola de salida y su vuelta atrás cuando la base rechaza.
 - `necesitaReconcile(replica, ahora)` decide entre `bootstrap()` y `delta()`: reconcile completo al entrar y cada 24 horas.
-- `src/sincronizacion.ts` son las llamadas (`traerBootstrap`, `traerDelta`, `guardarMovimiento`) y `src/errores.ts` clasifica los rechazos: los `MNxxx` y el `42501` no se reintentan.
+- `filaPorId(replica, tabla, id)` es la lectura puntual, y `faltaConfigurar(ajustes)` responde si el taller todavía está en cero: es lo que decide el estado vacío de la primera configuración (ADR 0012).
+- `src/sincronizacion.ts` son las llamadas (`traerBootstrap`, `traerDelta`, `guardarMovimiento`, `guardarAjustes`, `guardarNombreDelTaller`) y `src/errores.ts` clasifica los rechazos: los `MNxxx` y el `42501` no se reintentan. Las ediciones mandan solo las columnas que cambiaron; `COLUMNAS_DE_AJUSTES` es la lista con grant, y sale del tipo generado.
 - La conversión de `bigint` a `Money` vive en `src/dinero.ts`, en un solo lugar.
 
-## Dar acceso a una cuenta
+## El alta de una cuenta
 
-Nadie se crea un household solo: `private.crear_household` no tiene grant (ADR 0004). Después de que alguien se registra en la app, el alta la hace el dueño de la base:
+El taller se crea solo. Un trigger sobre `auth.users` llama a `private.crear_taller_del_usuario()` cuando el mail queda confirmado, y esa función deja household, membresía de titular y ajustes en cero **en la misma transacción que la cuenta**: si falla, falla el alta entera (ADR 0012). Dos cosas que hay que tener presentes al tocarla:
+
+- **Un error ahí adentro rompe todos los registros, no uno.** Nada de lo que venga de afuera entra sin pasar por una constante o una validación: el nombre del taller es fijo justamente por eso. `supabase/tests/12_alta_de_cuenta.sql` fuerza un fallo y verifica que no quede ni cuenta ni household huérfano.
+- **`authenticated` no tiene insert ni update sobre `household_members`.** Las membresías las crea únicamente el trigger; de `households` el usuario solo escribe `nombre`.
+
+El script queda para diagnóstico y reparación, y es el punto de extensión de las invitaciones:
 
 ```sh
 pnpm --filter @maun/db db:household --listar
@@ -54,7 +60,7 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`. Commiteá `src/database.types.ts` y `supabase/esquema.sql`: ninguno de los dos se edita a mano.
 6. `pnpm --filter @maun/db sb db advisors --linked` y `pnpm verify`.
 
-`supabase/esquema.sql` es la vista del estado final del esquema. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
+`supabase/esquema.sql` es la vista del estado final del esquema: `public`, `private` y **los triggers sobre `auth.users`**, que no son nuestra tabla pero sostienen el alta de cuentas. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
 
 ## Tests de Vitest que tocan la base
 
