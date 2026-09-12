@@ -17,12 +17,13 @@ import { datosDelLibro } from '@/shared/api';
 import {
   formatearPesos,
   hoyLocal,
+  rutaDeMovimientoNuevo,
   rutaDelMovimiento,
-  RUTA_DE_MOVIMIENTO_NUEVO,
+  RUTA_DE_DIEZMO,
 } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
-const RUTA_DEL_PAGO = `${RUTA_DE_MOVIMIENTO_NUEVO}?clase=pago_diezmo`;
+const RUTA_DEL_PAGO = rutaDeMovimientoNuevo({ clase: 'pago_diezmo', volverA: RUTA_DE_DIEZMO });
 
 export function DiezmoPage() {
   const replica = useReplicaDelTaller();
@@ -136,7 +137,7 @@ export function DiezmoPage() {
             }
             alAbrir={(linea) => {
               if (linea.bloqueo === null) {
-                void navegar(rutaDelMovimiento(linea.asientoId));
+                void navegar(rutaDelMovimiento(linea.asientoId, RUTA_DE_DIEZMO));
                 return;
               }
               setFicha(linea);

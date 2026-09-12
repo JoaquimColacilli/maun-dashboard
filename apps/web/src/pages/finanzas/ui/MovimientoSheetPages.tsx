@@ -10,9 +10,19 @@ function esClase(valor: string | null): valor is ClaseDeMovimiento {
   return valor !== null && (CLASES_EN_ORDEN as readonly string[]).includes(valor);
 }
 
+function useVuelta(): () => void {
+  const navegar = useNavigate();
+  const [parametros] = useSearchParams();
+  const volverA = parametros.get('volverA');
+  const destino = volverA !== null && volverA.startsWith('/') ? volverA : RUTA_DE_FINANZAS;
+  return () => {
+    void navegar(destino);
+  };
+}
+
 export function MovimientoNuevoPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const volver = useVuelta();
   const [parametros] = useSearchParams();
   const clase = parametros.get('clase');
 
@@ -21,16 +31,14 @@ export function MovimientoNuevoPage() {
       claseInicial={esClase(clase) ? clase : undefined}
       saldos={saldosDeLaReplica(replica)}
       metaCocos={ajustesDe(replica)?.meta_cocos_centavos ?? 0}
-      alCerrar={() => {
-        void navegar(RUTA_DE_FINANZAS);
-      }}
+      alCerrar={volver}
     />
   );
 }
 
 export function MovimientoEdicionPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const volver = useVuelta();
   const { id = '' } = useParams();
   const movimiento = filaPorId(replica, 'movimientos', id);
 
@@ -41,9 +49,7 @@ export function MovimientoEdicionPage() {
       movimiento={movimiento}
       saldos={saldosDeLaReplica(replica)}
       metaCocos={ajustesDe(replica)?.meta_cocos_centavos ?? 0}
-      alCerrar={() => {
-        void navegar(RUTA_DE_FINANZAS);
-      }}
+      alCerrar={volver}
     />
   );
 }

@@ -29,6 +29,7 @@ export {
   rutaDeCierre,
   rutaDeCobro,
   rutaDeEdicion,
+  rutaDeMovimientoNuevo,
   rutaDelMovimiento,
   rutaDelProyecto,
   RUTA_DE_DIEZMO,
