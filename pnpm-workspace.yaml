@@ -36,6 +36,7 @@ catalog:
   idb-keyval: 6.3.0
   jsdom: 30.0.1
   lint-staged: 17.5.0
+  lucide-react: 1.44.0
   pg: 8.23.0
   prettier: 3.9.6
   react: 19.3.0

@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "catalog:",
-    "@fontsource/young-serif": "catalog:"
+    "@fontsource/young-serif": "catalog:",
+    "lucide-react": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:"
