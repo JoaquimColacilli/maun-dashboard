@@ -190,7 +190,7 @@ export function HojaDeMovimiento({
           <Segmentado grupo={datos.grupo} alElegir={elegirGrupo} />
 
           {clasesDelGrupo(datos.grupo).length > 1 && (
-            <div className="flex flex-wrap gap-2">
+            <div role="group" aria-label="Detalle del tipo" className="flex flex-wrap gap-2">
               {clasesDelGrupo(datos.grupo).map((opcion) => (
                 <button
                   key={opcion.id}
@@ -232,6 +232,7 @@ export function HojaDeMovimiento({
                 inputMode="decimal"
                 value={monto}
                 placeholder="0"
+                aria-label="Cuánta plata"
                 aria-invalid={error === undefined ? undefined : true}
                 onChange={(evento) => {
                   setMonto(evento.target.value);

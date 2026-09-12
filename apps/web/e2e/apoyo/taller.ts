@@ -166,7 +166,45 @@ export async function vaciarProyectos(sesion: SesionDePrueba): Promise<number> {
   return vivos.length;
 }
 
+export interface FilaDeMovimiento {
+  id: string;
+  fecha: string;
+  tipo: string;
+  tesoro_origen: string | null;
+  tesoro_destino: string | null;
+  monto_centavos: number;
+  categoria: string;
+  descripcion: string;
+}
+
+export async function vaciarMovimientos({ entorno, accessToken }: SesionDePrueba): Promise<number> {
+  const vivos = (await pedir(entorno, '/rest/v1/movimientos?select=id&deleted_at=is.null', {
+    accessToken,
+  })) as { id: string }[];
+  if (vivos.length === 0) return 0;
+
+  await pedir(entorno, '/rest/v1/movimientos?deleted_at=is.null', {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+  });
+  return vivos.length;
+}
+
+export async function movimientosDelTaller({
+  entorno,
+  accessToken,
+}: SesionDePrueba): Promise<FilaDeMovimiento[]> {
+  return (await pedir(
+    entorno,
+    '/rest/v1/movimientos?select=id,fecha,tipo,tesoro_origen,tesoro_destino,monto_centavos,categoria,descripcion&deleted_at=is.null&order=id',
+    { accessToken },
+  )) as FilaDeMovimiento[];
+}
+
 export async function vaciarTaller(sesion: SesionDePrueba): Promise<void> {
+  await vaciarMovimientos(sesion);
   await vaciarProyectos(sesion);
   await vaciarClientes(sesion);
 }
