@@ -1,6 +1,8 @@
 import {
   aplicarLote,
   guardarAjustes,
+  guardarCambiosDeCliente,
+  guardarClienteNuevo,
   guardarMovimiento,
   guardarNombreDelTaller,
   necesitaReconcile,
@@ -8,6 +10,8 @@ import {
   traerBootstrap,
   traerDelta,
   type CambiosDeAjustes,
+  type CambiosDeCliente,
+  type ClienteNuevo,
   type FilaDe,
   type MovimientoNuevo,
   type Replica,
@@ -63,4 +67,15 @@ export async function editarAjustes(
 
 export async function renombrarTaller(id: string, nombre: string): Promise<FilaDe<'households'>> {
   return guardarNombreDelTaller(clienteMaun(), id, nombre);
+}
+
+export async function crearCliente(nuevo: ClienteNuevo): Promise<FilaDe<'clientes'>> {
+  return guardarClienteNuevo(clienteMaun(), nuevo);
+}
+
+export async function editarCliente(
+  id: string,
+  cambios: CambiosDeCliente,
+): Promise<FilaDe<'clientes'>> {
+  return guardarCambiosDeCliente(clienteMaun(), id, cambios);
 }

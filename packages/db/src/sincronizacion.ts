@@ -81,3 +81,56 @@ export async function guardarMovimiento(
   if (error) throw error;
   return data;
 }
+
+// Las columnas de clientes que el usuario escribe, y que tienen grant en la base. Salen del tipo
+// generado, no de una copia a mano.
+export const COLUMNAS_DE_CLIENTE = [
+  'nombre',
+  'zona',
+  'telefono',
+  'email',
+  'direccion',
+  'origen_contacto',
+  'origen_detalle',
+  'condicion_fiscal',
+  'cuit',
+  'razon_social',
+  'domicilio_fiscal',
+  'notas',
+] as const;
+
+export type ColumnaDeCliente = (typeof COLUMNAS_DE_CLIENTE)[number];
+
+export type DatosDeCliente = Pick<FilaDe<'clientes'>, ColumnaDeCliente>;
+
+export type ClienteNuevo = DatosDeCliente & { id: string };
+
+export type CambiosDeCliente = Partial<DatosDeCliente>;
+
+export async function guardarClienteNuevo(
+  cliente: ClienteMaun,
+  nuevo: ClienteNuevo,
+): Promise<FilaDe<'clientes'>> {
+  const { data, error } = await cliente
+    .from('clientes')
+    .upsert(nuevo, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function guardarCambiosDeCliente(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeCliente,
+): Promise<FilaDe<'clientes'>> {
+  const { data, error } = await cliente
+    .from('clientes')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}

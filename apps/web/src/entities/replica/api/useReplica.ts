@@ -1,8 +1,7 @@
 import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 
 import { debeReintentarse, sincronizar, type Replica } from '@/shared/api';
-
-import { claveDeReplica } from './claves';
+import { claveDeReplica } from '@/shared/lib';
 
 const REINTENTOS = 3;
 
