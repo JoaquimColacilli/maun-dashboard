@@ -275,8 +275,9 @@ test('los tres estados del diezmo: con deuda, al día y pagado de más', async (
   await expect(estado).not.toContainText('$');
 
   await pagarDiezmo(page, '30.000', 'Pago de más');
-  await expect(estado).toContainText('Pagaste de más');
+  await expect(estado).toContainText('Pagaste');
   await expect(estado).toContainText('$ 30.000');
+  await expect(estado).toContainText('de más');
 });
 
 test('el ajuste de Cocos calcula la diferencia, elige el concepto por el signo y deja el saldo escrito', async ({

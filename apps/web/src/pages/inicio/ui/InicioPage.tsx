@@ -47,6 +47,10 @@ import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
 
 const DIAS_DE_PROYECCION = 365;
 
+function encabezado(frase: FraseDelDiezmo): string {
+  return frase.despues === '' ? frase.antes : `${frase.antes} ${frase.despues}`;
+}
+
 function porcentaje(parte: Money, total: Money): number {
   return total <= 0 ? 0 : Math.round((parte / total) * 100);
 }
@@ -156,10 +160,10 @@ function Tarjeta({
             {formatearPesos(saldo)}
           </span>
         ) : frase.importe === null ? (
-          <span className="text-body-lg leading-tight font-semibold">{frase.verbo}</span>
+          <span className="text-body-lg leading-tight font-semibold">{encabezado(frase)}</span>
         ) : (
           <>
-            <span className="text-label leading-tight font-medium">{frase.verbo}</span>
+            <span className="text-label leading-tight font-medium">{encabezado(frase)}</span>
             <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
               {frase.importe}
             </span>
@@ -419,7 +423,7 @@ export function InicioPage() {
               <Acceso
                 icono="church"
                 etiqueta="Diezmo"
-                titulo={frase.verbo}
+                titulo={encabezado(frase)}
                 valor={frase.importe ?? ''}
                 tono="text-diezmo"
                 fondo="bg-diezmo-tint"

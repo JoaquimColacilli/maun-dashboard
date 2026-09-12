@@ -71,13 +71,16 @@ export function DiezmoPage() {
           Diezmo
         </span>
         {frase.importe === null ? (
-          <span className="text-h1 leading-tight font-semibold lg:text-h1-lg">{frase.verbo}</span>
+          <span className="text-h1 leading-tight font-semibold lg:text-h1-lg">{frase.antes}</span>
         ) : (
           <span className="flex flex-wrap items-baseline gap-x-2">
-            <span className="text-body-lg font-semibold">{frase.verbo}</span>
+            <span className="text-body-lg font-semibold">{frase.antes}</span>
             <span className="text-money-xl leading-tight font-semibold tabular-nums">
               {frase.importe}
             </span>
+            {frase.despues !== '' && (
+              <span className="text-body-lg font-semibold">{frase.despues}</span>
+            )}
           </span>
         )}
         <span className="mt-1 text-label leading-relaxed text-text-2">{frase.detalle}</span>

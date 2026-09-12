@@ -3,8 +3,9 @@ import type { EstadoDelDiezmo } from '@maun/domain';
 import { formatearPesos } from '@/shared/lib';
 
 export interface FraseDelDiezmo {
-  verbo: string;
+  antes: string;
   importe: string | null;
+  despues: string;
   frase: string;
   detalle: string;
 }
@@ -13,8 +14,9 @@ export function fraseDelDiezmo(estado: EstadoDelDiezmo): FraseDelDiezmo {
   if (estado.situacion === 'debe') {
     const importe = formatearPesos(estado.importe);
     return {
-      verbo: 'Debés',
+      antes: 'Debés',
       importe,
+      despues: '',
       frase: `Debés ${importe}`,
       detalle: 'de lo que ya cobraste y todavía no diste',
     };
@@ -22,15 +24,17 @@ export function fraseDelDiezmo(estado: EstadoDelDiezmo): FraseDelDiezmo {
   if (estado.situacion === 'pago-de-mas') {
     const importe = formatearPesos(estado.importe);
     return {
-      verbo: 'Pagaste de más',
+      antes: 'Pagaste',
       importe,
+      despues: 'de más',
       frase: `Pagaste ${importe} de más`,
       detalle: 'se descuenta de lo próximo que se genere',
     };
   }
   return {
-    verbo: 'Estás al día',
+    antes: 'Estás al día',
     importe: null,
+    despues: '',
     frase: 'Estás al día',
     detalle: 'todo lo generado ya está pagado',
   };
