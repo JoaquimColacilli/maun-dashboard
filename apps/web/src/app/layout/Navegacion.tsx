@@ -91,7 +91,7 @@ function MenuDeAcciones({
       <button
         type="button"
         aria-label="Cerrar el menú"
-        className="fixed inset-0 z-20 bg-ink/20"
+        className="fixed inset-0 z-20 bg-velo-suave"
         onClick={cerrar}
       />
       <div

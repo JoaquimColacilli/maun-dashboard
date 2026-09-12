@@ -139,18 +139,20 @@ function Tarjeta({
       type="button"
       onClick={alElegir}
       className={`flex min-h-[118px] flex-col justify-between gap-3 rounded-panel p-3.5 text-left ${
-        enNegativo ? 'bg-ink text-paper' : tesoro.fondo
+        enNegativo
+          ? 'border border-negativo-borde bg-negativo-bg text-negativo-texto'
+          : tesoro.fondo
       }`}
     >
       <span className="flex w-full items-center justify-between gap-2">
         <span
-          className={`flex items-center gap-2 text-label font-semibold ${enNegativo ? 'text-paper' : tesoro.texto}`}
+          className={`flex items-center gap-2 text-label font-semibold ${enNegativo ? 'text-negativo-texto' : tesoro.texto}`}
         >
-          <Icono nombre={tesoro.icono} tamano={18} />
+          <Icono nombre={enNegativo ? 'triangle-alert' : tesoro.icono} tamano={18} />
           {tesoro.nombre}
         </span>
         {enNegativo && (
-          <span className="rounded-control border border-paper px-1.5 text-badge font-semibold">
+          <span className="rounded-control border border-current px-1.5 text-badge font-semibold">
             en negativo
           </span>
         )}
@@ -170,7 +172,7 @@ function Tarjeta({
             </span>
           </>
         )}
-        <span className={`text-meta ${enNegativo ? 'text-paper/70' : 'text-text-2'}`}>
+        <span className={`text-meta ${enNegativo ? 'text-negativo-texto/80' : 'text-text-2'}`}>
           {detalle}
         </span>
       </span>

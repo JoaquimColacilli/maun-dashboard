@@ -39,7 +39,7 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
             onClick={() => {
               setConfirmando(false);
             }}
-            className="absolute inset-0 cursor-default bg-ink/35"
+            className="absolute inset-0 cursor-default bg-velo"
           />
           <div
             role="alertdialog"

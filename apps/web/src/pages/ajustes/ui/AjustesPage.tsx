@@ -5,6 +5,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
+import { SelectorDeTema } from '@/features/elegir-tema';
 import { useSesionActiva } from '@/entities/sesion';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
@@ -127,13 +128,22 @@ export function AjustesPage() {
           </p>
         </section>
 
-        <section aria-labelledby="titulo-cuenta" className={`${SECCION} items-start`}>
-          <h2 id="titulo-cuenta" className="text-section font-semibold">
-            Cuenta
-          </h2>
-          <p className="text-body text-text-2">{email}</p>
-          <BotonSalir />
-        </section>
+        <div className="flex min-w-0 flex-col gap-8">
+          <section aria-labelledby="titulo-apariencia" className={SECCION}>
+            <h2 id="titulo-apariencia" className="text-section font-semibold">
+              Apariencia
+            </h2>
+            <SelectorDeTema />
+          </section>
+
+          <section aria-labelledby="titulo-cuenta" className={`${SECCION} items-start`}>
+            <h2 id="titulo-cuenta" className="text-section font-semibold">
+              Cuenta
+            </h2>
+            <p className="text-body text-text-2">{email}</p>
+            <BotonSalir />
+          </section>
+        </div>
       </div>
     </Pagina>
   );

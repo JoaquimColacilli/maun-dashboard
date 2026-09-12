@@ -205,7 +205,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
                 }}
                 className={`min-h-tap rounded-control text-label ${
                   forma === opcion
-                    ? 'bg-paper font-semibold text-ink shadow-float'
+                    ? 'bg-elevado font-semibold text-ink shadow-float'
                     : 'font-medium text-text-2'
                 }`}
               >

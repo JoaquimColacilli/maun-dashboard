@@ -1,8 +1,17 @@
 <!doctype html>
-<html lang="es-AR">
+<html lang="es-AR" data-theme="system">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      try {
+        var tema = localStorage.getItem('maun:tema');
+        document.documentElement.dataset.theme =
+          tema === 'light' || tema === 'dark' ? tema : 'system';
+      } catch (error) {
+        document.documentElement.dataset.theme = 'system';
+      }
+    </script>
     <meta name="theme-color" content="#141414" />
     <meta name="description" content="Finanzas y proyectos del taller MAUN." />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />

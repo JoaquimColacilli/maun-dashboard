@@ -55,5 +55,12 @@ export {
   type TipoDeAviso,
 } from './avisos/bandeja';
 export { calcularEstadoSync, describirEstadoSync, type EstadoSync } from './sync/estado-sync';
+export {
+  CLAVE_DEL_TEMA,
+  elegirTema,
+  preferenciaDeTema,
+  useTema,
+  type PreferenciaDeTema,
+} from './tema';
 export { useEstadoSync } from './sync/useEstadoSync';
 export { uuidv7 } from './uuid';

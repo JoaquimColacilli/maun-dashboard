@@ -181,7 +181,7 @@ export function AvanceDelContacto({
               }}
               className={`min-h-tap rounded-control px-1 text-label leading-tight ${
                 estado === etapa
-                  ? 'bg-paper font-semibold text-ink shadow-float'
+                  ? 'bg-elevado font-semibold text-ink shadow-float'
                   : 'font-medium text-text-2'
               }`}
             >

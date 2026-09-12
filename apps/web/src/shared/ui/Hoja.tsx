@@ -33,7 +33,7 @@ export function Hoja({ titulo, alCerrar, children }: HojaProps) {
         aria-hidden
         tabIndex={-1}
         onClick={alCerrar}
-        className="absolute inset-0 cursor-default bg-ink/35"
+        className="absolute inset-0 cursor-default bg-velo"
       />
       <div
         role="dialog"

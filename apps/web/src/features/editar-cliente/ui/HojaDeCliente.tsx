@@ -104,7 +104,7 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
         aria-hidden
         tabIndex={-1}
         onClick={alCerrar}
-        className="absolute inset-0 cursor-default bg-ink/35"
+        className="absolute inset-0 cursor-default bg-velo"
       />
       <form
         noValidate
@@ -231,7 +231,7 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
                   }}
                   className={`min-h-tap rounded-control text-label ${
                     condicion === id
-                      ? 'bg-paper font-semibold text-ink shadow-float'
+                      ? 'bg-elevado font-semibold text-ink shadow-float'
                       : 'font-medium text-text-2'
                   }`}
                 >

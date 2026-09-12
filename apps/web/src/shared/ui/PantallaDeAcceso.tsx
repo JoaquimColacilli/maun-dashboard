@@ -20,7 +20,7 @@ export function PantallaDeAcceso({
 }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[5fr_6fr]">
-      <aside className="hidden flex-col justify-between bg-ink p-12 text-paper lg:flex">
+      <aside className="hidden flex-col justify-between bg-marca p-12 text-sobre-marca lg:flex">
         <span className="font-display text-h1-lg">MAUN</span>
         <div className="flex max-w-[420px] flex-col gap-4">
           <div className="flex gap-1.5">
@@ -28,11 +28,11 @@ export function PantallaDeAcceso({
               <span key={barra.color} className={`h-3.5 ${barra.ancho} ${barra.color}`} />
             ))}
           </div>
-          <p className="text-body-lg leading-normal text-paper">
+          <p className="text-body-lg leading-normal text-sobre-marca">
             Cuánto falta cobrar, qué se entrega esta semana y a dónde va cada peso cuando se cobra.
           </p>
         </div>
-        <span className="text-label text-paper/60">Un taller, cuatro tesoros.</span>
+        <span className="text-label text-sobre-marca/60">Un taller, cuatro tesoros.</span>
       </aside>
 
       <main className="flex flex-col justify-center px-(--page-pad-mobile) py-12 md:px-(--page-pad-tablet)">

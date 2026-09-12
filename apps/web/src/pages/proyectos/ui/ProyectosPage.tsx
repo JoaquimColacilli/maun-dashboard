@@ -238,7 +238,7 @@ function HojaDeOrden({
         aria-hidden
         tabIndex={-1}
         onClick={alCerrar}
-        className="absolute inset-0 cursor-default bg-ink/35"
+        className="absolute inset-0 cursor-default bg-velo"
       />
       <div
         role="dialog"
@@ -387,7 +387,9 @@ export function ProyectosPage() {
                 void navegar(opcion.ruta);
               }}
               className={`flex h-9.5 flex-1 items-center justify-center gap-1.5 rounded-field text-label ${
-                activa ? 'bg-paper font-semibold text-ink shadow-float' : 'font-medium text-text-2'
+                activa
+                  ? 'bg-elevado font-semibold text-ink shadow-float'
+                  : 'font-medium text-text-2'
               }`}
             >
               {opcion.etiqueta}

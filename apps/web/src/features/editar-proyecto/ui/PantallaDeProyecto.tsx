@@ -539,7 +539,7 @@ function BotonDeOpcion({
       aria-checked={elegido}
       onClick={alElegir}
       className={`min-h-tap rounded-control text-label ${
-        elegido ? 'bg-paper font-semibold text-ink shadow-float' : 'font-medium text-text-2'
+        elegido ? 'bg-elevado font-semibold text-ink shadow-float' : 'font-medium text-text-2'
       }`}
     >
       {etiqueta}
