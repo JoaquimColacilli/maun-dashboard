@@ -1,3 +1,8 @@
+// Diagnóstico y reparación del alta de cuentas. El camino normal no pasa por acá: el taller lo crea
+// el trigger de auth.users al confirmar el mail (ADR 0012). `--listar` muestra quién se registró y
+// con qué taller quedó; el alta a mano queda para una cuenta que, por lo que sea, quedó sin taller,
+// y es el punto de extensión de las invitaciones cuando existan.
+
 import { parseArgs } from 'node:util';
 
 import { conectar } from './conexion.ts';
@@ -54,7 +59,7 @@ try {
     const nombre = values.nombre;
     if (!email || !nombre) {
       throw new Error(
-        'Uso: pnpm --filter @maun/db db:household --email <mail> --nombre "<taller>", o --listar.',
+        'Uso: pnpm --filter @maun/db db:household --listar para ver quién se registró, o --email <mail> --nombre "<taller>" para reparar una cuenta que quedó sin taller.',
       );
     }
 
@@ -88,7 +93,9 @@ try {
         `${email} tuvo acceso al household "${existente.nombre}" y se lo revocaron. No creo uno nuevo: reactivá esa membresía a mano o borrá el household viejo si ya no sirve.`,
       );
     } else if (existente) {
-      console.log(`${email} ya pertenece al household "${existente.nombre}". No se cambió nada.`);
+      console.log(
+        `${email} ya pertenece al household "${existente.nombre}". No se cambió nada: el taller se crea solo al confirmar la cuenta.`,
+      );
     } else {
       const { rows } = await cliente.query<{ id: string }>(
         'select private.crear_household($1, $2) as id',
