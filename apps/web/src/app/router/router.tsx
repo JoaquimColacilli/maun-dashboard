@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AccesoPage } from '@/pages/acceso';
 import { AjustesPage } from '@/pages/ajustes';
-import { ClientesPage } from '@/pages/clientes';
+import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
 import { FinanzasPage } from '@/pages/finanzas';
 import { InicioPage } from '@/pages/inicio';
@@ -40,6 +40,7 @@ export const router = createBrowserRouter([
                   { path: '/seguimiento', element: <SeguimientoPage /> },
                   { path: '/proyectos', element: <ProyectosPage /> },
                   { path: '/clientes', element: <ClientesPage /> },
+                  { path: '/clientes/:id', element: <ClienteFichaPage /> },
                   { path: '/finanzas', element: <FinanzasPage /> },
                   { path: '/diezmo', element: <DiezmoPage /> },
                   { path: '/ajustes', element: <AjustesPage /> },

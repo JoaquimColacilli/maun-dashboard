@@ -1,6 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import {
+  CLAVE_DE_CLIENTE,
+  CLAVE_DE_CLIENTE_NUEVO,
+  MUTACION_DE_CLIENTE,
+  MUTACION_DE_CLIENTE_NUEVO,
+} from '@/entities/cliente';
+import {
   CLAVE_DE_AJUSTES,
   CLAVE_DEL_NOMBRE,
   MUTACION_DE_AJUSTES,
@@ -19,6 +25,12 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DEL_NOMBRE, MUTACION_DEL_NOMBRE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_CLIENTE_NUEVO, MUTACION_DE_CLIENTE_NUEVO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_CLIENTE, MUTACION_DE_CLIENTE);
   },
 ];
 
