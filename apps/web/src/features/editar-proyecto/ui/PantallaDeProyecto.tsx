@@ -195,18 +195,20 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
         enCelular ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-paper' : 'flex flex-col'
       }
     >
-      <header className="flex flex-none items-center justify-between border-b border-hairline px-3 py-2 md:px-6 md:py-3">
-        <Button
-          variant="terciario"
-          onClick={() => {
-            void navegar(proyecto === undefined ? '/proyectos' : rutaDelProyecto(proyecto.id));
-          }}
-        >
-          <Icono nombre="x" tamano={20} />
-          Cancelar
-        </Button>
-        <span className="text-body-lg font-semibold">{titulo}</span>
-        <span className="w-[92px]" />
+      <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
+        <div className="mx-auto flex w-full max-w-content items-center justify-between px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
+          <Button
+            variant="terciario"
+            onClick={() => {
+              void navegar(proyecto === undefined ? '/proyectos' : rutaDelProyecto(proyecto.id));
+            }}
+          >
+            <Icono nombre="x" tamano={20} />
+            Cancelar
+          </Button>
+          <span className="text-body-lg font-semibold">{titulo}</span>
+          <span className="w-[92px]" />
+        </div>
       </header>
 
       <form
@@ -216,7 +218,13 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
         }}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="mx-auto grid min-h-0 w-full max-w-content flex-1 grid-cols-1 gap-6 overflow-y-auto px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:grid-cols-2 lg:gap-x-12 lg:px-(--page-pad-desktop) lg:py-6">
+        <div
+          className={`mx-auto grid min-h-0 w-full max-w-content flex-1 grid-cols-1 gap-6 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:grid-cols-2 lg:gap-x-12 lg:px-(--page-pad-desktop) lg:py-6 ${
+            enCelular
+              ? 'overflow-y-auto'
+              : '[&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
+          }`}
+        >
           <div className="flex min-w-0 flex-col gap-5">
             <ClienteCombobox
               clientes={clientes}
@@ -465,6 +473,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               etiquetaDelDetalle="Concepto"
               placeholderDelDetalle="Seña, adelanto, saldo…"
               textoDeAgregar="Agregar un pago"
+              ayuda="Lo que te pagó el cliente por este trabajo. Entra a la caja del taller."
               vacio="Todavía no cobraste nada de este trabajo. La seña suele ir primero."
               control={control}
               register={register}
@@ -478,7 +487,8 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               etiquetaDelDetalle="Descripción"
               placeholderDelDetalle="Melamina, herrajes, flete…"
               textoDeAgregar="Agregar un gasto"
-              vacio="Todo lo que compres para este mueble va acá y se descuenta de la ganancia."
+              ayuda="Materiales y compras de este mueble. Se descuentan de la ganancia."
+              vacio="Todavía no cargaste gastos para este mueble."
               control={control}
               register={register}
               errores={errors}
@@ -488,41 +498,39 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
           </div>
         </div>
 
-        <footer className="flex flex-none flex-wrap items-center gap-3 border-t border-hairline bg-paper px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
-          <dl className="flex min-w-[210px] flex-1 gap-4 tabular-nums">
-            <Total
-              etiqueta="Presupuesto"
-              valor={presupuesto === null ? '—' : formatearPesos(presupuesto)}
-            />
-            <Total etiqueta="Cobrado" valor={formatearPesos(totalCobrado)} tono="text-hogar" />
-            <Total etiqueta="Saldo" valor={saldo === null ? '—' : formatearPesos(saldo)} />
-            <Total
-              etiqueta="Neta"
-              valor={formatearPesos(neta)}
-              tono={neta < 0 ? 'text-alerta' : 'text-maun'}
-            />
-          </dl>
-          <Button
-            type="submit"
-            cargando={guardar.isPending}
-            className="min-w-[170px] flex-1 md:flex-none"
-          >
-            {proyecto === undefined ? 'Guardar proyecto' : 'Guardar los cambios'}
-          </Button>
+        <footer className="flex-none border-t border-hairline bg-paper md:sticky md:bottom-0 md:z-20">
+          <div className="mx-auto flex w-full max-w-content flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
+            {rechazo !== null && (
+              <p role="alert" className="basis-full text-label font-medium text-alerta">
+                {mensajeDeSincronizacion(rechazo, {
+                  operacion: 'proyecto',
+                  sujeto: proyecto?.titulo,
+                  estado: proyecto?.estado === 'perdido' ? 'perdido' : 'cobrado',
+                })}
+              </p>
+            )}
+            <dl className="flex min-w-[210px] flex-1 gap-4 tabular-nums md:gap-6 lg:gap-8">
+              <Total
+                etiqueta="Presupuesto"
+                valor={presupuesto === null ? '—' : formatearPesos(presupuesto)}
+              />
+              <Total etiqueta="Cobrado" valor={formatearPesos(totalCobrado)} tono="text-hogar" />
+              <Total etiqueta="Saldo" valor={saldo === null ? '—' : formatearPesos(saldo)} />
+              <Total
+                etiqueta="Neta"
+                valor={formatearPesos(neta)}
+                tono={neta < 0 ? 'text-alerta' : 'text-maun'}
+              />
+            </dl>
+            <Button
+              type="submit"
+              cargando={guardar.isPending}
+              className="min-w-[170px] flex-1 md:flex-none"
+            >
+              {proyecto === undefined ? 'Guardar proyecto' : 'Guardar los cambios'}
+            </Button>
+          </div>
         </footer>
-
-        {rechazo !== null && (
-          <p
-            role="alert"
-            className="px-(--page-pad-mobile) pb-3 text-label font-medium text-alerta"
-          >
-            {mensajeDeSincronizacion(rechazo, {
-              operacion: 'proyecto',
-              sujeto: proyecto?.titulo,
-              estado: proyecto?.estado === 'perdido' ? 'perdido' : 'cobrado',
-            })}
-          </p>
-        )}
       </form>
     </div>
   );
@@ -531,8 +539,12 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 function Total({ etiqueta, valor, tono = '' }: { etiqueta: string; valor: string; tono?: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-meta text-text-3">{etiqueta}</dt>
-      <dd className={`text-label font-semibold ${tono}`}>{valor}</dd>
+      <dt className="text-meta text-text-3 lg:text-label">{etiqueta}</dt>
+      <dd
+        className={`text-label font-semibold whitespace-nowrap md:text-body-lg lg:text-money-lg ${tono}`}
+      >
+        {valor}
+      </dd>
     </div>
   );
 }

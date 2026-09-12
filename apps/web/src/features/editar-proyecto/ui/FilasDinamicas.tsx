@@ -14,6 +14,7 @@ export interface FilasDinamicasProps {
   etiquetaDelDetalle: string;
   placeholderDelDetalle: string;
   textoDeAgregar: string;
+  ayuda: string;
   vacio: string;
   control: Control<FormularioDeProyecto>;
   register: UseFormRegister<FormularioDeProyecto>;
@@ -34,6 +35,7 @@ export function FilasDinamicas({
   etiquetaDelDetalle,
   placeholderDelDetalle,
   textoDeAgregar,
+  ayuda,
   vacio,
   control,
   register,
@@ -90,11 +92,14 @@ export function FilasDinamicas({
 
   return (
     <section aria-label={titulo} className="flex flex-col gap-2" ref={contenedor}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-section font-semibold">{titulo}</h2>
-        <span role="status" className="text-label text-text-2 tabular-nums">
-          {total > 0 ? formatearPesos(total) : ''}
-        </span>
+      <div className="flex flex-col gap-0.5 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-section font-semibold">{titulo}</h2>
+          <span role="status" className="text-label text-text-2 tabular-nums">
+            {total > 0 ? formatearPesos(total) : ''}
+          </span>
+        </div>
+        <p className="text-meta leading-normal text-text-3">{ayuda}</p>
       </div>
 
       {campos.fields.length === 0 && <p className="text-label text-text-2">{vacio}</p>}

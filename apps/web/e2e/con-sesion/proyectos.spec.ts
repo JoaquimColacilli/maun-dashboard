@@ -47,6 +47,66 @@ async function agregar(page: Page, lista: 'Pagos recibidos' | 'Gastos e insumos'
   await page.getByRole('region', { name: lista }).getByRole('button', { name: texto }).click();
 }
 
+test('en escritorio, con muchas filas, las dos barras quedan fijas, cada lista deja su título a la vista y el teclado no esconde el campo', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'escritorio', 'las barras fijas son del escritorio');
+  await conCliente();
+  await page.goto('/proyectos/nuevo');
+  await elegirCliente(page, 'Marcela Sosa');
+  await page.getByLabel('Trabajo').fill('Cocina con muchas filas');
+
+  for (const numero of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    await agregar(page, 'Pagos recibidos');
+    await cargarFila(page, 'Pagos recibidos', numero, {
+      detalle: `Pago ${String(numero)}`,
+      monto: '1000',
+    });
+  }
+  for (const numero of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    await agregar(page, 'Gastos e insumos');
+    await cargarFila(page, 'Gastos e insumos', numero, {
+      detalle: `Gasto ${String(numero)}`,
+      monto: '500',
+    });
+  }
+
+  const pagos = page.getByRole('region', { name: 'Pagos recibidos' });
+  await pagos.evaluate((seccion) => {
+    const main = seccion.closest('main');
+    if (main) main.scrollTop += seccion.getBoundingClientRect().top + 250;
+  });
+
+  await expect(page.getByRole('button', { name: 'Cancelar' })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Guardar proyecto' })).toBeInViewport();
+  await expect(page.locator('form footer')).toContainText('Cobrado');
+
+  const titulo = pagos.getByRole('heading', { name: 'Pagos recibidos' });
+  await expect(titulo).toBeInViewport();
+  const caja = await titulo.boundingBox();
+  expect(caja?.y ?? 0).toBeGreaterThanOrEqual(60);
+  expect(caja?.y ?? 999).toBeLessThan(120);
+  await expect(pagos).toContainText('Lo que te pagó el cliente por este trabajo.');
+
+  await pagos.getByLabel('Concepto 1', { exact: true }).focus();
+  for (let paso = 0; paso < 24; paso += 1) {
+    await page.keyboard.press('Tab');
+    const tapado = await page.evaluate(() => {
+      const enfocado = document.activeElement;
+      const cabecera = document.querySelector('form')?.previousElementSibling;
+      const pie = document.querySelector('form footer');
+      if (!(enfocado instanceof HTMLElement) || !cabecera || !pie) return false;
+      if (enfocado.closest('header, footer')) return false;
+      const caja = enfocado.getBoundingClientRect();
+      return (
+        caja.top < cabecera.getBoundingClientRect().bottom ||
+        caja.bottom > pie.getBoundingClientRect().top
+      );
+    });
+    expect(tapado).toBe(false);
+  }
+});
+
 test('un proyecto con dos pagos y dos gastos entra entero y sobrevive a recargar', async ({
   page,
 }) => {
