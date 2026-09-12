@@ -1,6 +1,6 @@
-import { useId, type InputHTMLAttributes } from 'react';
+import { useId, type ComponentPropsWithRef } from 'react';
 
-export interface CampoProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
+export interface CampoProps extends Omit<ComponentPropsWithRef<'input'>, 'id'> {
   etiqueta: string;
   error?: string;
   ayuda?: string;
