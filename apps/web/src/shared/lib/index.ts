@@ -1,7 +1,18 @@
 export { borrarCacheLocal, crearPersisterIndexedDb } from './cache/persister';
 export { COLA_DE_SALIDA, esPersistible, reanudarCola } from './cache/cola';
 export { limpiarDatosLocales } from './cache/limpieza';
-export { hoyLocal } from './fechas';
+export {
+  diaDelMes,
+  diasDelMes,
+  diasHasta,
+  fechaLarga,
+  hoyLocal,
+  mesAnterior,
+  mesDeLaFecha,
+  nombreDelMes,
+  relativa,
+} from './fechas';
+export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';
 export { formatearPorcentaje, parsearPorcentaje } from './porcentaje';
 export { calcularEstadoSync, describirEstadoSync, type EstadoSync } from './sync/estado-sync';
