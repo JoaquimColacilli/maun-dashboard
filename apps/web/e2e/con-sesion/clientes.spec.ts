@@ -41,9 +41,7 @@ test('un cliente cargado sobrevive a recargar la página, y su edición también
   await page.getByRole('button', { name: 'Cargá tu primer cliente' }).click();
   await cargarCliente(page, { nombre: 'Ana Gómez', zona: 'Vicente López' });
 
-  // Aparece al instante, antes de que la cola llegue a la base.
   await expect(page.getByRole('button', { name: /Ana Gómez/ })).toBeVisible();
-  // Y recién cuando llegó, recargar es una prueba de que se guardó de verdad.
   await expect
     .poll(async () => (await leerCliente(sesion, 'Ana Gómez'))?.zona, { timeout: 20_000 })
     .toBe('Vicente López');

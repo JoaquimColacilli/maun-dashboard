@@ -48,8 +48,6 @@ describe('formatearCuit', () => {
 
 describe('verificadorDeCuit', () => {
   it('aplica los pesos 5 4 3 2 7 6 5 4 3 2 sobre los primeros diez dígitos', () => {
-    // 2·5+0·4+1·3+2·2+3·7+4·6+5·5+6·4+7·3+8·2 = 10+0+3+4+21+24+25+24+21+16 = 148
-    // 148 mod 11 = 5, y 11 − 5 = 6.
     expect(verificadorDeCuit('2012345678')).toBe(6);
   });
 
@@ -68,7 +66,6 @@ describe('verificadorDeCuit', () => {
   });
 
   it('devuelve null en el caso ambiguo: el resto da 10 y no hay una convención única', () => {
-    // Se busca el primer caso real con módulo 10 en vez de fijar uno a mano.
     let ambiguos = 0;
     for (let n = 0; n < 500; n++) {
       const diez = `20${String(n).padStart(8, '0')}`;

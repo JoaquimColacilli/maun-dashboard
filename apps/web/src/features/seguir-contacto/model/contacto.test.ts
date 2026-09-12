@@ -98,6 +98,7 @@ describe('pedidoDelContacto', () => {
       estado: 'contacto',
       presupuesto_centavos: null,
       fecha_visita: null,
+      ultimo_contacto: HOY,
       notas: 'lo llamó la hermana',
     });
     expect(pedido.pagos).toEqual([]);
@@ -115,6 +116,7 @@ describe('pedidoDelContacto', () => {
     });
 
     expect(pedido.datos.estado).toBe('a_presupuestar');
+    expect(pedido.datos.ultimo_contacto).toBe('2026-09-10');
     expect(pedido.pagos).toEqual([
       {
         id: 'nueva',
@@ -135,7 +137,34 @@ describe('pedidoDelContacto', () => {
       hoy: HOY,
     });
     expect(pedido.datos.estado).toBe('relevamiento');
+    expect(pedido.datos.ultimo_contacto).toBe(HOY);
     expect(pedido.pagos[0]).toMatchObject({ fecha: HOY, monto_centavos: 5_000_000 });
+  });
+
+  it('corregir las notas no mueve el último contacto; ponerle fecha a la visita, sí', () => {
+    const quieto = proyecto({ estado: 'presupuesto_enviado', ultimo_contacto: '2026-09-01' });
+    const notas = pedidoDelContacto({
+      id: 'p',
+      proyecto: quieto,
+      valores: valores({ notas: 'le gusta el roble' }),
+      sena: undefined,
+      idDeSenaNueva: 'x',
+      hoy: HOY,
+    });
+    expect(notas.datos.ultimo_contacto).toBe('2026-09-01');
+
+    const conVisita = pedidoDelContacto({
+      id: 'p',
+      proyecto: proyecto({ ultimo_contacto: '2026-09-01' }),
+      valores: valores({ visita: '2026-09-11' }),
+      sena: undefined,
+      idDeSenaNueva: 'x',
+      hoy: HOY,
+    });
+    expect(conVisita.datos).toMatchObject({
+      estado: 'a_presupuestar',
+      ultimo_contacto: '2026-09-11',
+    });
   });
 
   it('editar el monto de la seña es el mismo pago, con el mismo id', () => {

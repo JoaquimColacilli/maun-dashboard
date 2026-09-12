@@ -19,8 +19,6 @@ export interface ResumenDeProyecto {
 
 const SIN_CLIENTE = 'Cliente borrado';
 
-// El saldo es lo que falta cobrar del presupuesto. Un proyecto sin presupuesto cargado (un lead que
-// todavía no se presupuestó) no tiene saldo: no es cero, es que no se sabe.
 function saldoDe(presupuesto: number | null, cobrado: number): Money {
   return centavos(presupuesto === null ? 0 : Math.max(0, presupuesto - cobrado));
 }

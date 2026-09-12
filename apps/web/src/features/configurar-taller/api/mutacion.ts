@@ -19,9 +19,6 @@ export const CLAVE_DEL_NOMBRE = ['households', 'renombrar'] as const;
 const REINTENTOS = 5;
 const DURACION_DEL_RECHAZO_MS = 24 * 60 * 60 * 1000;
 
-// Los valores previos viajan en las variables y no en el contexto de la mutación: el contexto no se
-// persiste, así que un rechazo después de cerrar y abrir la app no tendría con qué volver atrás. Y
-// el delta tampoco lo arreglaría: en el servidor la fila nunca cambió, así que no vuelve a viajar.
 export interface EdicionDeAjustes {
   id: string;
   cambios: CambiosDeAjustes;

@@ -1,0 +1,496 @@
+{
+  "maun3_c": { "sueldo": 1800000, "fijos": 250000, "metaCocos": 10000000, "tasa": 40 },
+  "maun3_p": [
+    {
+      "id": "1752600000000-a1b2c",
+      "cliente": "Marcela Duarte",
+      "trabajo": "Placard 3 puertas con interior en melamina",
+      "presupuesto": 1240000,
+      "pago": "Transferencia",
+      "inicio": "2025-07-20",
+      "entrega": "2025-08-18",
+      "estado": "cobrado",
+      "pagos": [
+        { "id": "1752600000001-p0001", "fecha": "2025-07-18", "concepto": "Seña", "monto": 400000 },
+        {
+          "id": "1752600000002-p0002",
+          "fecha": "2025-08-05",
+          "concepto": "Adelanto",
+          "monto": 400000
+        },
+        {
+          "id": "1752600000003-p0003",
+          "fecha": "2025-08-28",
+          "concepto": "Saldo final",
+          "monto": 440000
+        }
+      ],
+      "insumos": [
+        { "fecha": "2025-07-22", "nombre": "Melamina blanca 18mm (3 placas)", "monto": 246000 },
+        { "fecha": "2025-07-29", "nombre": "Herrajes Blum", "monto": "58000" },
+        { "fecha": "2025-07-29", "nombre": "Tapacantos", "monto": 14500.300000000001 },
+        { "fecha": "2025-08-02", "nombre": "Flete (lo pagó la clienta)", "monto": 0 }
+      ]
+    },
+    {
+      "id": "1755000000000-b2c3d",
+      "cliente": "marcela  duarte ",
+      "trabajo": "Mueble bajo mesada con cajones",
+      "presupuesto": 890000,
+      "pago": "Efectivo",
+      "inicio": "2025-08-11",
+      "entrega": "2025-09-09",
+      "estado": "en_curso",
+      "pagos": [
+        { "id": "1755000000001-p0004", "fecha": "2025-08-11", "concepto": "Seña", "monto": 300000 }
+      ],
+      "insumos": [{ "fecha": "2025-08-12", "nombre": "Melamina blanca 18mm", "monto": 198000 }]
+    },
+    {
+      "id": "1756900000000-c3d4e",
+      "cliente": "MARCELA DUARTE.",
+      "trabajo": "Vajillero para el comedor",
+      "presupuesto": 450000,
+      "pago": "Efectivo",
+      "inicio": "2025-09-03",
+      "entrega": "2025-10-02",
+      "estado": "presupuestado",
+      "pagos": [],
+      "insumos": [{ "fecha": "2025-09-04", "nombre": "Nafta de la visita", "monto": 8000 }]
+    },
+    {
+      "id": "1762000000000-d4e5f",
+      "cliente": "José Pérez",
+      "trabajo": "Cocina integral en melamina grafito",
+      "presupuesto": 4800000,
+      "pago": "Cuotas",
+      "inicio": "2025-11-03",
+      "entrega": "2025-12-02",
+      "estado": "cobrado",
+      "pagos": [
+        {
+          "id": "1762000000001-p0005",
+          "fecha": "2025-11-03",
+          "concepto": "Seña",
+          "monto": 1800000
+        },
+        {
+          "id": "1762000000002-p0006",
+          "fecha": "2025-11-24",
+          "concepto": "Segunda cuota",
+          "monto": 1500000
+        },
+        {
+          "id": "1762000000003-p0007",
+          "fecha": "2025-12-19",
+          "concepto": "Saldo",
+          "monto": 1500000
+        }
+      ],
+      "insumos": [
+        { "fecha": "2025-11-05", "nombre": "Melamina grafito 18mm (10 placas)", "monto": 820000 },
+        { "fecha": "2025-11-12", "nombre": "Herrajes Blum", "monto": 310000 },
+        { "fecha": "2025-12-15", "nombre": "Flete y ayudante", "monto": 88000 }
+      ]
+    },
+    {
+      "id": "1763000000000-e5f6a",
+      "cliente": "Jose Perez",
+      "trabajo": "Vestidor del dormitorio",
+      "presupuesto": 3200000,
+      "pago": "Transferencia",
+      "inicio": "2025-11-10",
+      "entrega": "2025-12-09",
+      "estado": "entregado",
+      "pagos": [
+        {
+          "id": "1763000000001-p0008",
+          "fecha": "2025-11-10",
+          "concepto": "Anticipo",
+          "monto": 1600000
+        }
+      ],
+      "insumos": [
+        { "fecha": "2025-11-12", "nombre": "Melamina roble (14 placas)", "monto": 610000 }
+      ]
+    },
+    {
+      "id": "1764000000000-f6a7b",
+      "cliente": "Estudio Bramante",
+      "trabajo": "Biblioteca a medida 2,40 × 3,10",
+      "presupuesto": 2400000,
+      "pago": "Mixto",
+      "inicio": "2025-11-24",
+      "entrega": "2025-12-23",
+      "estado": "cobrado",
+      "pagos": [
+        {
+          "id": "1764000000001-p0009",
+          "fecha": "2025-11-24",
+          "concepto": "Seña",
+          "monto": 1200000
+        },
+        {
+          "id": "1764000000002-p0010",
+          "fecha": "2025-12-22",
+          "concepto": "Saldo",
+          "monto": 1200000
+        }
+      ],
+      "insumos": [
+        { "fecha": "2025-11-26", "nombre": "Melamina blanca 18mm (5 placas)", "monto": 410000 },
+        { "fecha": "2025-12-01", "nombre": "Flete", "monto": 30000 }
+      ]
+    },
+    {
+      "id": "1765000000000-a7b8c",
+      "cliente": "Jorge Peña",
+      "trabajo": "Deck de madera para el patio",
+      "presupuesto": 1100000,
+      "pago": "Efectivo",
+      "inicio": "2026-01-05",
+      "entrega": "2026-02-03",
+      "estado": "en_curso",
+      "pagos": [
+        { "id": "1765000000001-p0011", "fecha": "2026-01-05", "concepto": "Seña", "monto": 500000 }
+      ],
+      "insumos": []
+    },
+    {
+      "id": "1766000000000-b8c9d",
+      "cliente": "Jorge Pena",
+      "trabajo": "Alacena para el lavadero",
+      "presupuesto": 380000,
+      "pago": "Efectivo",
+      "inicio": "",
+      "entrega": "",
+      "estado": "presupuestado",
+      "pagos": [],
+      "insumos": []
+    }
+  ],
+  "maun3_m": [
+    {
+      "id": "m-01",
+      "tipo": "ingreso_hogar",
+      "concepto": "Docencia de agosto",
+      "monto": 420000,
+      "fecha": "2025-08-05"
+    },
+    {
+      "id": "m-02",
+      "tipo": "ingreso_maun",
+      "concepto": "Arreglo de una puerta, sin proyecto",
+      "monto": 35000,
+      "fecha": "2025-09-10"
+    },
+    {
+      "id": "m-03",
+      "tipo": "gasto_hogar",
+      "cat": "Supermercado",
+      "concepto": "Supermercado",
+      "monto": 102300.5,
+      "fecha": "2025-09-12"
+    },
+    {
+      "id": "m-04",
+      "tipo": "gasto_maun",
+      "cat": "Herramientas/equipamiento",
+      "concepto": "Sierra circular",
+      "monto": 185000,
+      "fecha": "2025-10-01"
+    },
+    {
+      "id": "m-05",
+      "tipo": "pago_diezmo",
+      "concepto": "Diezmo de diciembre",
+      "monto": 450000,
+      "fecha": "2026-01-10"
+    },
+    {
+      "id": "m-06",
+      "tipo": "transfer_cocos",
+      "concepto": "Aporte a Cocos",
+      "monto": 1000000,
+      "fecha": "2026-01-15"
+    },
+    {
+      "id": "m-07",
+      "tipo": "gasto_cocos",
+      "cat": "Compra inmueble",
+      "concepto": "Seña del terreno",
+      "monto": 400000,
+      "fecha": "2026-02-01"
+    },
+    {
+      "id": "m-08",
+      "tipo": "cocos_a_maun",
+      "concepto": "Vuelve a MAUN para placas",
+      "monto": 150000,
+      "fecha": "2026-02-10"
+    },
+    {
+      "id": "m-09",
+      "tipo": "ajuste_cocos",
+      "concepto": "Ajuste COCOS (intereses/depósito)",
+      "monto": 180000,
+      "fecha": "2026-03-01"
+    },
+    {
+      "id": "m-10",
+      "tipo": "ajuste_cocos",
+      "concepto": "Ajuste COCOS (retiro/corrección)",
+      "monto": -25000,
+      "fecha": "2026-04-01"
+    },
+
+    {
+      "id": "d-01",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "ingreso_maun",
+      "concepto": "Seña — Placard 3 puertas con interior en melamina (Marcela Duarte)",
+      "monto": 400000,
+      "fecha": "2025-07-18"
+    },
+    {
+      "id": "d-02",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "ingreso_maun",
+      "concepto": "Adelanto — Placard 3 puertas con interior en melamina (Marcela Duarte)",
+      "monto": 400000,
+      "fecha": "2025-08-05"
+    },
+    {
+      "id": "d-03",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "ingreso_maun",
+      "concepto": "Saldo final — Placard 3 puertas con interior en melamina (Marcela Duarte)",
+      "monto": 440000,
+      "fecha": "2025-08-28"
+    },
+    {
+      "id": "d-04",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Melamina blanca 18mm (3 placas) — Placard 3 puertas con interior en melamina",
+      "monto": 246000,
+      "fecha": "2025-07-22"
+    },
+    {
+      "id": "d-05",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Herrajes Blum — Placard 3 puertas con interior en melamina",
+      "monto": 58000,
+      "fecha": "2025-07-29"
+    },
+    {
+      "id": "d-06",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Tapacantos — Placard 3 puertas con interior en melamina",
+      "monto": 14500.300000000001,
+      "fecha": "2025-07-29"
+    },
+    {
+      "id": "d-07",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "diezmo_generado",
+      "concepto": "Diezmo generado — Placard 3 puertas con interior en melamina",
+      "monto": 92150,
+      "fecha": "2025-09-01"
+    },
+    {
+      "id": "d-08",
+      "proyId": "1752600000000-a1b2c",
+      "tipo": "sueldo_hogar",
+      "concepto": "Sueldo HOGAR — Placard 3 puertas con interior en melamina",
+      "monto": 829349.7,
+      "fecha": "2025-09-01"
+    },
+
+    {
+      "id": "d-09",
+      "proyId": "1755000000000-b2c3d",
+      "tipo": "ingreso_maun",
+      "concepto": "Seña — Mueble bajo mesada con cajones (marcela  duarte )",
+      "monto": 300000,
+      "fecha": "2025-08-11"
+    },
+    {
+      "id": "d-10",
+      "proyId": "1755000000000-b2c3d",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Melamina blanca 18mm — Mueble bajo mesada con cajones",
+      "monto": 198000,
+      "fecha": "2025-08-12"
+    },
+
+    {
+      "id": "d-11",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "ingreso_maun",
+      "concepto": "Seña — Cocina integral en melamina grafito (José Pérez)",
+      "monto": 1800000,
+      "fecha": "2025-11-03"
+    },
+    {
+      "id": "d-12",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "ingreso_maun",
+      "concepto": "Segunda cuota — Cocina integral en melamina grafito (José Pérez)",
+      "monto": 1500000,
+      "fecha": "2025-11-24"
+    },
+    {
+      "id": "d-13",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "ingreso_maun",
+      "concepto": "Saldo — Cocina integral en melamina grafito (José Pérez)",
+      "monto": 1500000,
+      "fecha": "2025-12-19"
+    },
+    {
+      "id": "d-14",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Melamina grafito 18mm (10 placas) — Cocina integral en melamina grafito",
+      "monto": 820000,
+      "fecha": "2025-11-05"
+    },
+    {
+      "id": "d-15",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Herrajes Blum — Cocina integral en melamina grafito",
+      "monto": 310000,
+      "fecha": "2025-11-12"
+    },
+    {
+      "id": "d-16",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Flete y ayudante — Cocina integral en melamina grafito",
+      "monto": 88000,
+      "fecha": "2025-12-15"
+    },
+    {
+      "id": "d-17",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "diezmo_generado",
+      "concepto": "Diezmo generado — Cocina integral en melamina grafito",
+      "monto": 358200,
+      "fecha": "2026-01-02"
+    },
+    {
+      "id": "d-18",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "sueldo_hogar",
+      "concepto": "Sueldo HOGAR — Cocina integral en melamina grafito",
+      "monto": 1800000,
+      "fecha": "2026-01-02"
+    },
+    {
+      "id": "d-19",
+      "proyId": "1762000000000-d4e5f",
+      "tipo": "fijos_maun",
+      "concepto": "Costos fijos MAUN — Cocina integral en melamina grafito",
+      "monto": 250000,
+      "fecha": "2026-01-02"
+    },
+
+    {
+      "id": "d-20",
+      "proyId": "1763000000000-e5f6a",
+      "tipo": "ingreso_maun",
+      "concepto": "Anticipo — Vestidor del dormitorio (Jose Perez)",
+      "monto": 1600000,
+      "fecha": "2025-11-10"
+    },
+    {
+      "id": "d-21",
+      "proyId": "1763000000000-e5f6a",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Melamina roble (14 placas) — Vestidor del dormitorio",
+      "monto": 610000,
+      "fecha": "2025-11-12"
+    },
+
+    {
+      "id": "d-22",
+      "proyId": "1764000000000-f6a7b",
+      "tipo": "ingreso_maun",
+      "concepto": "Seña — Biblioteca a medida 2,40 × 3,10 (Estudio Bramante)",
+      "monto": 1200000,
+      "fecha": "2025-11-24"
+    },
+    {
+      "id": "d-23",
+      "proyId": "1764000000000-f6a7b",
+      "tipo": "ingreso_maun",
+      "concepto": "Saldo — Biblioteca a medida 2,40 × 3,10 (Estudio Bramante)",
+      "monto": 1200000,
+      "fecha": "2025-12-22"
+    },
+    {
+      "id": "d-24",
+      "proyId": "1764000000000-f6a7b",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Melamina blanca 18mm (5 placas) — Biblioteca a medida 2,40 × 3,10",
+      "monto": 410000,
+      "fecha": "2025-11-26"
+    },
+    {
+      "id": "d-25",
+      "proyId": "1764000000000-f6a7b",
+      "tipo": "gasto_maun",
+      "cat": "Materiales/insumos",
+      "concepto": "Insumo: Flete — Biblioteca a medida 2,40 × 3,10",
+      "monto": 30000,
+      "fecha": "2025-12-01"
+    },
+    {
+      "id": "d-26",
+      "proyId": "1764000000000-f6a7b",
+      "tipo": "diezmo_generado",
+      "concepto": "Diezmo generado — Biblioteca a medida 2,40 × 3,10",
+      "monto": 196000,
+      "fecha": "2026-01-02"
+    },
+    {
+      "id": "d-27",
+      "proyId": "1764000000000-f6a7b",
+      "tipo": "sueldo_hogar",
+      "concepto": "Sueldo HOGAR — Biblioteca a medida 2,40 × 3,10",
+      "monto": 1764000,
+      "fecha": "2026-01-02"
+    },
+
+    {
+      "id": "d-28",
+      "proyId": "1765000000000-a7b8c",
+      "tipo": "ingreso_maun",
+      "concepto": "Seña — Deck de madera para el patio (Jorge Peña)",
+      "monto": 500000,
+      "fecha": "2026-01-05"
+    },
+
+    {
+      "id": "d-29",
+      "proyId": "1750000000000-borrado",
+      "tipo": "ingreso_maun",
+      "concepto": "Seña — Un proyecto que ya no está",
+      "monto": 50000,
+      "fecha": "2025-06-20"
+    }
+  ]
+}

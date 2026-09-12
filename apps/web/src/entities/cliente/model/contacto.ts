@@ -15,9 +15,6 @@ export function nombreCorto(nombre: string): string {
   return primera === 'Familia' || primera === 'Estudio' ? limpio : primera;
 }
 
-// El teléfono se guarda como lo escribió el usuario: normalizar solo sirve para armar el enlace de
-// WhatsApp, que necesita el número en formato internacional. Un número argentino escrito a mano
-// viene de mil formas y rechazarlas sería hostil.
 export function telefonoParaWhatsapp(telefono: string): string | null {
   const digitos = telefono.replace(/\D/g, '');
   if (digitos === '') return null;

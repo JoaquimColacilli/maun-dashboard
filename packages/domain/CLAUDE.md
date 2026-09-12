@@ -32,6 +32,8 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 `resumenDelMes` es lo que se muestra por mes: objetivo, liquidado y lo que falta, de sueldo y de fijos.
 
+`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra el que prometían. Con el tope por proyecto, que es la regla del dueño, cada cobro promete su propio sueldo, con el objetivo con el que se liquidó; con el tope mensual, el mes promete uno. Por eso `LiquidacionRegistrada` lleva `sueldoMensual` (ADR 0011). Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
+
 ## El CUIT
 
 `revisarCuit` **avisa, no bloquea** (ADR 0014). Devuelve cuatro estados y no un booleano, porque el caso del módulo 11 que da 10 no tiene una convención única: `verificadorDeCuit` devuelve `null` ahí en vez de elegir entre "inválido" y "mapearlo a 9", y `revisarCuit` lo llama `ambiguo`. El prefijo y el verificador que no cierra también son advertencias. Lo único que la app frena es el largo, y no por el checksum: es el `check` de formato de la base, y un rechazo definitivo tapa la cola.

@@ -7,6 +7,7 @@ import {
   planDeLiquidacion,
   resumenDelMes,
   SIN_DIEZMO,
+  sueldoDelMes,
   topesDeLaLiquidacion,
   type AjustesDeLiquidacion,
   type EntradaLiquidacion,
@@ -42,6 +43,7 @@ function registrada(
     fijos: CERO,
     objetivoSueldo: SUELDO,
     objetivoFijos: FIJOS,
+    sueldoMensual: false,
     ...extra,
   };
 }
@@ -297,5 +299,90 @@ describe('el resumen de un mes', () => {
 
   it('rechaza un mes en curso mal escrito', () => {
     expect(() => resumenDelMes(agosto, '2026-08', ajustes, '2026-9')).toThrow(RangeError);
+  });
+});
+
+describe('el sueldo de un mes, con el tope por cobro', () => {
+  const ajustes = { sueldoMensual: SUELDO, costosFijos: FIJOS };
+
+  it('sin cobros espera un sueldo, el de los ajustes', () => {
+    expect(sueldoDelMes([], '2026-09', ajustes, '2026-09')).toEqual({
+      pagado: 0,
+      esperado: SUELDO,
+      cobros: 0,
+      porCobro: false,
+    });
+  });
+
+  it('dos cobros enteros esperan dos sueldos: la barra no se pasa del cien por ciento', () => {
+    const dos = [
+      registrada('2026-09-05', { sueldo: SUELDO }),
+      registrada('2026-09-20', { sueldo: SUELDO }),
+    ];
+    expect(sueldoDelMes(dos, '2026-09', ajustes, '2026-09')).toEqual({
+      pagado: 360_000_000,
+      esperado: 360_000_000,
+      cobros: 2,
+      porCobro: true,
+    });
+  });
+
+  it('un cobro que no alcanzó para su sueldo se ve como lo que le faltó, aunque el otro lo haya pagado entero', () => {
+    const dos = [
+      registrada('2026-09-05', { sueldo: SUELDO }),
+      registrada('2026-09-20', { sueldo: centavos(90_000_000) }),
+    ];
+    expect(sueldoDelMes(dos, '2026-09', ajustes, '2026-09')).toMatchObject({
+      pagado: 270_000_000,
+      esperado: 360_000_000,
+    });
+  });
+
+  it('cada cobro espera el objetivo con el que se liquidó, no el de hoy', () => {
+    const conOtroObjetivo = [
+      registrada('2026-08-05', {
+        sueldo: centavos(100_000_000),
+        objetivoSueldo: centavos(100_000_000),
+      }),
+      registrada('2026-08-20', { sueldo: SUELDO }),
+    ];
+    expect(sueldoDelMes(conOtroObjetivo, '2026-08', ajustes, '2026-09').esperado).toBe(280_000_000);
+  });
+
+  it('un perdido sin sueldo y los cobros de otro mes no cuentan', () => {
+    const mezcla = [
+      registrada('2026-09-05', { sueldo: SUELDO }),
+      registrada('2026-09-10', { estado: 'perdido', objetivoSueldo: CERO }),
+      registrada('2026-08-28', { sueldo: SUELDO }),
+    ];
+    expect(sueldoDelMes(mezcla, '2026-09', ajustes, '2026-09')).toMatchObject({
+      pagado: SUELDO,
+      esperado: SUELDO,
+      cobros: 1,
+    });
+  });
+
+  it('con el tope por mes el mes espera un solo sueldo, tenga los cobros que tenga', () => {
+    const mensuales = [
+      registrada('2026-09-05', { sueldo: centavos(120_000_000), sueldoMensual: true }),
+      registrada('2026-09-20', { sueldo: centavos(60_000_000), sueldoMensual: true }),
+    ];
+    expect(sueldoDelMes(mensuales, '2026-09', ajustes, '2026-09')).toEqual({
+      pagado: SUELDO,
+      esperado: SUELDO,
+      cobros: 2,
+      porCobro: false,
+    });
+  });
+
+  it('si el modo cambió a mitad de mes, los cobros por trabajo suman su sueldo y los mensuales comparten uno', () => {
+    const mezcla = [
+      registrada('2026-09-05', { sueldo: SUELDO }),
+      registrada('2026-09-20', { sueldo: CERO, sueldoMensual: true }),
+    ];
+    expect(sueldoDelMes(mezcla, '2026-09', ajustes, '2026-09')).toMatchObject({
+      esperado: 360_000_000,
+      porCobro: false,
+    });
   });
 });

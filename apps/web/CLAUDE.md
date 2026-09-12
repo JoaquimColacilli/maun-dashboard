@@ -37,6 +37,7 @@ src/
 - `/acceso/nueva-contrasena` exige que la sesión venga del enlace de recuperación: con la sesión abierta alcanzaría para cambiar la contraseña sin saber la anterior.
 - **El registro es auto-servicio:** quien confirma su mail sale con su propio taller, creado por un trigger de `auth.users` en la misma transacción que la cuenta. No hay pantalla de "sin acceso" y no la agregues: una sesión sin taller es un alta que quedó a medias, y cae en el error genérico con reintentar.
 - Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso, y al revés tampoco: son mensajes distintos sobre el mismo `ErrorDeCarga`.
+- `RutaConAcceso` trata `isPaused` igual que `isError`. Sin nada guardado y sin red, la query de la réplica queda **en pausa, no en error**: sin ese caso la pantalla se quedaba en el skeleton para siempre, sin mensaje y sin forma de salir.
 - Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/seguimiento`, `/proyectos`, `/clientes`, `/finanzas`, `/diezmo` y `/ajustes`.
 - **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
@@ -49,6 +50,8 @@ src/
 - El foco y el anuncio al cambiar de ruta los hace `Marco.tsx` sobre el `<main>`, no cada pantalla. Las pantallas **no** renderizan `<main>`: ya hay uno.
 - Las transiciones van con `conTransicion()` (`document.startViewTransition` + `flushSync`), nunca con el componente `<ViewTransition>` de React.
 - El nodo raíz está anclado con `position: fixed; inset: 0` por el problema de `100vh` en PWA instalada, y el contenido lleva `calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom))` de padding inferior.
+- Las búsquedas de Clientes y Proyectos filtran la réplica en memoria desde la primera letra, **sin debounce**: no hay red de por medio que cuidar.
+- **La barra «Sueldo del mes» de Inicio sale de `sueldoDelMes`, no de `resumenDelMes`.** El tope de sueldo es por cobro, así que cada cobro del mes espera su propio sueldo y la barra nunca pasa del 100% (ADR 0011). El mensaje de arriba, en cambio, sigue leyendo el mes contra un sueldo: es a propósito.
 
 ## Offline (ADR 0005 y 0010)
 
@@ -62,6 +65,7 @@ src/
 - Forma de las mutaciones (ADR 0010): alta, upsert de la fila completa por id (UUIDv7 generado en el cliente con `uuidv7()`); edición, update por id con solo las columnas que cambiaron; baja, update de `deleted_at` con la marca fijada al encolar. `ajustes` solo se edita.
 - Cada mutación se aplica optimista a la réplica con `aplicarFilaLocal` y, si la base la rechaza, se saca con `quitarFilaLocal`.
 - Los rechazos con SQLSTATE `MNxxx` y `42501` no se reintentan: se le muestran al usuario. Tampoco se reintenta ningún otro SQLSTATE definitivo (una violación de check nunca va a andar y tapa la cola, que drena de a una). La red, los timeouts y las clases transitorias sí.
+- **Un corte de red no llega como `TypeError`.** PostgREST devuelve un objeto con `code` vacío y el mensaje del `fetch` adentro («Failed to fetch», «Load failed»…). `esFalloDeRed` lo reconoce por ese par: sin eso, la pantalla mostraba «TypeError: Failed to fetch» en vez de «sin conexión».
 - Nunca muestres "guardado" para una mutación en cola. Para el estado real usá `useEstadoSync` y `describirEstadoSync` de `@/shared/lib`. El `IndicadorSync` global es el que lo dice y **desaparece cuando no hay nada pendiente**: en un test, que no esté es la señal de que ya llegó a la base.
 - `crearQueryClient()` siembra `onlineManager` con `navigator.onLine`. **No lo saques**: `onlineManager` arranca en `true` fijo y solo cambia con los eventos de `window`, así que abrir la app ya sin señal la dejaba creyendo que hay red, con las mutaciones fallando en vez de encolarse (ADR 0014).
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
@@ -154,9 +158,13 @@ src/
   tabla de leads: la seña tendría que mudarse al aprobar, y eso es lo que no puede pasar.
 - **La ficha es `/proyectos/:id` y elige la vista por la fase** (`FichaDeContacto` o la de obra). No
   agregues `/seguimiento/:id`: los avisos, el cierre y `rutaDelProyecto` ya apuntan a la otra.
-- **El orden y el próximo paso se derivan, no se cargan.** `contactosEnOrden` usa
-  `ultimasActividades` (el `updated_at` más nuevo entre la fila, sus pagos y sus gastos) y
-  `situacionDelContacto` escribe la frase. Las visitas agendadas van al final.
+- **El orden y el próximo paso se derivan, no se cargan.** La espera cuenta desde
+  `proyectos.ultimo_contacto`, que escriben solos los pasos y no las ediciones: cargar el contacto,
+  cambiar de etapa y aprobarlo pasan por `ultimoContactoAlGuardar`. Si está vacío, cuenta desde el día
+  de `ultimasActividades` (el `updated_at` más nuevo entre la fila, sus pagos y sus gastos).
+  `contactosEnOrden` ordena por ese día y después por la última actividad, y `situacionDelContacto`
+  escribe la frase. Las visitas agendadas van al final. **Un paso nuevo que cambie la etapa tiene que
+  pasar por `ultimoContactoAlGuardar`**, o la espera vuelve a mentir.
 - **El pasaje (`/proyectos/:id/aprobar`) manda `pagos: []`**: la seña no se toca, así que no viaja ni
   se duplica. `ProyectoPasajePage` decide si deja entrar **al montarse**, con un `useState`: la fila
   optimista pasa a `en_curso` antes de la respuesta, y una guarda por render desmontaría el formulario
@@ -171,12 +179,14 @@ src/
   manda al detalle.
 - **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `role="dialog"`**: si no, una hoja
   abierta por ruta (`/seguimiento/nuevo`, `/finanzas/nuevo`) perdía el foco del primer campo.
-- **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). No es un bug, y el e2e
-  lo deja escrito.
+- **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). Es una diferencia
+  deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
+  «arregles».
 - Proyecto nuevo solo ofrece estados de obra: un contacto entra por Seguimiento.
 
 ## Cosas que muerden en el e2e
 
+- **Antes de `context.setOffline(true)` hay que esperar dos cosas**: `navigator.serviceWorker.ready`, porque el service worker es el que sirve el shell al reabrir, y que la réplica ya esté guardada en IndexedDB. Sin lo segundo, reabrir sin señal encuentra el dispositivo vacío.
 - **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
 - **PostgREST rechaza un `PATCH` sin filtro** con un `21000` («UPDATE requires a WHERE clause»), aunque la RLS ya deje una sola fila a la vista: los helpers que editan por REST llevan el filtro igual.
 - El navegador **normaliza `0ms` a `0s`** al leer una custom property computada: para afirmar sobre una duración, comparar el número y no el texto.

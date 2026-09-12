@@ -53,6 +53,7 @@ export interface LiquidacionRegistrada {
   fijos: Money;
   objetivoSueldo: Money;
   objetivoFijos: Money;
+  sueldoMensual: boolean;
 }
 
 export interface PlanDeLiquidacion {
@@ -87,6 +88,13 @@ export interface EscalonDelMes {
 export interface ResumenDelMes {
   sueldo: EscalonDelMes;
   fijos: EscalonDelMes;
+}
+
+export interface SueldoDelMes {
+  pagado: Money;
+  esperado: Money;
+  cobros: number;
+  porCobro: boolean;
 }
 
 const FORMATO_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -248,5 +256,31 @@ export function resumenDelMes(
       liquidado: liquidado.fijos,
       falta: faltante(objetivoFijos, liquidado.fijos),
     },
+  };
+}
+
+export function sueldoDelMes(
+  liquidaciones: readonly LiquidacionRegistrada[],
+  mes: string,
+  ajustes: Pick<AjustesDeLiquidacion, 'sueldoMensual' | 'costosFijos'>,
+  mesEnCurso: string,
+): SueldoDelMes {
+  const resumen = resumenDelMes(liquidaciones, mes, ajustes, mesEnCurso);
+  const conSueldo = liquidaciones.filter(
+    (liquidacion) => mesDe(liquidacion.fecha) === mes && liquidacion.objetivoSueldo > 0,
+  );
+  const porCobro = conSueldo.filter((liquidacion) => !liquidacion.sueldoMensual);
+
+  let esperado = CERO;
+  for (const liquidacion of porCobro) esperado = sumar(esperado, liquidacion.objetivoSueldo);
+  if (porCobro.length < conSueldo.length || conSueldo.length === 0) {
+    esperado = sumar(esperado, resumen.sueldo.objetivo);
+  }
+
+  return {
+    pagado: resumen.sueldo.liquidado,
+    esperado,
+    cobros: conSueldo.length,
+    porCobro: conSueldo.length > 0 && porCobro.length === conSueldo.length,
   };
 }

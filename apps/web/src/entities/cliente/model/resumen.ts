@@ -19,8 +19,6 @@ export interface ResumenDeCliente {
   saldo: Money;
 }
 
-// La fecha con la que se ordena el historial y se cuenta "el último trabajo": la primera que el
-// proyecto tenga, de la más definitiva a la más tentativa.
 export function fechaDelProyecto(proyecto: Proyecto): string | undefined {
   return (
     proyecto.fecha_cobro ??

@@ -68,8 +68,6 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
     proyectoId === undefined ? undefined : filaPorId(replica, 'proyectos', proyectoId);
   const clientes = filasDe(replica, 'clientes');
 
-  // La versión y el conjunto de hijos son los que el usuario vio al abrir el formulario: es lo que
-  // la base compara para decidir si este guardado pisa algo que cambió mientras tanto.
   const alAbrir = useRef({
     id: proyectoId ?? uuidv7(),
     version: proyecto?.version ?? null,
@@ -124,15 +122,11 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
   const [entregaAuto, setEntregaAuto] = useState(proyecto?.entrega_estimada == null);
   const [comprobanteAuto, setComprobanteAuto] = useState(proyecto === undefined);
 
-  // La entrega estimada se autocompleta a 21 días hábiles del inicio, y se deja pisar: si el
-  // usuario la tocó una vez, mover el inicio ya no la vuelve a calcular.
   useEffect(() => {
     if (!entregaAuto || inicio.trim() === '') return;
     setValue('entrega_estimada', entregaEstimada(inicio), { shouldDirty: true });
   }, [entregaAuto, inicio, setValue]);
 
-  // El comprobante lo hereda de la condición fiscal del cliente: el día de la entrega no hay que
-  // acordarse si a este le va factura A o un remito.
   useEffect(() => {
     if (!comprobanteAuto || cliente === undefined) return;
     setValue('comprobante', comprobanteDeLaCondicion(cliente.condicion_fiscal), {
@@ -153,10 +147,6 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
   const saldo = Math.max(0, presupuestoEnPesos - totalCobrado);
   const neta = totalCobrado - totalGastos;
 
-  // Sin señal la mutación queda en pausa y nunca resuelve: ahí el formulario se cierra igual, que es
-  // lo que hace que el taller pueda cargar un proyecto en modo avión. Con señal se espera la
-  // respuesta, porque un rechazo (una versión vieja, un proyecto ya cobrado) tiene que verse acá,
-  // con todo lo que el usuario escribió todavía en pantalla.
   function reabrirParaEditar(fila: NonNullable<typeof proyecto>): void {
     const hacia = fila.estado === 'perdido' ? 'presupuesto_enviado' : 'entregado';
     revertir.mutate({

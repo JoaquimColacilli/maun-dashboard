@@ -29,6 +29,9 @@ supabase/.env.*
 # material de consulta local, no es código del proyecto
 design-reference/
 
+# la migración del sistema viejo trae datos reales del taller (ADR 0017)
+informe-migracion-*.md
+
 # sistema operativo y logs
 .DS_Store
 Thumbs.db

@@ -61,9 +61,6 @@ export interface DistribucionDespieceProps {
   provisoria?: boolean;
 }
 
-// El despiece de la distribución. En un proyecto liquidado muestra lo que quedó congelado; en el
-// resto, la proyección atenuada de a dónde iría cada peso si se cobrara hoy. Es el mismo componente
-// que usa la pantalla de cobro: lo que cambia es el modo, no la cuenta.
 export function DistribucionDespiece({
   despiece,
   animar = false,

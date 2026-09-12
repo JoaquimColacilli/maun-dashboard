@@ -70,7 +70,6 @@ test('un proyecto con dos pagos y dos gastos entra entero y sobrevive a recargar
   await page.getByRole('button', { name: 'Guardar proyecto' }).click();
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Placard de tres puertas');
-  // Y cuando la cola llegó a la base, las cinco filas están.
   await expect
     .poll(async () => (await leerProyecto(sesion, 'Placard de tres puertas'))?.id, {
       timeout: 20_000,
@@ -145,11 +144,9 @@ test('guardar sobre una versión vieja se rechaza y no se lleva puesto lo que es
   const id = proyecto?.id ?? '';
   const versionVista = proyecto?.version ?? 1;
 
-  // El formulario queda abierto con la versión que vio el usuario.
   await page.getByRole('button', { name: 'Editar' }).click();
   await expect(page.getByLabel('Trabajo')).toHaveValue('Biblioteca a medida');
 
-  // Y desde otro lado alguien guarda primero.
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
       id,
@@ -176,12 +173,10 @@ test('guardar sobre una versión vieja se rechaza y no se lleva puesto lo que es
   await page.getByLabel('Trabajo').fill('Biblioteca, cambiada en el celular');
   await page.getByRole('button', { name: 'Guardar los cambios' }).click();
 
-  // El rechazo se ve, en palabras que el usuario entiende.
   await expect(page.getByRole('alert')).toContainText(
     /cambió desde que lo abriste|Abrilo de nuevo/i,
   );
 
-  // Y la base se quedó con lo que llegó primero: el segundo guardado no pisó nada.
   expect((await leerProyecto(sesion, 'Biblioteca, cambiada desde la PC'))?.id).toBe(id);
   expect(await leerProyecto(sesion, 'Biblioteca, cambiada en el celular')).toBeUndefined();
 });
@@ -209,8 +204,6 @@ test('la tabla de escritorio ordena por cada columna, en los dos sentidos', asyn
 
   await page.goto('/proyectos');
 
-  // Cada columna arranca con el sentido que tiene sentido para su tipo —la plata de mayor a
-  // menor, las fechas de la más próxima a la más lejana— y el segundo clic la da vuelta.
   const columnas: [string, 'ascending' | 'descending'][] = [
     ['Cliente', 'ascending'],
     ['Trabajo', 'ascending'],
@@ -229,7 +222,6 @@ test('la tabla de escritorio ordena por cada columna, en los dos sentidos', asyn
     await expect(encabezado).toHaveAttribute('aria-sort', alRevés);
   }
 
-  // Y ordenar de verdad cambia el orden de las filas, no solo la flecha.
   const porPresupuesto = page.getByRole('columnheader', { name: /Presupuesto/ });
   await porPresupuesto.getByRole('button').click();
   await expect(porPresupuesto).toHaveAttribute('aria-sort', 'descending');

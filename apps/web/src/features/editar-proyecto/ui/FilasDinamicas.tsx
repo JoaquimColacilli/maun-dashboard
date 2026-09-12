@@ -57,11 +57,6 @@ export function FilasDinamicas({
     };
   }, [deshacer]);
 
-  // Al agregar una fila el foco cae en su primer campo: si no, el usuario tiene que buscar dónde
-  // escribir, y en el celular eso es buscar con el pulgar entre inputs de tres milímetros. Lo hace
-  // el `shouldFocus` de useFieldArray, que corre junto con el render; poner otro foco propio en un
-  // requestAnimationFrame compite con ese y puede llegar tarde, en medio de lo que el usuario ya
-  // está escribiendo. Acá solo se acerca la fila a la vista.
   function agregar(): void {
     const nueva = filaVacia(uuidv7(), hoyLocal());
     campos.append(nueva);

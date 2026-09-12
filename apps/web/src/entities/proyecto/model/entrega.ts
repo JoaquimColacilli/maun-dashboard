@@ -24,9 +24,6 @@ export const CLASE_DE_ENTREGA: Readonly<Record<TonoDeEntrega, string>> = {
   vencida: 'font-semibold text-alerta',
 };
 
-// La urgencia relativa, que es para lo que el dueño mira esta columna: decidir qué hace hoy. Un
-// proyecto ya entregado, cobrado o perdido no es urgente aunque su fecha haya pasado, así que no
-// devuelve nada y la pantalla muestra la fecha sin pintarla de rojo.
 export function urgenciaDeEntrega(
   entregaEstimada: string | null,
   estado: EstadoProyecto,

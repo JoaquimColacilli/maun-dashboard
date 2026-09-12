@@ -446,6 +446,7 @@ function registrada(fila: FilaProyecto): LiquidacionRegistrada | null {
     fijos: centavos(Number(fila.fijos)),
     objetivoSueldo: centavos(Number(fila.objetivo_sueldo)),
     objetivoFijos: centavos(Number(fila.objetivo_fijos)),
+    sueldoMensual: fila.sueldo_mensual === true,
   };
 }
 
@@ -1053,8 +1054,6 @@ function comoTextoTs(asiento: Asiento): string {
   ]);
 }
 
-// La vista es un union all: puede repetir la misma fila (los dos lados de una distribución caen en
-// maun con distinta contrapartida). Se comparan como multiconjuntos, no como listas ordenadas.
 function diferenciasDeMultiset(enSql: readonly string[], enTs: readonly string[]): string[] {
   const cuenta = new Map<string, number>();
   for (const fila of enSql) cuenta.set(fila, (cuenta.get(fila) ?? 0) + 1);
@@ -1068,9 +1067,6 @@ function diferenciasDeMultiset(enSql: readonly string[], enTs: readonly string[]
   return diferencias;
 }
 
-// El TypeScript lee lo mismo que lee la app: bootstrap() arma la réplica y de ahí sale el libro.
-// Filtrar acá las filas borradas a mano sería copiar en el comparador el where de la vista, que es
-// justo una de las mitades que puede diverger.
 async function replicaDeLaBase(cliente: pg.Client, usuarioId: string): Promise<Replica> {
   const { rows } = await cliente.query<{ lote: unknown }>('select public.bootstrap() as lote');
   return aplicarLote(replicaVacia(usuarioId), leerLote(rows[0]?.lote), 'reconcile', 0);
@@ -1259,8 +1255,6 @@ export async function compararLibroDelSeed(cliente: pg.Client): Promise<string[]
     return ['el seed no tiene asientos: cargalo con `pnpm --filter @maun/db db:seed`'];
   }
 
-  // El household del seed no tiene miembros a propósito (ADR 0012), así que para leerlo por el
-  // camino real (bootstrap bajo RLS) hace falta uno. Se crea y se deshace en el savepoint.
   await cliente.query('savepoint libro_del_seed');
   const { rows: usuario } = await cliente.query<{ id: string }>(
     `insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
@@ -1439,9 +1433,6 @@ async function idsVivos(cliente: pg.Client, tabla: string, proyectoId: string): 
   return rows.map((fila) => fila.id);
 }
 
-// Lo que devuelve guardar_proyecto tiene que ser lo que quedó en la base: el cliente lo aplica a su
-// réplica sin volver a preguntar, así que una respuesta incompleta se le queda pegada hasta el
-// próximo delta.
 async function compararRespuesta(
   cliente: pg.Client,
   proyectoId: string,
@@ -1466,9 +1457,6 @@ async function compararRespuesta(
   return diferencias;
 }
 
-// Los dos números que la app le manda a cobrar_proyecto, leídos por el camino real (bootstrap →
-// réplica → totalesDelProyecto) contra la suma de la base. Si divergen, todo cobro rebota con
-// MN006 y el taller se queda sin poder cobrar, que es su operación más importante.
 async function compararTotalesDelProyecto(
   cliente: pg.Client,
   contexto: Contexto,

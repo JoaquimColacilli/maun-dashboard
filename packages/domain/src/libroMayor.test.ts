@@ -198,8 +198,6 @@ describe('la distribución congelada', () => {
     });
   });
 
-  // Un perdido con seña retenida también congela distribución y también mueve plata: la vista los
-  // incluye desde la migración de perdidos, y este es el caso que distingue una copia vieja.
   it('un perdido con seña retenida también mueve el diezmo', () => {
     const asientos = asientosDelLibro(
       datos({
@@ -337,8 +335,6 @@ describe('proyeccionCocos', () => {
     expect(proyeccionCocos($(10_000_000), 0, 365)).toBe(10_000_000);
   });
 
-  // La base acepta la tasa hasta 100000 puntos básicos: no es un porcentaje sobre plata, así que no
-  // pasa por puntosBasicos(), que corta en 10000.
   it('acepta tasas por encima del 100%, que es lo que la base permite', () => {
     expect(proyeccionCocos($(1_000_000), 100_000, 365)).toBe(11_000_000);
   });

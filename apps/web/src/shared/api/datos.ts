@@ -52,16 +52,12 @@ export async function sincronizar({
 
   const previa = deEsteUsuario(leerReplica());
 
-  // El reconcile reemplaza la copia entera, así que no corre mientras haya cambios en la cola:
-  // se llevaría puestas las filas optimistas que todavía no llegaron al servidor.
   if (!previa || (necesitaReconcile(previa, ahora) && !hayPendientes)) {
     const lote = await traerBootstrap(cliente);
     return aplicarLote(replicaVacia(usuarioId), lote, 'reconcile', ahora);
   }
 
   const lote = await traerDelta(cliente, previa.cursor);
-  // La réplica se vuelve a leer después del viaje a la base: la cola pudo haber agregado o sacado
-  // filas mientras tanto, y mezclar sobre la foto vieja las borraría.
   const base = deEsteUsuario(leerReplica()) ?? previa;
   return aplicarLote(base, lote, 'delta', ahora);
 }

@@ -2,6 +2,7 @@ import {
   cambiaLaFila,
   datosActualesDelProyecto,
   etapaAlGuardarElContacto,
+  ultimoContactoAlGuardar,
   type Pago,
   type Proyecto,
 } from '@/entities/proyecto';
@@ -126,6 +127,7 @@ export function pedidoDelContacto({
   const base =
     proyecto === undefined ? DATOS_DE_UN_CONTACTO_NUEVO : datosActualesDelProyecto(proyecto);
   const visita = valores.visita.trim();
+  const estado = etapaAlGuardarElContacto(proyecto?.estado, visita, hoy);
 
   return {
     id,
@@ -134,8 +136,9 @@ export function pedidoDelContacto({
       ...base,
       cliente_id: valores.clienteId,
       titulo: valores.titulo.trim(),
-      estado: etapaAlGuardarElContacto(proyecto?.estado, visita, hoy),
+      estado,
       fecha_visita: visita === '' ? null : visita,
+      ultimo_contacto: ultimoContactoAlGuardar(proyecto, estado, hoy, visita === '' ? hoy : visita),
       notas: valores.notas.trim(),
     },
     pagos: pagosDeLaSena(valores, sena, idDeSenaNueva, hoy),

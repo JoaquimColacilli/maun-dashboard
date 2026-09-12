@@ -10,8 +10,6 @@ export interface EntregaRelativaProps {
   conFecha?: boolean;
 }
 
-// La urgencia manda y la fecha va abajo, chica: el dueño mira esta columna para decidir qué hace
-// hoy, y "en 4 días" se lee de un vistazo, "jue 30 sep" hay que calcularlo.
 export function EntregaRelativa({
   entregaEstimada,
   urgencia,

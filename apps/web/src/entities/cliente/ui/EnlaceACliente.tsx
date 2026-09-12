@@ -2,7 +2,6 @@ import { Link } from 'react-router';
 
 import { rutaDelCliente } from '../model/rutas';
 
-// El nombre del cliente es un enlace a su ficha desde cualquier lado de la app.
 export function EnlaceACliente({
   id,
   nombre,

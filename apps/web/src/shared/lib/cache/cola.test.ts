@@ -87,8 +87,6 @@ describe('la cola de salida', () => {
 
     await guardar(primerCliente);
 
-    // El cliente que restaura NO registra el scope: si el orden se sostiene, es porque el scope
-    // viajó con la mutación persistida. Con el scope en los defaults, este test pasaría igual.
     const terminadas: number[] = [];
     const segundoCliente = clienteCon(async ({ orden }) => {
       if (orden === 1) await esperar(30);
@@ -128,8 +126,6 @@ describe('la cola de salida', () => {
   });
 
   it('una mutación que ya salió y estaba reintentando también se persiste y se reanuda', async () => {
-    // Con señal mala navigator.onLine dice que hay red: la mutación no se pausa, sale y reintenta.
-    // Si solo se persistiera lo pausado, ese cambio se perdería al cerrar la app.
     let colgada: (() => void) | undefined;
     const primerCliente = clienteCon(
       () =>

@@ -1,6 +1,5 @@
 const FORMATO = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 });
 
-// La base guarda la tasa en puntos básicos enteros (4000 = 40%) y la acota entre 0 y 100000.
 const MAXIMO_BP = 100_000;
 
 export function formatearPorcentaje(bp: number): string {

@@ -22,6 +22,7 @@
     "db:ensayo": "node --conditions=@maun/source scripts/ensayo.ts",
     "db:esquema": "node scripts/esquema.ts",
     "db:medir": "node scripts/medir.ts",
+    "db:migrar": "node --conditions=@maun/source scripts/migrar.ts",
     "db:household": "node scripts/household.ts",
     "db:seed": "node scripts/seed.ts",
     "db:seed:borrar": "node scripts/seed.ts --borrar"

@@ -34,6 +34,7 @@ export {
   planDeLiquidacion,
   resumenDelMes,
   SIN_DIEZMO,
+  sueldoDelMes,
   topesDeLaLiquidacion,
   type AjustesDeLiquidacion,
   type EntradaLiquidacion,
@@ -45,6 +46,7 @@ export {
   type PlanDeLiquidacion,
   type Reapertura,
   type ResumenDelMes,
+  type SueldoDelMes,
   type Topes,
 } from './liquidacion.ts';
 

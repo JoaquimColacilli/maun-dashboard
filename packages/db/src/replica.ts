@@ -90,9 +90,6 @@ export function replicaVacia(usuarioId: string): Replica {
   return { usuarioId, cursor: '', reconciliadoEn: '', tablas } as Replica;
 }
 
-// `ahora` es el reloj del cliente, y es a propósito: `reconciliadoEn` solo se compara contra
-// Date.now() para saber cuándo toca el próximo reconcile. Guardar acá el cursor del servidor
-// mezclaría dos relojes, y con el del cliente atrasado la resta nunca llegaría a 24 horas.
 export function aplicarLote(
   replica: Replica,
   lote: Lote,
@@ -112,9 +109,6 @@ export function aplicarLote(
         filas.delete(fila.id);
         continue;
       }
-      // Una fila más vieja no pisa a la más nueva: cubre un delta que llega tarde, fuera de orden.
-      // El solape de cinco minutos vuelve a traer la misma version, y esa sí se aplica: es la del
-      // servidor, que manda sobre la copia optimista.
       const existente = filas.get(fila.id);
       if (existente && existente.version > fila.version) continue;
       filas.set(fila.id, fila);
@@ -191,8 +185,6 @@ export function ajustesDe(replica: Replica): FilaDe<'ajustes'> | undefined {
   return filasDe(replica, 'ajustes')[0];
 }
 
-// Un taller recién creado trae los ajustes en cero: la cascada no tiene con qué repartir y la app
-// tiene que pedirlos. Es la misma condición que dibuja el estado vacío del diseño.
 export function faltaConfigurar(ajustes: FilaDe<'ajustes'> | undefined): boolean {
   if (!ajustes) return false;
   return (

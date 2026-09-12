@@ -53,7 +53,6 @@ describe('ClienteCombobox, solo con el teclado', () => {
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     expect(input).toHaveAttribute('aria-expanded', 'true');
     expect(resaltado(input)).toContain('Ana Gómez');
-    // Si el foco saltara a la lista, el modelo de aria-activedescendant estaría roto.
     expect(document.activeElement).toBe(input);
 
     fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -100,7 +99,6 @@ describe('ClienteCombobox, solo con el teclado', () => {
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    // El alta solo necesita el nombre: el resto se completa después, sin salir del formulario.
     expect(alElegir).toHaveBeenCalledWith(
       expect.objectContaining({ nombre: 'Delia Sosa', cuit: '', telefono: '' }),
     );

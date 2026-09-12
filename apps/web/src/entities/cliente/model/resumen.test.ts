@@ -146,7 +146,6 @@ describe('resumenesDeClientes', () => {
     });
     const [resumen] = resumenesDeClientes(replica);
 
-    // p1 debe 60.000, p2 debe 80.000, y p3 ya está cobrado.
     expect(resumen?.saldo).toBe(140_000);
   });
 

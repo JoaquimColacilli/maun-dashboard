@@ -44,8 +44,6 @@ describe('en el celular', () => {
     );
   });
 
-  // Seguimiento no es destino en celular: vive adentro de Proyectos, así que la barra no puede
-  // quedar sin nada marcado.
   it('estando en Seguimiento marca Proyectos, que es donde vive', () => {
     pantallaDe(390);
     montar('/seguimiento');

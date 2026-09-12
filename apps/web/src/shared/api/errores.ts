@@ -23,8 +23,6 @@ const POR_CODIGO: Record<string, string> = {
 
 const SIN_RED = 'No hay conexión con el servidor. Probá de nuevo cuando vuelva la señal.';
 
-// PostgREST no rechaza con un TypeError: devuelve un objeto con el code vacío y el mensaje del
-// fetch adentro. Sin esto, un corte de red termina mostrando "TypeError: Failed to fetch".
 const MENSAJE_DE_RED = /failed to fetch|networkerror|network request failed|load failed/i;
 
 function codigoDeAuth(error: unknown): { codigo: string; estado: number; nombre: string } {

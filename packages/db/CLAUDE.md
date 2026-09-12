@@ -1,6 +1,6 @@
 # @maun/db
 
-Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed y el alta de households.
+Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed, el alta de households y la migración de una sola vez desde el sistema viejo (`db:migrar`).
 
 ## La réplica del household
 
@@ -12,6 +12,7 @@ Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la fa
 - `necesitaReconcile(replica, ahora)` decide entre `bootstrap()` y `delta()`: reconcile completo al entrar y cada 24 horas.
 - `filaPorId(replica, tabla, id)` es la lectura puntual, y `faltaConfigurar(ajustes)` responde si el taller todavía está en cero: es lo que decide el estado vacío de la primera configuración (ADR 0012).
 - `src/sincronizacion.ts` son las llamadas (`traerBootstrap`, `traerDelta`, `guardarMovimiento`, `guardarAjustes`, `guardarNombreDelTaller`, `guardarProyecto`) y `src/errores.ts` clasifica los rechazos: los `MNxxx` y el `42501` no se reintentan. Las ediciones mandan solo las columnas que cambiaron; `COLUMNAS_DE_AJUSTES` es la lista con grant, y sale del tipo generado.
+- Un fallo de `fetch` no llega como excepción: PostgREST lo devuelve como un objeto con `code` vacío. `debeReintentarse` lee ese `code` vacío como «no hubo respuesta de la base» (red, timeout o un 5xx) y lo reintenta.
 - La conversión de `bigint` a `Money` vive en `src/dinero.ts`, en un solo lugar.
 - `src/vistas.ts` traduce la réplica para el dominio. `totalesPorProyecto` vive ahí y no en una pantalla: son los dos números que la app le manda a `cobrar_proyecto`, y si divergen de la suma de la base el cobro rebota con `MN006`. El comparador los verifica por el camino real (ADR 0015).
 - `guardarProyecto` llama al RPC `guardar_proyecto`, que guarda el proyecto con sus pagos y sus gastos en una transacción. Es la única forma de escribir pagos y gastos: no hay mutaciones sueltas para ellos (ADR 0015).
@@ -32,6 +33,39 @@ pnpm --filter @maun/db db:household --email <mail> --nombre "<taller>"
 ```
 
 `--listar` muestra los usuarios de Auth, si confirmaron el mail y a qué household pertenecen. El alta es idempotente: si la cuenta ya tiene household, avisa y no cambia nada.
+
+El alta mira también las membresías borradas. Si a la cuenta le revocaron el acceso, no crea otro household: el viejo quedaría con datos y sin ningún miembro vivo, invisible por RLS. Avisa y la reparación queda a mano.
+
+## La migración del sistema viejo (ADR 0017)
+
+`scripts/migrar.ts` trae los datos del HTML viejo a un household vacío, una sola vez. La lógica vive en `scripts/migracion/` (entrada, clientes, plan, escritura e informe) y se prueba en `tests/migracion.test.ts`, en rollback, con el JSON armado a mano de `tests/datos/sistema-viejo.json`.
+
+1. En la PC del taller, con el HTML abierto, en la consola del navegador:
+
+   ```js
+   copy(
+     JSON.stringify({
+       maun3_p: localStorage.getItem('maun3_p'),
+       maun3_m: localStorage.getItem('maun3_m'),
+       maun3_c: localStorage.getItem('maun3_c'),
+     }),
+   );
+   ```
+
+   Pegalo en un archivo **fuera del repo**. Las tres claves pueden quedar como texto: el script las parsea.
+
+2. Anotá los cuatro saldos que muestra Finanzas ese día, tal cual, DIEZMO con su signo.
+3. El ensayo, que no escribe nada: `pnpm --filter @maun/db db:migrar --archivo <json> --household <id> --hogar=<saldo> --maun=<saldo> --diezmo=<saldo> --cocos=<saldo>`. Los saldos van con `=` para que uno negativo no se lea como otra opción.
+4. Leé el informe, que queda al lado del JSON. Si un grupo de clientes está mal, `--separar "<nombre exacto>"`. Si hay datos sucios, se corrigen en el JSON: el script no los arregla solo.
+5. La misma línea con `--escribir`: pregunta por los clientes antes de tocar nada, muestra todo y pide `confirmo` antes del `commit`.
+
+Lo que no hay que romper:
+
+- **Escribe como el titular del household**, con el rol `authenticated` y sus claims, no como el dueño de la base. Pasa por la RLS, los grants, los triggers y `cobrar_proyecto`. No lo cambies por `update` directos como los del seed: es la puerta de atrás que el ADR 0017 descarta.
+- **Un cobrado entra como `entregado` y se cobra con `cobrar_proyecto`.** El check `proyectos_liquidado_con_distribucion` no deja un cobrado sin distribución, y la guarda de pagos no deja cargarle pagos a un proyecto liquidado.
+- **Se niega sobre un household con cualquier fila**, borradas incluidas, y si el titular pertenece a más de un household: `household_actual()` elige con `limit 1`.
+- El informe y el JSON tienen datos reales del taller y no se commitean. `.gitignore` ignora `informe-migracion-*.md`.
+- Los tests corren `migrar()`, no la CLI: las preguntas de la terminal y el `commit` final no se prueban, porque escribirían en producción.
 
 ## Supabase CLI
 

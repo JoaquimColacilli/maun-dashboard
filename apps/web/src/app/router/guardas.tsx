@@ -28,9 +28,6 @@ export function RutaConSesion() {
   );
 }
 
-// El taller se crea junto con la cuenta y en la misma transacción (ADR 0012), así que una sesión
-// sin taller es un alta que quedó a medias: no es un estado que la app tenga que explicar con una
-// pantalla propia, sino un error como cualquier otro.
 const SIN_TALLER = new Error('Tu cuenta no quedó asociada a ningún taller.');
 
 export function RutaConAcceso() {
@@ -57,8 +54,6 @@ export function RutaConAcceso() {
     );
   }
 
-  // Sin nada guardado y sin red la query queda en pausa, no en error: sin este caso, la pantalla
-  // se quedaba en el skeleton para siempre, sin mensaje y sin forma de salir.
   if (replica.isPaused || replica.isError) {
     return <ErrorDeCarga error={replica.error} reintentar={reintentar} />;
   }

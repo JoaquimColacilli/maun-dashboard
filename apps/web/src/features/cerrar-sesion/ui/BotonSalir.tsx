@@ -20,9 +20,6 @@ export function BotonSalir() {
     } catch (fallo) {
       setError(mensajeDeAcceso(fallo));
     } finally {
-      // Se limpia siempre, también cuando salir() falla: ante un error que no sea de permisos,
-      // auth-js ya borró la sesión local antes de devolverlo, así que el usuario queda afuera y
-      // los datos no pueden quedarse en el disco.
       await limpiarDatosLocales(queryClient);
       setSaliendo(false);
     }

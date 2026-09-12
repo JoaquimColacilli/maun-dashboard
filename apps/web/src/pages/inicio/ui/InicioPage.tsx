@@ -6,12 +6,14 @@ import {
   proyeccionCocos,
   restar,
   resumenDelMes,
+  sueldoDelMes,
   type Money,
 } from '@maun/domain';
 import { useNavigate } from 'react-router';
 
 import {
   fraseDelDiezmo,
+  fraseDelSueldo,
   resumenMensual,
   type FraseDelDiezmo,
   type ResumenMensual,
@@ -55,7 +57,6 @@ function porcentaje(parte: Money, total: Money): number {
   return total <= 0 ? 0 : Math.round((parte / total) * 100);
 }
 
-// Sin mes previo contra el cual comparar no hay comparación: un "+100%" contra cero no dice nada.
 function comparacion(valor: Money, previo: Money, mes: string): string {
   if (previo <= 0) return '';
   const variacion = Math.round(((valor - previo) / previo) * 100);
@@ -180,17 +181,19 @@ function Tarjeta({
 function Barra({
   etiqueta,
   texto,
+  detalle,
   pct,
   color,
 }: {
   etiqueta: string;
   texto: string;
+  detalle?: string;
   pct: number;
   color: string;
 }) {
   return (
     <div>
-      <div className="mb-1.5 flex items-baseline justify-between text-label">
+      <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-label">
         <span className="font-medium">{etiqueta}</span>
         <span className="text-text-2 tabular-nums">{texto}</span>
       </div>
@@ -198,6 +201,7 @@ function Barra({
         role="progressbar"
         aria-label={etiqueta}
         aria-valuenow={pct}
+        aria-valuetext={detalle === undefined ? texto : `${texto}. ${detalle}`}
         aria-valuemin={0}
         aria-valuemax={100}
         className="h-1.5 overflow-hidden rounded-control bg-surface-2"
@@ -207,6 +211,7 @@ function Barra({
           style={{ width: `${String(Math.min(100, pct))}%` }}
         />
       </div>
+      {detalle !== undefined && <p className="mt-1 text-meta text-text-3">{detalle}</p>}
     </div>
   );
 }
@@ -265,12 +270,11 @@ export function InicioPage() {
   const diezmo = estadoDelDiezmo(asientos);
   const frase = fraseDelDiezmo(diezmo);
 
-  const resumen = resumenDelMes(
-    liquidacionesDeLaReplica(replica),
-    mes,
-    objetivosDeLaReplica(replica),
-    mes,
-  );
+  const liquidaciones = liquidacionesDeLaReplica(replica);
+  const objetivos = objetivosDeLaReplica(replica);
+  const resumen = resumenDelMes(liquidaciones, mes, objetivos, mes);
+  const sueldo = sueldoDelMes(liquidaciones, mes, objetivos, mes);
+  const fraseSueldo = fraseDelSueldo(sueldo);
   const metaCocos = centavos(ajustes?.meta_cocos_centavos ?? 0);
   const mensaje = mensajeDelMes(mes, saldos.hogar, del, resumen.sueldo.falta);
 
@@ -381,8 +385,9 @@ export function InicioPage() {
             <section aria-label="Progreso" className="mt-5 flex flex-col gap-4">
               <Barra
                 etiqueta="Sueldo del mes"
-                texto={`${formatearPesos(resumen.sueldo.liquidado)} de ${formatearPesos(resumen.sueldo.objetivo)}`}
-                pct={porcentaje(resumen.sueldo.liquidado, resumen.sueldo.objetivo)}
+                texto={fraseSueldo.texto}
+                detalle={fraseSueldo.detalle}
+                pct={porcentaje(sueldo.pagado, sueldo.esperado)}
                 color={TESORO.hogar.barra}
               />
               <Barra

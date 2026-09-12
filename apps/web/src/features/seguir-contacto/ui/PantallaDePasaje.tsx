@@ -13,6 +13,7 @@ import {
   FORMAS_EN_ORDEN,
   MUTACION_DE_PROYECTO,
   rutaDelProyecto,
+  ultimoContactoAlGuardar,
   type Comprobante,
   type FormaDePago,
   type ResumenDeProyecto,
@@ -84,6 +85,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           datos: {
             ...datosActualesDelProyecto(proyecto),
             estado: 'en_curso',
+            ultimo_contacto: ultimoContactoAlGuardar(proyecto, 'en_curso', hoy),
             presupuesto_centavos: monto,
             forma_pago: forma,
             comprobante,

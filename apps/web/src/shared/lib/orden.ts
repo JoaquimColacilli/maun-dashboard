@@ -10,10 +10,6 @@ export interface Criterio<T> {
   inicial: Sentido;
 }
 
-// Las listas de esta app son unos cientos de elementos en memoria: el trabajo no está en la
-// maquinaria de ordenar sino en comparar bien cada tipo. El texto con la collation del español
-// (así "Ávila" cae donde el usuario espera y las mayúsculas no mandan), la plata como entero de
-// centavos, y las fechas como texto ISO, que ordenado alfabéticamente ya queda cronológico.
 const TEXTO = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
 
 function comparar(tipo: TipoDeOrden, uno: string | number, otro: string | number): number {
@@ -35,8 +31,6 @@ export function criterioPorId<T>(
   return criterios.find((criterio) => criterio.id === id);
 }
 
-// El desempate mantiene el orden estable y determinístico: dos proyectos con la misma fecha de
-// entrega tienen que salir siempre en el mismo orden, o la lista baila al volver a ordenar.
 export function ordenar<T>(
   filas: readonly T[],
   criterio: Criterio<T>,
@@ -49,8 +43,6 @@ export function ordenar<T>(
     const izquierda = criterio.leer(uno);
     const derecha = criterio.leer(otro);
 
-    // Lo que falta va al final en los dos sentidos: un proyecto sin fecha de entrega no es ni el
-    // más urgente ni el menos, y esconderlo arriba del todo al invertir sería peor.
     if (izquierda === undefined || derecha === undefined) {
       if (izquierda !== derecha) return izquierda === undefined ? 1 : -1;
       return TEXTO.compare(desempate(uno), desempate(otro));

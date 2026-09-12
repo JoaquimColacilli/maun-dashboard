@@ -23,8 +23,6 @@ function guardar(nuevo: EstadoSesion): void {
   for (const oyente of oyentes) oyente();
 }
 
-// Una sola suscripción para toda la app: cada guarda y cada pantalla leen de acá. Con un hook por
-// componente, cruzar una frontera de rutas remontaba el estado y volvía a mostrar el skeleton.
 function arrancar(): void {
   if (arrancado) return;
   arrancado = true;
