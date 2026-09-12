@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
+import {
+  avisosEnPantalla,
+  indicadorDeSync,
+  listoParaCortar,
+  saldosEnInicio,
+} from '../apoyo/pantalla';
 import {
   ajustarTaller,
   cobrarPorRpc,
@@ -159,7 +164,7 @@ test('los ocho tipos manuales mueven los cuatro tesoros, con la contrapartida de
   await cargar(page, { grupo: 'Cocos', clase: 'Gasto', monto: '1.000', descripcion: 'Sellos' });
   await cargar(page, { grupo: 'Diezmo', monto: '2.000', descripcion: 'Diezmo de septiembre' });
 
-  await expect(page.getByRole('status').last()).toBeHidden({ timeout: 30_000 });
+  await expect(indicadorDeSync(page)).toBeHidden({ timeout: 30_000 });
 
   const filas = await movimientosDelTaller(sesion);
   expect(filas).toHaveLength(8);
@@ -230,6 +235,10 @@ test('en modo avión el movimiento aparece sin confirmar, sobrevive a cerrar la 
   const fila = page.getByRole('button', { name: /Súper sin señal/ });
   await expect(fila).toBeVisible();
   await expect(fila).toContainText('sin confirmar');
+  await expect(avisosEnPantalla(page)).toContainText(
+    'Movimiento anotado sin señal: se guarda solo cuando vuelva.',
+  );
+  await expect(avisosEnPantalla(page)).not.toContainText('Movimiento guardado.');
   expect(await movimientosDelTaller(sesion)).toHaveLength(0);
 
   await page.close();
@@ -374,7 +383,8 @@ test('un movimiento cargado a mano se edita y se borra desde su ficha', async ({
     monto: '40.000',
     descripcion: 'Hoja de sierra',
   });
-  await expect(page.getByRole('status').last()).toBeHidden({ timeout: 30_000 });
+  await expect(indicadorDeSync(page)).toBeHidden({ timeout: 30_000 });
+  await expect(avisosEnPantalla(page)).toContainText('Movimiento guardado.');
 
   await page.getByRole('button', { name: /Hoja de sierra/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();

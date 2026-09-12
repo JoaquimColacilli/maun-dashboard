@@ -10,7 +10,7 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filasDe, mensajeDeSincronizacion } from '@/shared/api';
-import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
+import { formatearPesos, hoyLocal, metaDeAvisos, uuidv7 } from '@/shared/lib';
 import { Button, Campo, Hoja, MoneyInput } from '@/shared/ui';
 
 import {
@@ -49,7 +49,10 @@ export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContacto
   const [rechazo, setRechazo] = useState<unknown>(null);
   const yaTermino = useRef(false);
 
-  const guardar = useMutation(MUTACION_DE_PROYECTO);
+  const guardar = useMutation({
+    ...MUTACION_DE_PROYECTO,
+    meta: metaDeAvisos('contactoGuardado', { errorEnPantalla: true }),
+  });
   const editarCliente = useMutation(MUTACION_DE_CLIENTE);
 
   const cliente = clientes.find((fila) => fila.id === valores.clienteId);

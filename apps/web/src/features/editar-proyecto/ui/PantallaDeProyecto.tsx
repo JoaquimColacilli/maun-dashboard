@@ -33,7 +33,14 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filaPorId, filasDe, mensajeDeSincronizacion } from '@/shared/api';
-import { formatearPesos, hoyLocal, useAltoVisible, useAnchoDePantalla, uuidv7 } from '@/shared/lib';
+import {
+  formatearPesos,
+  hoyLocal,
+  metaDeAvisos,
+  useAltoVisible,
+  useAnchoDePantalla,
+  uuidv7,
+} from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput } from '@/shared/ui';
 
 import { FilasDinamicas } from './FilasDinamicas';
@@ -68,7 +75,10 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
     gastos: proyectoId === undefined ? [] : gastosDelProyecto(replica, proyectoId).map((g) => g.id),
   });
 
-  const guardar = useMutation(MUTACION_DE_PROYECTO);
+  const guardar = useMutation({
+    ...MUTACION_DE_PROYECTO,
+    meta: metaDeAvisos('proyectoGuardado', { errorEnPantalla: true }),
+  });
   const [rechazo, setRechazo] = useState<unknown>(null);
   const [volverALiquidar, setVolverALiquidar] = useState<'cierre' | 'cobro' | null>(null);
   const revertir = useMutation(MUTACION_DE_REVERSION);

@@ -1,9 +1,55 @@
 import { expect, test } from '@playwright/test';
 
-import { iniciarSesionDePrueba, leerCliente, vaciarTaller } from '../apoyo/taller';
+import { avisosEnPantalla } from '../apoyo/pantalla';
+import {
+  contarClientes,
+  crearCliente,
+  guardarProyectoPorRpc,
+  iniciarSesionDePrueba,
+  leerCliente,
+  vaciarTaller,
+} from '../apoyo/taller';
 
 test.beforeEach(async () => {
   await vaciarTaller(await iniciarSesionDePrueba());
+});
+
+test('borrar un cliente con un trabajo vivo lo rechaza la base y el aviso de error lo dice con el motivo', async ({
+  page,
+}) => {
+  const sesion = await iniciarSesionDePrueba();
+  const clienteId = await crearCliente(sesion, 'Rosa Ibarra');
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id: crypto.randomUUID(),
+      version: null,
+      cliente_id: clienteId,
+      titulo: 'Vajillero',
+      estado: 'en_curso',
+      presupuesto_centavos: 50_000_000,
+      comprobante: 'sin_comprobante',
+    },
+    pagos: [],
+    gastos: [],
+  });
+
+  await page.goto(`/clientes/${clienteId}`);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Rosa Ibarra');
+  await page.getByRole('button', { name: 'Borrar', exact: true }).click();
+  await page
+    .getByRole('alertdialog', { name: '¿Borrás a Rosa Ibarra?' })
+    .getByRole('button', { name: 'Borrar el cliente' })
+    .click();
+
+  const error = page.getByRole('alert').filter({ hasText: 'No se borró el cliente.' });
+  await expect(error).toBeVisible({ timeout: 20_000 });
+  await expect(error).toContainText('Rosa Ibarra');
+  await expect(avisosEnPantalla(page).filter({ hasText: 'Cliente borrado.' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Rosa Ibarra/ })).toBeVisible();
+  expect(await contarClientes(sesion, 'Rosa Ibarra')).toBe(1);
+
+  await error.getByRole('button', { name: 'Cerrar el aviso' }).click();
+  await expect(error).toBeHidden();
 });
 
 async function cargarCliente(

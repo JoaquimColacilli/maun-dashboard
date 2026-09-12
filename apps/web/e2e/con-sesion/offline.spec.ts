@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 
+import { avisosEnPantalla, indicadorDeSync } from '../apoyo/pantalla';
 import {
   contarClientes,
   contarHijos,
@@ -31,8 +32,12 @@ test('en modo avión el cliente aparece al instante, sobrevive a cerrar la app y
   await page.getByRole('button', { name: 'Guardar cliente' }).click();
 
   await expect(page.getByRole('button', { name: /Sin señal/ })).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('Sin conexión');
-  await expect(page.getByRole('status')).toContainText('1 cambio');
+  await expect(indicadorDeSync(page)).toContainText('Sin conexión');
+  await expect(indicadorDeSync(page)).toContainText('1 cambio');
+  await expect(avisosEnPantalla(page)).toContainText(
+    'Cliente anotado sin señal: se guarda solo cuando vuelva.',
+  );
+  await expect(avisosEnPantalla(page)).not.toContainText('Cliente guardado.');
   expect(await contarClientes(sesion, 'Sin señal')).toBe(0);
 
   await page.close();
@@ -40,12 +45,13 @@ test('en modo avión el cliente aparece al instante, sobrevive a cerrar la app y
   await reabierta.goto('/clientes');
 
   await expect(reabierta.getByRole('button', { name: /Sin señal/ })).toBeVisible();
-  await expect(reabierta.getByRole('status')).toContainText('Sin conexión');
-  await expect(reabierta.getByRole('status')).toContainText('1 cambio');
+  await expect(indicadorDeSync(reabierta)).toContainText('Sin conexión');
+  await expect(indicadorDeSync(reabierta)).toContainText('1 cambio');
   expect(await contarClientes(sesion, 'Sin señal')).toBe(0);
 
   await context.setOffline(false);
-  await expect(reabierta.getByRole('status')).toBeHidden({ timeout: 20_000 });
+  await expect(indicadorDeSync(reabierta)).toBeHidden({ timeout: 20_000 });
+  await expect(avisosEnPantalla(reabierta)).toContainText('Estaba anotado sin señal.');
 
   expect(await contarClientes(sesion, 'Sin señal')).toBe(1);
   await expect(reabierta.getByRole('listitem')).toHaveCount(1);
@@ -78,7 +84,7 @@ test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente,
   await page.goto('/proyectos');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await expect(page.getByRole('button', { name: 'Nuevo proyecto' })).toBeVisible();
-  await expect(page.getByRole('status')).toBeHidden({ timeout: 20_000 });
+  await expect(indicadorDeSync(page)).toBeHidden({ timeout: 20_000 });
 
   await context.setOffline(true);
 
@@ -111,15 +117,15 @@ test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente,
   await page.getByRole('button', { name: 'Guardar proyecto' }).click();
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Placard sin señal');
-  await expect(page.getByRole('status').first()).toContainText('Sin conexión');
-  await expect(page.getByRole('status').first()).toContainText('1 cambio');
+  await expect(indicadorDeSync(page)).toContainText('Sin conexión');
+  await expect(indicadorDeSync(page)).toContainText('1 cambio');
   expect(await leerProyecto(sesion, 'Placard sin señal')).toBeUndefined();
 
   await page.close();
   const reabierta = await context.newPage();
   await reabierta.goto('/proyectos');
   await expect(reabierta.getByRole('link', { name: 'Placard sin señal' })).toBeVisible();
-  await expect(reabierta.getByRole('status').first()).toContainText('1 cambio');
+  await expect(indicadorDeSync(reabierta)).toContainText('1 cambio');
   await reabierta.getByRole('link', { name: 'Placard sin señal' }).click();
   await expect(reabierta.getByRole('region', { name: 'Pagos recibidos' })).toContainText('Pago 2');
   await expect(reabierta.getByRole('region', { name: 'Gastos e insumos' })).toContainText(
@@ -127,7 +133,7 @@ test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente,
   );
 
   await context.setOffline(false);
-  await expect(reabierta.getByRole('status').first()).toBeHidden({ timeout: 20_000 });
+  await expect(indicadorDeSync(reabierta)).toBeHidden({ timeout: 20_000 });
 
   const guardado = await leerProyecto(sesion, 'Placard sin señal');
   expect(guardado).toBeDefined();

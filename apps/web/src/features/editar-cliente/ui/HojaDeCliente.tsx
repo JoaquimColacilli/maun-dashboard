@@ -22,7 +22,7 @@ import {
   type FormularioDeCliente,
 } from '@/entities/cliente';
 import { mensajeDeSincronizacion, type DatosDeCliente } from '@/shared/api';
-import { uuidv7 } from '@/shared/lib';
+import { metaDeAvisos, uuidv7 } from '@/shared/lib';
 import { Button, Campo, Hoja } from '@/shared/ui';
 
 export interface HojaDeClienteProps {
@@ -36,8 +36,8 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
   const idTitulo = useId();
   const primerCampo = useRef<HTMLInputElement>(null);
 
-  const crear = useMutation(MUTACION_DE_CLIENTE_NUEVO);
-  const editar = useMutation(MUTACION_DE_CLIENTE);
+  const crear = useMutation({ ...MUTACION_DE_CLIENTE_NUEVO, meta: metaDeAvisos('clienteNuevo') });
+  const editar = useMutation({ ...MUTACION_DE_CLIENTE, meta: metaDeAvisos('clienteEditado') });
   const enVuelo = crear.isPending || editar.isPending;
   const fallo: unknown = crear.error ?? editar.error;
 

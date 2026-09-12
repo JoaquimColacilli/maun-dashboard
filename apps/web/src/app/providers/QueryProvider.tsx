@@ -18,6 +18,7 @@ import {
 } from '@/shared/lib';
 import { Cargando } from '@/shared/ui';
 
+import { avisarDesdeLaCola } from './avisos-de-la-cola';
 import { crearQueryClient, DURACION_CACHE_MS, VERSION_CACHE } from './query-client';
 
 const OPCIONES_DE_DESHIDRATACION: PersistedQueryClientSaveOptions['dehydrateOptions'] = {
@@ -80,6 +81,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   const [persister] = useState(crearPersisterIndexedDb);
   useLimpiezaDeSesion(queryClient);
   useGuardadoInmediato(queryClient, persister);
+  useEffect(() => avisarDesdeLaCola(queryClient), [queryClient]);
 
   return (
     <PersistQueryClientProvider

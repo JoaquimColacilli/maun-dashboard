@@ -15,7 +15,7 @@ import {
   type SituacionDelContacto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeProyecto } from '@/shared/api';
-import { hoyLocal } from '@/shared/lib';
+import { hoyLocal, metaDeAvisos } from '@/shared/lib';
 import { Button, Icono, MoneyInput } from '@/shared/ui';
 
 export interface AvanceDelContactoProps {
@@ -32,7 +32,10 @@ export function AvanceDelContacto({
   alAgendar,
 }: AvanceDelContactoProps) {
   const navegar = useNavigate();
-  const guardar = useMutation(MUTACION_DE_PROYECTO);
+  const guardar = useMutation({
+    ...MUTACION_DE_PROYECTO,
+    meta: metaDeAvisos('contactoAvanzado', { errorEnPantalla: true, sujeto: proyecto.titulo }),
+  });
   const [rechazo, setRechazo] = useState<unknown>(null);
   const [presupuestando, setPresupuestando] = useState(false);
   const [presupuesto, setPresupuesto] = useState<number | null>(null);

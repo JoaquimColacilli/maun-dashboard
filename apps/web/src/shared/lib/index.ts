@@ -65,6 +65,19 @@ export {
   type AvisoAnotado,
   type TipoDeAviso,
 } from './avisos/bandeja';
+export {
+  avisarEnPantalla,
+  avisosDeLaMeta,
+  descartarDePantalla,
+  metaDeAvisos,
+  TEXTOS_DE_AVISO,
+  useAvisosEnPantalla,
+  vaciarAvisosEnPantalla,
+  type AvisoEnPantalla,
+  type AvisosDeUnaMutacion,
+  type QueSeGuarda,
+  type TonoDelAviso,
+} from './avisos/pantalla';
 export { calcularEstadoSync, describirEstadoSync, type EstadoSync } from './sync/estado-sync';
 export {
   CLAVE_DEL_TEMA,

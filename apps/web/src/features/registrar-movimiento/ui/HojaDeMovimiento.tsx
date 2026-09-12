@@ -15,7 +15,14 @@ import {
   type GrupoDeMovimiento,
 } from '@/entities/movimiento';
 import { mensajeDeSincronizacion, type CambiosDeMovimiento, type FilaDe } from '@/shared/api';
-import { formatearPesos, hoyLocal, TESORO, useEstadoSync, uuidv7 } from '@/shared/lib';
+import {
+  formatearPesos,
+  hoyLocal,
+  metaDeAvisos,
+  TESORO,
+  useEstadoSync,
+  uuidv7,
+} from '@/shared/lib';
 import { Button, Campo, Hoja, Icono, MoneyInput } from '@/shared/ui';
 
 const UN_DIA_MS = 86_400_000;
@@ -97,9 +104,15 @@ export function HojaDeMovimiento({
     campoDeMonto.current?.focus();
   }, []);
 
-  const crear = useMutation(MUTACION_DE_MOVIMIENTO);
-  const editar = useMutation(MUTACION_DE_EDICION_DE_MOVIMIENTO);
-  const borrar = useMutation(MUTACION_DE_BAJA_DE_MOVIMIENTO);
+  const crear = useMutation({ ...MUTACION_DE_MOVIMIENTO, meta: metaDeAvisos('movimientoNuevo') });
+  const editar = useMutation({
+    ...MUTACION_DE_EDICION_DE_MOVIMIENTO,
+    meta: metaDeAvisos('movimientoEditado'),
+  });
+  const borrar = useMutation({
+    ...MUTACION_DE_BAJA_DE_MOVIMIENTO,
+    meta: metaDeAvisos('movimientoBorrado'),
+  });
   const estadoSync = useEstadoSync();
   const enVuelo = crear.isPending || editar.isPending || borrar.isPending;
   const fallo: unknown = crear.error ?? editar.error ?? borrar.error;

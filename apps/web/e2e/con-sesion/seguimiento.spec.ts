@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
+import { indicadorDeSync, listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
 import {
   contactoPorRpc,
   crearCliente,
@@ -348,7 +348,7 @@ test('en modo avión el contacto con su seña queda entero, sobrevive a cerrar l
     'aria-checked',
     'true',
   );
-  await expect(page.getByRole('status').first()).toContainText('Sin conexión');
+  await expect(indicadorDeSync(page)).toContainText('Sin conexión');
   expect(await leerProyecto(sesion, 'Biblioteca sin señal')).toBeUndefined();
 
   await page.close();
@@ -358,7 +358,7 @@ test('en modo avión el contacto con su seña queda entero, sobrevive a cerrar l
   await expect(tarjeta).toContainText('Biblioteca sin señal', { timeout: 30_000 });
   await expect(tarjeta).toContainText('A presupuestar');
   await expect(tarjeta).toContainText('$ 80.000');
-  await expect(reabierta.getByRole('status').first()).toContainText('Sin conexión');
+  await expect(indicadorDeSync(reabierta)).toContainText('Sin conexión');
   expect(await leerProyecto(sesion, 'Biblioteca sin señal')).toBeUndefined();
 
   await context.setOffline(false);

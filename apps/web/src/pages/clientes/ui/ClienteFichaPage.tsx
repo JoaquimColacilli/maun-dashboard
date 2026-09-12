@@ -22,7 +22,7 @@ import { RUTA_DE_PROYECTO_NUEVO } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { fechaLarga, formatearPesos, hoyLocal, relativa } from '@/shared/lib';
+import { fechaLarga, formatearPesos, hoyLocal, metaDeAvisos, relativa } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
@@ -174,10 +174,14 @@ export function ClienteFichaPage() {
   const { id = '' } = useParams();
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
-  const borrar = useMutation(MUTACION_DE_BAJA_DE_CLIENTE);
-
   const hoy = hoyLocal();
   const resumen = resumenDeCliente(replica, id);
+  const borrar = useMutation({
+    ...MUTACION_DE_BAJA_DE_CLIENTE,
+    meta: metaDeAvisos('clienteBorrado', {
+      ...(resumen ? { sujeto: resumen.cliente.nombre } : {}),
+    }),
+  });
 
   if (!resumen) {
     return (

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export interface SaldosDeInicio {
   hogar: number;
@@ -7,9 +7,23 @@ export interface SaldosDeInicio {
   cocos: number;
 }
 
+export function indicadorDeSync(page: Page): Locator {
+  return page
+    .getByRole('status')
+    .filter({ hasText: /Sin conexión|Sincronizando|no se pudo guardar|no se pudieron guardar/ });
+}
+
+export function avisosEnPantalla(page: Page): Locator {
+  return page.getByRole('status').filter({ hasText: /guardad|anotad|borrad/i });
+}
+
 export async function listoParaCortar(page: Page): Promise<void> {
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await expect(page.getByRole('status').last()).toBeHidden({ timeout: 20_000 });
+  await expect(page.getByRole('main')).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.getByRole('status').filter({ hasText: /Abriendo la app|Trayendo los datos/ }),
+  ).toHaveCount(0, { timeout: 20_000 });
+  await expect(indicadorDeSync(page)).toBeHidden({ timeout: 20_000 });
 }
 
 export async function saldosEnInicio(page: Page): Promise<SaldosDeInicio> {

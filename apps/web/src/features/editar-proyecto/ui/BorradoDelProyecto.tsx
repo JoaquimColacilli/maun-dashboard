@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { hijosDelProyecto, MUTACION_DE_BAJA_DE_PROYECTO, type Proyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { metaDeAvisos } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono } from '@/shared/ui';
 
 export interface BorradoDelProyectoProps {
@@ -13,7 +14,12 @@ export interface BorradoDelProyectoProps {
 
 export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDelProyectoProps) {
   const replica = useReplicaDelTaller();
-  const borrar = useMutation(MUTACION_DE_BAJA_DE_PROYECTO);
+  const borrar = useMutation({
+    ...MUTACION_DE_BAJA_DE_PROYECTO,
+    meta: metaDeAvisos(sustantivo === 'contacto' ? 'contactoBorrado' : 'proyectoBorrado', {
+      sujeto: proyecto.titulo,
+    }),
+  });
   const [confirmando, setConfirmando] = useState(false);
   const { pagos, gastos } = hijosDelProyecto(replica, proyecto.id);
 

@@ -12,7 +12,7 @@ import {
 import { ConSalida } from '@/shared/ui';
 
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
-import { AvisoDeRechazo } from './AvisoDeRechazo';
+import { Avisos } from './Avisos';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
 
@@ -80,7 +80,7 @@ export function Marco() {
 
       <CapaDeHoja />
 
-      <AvisoDeRechazo />
+      <Avisos />
 
       <span aria-live="polite" className="sr-only">
         {anuncio}

@@ -17,7 +17,7 @@ export function AvisoDeRechazo() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-4 bottom-[calc(var(--bottom-nav-clearance)+3.25rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-[420px] rounded-panel border border-alerta bg-paper px-3.5 py-3 shadow-menu md:bottom-[calc(14px+3.25rem+env(safe-area-inset-bottom))]"
+      className="pointer-events-auto rounded-panel border border-alerta bg-paper px-3.5 py-3 shadow-menu"
     >
       <div className="flex items-start gap-2">
         <span className="mt-0.5 flex-none text-alerta">
