@@ -1,4 +1,5 @@
 export { borrarCacheLocal, crearPersisterIndexedDb } from './cache/persister';
+export { guardarCacheAhora, registrarGuardado } from './cache/guardado';
 export { claveDeReplica, claveDeTodaReplica, RAIZ_DE_REPLICA } from './claves';
 export { COLA_DE_SALIDA, esPersistible, reanudarCola } from './cache/cola';
 export { limpiarDatosLocales } from './cache/limpieza';
@@ -24,6 +25,18 @@ export {
 export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible } from './teclado';
 export { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';
+export {
+  rutaDeCierre,
+  rutaDeCobro,
+  rutaDeEdicion,
+  rutaDeMovimientoNuevo,
+  rutaDelMovimiento,
+  rutaDelProyecto,
+  RUTA_DE_DIEZMO,
+  RUTA_DE_FINANZAS,
+  RUTA_DE_MOVIMIENTO_NUEVO,
+  RUTA_DE_PROYECTO_NUEVO,
+} from './rutas';
 export { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from './tesoros';
 export { formatearPorcentaje, parsearPorcentaje } from './porcentaje';
 export {

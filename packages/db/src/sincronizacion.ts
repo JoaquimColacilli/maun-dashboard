@@ -84,6 +84,54 @@ export async function guardarMovimiento(
   return data;
 }
 
+// Las columnas de movimientos que el usuario escribe, y que tienen grant en la base. Salen del tipo
+// generado, no de una copia a mano.
+export const COLUMNAS_DE_MOVIMIENTO = [
+  'fecha',
+  'tipo',
+  'tesoro_origen',
+  'tesoro_destino',
+  'monto_centavos',
+  'categoria',
+  'descripcion',
+] as const;
+
+export type ColumnaDeMovimiento = (typeof COLUMNAS_DE_MOVIMIENTO)[number];
+
+export type DatosDeMovimiento = Pick<FilaDe<'movimientos'>, ColumnaDeMovimiento>;
+
+export type CambiosDeMovimiento = Partial<DatosDeMovimiento>;
+
+export async function guardarCambiosDeMovimiento(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeMovimiento,
+): Promise<FilaDe<'movimientos'>> {
+  const { data, error } = await cliente
+    .from('movimientos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function borrarMovimiento(
+  cliente: ClienteMaun,
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'movimientos'>> {
+  const { data, error } = await cliente
+    .from('movimientos')
+    .update({ deleted_at: borradoEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 // Las columnas de clientes que el usuario escribe, y que tienen grant en la base. Salen del tipo
 // generado, no de una copia a mano.
 export const COLUMNAS_DE_CLIENTE = [

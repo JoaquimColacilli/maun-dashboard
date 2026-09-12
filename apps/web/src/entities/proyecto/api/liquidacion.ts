@@ -18,6 +18,7 @@ import {
   claveDeTodaReplica,
   COLA_DE_SALIDA,
   formatearPesos,
+  guardarCacheAhora,
   limpiarRechazosDelProyecto,
   uuidv7,
 } from '@/shared/lib';
@@ -76,15 +77,15 @@ function anotarElRechazo(
   proyectoId: string,
   titulo: string,
   estado: 'cobrado' | 'perdido',
-): void {
+): Promise<void> {
   const traducido = traducirRechazo(error, {
     operacion: operacion satisfies OperacionRechazada,
     sujeto: titulo,
     estado,
   });
-  if (!traducido) return;
+  if (!traducido) return Promise.resolve();
 
-  anotarAviso(cliente, {
+  return anotarAviso(cliente, {
     id: uuidv7(),
     tipo: 'rechazo',
     cuando: new Date().toISOString(),
@@ -102,9 +103,9 @@ function anotarElAjuste(
   cliente: QueryClient,
   fila: FilaDe<'proyectos'>,
   { pedido, titulo }: LiquidacionDeProyecto,
-): void {
+): Promise<void> {
   const ajuste = ajusteDeLaLiquidacion(fila, pedido);
-  if (!ajuste) return;
+  if (!ajuste) return Promise.resolve();
 
   const detalle = ajuste.diferencias
     .map(
@@ -113,7 +114,7 @@ function anotarElAjuste(
     )
     .join(' ');
 
-  anotarAviso(cliente, {
+  return anotarAviso(cliente, {
     id: uuidv7(),
     tipo: 'ajuste',
     cuando: new Date().toISOString(),
@@ -140,15 +141,16 @@ export const MUTACION_DE_LIQUIDACION: MutationOptions<
   onMutate: async ({ optimista }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', optimista));
+    await guardarCacheAhora();
   },
-  onSuccess: (fila, variables, _contexto, { client }) => {
+  onSuccess: async (fila, variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', fila));
-    limpiarRechazosDelProyecto(client, variables.pedido.proyectoId);
-    anotarElAjuste(client, fila, variables);
+    await limpiarRechazosDelProyecto(client, variables.pedido.proyectoId);
+    await anotarElAjuste(client, fila, variables);
   },
-  onError: (error, { pedido, previo, titulo }, _contexto, { client }) => {
+  onError: async (error, { pedido, previo, titulo }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', previo));
-    anotarElRechazo(
+    await anotarElRechazo(
       client,
       error,
       operacionDeLiquidacion(pedido),
@@ -172,14 +174,15 @@ export const MUTACION_DE_REVERSION: MutationOptions<
   onMutate: async ({ optimista }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', optimista));
+    await guardarCacheAhora();
   },
-  onSuccess: (fila, { pedido }, _contexto, { client }) => {
+  onSuccess: async (fila, { pedido }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', fila));
-    limpiarRechazosDelProyecto(client, pedido.proyectoId);
+    await limpiarRechazosDelProyecto(client, pedido.proyectoId);
   },
-  onError: (error, { pedido, previo, titulo }, _contexto, { client }) => {
+  onError: async (error, { pedido, previo, titulo }, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proyectos', previo));
-    anotarElRechazo(
+    await anotarElRechazo(
       client,
       error,
       operacionDeReversion(pedido),

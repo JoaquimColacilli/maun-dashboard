@@ -42,6 +42,13 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 - `private.topes_de_la_liquidacion`, `private.liquidacion_valida`, `private.reversion_valida` y el bloque de objetivos y la suma del mes de `private.liquidar`, en `20260911210000_topes_mensuales_y_perdido.sql`.
 - **`asientosDelLibro` y `saldosPorTesoro` contra la vista `public.libro_mayor`**, que es el estado vivo del esquema (`supabase/esquema.sql`), no el archivo de la migración: los dos difieren y el archivo está desactualizado (ADR 0013 y 0014).
 
+`lineasDelLibro` **no tiene gemela en SQL y no la necesita**: es la forma sin partir de lo mismo, y
+`asientosDelLibro` es literalmente `lineasDelLibro(...).flatMap(asientosDeLaLinea)`. Nada en la base
+consume una línea —la vista existe para sacar saldos, y los saldos siguen saliendo de los asientos—,
+así que la comparación contra `libro_mayor` la cubre por construcción: si una línea estuviera mal, sus
+asientos estarían mal. Una línea es una operación (una transferencia es **una**, con origen y
+destino); un asiento es un lado (ADR 0018).
+
 **Todo cambio acá lleva el cambio en SQL, con una migración nueva, en el mismo PR.** `packages/db/tests/dominio-vs-sql.test.ts` los compara contra la base y falla si divergen en un solo caso.
 
 ## Estados

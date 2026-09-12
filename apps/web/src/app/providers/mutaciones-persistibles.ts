@@ -9,6 +9,14 @@ import {
   MUTACION_DE_CLIENTE_NUEVO,
 } from '@/entities/cliente';
 import {
+  CLAVE_DE_BAJA_DE_MOVIMIENTO,
+  CLAVE_DE_EDICION_DE_MOVIMIENTO,
+  CLAVE_DE_MOVIMIENTO,
+  MUTACION_DE_BAJA_DE_MOVIMIENTO,
+  MUTACION_DE_EDICION_DE_MOVIMIENTO,
+  MUTACION_DE_MOVIMIENTO,
+} from '@/entities/movimiento';
+import {
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_LIQUIDACION,
   CLAVE_DE_NOTAS,
@@ -26,13 +34,20 @@ import {
   MUTACION_DE_AJUSTES,
   MUTACION_DEL_NOMBRE,
 } from '@/features/configurar-taller';
-import { CLAVE_DE_MOVIMIENTO, MUTACION_DE_MOVIMIENTO } from '@/features/registrar-movimiento';
-
 type RegistroDeMutacion = (queryClient: QueryClient) => void;
 
 const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_MOVIMIENTO, MUTACION_DE_MOVIMIENTO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(
+      CLAVE_DE_EDICION_DE_MOVIMIENTO,
+      MUTACION_DE_EDICION_DE_MOVIMIENTO,
+    );
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_MOVIMIENTO, MUTACION_DE_BAJA_DE_MOVIMIENTO);
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_AJUSTES, MUTACION_DE_AJUSTES);

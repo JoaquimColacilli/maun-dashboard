@@ -7,7 +7,7 @@ el rediseño.
 Leyenda de la última columna: **está** (funciona hoy), **falta** (no está, y en qué paso queda), **no
 se replica** (decisión tomada, con el motivo).
 
-Actualizado en el paso 9 (cobro y liquidación).
+Actualizado en el paso 10 (finanzas, diezmo y movimientos a mano).
 
 ---
 
@@ -30,7 +30,7 @@ sale de la vista `libro_mayor` a partir de la distribución congelada (ADR 0003)
 | `sueldo_hogar`    | `hogar += `, **nunca restaba de MAUN**            | **Está, corregido.** Sale de `dist_sueldo_centavos`: asiento `maun → hogar`. Es el error 2 del ADR 0003.                                                                                                                  |
 | `diezmo_generado` | `diezmoAcum += `, `maun -= `                      | **Está.** Sale de `dist_diezmo_centavos`: asiento `maun → diezmo`.                                                                                                                                                        |
 | `fijos_maun`      | `maun -= monto`, **sin ir a ningún tesoro**       | **No se replica.** Los fijos son un escalón del reparto, no plata que sale del taller. En el HTML esa diferencia se evaporaba de MAUN sin destino. Hoy no genera asiento y el remanente dice la verdad (ADR 0003 y 0011). |
-| `ajuste_cocos`    | `cocos += diferencia`, al guardar la config       | **Falta el generador.** El tipo `ajuste` existe y se carga a mano en Finanzas; lo que no está es corregir el saldo de COCOS escribiendo el número nuevo. Ver la pregunta 2 al final.                                      |
+| `ajuste_cocos`    | `cocos += diferencia`, al guardar la config       | **Está.** En Ajustes se escribe el saldo real de Cocos; la app calcula la diferencia, elige el concepto según el signo y encola el `ajuste`. La resta no la hace el usuario.                                              |
 | `ajuste_hogar`    | `hogar += monto`                                  | **No se replica.** Código muerto en el original: está en `calcTesoros` y en `tesoroLabel`, y **nada lo genera nunca**.                                                                                                    |
 | `ajuste_maun`     | `maun += monto`                                   | **No se replica.** Código muerto, igual que el anterior.                                                                                                                                                                  |
 
@@ -43,8 +43,8 @@ Sale de los `onclick` y `onchange` del archivo.
 | Acción del original                        | Dónde estaba               | Hoy                                                                                                                                                                                                                               |
 | ------------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `goTab('proy')`                            | Nav                        | **Está.** Proyectos, con tres pestañas (`Seguimiento · Activos · Historial`) que el original no tenía.                                                                                                                            |
-| `goTab('fin')`                             | Nav                        | **Parcial.** La sección existe y carga movimientos; el libro mayor llega en el paso que viene.                                                                                                                                    |
-| `goTab('diezmo')`                          | Nav                        | **Falta.** Pantalla del paso que viene. El saldo de diezmo ya se ve en Inicio.                                                                                                                                                    |
+| `goTab('fin')`                             | Nav                        | **Está.** Libro mayor agrupado por día, con filtros por tesoro, por sentido y por mes, y buscador. Arranca en el mes en curso.                                                                                                    |
+| `goTab('diezmo')`                          | Nav                        | **Está.** El saldo como frase, lo generado contra lo pagado, y el historial de las dos cosas.                                                                                                                                     |
 | `goTab('cfg')`                             | Nav                        | **Está.** Ajustes.                                                                                                                                                                                                                |
 | `abrirForm(null)` — nuevo proyecto         | Botón «+ Nuevo proyecto»   | **Está.** `/proyectos/nuevo`.                                                                                                                                                                                                     |
 | `abrirForm(id)` — editar proyecto          | Fila y detalle             | **Está.** `/proyectos/:id/editar`.                                                                                                                                                                                                |
@@ -59,48 +59,49 @@ Sale de los `onclick` y `onchange` del archivo.
 | `abrirMovForm()`                           | Botón «+ Movimiento»       | **Está.** Formulario de movimiento en Finanzas.                                                                                                                                                                                   |
 | `onTipoChange()` — categorías y ayuda      | Formulario de movimiento   | **Está.** Los lados de cada tipo y el texto de ayuda.                                                                                                                                                                             |
 | `guardarMovimiento()`                      | Formulario de movimiento   | **Está.**                                                                                                                                                                                                                         |
-| `abrirMovForm('pago_diezmo')`              | Botón de la pestaña Diezmo | **Falta.** El tipo existe; el atajo desde la pantalla de Diezmo llega con esa pantalla.                                                                                                                                           |
-| `guardarCfg()`                             | Configuración              | **Parcial.** Se guardan sueldo, costos fijos, meta de Cocos y tasa, más el nombre del taller. **No** está el ajuste del saldo de COCOS.                                                                                           |
-| `exportarCSV()`                            | Cabecera de Proyectos      | **Falta.** Ver la pregunta 1 al final: **no estaba en Configuración**, y el original también tiene **importación**.                                                                                                               |
-| `importarCSV()`                            | Cabecera de Proyectos      | **Falta.** No estaba en el pedido; queda anotado acá para que no se pierda.                                                                                                                                                       |
+| `abrirMovForm('pago_diezmo')`              | Botón de la pestaña Diezmo | **Está.** «Registrar un pago» abre el formulario con el tipo ya elegido.                                                                                                                                                          |
+| `guardarCfg()`                             | Configuración              | **Está.** Sueldo, costos fijos, meta de Cocos, tasa, el nombre del taller, y el ajuste del saldo de COCOS con su asiento automático.                                                                                              |
+| `exportarCSV()`                            | Cabecera de Proyectos      | **Falta, sin agendar.** Ver la pregunta 1 al final: **no estaba en Configuración**, y el original también tiene **importación**. Es lo único de la interfaz vieja que sigue sin lugar en el plan.                                 |
+| `importarCSV()`                            | Cabecera de Proyectos      | **Falta, sin agendar**, y con una decisión previa: un upsert por id desde un archivo se saltea las guardas de estado y de versión (ADR 0017).                                                                                     |
 | `goSub('lista')` / `goSub('fin-panel')`    | Cancelar                   | **Está.** Cancelar y volver, en los dos formularios.                                                                                                                                                                              |
 
 ---
 
 ## 3. Las cuatro pestañas y sus paneles
 
-| Panel del original                               | Hoy                                                                                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Proyectos** · métricas (4 tarjetas)            | **Está.** Total, en curso, entregados con saldo, cobrados. El original mostraba además la suma de presupuestos de los cobrados.                                                 |
-| **Proyectos** · tabla de 7 columnas              | **Está**, y ordenable por las siete, con buscador, filtro por estado y tarjetas en el celular.                                                                                  |
-| **Proyectos** · formulario                       | **Está.** Era la peor pantalla del original: en el celular no se podía usar.                                                                                                    |
-| **Proyectos** · detalle                          | **Está.**                                                                                                                                                                       |
-| **Finanzas** · tarjetas de los cuatro tesoros    | **Está**, en Inicio.                                                                                                                                                            |
-| **Finanzas** · panel del mes (3 KPIs)            | **Está**, en Inicio: entró al hogar, gastó el hogar, facturó el taller, cada uno comparado con el mes anterior.                                                                 |
-| **Finanzas** · mensaje de motivación             | **Parcial.** Inicio dice si el sueldo del mes está cubierto y cuánto falta. Las cinco variantes de texto del original no se portaron: es una sola línea, sin el tono de arenga. |
-| **Finanzas** · tres barras                       | **Está**, en Inicio: sueldo del mes, meta de Cocos, diezmo pagado vs generado.                                                                                                  |
-| **Finanzas** · proyección de Cocos               | **Está**, en Inicio. El original la calculaba contra el **31/12/2026 hardcodeado**; hoy es a 365 días.                                                                          |
-| **Finanzas** · historial de movimientos          | **Falta.** Es la pantalla del paso que viene.                                                                                                                                   |
-| **Diezmo** · tarjeta de saldo, barra e historial | **Falta.** Paso que viene. El saldo ya se ve en Inicio.                                                                                                                         |
-| **Configuración** · sueldo, fijos, meta, tasa    | **Está**, en Ajustes.                                                                                                                                                           |
-| **Configuración** · saldos de sólo lectura       | **No se replica así.** Los saldos se ven en Inicio, que es donde se miran. Repetirlos en Ajustes era el lugar donde se los editaba.                                             |
-| **Configuración** · saldo de COCOS editable      | **Falta.** Ver la pregunta 2.                                                                                                                                                   |
+| Panel del original                               | Hoy                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Proyectos** · métricas (4 tarjetas)            | **Está.** Total, en curso, entregados con saldo, cobrados. El original mostraba además la suma de presupuestos de los cobrados.                                                                                                                                                                                      |
+| **Proyectos** · tabla de 7 columnas              | **Está**, y ordenable por las siete, con buscador, filtro por estado y tarjetas en el celular.                                                                                                                                                                                                                       |
+| **Proyectos** · formulario                       | **Está.** Era la peor pantalla del original: en el celular no se podía usar.                                                                                                                                                                                                                                         |
+| **Proyectos** · detalle                          | **Está.**                                                                                                                                                                                                                                                                                                            |
+| **Finanzas** · tarjetas de los cuatro tesoros    | **Está**, en Inicio.                                                                                                                                                                                                                                                                                                 |
+| **Finanzas** · panel del mes (3 KPIs)            | **Está**, en Inicio: entró al hogar, gastó el hogar, facturó el taller, cada uno comparado con el mes anterior.                                                                                                                                                                                                      |
+| **Finanzas** · mensaje de motivación             | **Está, sin la arenga.** Inicio distingue las mismas cinco situaciones (hogar en negativo, mes sin movimiento, sueldo cubierto, facturó el taller pero al hogar no entró nada, y cuánto falta) con el contenido informativo de cada una. Lo que no se portó es el tono: no hay felicitaciones ni «¡vamos con todo!». |
+| **Finanzas** · tres barras                       | **Está**, en Inicio: sueldo del mes, meta de Cocos, diezmo pagado vs generado.                                                                                                                                                                                                                                       |
+| **Finanzas** · proyección de Cocos               | **Está**, en Inicio. El original la calculaba contra el **31/12/2026 hardcodeado**; hoy es a 365 días.                                                                                                                                                                                                               |
+| **Finanzas** · historial de movimientos          | **Está**, y bastante más: agrupado por día con el neto del día, filtros por tesoro, por sentido y por mes, buscador, y lo que sigue en la cola marcado como «sin confirmar». La tabla de cuatro columnas del original pasó a ser una lista que se puede usar en el celular.                                          |
+| **Diezmo** · tarjeta de saldo, barra e historial | **Está.** La tarjeta dice una frase en vez de un número con signo (ADR 0018), la barra es pagado sobre generado, y el historial junta lo generado y lo pagado.                                                                                                                                                       |
+| **Configuración** · sueldo, fijos, meta, tasa    | **Está**, en Ajustes.                                                                                                                                                                                                                                                                                                |
+| **Configuración** · saldos de sólo lectura       | **No se replica así.** Los saldos se ven en Inicio, que es donde se miran. Repetirlos en Ajustes era el lugar donde se los editaba.                                                                                                                                                                                  |
+| **Configuración** · saldo de COCOS editable      | **Está**, con la misma mecánica: se escribe el saldo real, la app calcula la diferencia y genera el asiento, con el concepto según el signo.                                                                                                                                                                         |
+| —                                                | **Agregado nuestro, no paridad:** la comparación del mes contra el anterior, con el gráfico de barras y la tabla con los mismos números. **El HTML original no tiene ningún gráfico** (se buscó `canvas`, `chart` y `svg` en sus 886 líneas y no hay nada).                                                          |
 
 ---
 
 ## 4. Lo que se calcula y se muestra
 
-| Cálculo del original               | Hoy                                                                                                                             |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Saldo HOGAR                        | **Está.** De la vista `libro_mayor`, no de una suma a mano.                                                                     |
-| Saldo MAUN                         | **Está.**                                                                                                                       |
-| Saldo DIEZMO (`pagado − generado`) | **Está**, con el mismo signo: positivo a favor, negativo en deuda.                                                              |
-| Saldo COCOS                        | **Está.**                                                                                                                       |
-| `calcProy()` — la cascada          | **Está, corregida.** Reparte sobre **lo cobrado**, no sobre el presupuesto (error 1 del ADR 0003). Ver la sección 5.            |
-| Saldo pendiente por proyecto       | **Está.**                                                                                                                       |
-| Días hábiles de entrega            | **Está.**                                                                                                                       |
-| Porcentajes de las barras          | **Está.**                                                                                                                       |
-| Proyección de Cocos con tasa anual | **Está.** El original componía diario (`(1+tasa/365)^días`); hoy es `(1+tasa)^(días/365)`, que es la misma tasa anual efectiva. |
+| Cálculo del original               | Hoy                                                                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Saldo HOGAR                        | **Está.** De la vista `libro_mayor`, no de una suma a mano.                                                                                                                                                                                                         |
+| Saldo MAUN                         | **Está.**                                                                                                                                                                                                                                                           |
+| Saldo DIEZMO (`pagado − generado`) | **Está, y no se muestra como saldo.** La base acumula `generado − pagado`, que es lo que falta pagar, y la app lo dice con una frase: «Debés $X», «Estás al día», «Pagaste $X de más». Nadie tiene que interpretar un signo para saber si está en falta (ADR 0018). |
+| Saldo COCOS                        | **Está.**                                                                                                                                                                                                                                                           |
+| `calcProy()` — la cascada          | **Está, corregida.** Reparte sobre **lo cobrado**, no sobre el presupuesto (error 1 del ADR 0003). Ver la sección 5.                                                                                                                                                |
+| Saldo pendiente por proyecto       | **Está.**                                                                                                                                                                                                                                                           |
+| Días hábiles de entrega            | **Está.**                                                                                                                                                                                                                                                           |
+| Porcentajes de las barras          | **Está.**                                                                                                                                                                                                                                                           |
+| Proyección de Cocos con tasa anual | **Está.** El original componía diario (`(1+tasa/365)^días`); hoy es `(1+tasa)^(días/365)`, que es la misma tasa anual efectiva.                                                                                                                                     |
 
 ---
 
@@ -158,15 +159,13 @@ no es cero, genera un movimiento `ajuste_cocos` por la diferencia, con el concep
 «Ajuste COCOS (intereses/depósito)» o «(retiro/corrección)» según el signo. Los otros tres saldos son
 `readonly`.
 
-**Falta en la app.** El tipo `ajuste` existe en la base y se puede cargar a mano desde Finanzas, pero
-hay que hacer la resta uno mismo. El camino corto es el mismo que el viejo: un campo en Ajustes que
-compare contra el saldo calculado y encole el movimiento por la diferencia. Queda para el paso de
-Finanzas, que es donde va a estar el libro mayor.
+**Está, desde el paso 10**, con la misma mecánica: en Ajustes se escribe el saldo real, la app calcula
+la diferencia contra el saldo que tenía y encola el `ajuste`. La diferencia y el concepto se muestran
+**antes** de apretar el botón.
 
-Un detalle para ese día: el original **no pide contrapartida** para ese ajuste — la plata aparece en
-COCOS y no sale de ningún lado. En esta base todo movimiento tiene los dos lados, así que un ajuste
-de intereses entra como `(null → cocos)`, que es «de afuera», y eso está bien: los intereses vienen
-de afuera del taller. Un ajuste por corrección, en cambio, habría que pensarlo.
+El ajuste que suma entra como `(null → cocos)`, que es «viene de afuera», y para los intereses eso es
+literalmente cierto. El que resta sale como `(cocos → null)`. Un ajuste ya generado no se edita: se
+compensa con otro, y la ficha del movimiento lo explica con el control deshabilitado (ADR 0018).
 
 ---
 
@@ -176,3 +175,15 @@ Para que la tabla no quede coja: réplica offline con cola de salida ordenada, m
 aislamiento por household, clientes como entidad propia con CUIT y condición fiscal, estados de
 seguimiento y de perdido, distribución congelada con su historia, topes mensuales, reapertura,
 libro mayor con contrapartida en todos los asientos, y la app instalable en el celular.
+
+Del paso 10, agregados por encima del original:
+
+- **La comparación del mes contra el anterior**, con gráfico de barras y tabla. El HTML no tiene
+  ningún gráfico.
+- **Filtros y búsqueda en el libro** (tesoro, sentido, mes, texto). El original lista todo junto,
+  siempre.
+- **Lo que sigue en la cola se ve marcado** fila por fila («sin confirmar»).
+- **Los movimientos cargados a mano se editan y se borran.** En el original, una vez cargado un
+  movimiento no se puede tocar.
+- **Lo derivado de un proyecto y los ajustes dicen por qué no se tocan**, con el control deshabilitado
+  y el camino, en vez de no existir.

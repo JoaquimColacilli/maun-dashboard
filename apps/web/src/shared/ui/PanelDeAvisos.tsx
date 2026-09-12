@@ -44,7 +44,7 @@ export function PanelDeAvisos({ avisos, children }: PanelDeAvisosProps) {
             size="chico"
             className="mt-1.5 -ml-3"
             onClick={() => {
-              descartarAviso(queryClient, aviso.id);
+              void descartarAviso(queryClient, aviso.id);
             }}
           >
             Entendido, sacalo de acá

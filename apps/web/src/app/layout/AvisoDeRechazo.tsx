@@ -44,7 +44,7 @@ export function AvisoDeRechazo() {
               type="button"
               className="text-meta font-medium text-text-2 underline underline-offset-3"
               onClick={() => {
-                descartarAviso(queryClient, rechazo.id);
+                void descartarAviso(queryClient, rechazo.id);
               }}
             >
               Descartar

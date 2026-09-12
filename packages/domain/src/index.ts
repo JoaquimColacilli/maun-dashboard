@@ -70,9 +70,12 @@ export {
 export { DIAS_HABILES_DE_ENTREGA, entregaEstimada, mesDe, sumarDiasHabiles } from './fechas.ts';
 
 export {
+  asientosDeLaLinea,
   asientosDelLibro,
   asientosDelMes,
   entradasYSalidas,
+  estadoDelDiezmo,
+  lineasDelLibro,
   proyeccionCocos,
   saldosDelLibro,
   saldosPorTesoro,
@@ -80,11 +83,14 @@ export {
   type Asiento,
   type DatosDelLibro,
   type EntradasYSalidas,
+  type EstadoDelDiezmo,
   type GastoDelLibro,
+  type LineaDelLibro,
   type MovimientoDelLibro,
   type OrigenDeAsiento,
   type PagoDelLibro,
   type ProyectoDelLibro,
   type SaldosPorTesoro,
+  type SituacionDelDiezmo,
   type Tesoro,
 } from './libroMayor.ts';

@@ -1,16 +1,21 @@
 import {
   asientosDelLibro,
-  asientosDelMes,
+  CERO,
   centavos,
-  entradasYSalidas,
+  estadoDelDiezmo,
   proyeccionCocos,
+  restar,
   resumenDelMes,
-  sumarTodos,
-  type Asiento,
   type Money,
 } from '@maun/domain';
 import { useNavigate } from 'react-router';
 
+import {
+  fraseDelDiezmo,
+  resumenMensual,
+  type FraseDelDiezmo,
+  type ResumenMensual,
+} from '@/entities/movimiento';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { LiquidacionesSinConfirmar } from '@/entities/proyecto';
 import { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from '@/entities/tesoro';
@@ -35,10 +40,16 @@ import {
   mesDeLaFecha,
   nombreDelMes,
   relativa,
+  RUTA_DE_DIEZMO,
+  RUTA_DE_FINANZAS,
 } from '@/shared/lib';
 import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
 
 const DIAS_DE_PROYECCION = 365;
+
+function encabezado(frase: FraseDelDiezmo): string {
+  return frase.despues === '' ? frase.antes : `${frase.antes} ${frase.despues}`;
+}
 
 function porcentaje(parte: Money, total: Money): number {
   return total <= 0 ? 0 : Math.round((parte / total) * 100);
@@ -52,10 +63,41 @@ function comparacion(valor: Money, previo: Money, mes: string): string {
   return `${signo}${String(Math.abs(variacion))}% vs. ${nombreDelMes(mesAnterior(mes)).toLowerCase()}`;
 }
 
-function facturado(asientos: readonly Asiento[]): Money {
-  return sumarTodos(
-    asientos.filter((asiento) => asiento.origen === 'pago').map((asiento) => asiento.monto),
-  );
+export interface MensajeDelMes {
+  texto: string;
+  alerta: boolean;
+}
+
+function mensajeDelMes(
+  mes: string,
+  saldoHogar: Money,
+  del: ResumenMensual,
+  faltaSueldo: Money,
+): MensajeDelMes {
+  const nombre = nombreDelMes(mes).toLowerCase();
+
+  if (saldoHogar < 0) {
+    return {
+      texto: `El hogar está en negativo: ${formatearPesos(restar(CERO, saldoHogar))}. Los gastos pasaron a lo que entró.`,
+      alerta: true,
+    };
+  }
+  if (del.entroHogar === 0 && del.facturoTaller === 0) {
+    return { texto: `${nombreDelMes(mes)} todavía no tiene movimiento.`, alerta: true };
+  }
+  if (faltaSueldo <= 0) {
+    return { texto: `El sueldo de ${nombre} ya está cubierto.`, alerta: false };
+  }
+  if (del.entroHogar === 0) {
+    return {
+      texto: `El taller facturó ${formatearPesos(del.facturoTaller)} en ${nombre} y al hogar todavía no entró nada: el sueldo se transfiere cuando cobrás un trabajo.`,
+      alerta: true,
+    };
+  }
+  return {
+    texto: `Faltan ${formatearPesos(faltaSueldo)} para cubrir el sueldo de ${nombre}.`,
+    alerta: true,
+  };
 }
 
 function saldoPendiente(replica: Replica, pendientes: readonly FilaDe<'proyectos'>[]): Money {
@@ -75,18 +117,19 @@ function Tarjeta({
   tesoro,
   saldo,
   meta,
+  frase,
   alElegir,
 }: {
   tesoro: DatosDelTesoro;
   saldo: Money;
   meta: Money;
+  frase?: FraseDelDiezmo;
   alElegir: () => void;
 }) {
-  const enNegativo = tesoro.id !== 'diezmo' && saldo < 0;
-  const importe = tesoro.id === 'diezmo' ? Math.abs(saldo) : saldo;
+  const enNegativo = saldo < 0 && frase === undefined;
 
   let detalle = tesoro.descripcion;
-  if (tesoro.id === 'diezmo') detalle = saldo < 0 ? 'en deuda' : 'a favor';
+  if (frase) detalle = frase.detalle;
   if (tesoro.id === 'cocos' && meta > 0) detalle = `${String(porcentaje(saldo, meta))}% de la meta`;
   if (enNegativo) detalle = 'gastó más de lo que entró';
 
@@ -112,9 +155,20 @@ function Tarjeta({
         )}
       </span>
       <span className="flex flex-col gap-0.5">
-        <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
-          {formatearPesos(importe)}
-        </span>
+        {frase === undefined ? (
+          <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
+            {formatearPesos(saldo)}
+          </span>
+        ) : frase.importe === null ? (
+          <span className="text-body-lg leading-tight font-semibold">{encabezado(frase)}</span>
+        ) : (
+          <>
+            <span className="text-label leading-tight font-medium">{encabezado(frase)}</span>
+            <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
+              {frase.importe}
+            </span>
+          </>
+        )}
         <span className={`text-meta ${enNegativo ? 'text-paper/70' : 'text-text-2'}`}>
           {detalle}
         </span>
@@ -206,11 +260,10 @@ export function InicioPage() {
   const saldos = saldosDeLaReplica(replica);
 
   const asientos = asientosDelLibro(datosDelLibro(replica));
-  const delMes = asientosDelMes(asientos, mes);
-  const delMesPrevio = asientosDelMes(asientos, mesAnterior(mes));
-  const hogar = entradasYSalidas(delMes, 'hogar');
-  const hogarPrevio = entradasYSalidas(delMesPrevio, 'hogar');
-  const diezmo = entradasYSalidas(asientos, 'diezmo');
+  const del = resumenMensual(asientos, mes);
+  const delPrevio = resumenMensual(asientos, mesAnterior(mes));
+  const diezmo = estadoDelDiezmo(asientos);
+  const frase = fraseDelDiezmo(diezmo);
 
   const resumen = resumenDelMes(
     liquidacionesDeLaReplica(replica),
@@ -219,6 +272,7 @@ export function InicioPage() {
     mes,
   );
   const metaCocos = centavos(ajustes?.meta_cocos_centavos ?? 0);
+  const mensaje = mensajeDelMes(mes, saldos.hogar, del, resumen.sueldo.falta);
 
   const proyectos = filasDe(replica, 'proyectos');
   const pendientes = proyectos.filter(
@@ -233,9 +287,9 @@ export function InicioPage() {
   };
 
   const estadisticas = [
-    { etiqueta: 'Entró al hogar', valor: hogar.entro, previo: hogarPrevio.entro },
-    { etiqueta: 'Gastó el hogar', valor: hogar.salio, previo: hogarPrevio.salio },
-    { etiqueta: 'Facturó el taller', valor: facturado(delMes), previo: facturado(delMesPrevio) },
+    { etiqueta: 'Entró al hogar', valor: del.entroHogar, previo: delPrevio.entroHogar },
+    { etiqueta: 'Gastó el hogar', valor: del.gastoHogar, previo: delPrevio.gastoHogar },
+    { etiqueta: 'Facturó el taller', valor: del.facturoTaller, previo: delPrevio.facturoTaller },
   ];
 
   return (
@@ -252,7 +306,8 @@ export function InicioPage() {
             tesoro={TESORO[id]}
             saldo={saldos[id]}
             meta={metaCocos}
-            alElegir={irA(id === 'diezmo' ? '/diezmo' : '/finanzas')}
+            frase={id === 'diezmo' ? frase : undefined}
+            alElegir={irA(id === 'diezmo' ? RUTA_DE_DIEZMO : RUTA_DE_FINANZAS)}
           />
         ))}
       </section>
@@ -285,14 +340,10 @@ export function InicioPage() {
               <span
                 aria-hidden
                 className={`mt-2 size-2 flex-none rounded-pill ${
-                  resumen.sueldo.falta > 0 ? 'bg-atencion' : 'bg-hogar'
+                  mensaje.alerta ? 'bg-atencion' : 'bg-hogar'
                 }`}
               />
-              <span>
-                {resumen.sueldo.falta > 0
-                  ? `Faltan ${formatearPesos(resumen.sueldo.falta)} para cubrir el sueldo de ${nombreDelMes(mes).toLowerCase()}.`
-                  : `El sueldo de ${nombreDelMes(mes).toLowerCase()} ya está cubierto.`}
-              </span>
+              <span>{mensaje.texto}</span>
             </p>
 
             <section
@@ -342,8 +393,8 @@ export function InicioPage() {
               />
               <Barra
                 etiqueta="Diezmo pagado"
-                texto={`${formatearPesos(diezmo.salio)} de ${formatearPesos(diezmo.entro)}`}
-                pct={porcentaje(diezmo.salio, diezmo.entro)}
+                texto={`${formatearPesos(diezmo.pagado)} de ${formatearPesos(diezmo.generado)}`}
+                pct={porcentaje(diezmo.pagado, diezmo.generado)}
                 color={TESORO.diezmo.barra}
               />
             </section>
@@ -372,11 +423,11 @@ export function InicioPage() {
               <Acceso
                 icono="church"
                 etiqueta="Diezmo"
-                titulo={saldos.diezmo < 0 ? 'en deuda' : 'a favor'}
-                valor={formatearPesos(Math.abs(saldos.diezmo))}
+                titulo={encabezado(frase)}
+                valor={frase.importe ?? ''}
                 tono="text-diezmo"
                 fondo="bg-diezmo-tint"
-                alElegir={irA('/diezmo')}
+                alElegir={irA(RUTA_DE_DIEZMO)}
               />
             </section>
 

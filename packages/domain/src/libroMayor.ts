@@ -65,54 +65,53 @@ export interface Asiento {
   proyectoId: string | null;
 }
 
+export interface LineaDelLibro {
+  origen: OrigenDeAsiento;
+  asientoId: string;
+  fecha: string;
+  desde: Tesoro | null;
+  hacia: Tesoro | null;
+  monto: Money;
+  concepto: string;
+  categoria: string;
+  descripcion: string;
+  proyectoId: string | null;
+}
+
 export type SaldosPorTesoro = Readonly<Record<Tesoro, Money>>;
 
 function negativo(importe: Money): Money {
   return restar(CERO, importe);
 }
 
-export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
-  const asientos: Asiento[] = [];
+export function lineasDelLibro(datos: DatosDelLibro): LineaDelLibro[] {
+  const lineas: LineaDelLibro[] = [];
 
   for (const movimiento of datos.movimientos) {
-    const comun = {
+    lineas.push({
       origen: 'manual',
       asientoId: movimiento.id,
       fecha: movimiento.fecha,
+      desde: movimiento.tesoroOrigen,
+      hacia: movimiento.tesoroDestino,
+      monto: movimiento.monto,
       concepto: movimiento.tipo,
       categoria: movimiento.categoria,
       descripcion: movimiento.descripcion,
       proyectoId: movimiento.proyectoId,
-    } as const;
-
-    if (movimiento.tesoroDestino !== null) {
-      asientos.push({
-        ...comun,
-        tesoro: movimiento.tesoroDestino,
-        contrapartida: movimiento.tesoroOrigen,
-        monto: movimiento.monto,
-      });
-    }
-    if (movimiento.tesoroOrigen !== null) {
-      asientos.push({
-        ...comun,
-        tesoro: movimiento.tesoroOrigen,
-        contrapartida: movimiento.tesoroDestino,
-        monto: negativo(movimiento.monto),
-      });
-    }
+    });
   }
 
   const proyectos = new Map(datos.proyectos.map((proyecto) => [proyecto.id, proyecto]));
 
   for (const pago of datos.pagos) {
     if (!proyectos.has(pago.proyectoId)) continue;
-    asientos.push({
+    lineas.push({
       origen: 'pago',
       asientoId: pago.id,
       fecha: pago.fecha,
-      tesoro: 'maun',
-      contrapartida: null,
+      desde: null,
+      hacia: 'maun',
       monto: pago.monto,
       concepto: 'cobro',
       categoria: 'Cobro',
@@ -123,13 +122,13 @@ export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
 
   for (const gasto of datos.gastos) {
     if (!proyectos.has(gasto.proyectoId)) continue;
-    asientos.push({
+    lineas.push({
       origen: 'gasto_proyecto',
       asientoId: gasto.id,
       fecha: gasto.fecha,
-      tesoro: 'maun',
-      contrapartida: null,
-      monto: negativo(gasto.monto),
+      desde: 'maun',
+      hacia: null,
+      monto: gasto.monto,
       concepto: 'gasto',
       categoria: 'Materiales',
       descripcion: gasto.descripcion,
@@ -140,21 +139,19 @@ export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
   for (const proyecto of datos.proyectos) {
     if (!estaLiquidado(proyecto.estado) || proyecto.fechaCobro === null) continue;
 
-    const lados: readonly [Tesoro, Tesoro, Money, string][] = [
-      ['diezmo', 'maun', proyecto.diezmo, 'diezmo'],
-      ['maun', 'diezmo', negativo(proyecto.diezmo), 'diezmo'],
-      ['hogar', 'maun', proyecto.sueldo, 'sueldo'],
-      ['maun', 'hogar', negativo(proyecto.sueldo), 'sueldo'],
+    const escalones: readonly [Tesoro, Money, string][] = [
+      ['diezmo', proyecto.diezmo, 'diezmo'],
+      ['hogar', proyecto.sueldo, 'sueldo'],
     ];
 
-    for (const [tesoro, contrapartida, monto, concepto] of lados) {
+    for (const [hacia, monto, concepto] of escalones) {
       if (monto === 0) continue;
-      asientos.push({
+      lineas.push({
         origen: 'distribucion',
         asientoId: proyecto.id,
         fecha: proyecto.fechaCobro,
-        tesoro,
-        contrapartida,
+        desde: 'maun',
+        hacia,
         monto,
         concepto,
         categoria: 'Distribución',
@@ -164,7 +161,42 @@ export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
     }
   }
 
+  return lineas;
+}
+
+export function asientosDeLaLinea(linea: LineaDelLibro): Asiento[] {
+  const comun = {
+    origen: linea.origen,
+    asientoId: linea.asientoId,
+    fecha: linea.fecha,
+    concepto: linea.concepto,
+    categoria: linea.categoria,
+    descripcion: linea.descripcion,
+    proyectoId: linea.proyectoId,
+  };
+
+  const asientos: Asiento[] = [];
+  if (linea.hacia !== null) {
+    asientos.push({
+      ...comun,
+      tesoro: linea.hacia,
+      contrapartida: linea.desde,
+      monto: linea.monto,
+    });
+  }
+  if (linea.desde !== null) {
+    asientos.push({
+      ...comun,
+      tesoro: linea.desde,
+      contrapartida: linea.hacia,
+      monto: negativo(linea.monto),
+    });
+  }
   return asientos;
+}
+
+export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
+  return lineasDelLibro(datos).flatMap(asientosDeLaLinea);
 }
 
 export function saldosPorTesoro(asientos: readonly Asiento[]): SaldosPorTesoro {
@@ -199,6 +231,26 @@ export function entradasYSalidas(asientos: readonly Asiento[], tesoro: Tesoro): 
   }
 
   return { entro, salio };
+}
+
+export type SituacionDelDiezmo = 'debe' | 'al-dia' | 'pago-de-mas';
+
+export interface EstadoDelDiezmo {
+  situacion: SituacionDelDiezmo;
+  importe: Money;
+  generado: Money;
+  pagado: Money;
+}
+
+export function estadoDelDiezmo(asientos: readonly Asiento[]): EstadoDelDiezmo {
+  const { entro, salio } = entradasYSalidas(asientos, 'diezmo');
+  const saldo = restar(entro, salio);
+  return {
+    situacion: saldo > 0 ? 'debe' : saldo < 0 ? 'pago-de-mas' : 'al-dia',
+    importe: saldo < 0 ? negativo(saldo) : saldo,
+    generado: entro,
+    pagado: salio,
+  };
 }
 
 export function proyeccionCocos(saldo: Money, tasaAnualBp: number, dias: number): Money {

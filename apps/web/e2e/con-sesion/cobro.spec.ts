@@ -11,6 +11,7 @@ import {
   vaciarTaller,
   type SesionDePrueba,
 } from '../apoyo/taller';
+import { listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
 
 const SUELDO = 50_000_000;
 const FIJOS = 25_000_000;
@@ -76,11 +77,6 @@ async function proyecto(
   return { id, clienteId, titulo };
 }
 
-async function listoParaCortar(page: Page): Promise<void> {
-  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await expect(page.getByRole('status').last()).toBeHidden({ timeout: 20_000 });
-}
-
 async function cobrarDesdeLaFicha(page: Page, id: string): Promise<void> {
   await page.goto(`/proyectos/${id}`);
   await page.getByRole('button', { name: /^Cobrar/ }).click();
@@ -94,30 +90,6 @@ async function cobrarDesdeLaLista(page: Page, titulo: string): Promise<void> {
   await page.getByRole('button', { name: /^Cobrar y repartir/ }).click();
   await expect(page.getByText('Cobrado, sin confirmar')).toBeVisible();
   await page.getByRole('link', { name: 'Proyectos', exact: true }).first().click();
-}
-
-interface SaldosDeInicio {
-  hogar: number;
-  maun: number;
-  diezmo: number;
-  cocos: number;
-}
-
-async function saldosEnInicio(page: Page): Promise<SaldosDeInicio> {
-  await page.goto('/');
-  const tesoros = page.getByRole('region', { name: 'Tesoros' });
-  const leer = async (nombre: string): Promise<number> => {
-    const texto = await tesoros.getByRole('button', { name: new RegExp(`^${nombre}`) }).innerText();
-    const encontrado = /\$\s?([\d.]+)/.exec(texto);
-    if (!encontrado?.[1]) throw new Error(`no se pudo leer el saldo de ${nombre}: «${texto}»`);
-    return Number(encontrado[1].replaceAll('.', ''));
-  };
-  return {
-    hogar: await leer('Hogar'),
-    maun: await leer('Maun'),
-    diezmo: await leer('Diezmo'),
-    cocos: await leer('Cocos'),
-  };
 }
 
 async function esperarEstado(id: string, estado: string): Promise<void> {

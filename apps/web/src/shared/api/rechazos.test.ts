@@ -107,11 +107,11 @@ describe('los MN00x traducidos a castellano de taller', () => {
     );
   });
 
-  it('MN008 al cobrar: la app quedó vieja', () => {
+  it('MN008 al cobrar: la app quedó vieja, y el texto sirve tanto para el corte como para los topes', () => {
     expect(texto('MN008', { operacion: 'cobro', sujeto: 'Placard' })).toBe(
-      'Esta app quedó vieja y está sacando otra cuenta que el servidor. No se guardó nada: el ' +
-        'reparto quedó como estaba. Cerrá la app y volvé a abrirla para que se actualice, y hacelo ' +
-        'de nuevo.',
+      'Esta app quedó vieja y no saca la misma cuenta que el servidor. No se guardó nada: el ' +
+        'trabajo quedó como estaba. Puede ser el corte de la ganancia, o lo que el mes ya lleva ' +
+        'cubierto. Cerrá la app, volvé a abrirla para que se actualice, y hacelo de nuevo.',
     );
   });
 

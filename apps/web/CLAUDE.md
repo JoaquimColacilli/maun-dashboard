@@ -55,6 +55,7 @@ src/
 - El cache se persiste en IndexedDB con structured clone (`shared/lib/cache/persister.ts`). No lo cambies por un persister de localStorage: es síncrono y chico.
 - Toda mutación que pueda quedar en cola necesita tres cosas: su `mutationKey`, su `mutationFn` registrada en `app/providers/mutaciones-persistibles.ts` y **`scope: COLA_DE_SALIDA`**. Sin lo segundo, `resumePausedMutations()` falla con "No mutationFn found"; sin lo tercero, la cola drena en paralelo y dos cambios del mismo mes se pisan.
 - Se persiste **toda mutación pendiente**, pausada o no (`esPersistible`), y al restaurar se llama a `reanudarCola`, que continúa primero las que quedaron a mitad de envío. El default de TanStack guarda solo lo pausado, y con señal mala una mutación sale sin pausarse.
+- **El `onMutate` de toda mutación encolable termina en `await guardarCacheAhora()`**, después de aplicar la fila optimista. `PersistQueryClientProvider` guarda solo, pero sin esperar a nadie: la escritura a IndexedDB puede quedar a mitad de camino si la app se recarga en ese instante, y ahí se pierden las dos cosas que no se pueden perder, la mutación en cola y la fila optimista que la acompaña (al restaurar, `reanudarCola` reenvía la mutación pero **no** vuelve a correr `onMutate`). Esperarlo cuesta milisegundos y garantiza que nada sale a la red antes de estar en disco. Lo mismo hacen `anotarAviso` y `descartarAviso`, que por eso devuelven una promesa (ADR 0018).
 - `onMutate` cancela las sincronizaciones en vuelo antes de tocar el cache, y `sincronizar()` mezcla sobre el cache fresco: si no, la respuesta de la base pisa lo que la cola escribió mientras tanto.
 - La réplica del household es una sola entrada del cache (`['replica', usuarioId]`). Se arma con `bootstrap()` y se mantiene con `delta(cursor)`; el reconcile completo corre al entrar y cada 24 horas, salvo que haya cola pendiente. Las pantallas leen de ahí: nada consulta PostgREST por su cuenta.
 - Forma de las mutaciones (ADR 0010): alta, upsert de la fila completa por id (UUIDv7 generado en el cliente con `uuidv7()`); edición, update por id con solo las columnas que cambiaron; baja, update de `deleted_at` con la marca fijada al encolar. `ajustes` solo se edita.
@@ -125,8 +126,31 @@ src/
 - **`vaciarTaller` del e2e descongela antes de borrar** (`descongelarProyectos`): un liquidado con pagos o gastos no se borra (`MN001`) y sin borrarlo tampoco se borra su cliente (`MN003`).
 - `useLiquidacionEnVuelo` filtra **todas** las mutaciones pendientes, y el guardado del agregado también lleva un `pedido`: lo que distingue a una liquidación es que el suyo trae `proyectoId`. Si agregás otra mutación con esa forma, ajustá el filtro.
 
+## Finanzas, el diezmo y los movimientos (ADR 0018)
+
+- **El libro se arma con `lineasDelTaller`, no con `asientosDelLibro`.** Una línea es una operación
+  (una transferencia es **una** fila, con `desde` y `hacia`); un asiento es un lado. Los saldos siguen
+  saliendo de los asientos. Si agregás algo al libro, agregalo a la línea: `asientosDelLibro` es
+  `lineasDelLibro(...).flatMap(asientosDeLaLinea)` y no puede divergir.
+- **El filtro por sentido tiene cuatro opciones, no tres**: Todo, Entradas, Salidas y Entre tesoros.
+  Una transferencia no es un ingreso ni un gasto y no se muestra como si lo fuera.
+- **El saldo de DIEZMO no se muestra como número con signo en ningún lado.** `estadoDelDiezmo` (dominio)
+  dice la situación y `fraseDelDiezmo` la escribe: «Debés $X», «Estás al día», «Pagaste $X de más». Si
+  aparece un lugar nuevo donde se vea el diezmo, va la frase, no el saldo.
+- **Los ocho tipos manuales salen del catálogo `CLASE`** de `entities/movimiento`: cada clase fija
+  `tipo`, `desde` y `hacia`, así que el formulario no puede armar una combinación que el `check`
+  `movimientos_forma_segun_tipo` rechace. Para agregar un tipo, se agrega una clase.
+- **Lo derivado de un proyecto y los ajustes no se editan ni se borran**, y eso se ve **antes**: la
+  ficha de sólo lectura muestra Editar y Borrar deshabilitados con el motivo y el camino. No saques
+  los botones: ausentes no explican nada.
+- Sin virtualización de listas y sin librería de gráficos. El gráfico del mes es `aria-hidden` y la
+  tabla con los mismos números vive detrás de «Ver los números», visible para cualquiera.
+
 ## Cosas que muerden en el e2e
 
 - **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
 - **PostgREST rechaza un `PATCH` sin filtro** con un `21000` («UPDATE requires a WHERE clause»), aunque la RLS ya deje una sola fila a la vista: los helpers que editan por REST llevan el filtro igual.
 - El navegador **normaliza `0ms` a `0s`** al leer una custom property computada: para afirmar sobre una duración, comparar el número y no el texto.
+- **`saldosEnInicio` vive en `e2e/apoyo/pantalla.ts`** y la tarjeta de DIEZMO no trae importe cuando está al día: el helper devuelve 0 en ese caso y negativo cuando dice «de más». Un helper que asume «siempre hay un `$`» se rompe con el taller vacío.
+- **Un cambio hecho por REST después de que la app cargó no aparece con un `page.goto`.** La réplica tiene `staleTime` de 60 s: al volver a montar, TanStack la considera fresca y no refetchea. O se hace el cambio **antes** del primer `goto`, o se cambia desde la interfaz.
+- **`getByRole('status')` no es el indicador de sincronización a secas.** Cualquier confirmación con `role="status"` entra en ese locator y rompe el `toBeHidden`. Para esperar a que la cola drene conviene preguntarle a la base (`expect.poll` sobre un helper de `apoyo/taller.ts`), que además es la afirmación que importa.

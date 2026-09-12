@@ -20,3 +20,5 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0014](0014-clientes-el-primer-camino-de-escritura.md)         | Clientes: el primer camino de escritura                  | Aceptada             |
 | [0015](0015-proyectos-el-agregado-que-se-guarda-entero.md)     | Proyectos: el agregado que se guarda entero              | Aceptada             |
 | [0016](0016-el-cobro-y-el-rechazo-que-encuentra-al-usuario.md) | El cobro, y el rechazo que encuentra al usuario          | Aceptada             |
+| [0017](0017-los-datos-del-sistema-viejo.md)                    | Los datos del sistema viejo entran por un script         | Aceptada, pendiente  |
+| [0018](0018-finanzas-el-diezmo-y-los-movimientos-a-mano.md)    | Finanzas, el diezmo y los movimientos a mano             | Aceptada             |

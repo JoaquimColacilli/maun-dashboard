@@ -11,7 +11,7 @@ import {
   type FilaDe,
   type Replica,
 } from '@/shared/api';
-import { COLA_DE_SALIDA } from '@/shared/lib';
+import { COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/lib';
 
 export const CLAVE_DE_AJUSTES = ['ajustes', 'editar'] as const;
 export const CLAVE_DEL_NOMBRE = ['households', 'renombrar'] as const;
@@ -61,6 +61,7 @@ export const MUTACION_DE_AJUSTES: MutationOptions<FilaDe<'ajustes'>, unknown, Ed
   onMutate: async ({ id, cambios }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conAjustes(replica, id, cambios));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'ajustes', fila));
@@ -83,6 +84,7 @@ export const MUTACION_DEL_NOMBRE: MutationOptions<
   onMutate: async ({ id, nombre }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) => conNombre(replica, id, nombre));
+    await guardarCacheAhora();
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'households', fila));

@@ -1,5 +1,7 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 
+import { guardarCacheAhora } from '../cache/guardado';
+
 export const CLAVE_DE_AVISOS = ['avisos'] as const;
 
 export type TipoDeAviso = 'rechazo' | 'ajuste';
@@ -21,25 +23,31 @@ export function avisosAnotados(queryClient: QueryClient): AvisoAnotado[] {
   return queryClient.getQueryData<AvisoAnotado[]>(CLAVE_DE_AVISOS) ?? [];
 }
 
-export function anotarAviso(queryClient: QueryClient, aviso: AvisoAnotado): void {
+export function anotarAviso(queryClient: QueryClient, aviso: AvisoAnotado): Promise<void> {
   queryClient.setQueryData<AvisoAnotado[]>(CLAVE_DE_AVISOS, (previos) => [
     ...(previos ?? []).filter((anotado) => anotado.id !== aviso.id),
     aviso,
   ]);
+  return guardarCacheAhora();
 }
 
-export function descartarAviso(queryClient: QueryClient, id: string): void {
+export function descartarAviso(queryClient: QueryClient, id: string): Promise<void> {
   queryClient.setQueryData<AvisoAnotado[]>(CLAVE_DE_AVISOS, (previos) =>
     (previos ?? []).filter((anotado) => anotado.id !== id),
   );
+  return guardarCacheAhora();
 }
 
-export function limpiarRechazosDelProyecto(queryClient: QueryClient, proyectoId: string): void {
+export function limpiarRechazosDelProyecto(
+  queryClient: QueryClient,
+  proyectoId: string,
+): Promise<void> {
   queryClient.setQueryData<AvisoAnotado[]>(CLAVE_DE_AVISOS, (previos) =>
     (previos ?? []).filter(
       (anotado) => anotado.tipo !== 'rechazo' || anotado.proyectoId !== proyectoId,
     ),
   );
+  return guardarCacheAhora();
 }
 
 const SIN_AVISOS: readonly AvisoAnotado[] = [];
