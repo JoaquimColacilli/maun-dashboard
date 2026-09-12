@@ -45,6 +45,13 @@ export {
 } from './replica.ts';
 
 export {
+  datosDelLibro,
+  liquidacionesDeLaReplica,
+  objetivosDeLaReplica,
+  saldosDeLaReplica,
+} from './vistas.ts';
+
+export {
   COLUMNAS_DE_AJUSTES,
   guardarAjustes,
   guardarMovimiento,

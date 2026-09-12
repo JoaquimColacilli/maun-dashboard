@@ -16,3 +16,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0010](0010-sincronizacion-replica-completa.md) | Sincronización: réplica completa del household           | Aceptada             |
 | [0011](0011-dominio-cascada-estados-y-cobro.md) | Dominio: cascada, estados y cobro, sin divergir de SQL   | Aceptada             |
 | [0012](0012-acceso-sesion-y-cola-de-salida.md)  | Acceso, sesión sin red y cola de salida ordenada         | Aceptada             |
+| [0013](0013-shell-navegacion-e-inicio.md)       | Shell, navegación por ancho e Inicio desde la réplica    | Aceptada             |

@@ -1,10 +1,68 @@
 import { describe, expect, it } from 'vitest';
 
-import { hoyLocal } from './fechas';
+import {
+  diaDelMes,
+  diasDelMes,
+  diasHasta,
+  fechaLarga,
+  hoyLocal,
+  mesAnterior,
+  mesDeLaFecha,
+  nombreDelMes,
+  relativa,
+} from './fechas';
 
 describe('hoyLocal', () => {
-  it('usa el día local, no el UTC', () => {
+  it('usa el día del reloj del dispositivo, no el UTC', () => {
     expect(hoyLocal(new Date(2026, 8, 11, 23, 30))).toBe('2026-09-11');
-    expect(hoyLocal(new Date(2026, 0, 5, 0, 15))).toBe('2026-01-05');
+    expect(hoyLocal(new Date(2026, 0, 1, 0, 5))).toBe('2026-01-01');
+  });
+});
+
+describe('el mes', () => {
+  it('sale de la fecha y tiene nombre y largo', () => {
+    expect(mesDeLaFecha('2026-09-11')).toBe('2026-09');
+    expect(nombreDelMes('2026-09')).toBe('Septiembre');
+    expect(diasDelMes('2026-09')).toBe(30);
+    expect(diasDelMes('2026-02')).toBe(28);
+    expect(diasDelMes('2024-02')).toBe(29);
+  });
+
+  it('el anterior cruza el año', () => {
+    expect(mesAnterior('2026-09')).toBe('2026-08');
+    expect(mesAnterior('2026-01')).toBe('2025-12');
+  });
+});
+
+describe('fechaLarga', () => {
+  it('escribe el día de la semana y el mes corto', () => {
+    expect(fechaLarga('2026-09-10', '2026-09-11')).toBe('jue 10 sep');
+  });
+
+  it('agrega el año solo cuando no es el de hoy', () => {
+    expect(fechaLarga('2025-12-18', '2026-09-11')).toBe('jue 18 dic 2025');
+  });
+
+  it('no se corre de día por la zona horaria', () => {
+    expect(diaDelMes('2026-09-01')).toBe(1);
+    expect(fechaLarga('2026-09-01', '2026-09-11')).toBe('mar 1 sep');
+  });
+});
+
+describe('distancias', () => {
+  it('cuenta los días entre dos fechas', () => {
+    expect(diasHasta('2026-09-16', '2026-09-11')).toBe(5);
+    expect(diasHasta('2026-09-08', '2026-09-11')).toBe(-3);
+  });
+
+  it('las dice como las diría una persona', () => {
+    expect(relativa('2026-09-11', '2026-09-11')).toBe('hoy');
+    expect(relativa('2026-09-12', '2026-09-11')).toBe('mañana');
+    expect(relativa('2026-09-10', '2026-09-11')).toBe('ayer');
+    expect(relativa('2026-09-16', '2026-09-11')).toBe('en 5 días');
+    expect(relativa('2026-09-08', '2026-09-11')).toBe('hace 3 días');
+    expect(relativa('2026-07-01', '2026-09-11')).toBe('hace 2 meses');
+    expect(relativa('2026-08-05', '2026-09-11')).toBe('hace 1 mes');
+    expect(relativa('2026-12-31', '2026-09-11')).toBe('en 4 meses');
   });
 });
