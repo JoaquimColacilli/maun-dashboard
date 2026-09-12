@@ -69,7 +69,8 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 - `tests/dominio-vs-sql.test.ts`: la misma comparación que corre el ensayo (`scripts/comparacion.ts`), ahora contra la base ya migrada, todo en rollback. Cubre:
   - la cascada, los topes, los rangos, los estados, las transiciones, las liquidaciones y las reversiones;
   - las liquidaciones reales paso a paso, calculadas como las calcula la app;
-  - cada liquidación del seed.
+  - cada liquidación del seed;
+  - **el libro mayor**: los asientos de la vista contra `asientosDelLibro`, como multiconjunto, y los cuatro saldos por tesoro. El lado de TypeScript lee por el camino real (`bootstrap()` → réplica → `datosDelLibro`), así que el `where` de la vista no está copiado en el comparador. Corre sobre los escenarios del libro y también sobre los de liquidación, y sobre el seed (ADR 0014).
 - `tests/concurrencia.test.ts`: conexiones reales, y todo lo que escriben termina en rollback. Prueban que:
   - la liquidación toma `for update` sobre el proyecto antes de leer pagos o gastos;
   - la guarda de un pago espera a la liquidación;

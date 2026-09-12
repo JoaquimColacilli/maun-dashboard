@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   compararCascada,
   compararEstados,
+  compararLibroDelSeed,
+  compararLibroMayor,
   compararLiquidaciones,
   compararRangos,
   compararSeed,
@@ -38,5 +40,13 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
 
   it('cada liquidación del seed es la que calcula el dominio con las anteriores de su mes', async () => {
     expect(await enTransaccionConRollback(compararSeed)).toEqual([]);
+  });
+
+  it('el libro mayor de SQL da los mismos asientos y los mismos saldos que asientosDelLibro', async () => {
+    expect(await enTransaccionConRollback(compararLibroMayor)).toEqual([]);
+  });
+
+  it('el libro mayor del seed sale igual de la vista y de la réplica', async () => {
+    expect(await enTransaccionConRollback(compararLibroDelSeed)).toEqual([]);
   });
 });

@@ -1,4 +1,5 @@
 import {
+  asientosDelLibro,
   calcularDistribucion,
   calcularLiquidacion,
   centavos,
@@ -10,8 +11,11 @@ import {
   puedeLiquidar,
   puedeRevertir,
   puntosBasicos,
+  saldosPorTesoro,
+  TESOROS,
   topesDeLaLiquidacion,
   type AjustesDeLiquidacion,
+  type Asiento,
   type Distribucion,
   type EntradaCascada,
   type EstadoLiquidado,
@@ -21,6 +25,10 @@ import {
   type Reapertura,
 } from '@maun/domain';
 import type pg from 'pg';
+
+import type { Tesoro, TipoMovimiento } from '../src/enums.ts';
+import { aplicarLote, leerLote, replicaVacia } from '../src/replica.ts';
+import { datosDelLibro } from '../src/vistas.ts';
 
 export const HOUSEHOLD_DEL_SEED = '5eed0000-0000-7000-8000-000000000001';
 
@@ -576,6 +584,20 @@ interface ProyectoDeEscenario {
   estado: EstadoProyecto;
   pagos: number[];
   gastos: number[];
+  borrado?: boolean;
+  pagosBorrados?: number[];
+  gastosBorrados?: number[];
+}
+
+interface MovimientoDeEscenario {
+  tipo: TipoMovimiento;
+  origen: Tesoro | null;
+  destino: Tesoro | null;
+  monto: number;
+  fecha: string;
+  categoria?: string;
+  descripcion?: string;
+  borrado?: boolean;
 }
 
 type Paso =
@@ -589,6 +611,7 @@ export interface EscenarioDeLiquidacion {
   ajustes: AjustesDeEscenario;
   proyectos: Readonly<Record<string, ProyectoDeEscenario>>;
   pasos: Paso[];
+  movimientos?: MovimientoDeEscenario[];
 }
 
 function unCobro(
@@ -717,6 +740,7 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
 
 interface Contexto {
   householdId: string;
+  usuarioId: string;
   ids: Map<string, string>;
 }
 
@@ -764,24 +788,52 @@ async function prepararEscenario(
     );
     const proyectoId = rows[0]?.id ?? '';
     ids.set(clave, proyectoId);
-    for (const [tabla, montos] of [
-      ['pagos', proyecto.pagos],
-      ['gastos', proyecto.gastos],
+    for (const [tabla, montos, borrado] of [
+      ['pagos', proyecto.pagos, false],
+      ['gastos', proyecto.gastos, false],
+      ['pagos', proyecto.pagosBorrados ?? [], true],
+      ['gastos', proyecto.gastosBorrados ?? [], true],
     ] as const) {
       for (const monto of montos) {
         await cliente.query(
-          `insert into public.${tabla} (household_id, proyecto_id, fecha, monto_centavos) values ($1, $2, '2026-08-01', $3)`,
-          [householdId, proyectoId, monto],
+          `insert into public.${tabla} (household_id, proyecto_id, fecha, monto_centavos, deleted_at)
+           values ($1, $2, '2026-08-01', $3, $4)`,
+          [householdId, proyectoId, monto, borrado ? '2026-08-15T00:00:00Z' : null],
         );
       }
     }
+    if (proyecto.borrado === true) {
+      await cliente.query(
+        `update public.proyectos set deleted_at = '2026-08-20T00:00:00Z' where id = $1`,
+        [proyectoId],
+      );
+    }
+  }
+
+  for (const movimiento of escenario.movimientos ?? []) {
+    await cliente.query(
+      `insert into public.movimientos
+         (household_id, fecha, tipo, tesoro_origen, tesoro_destino, monto_centavos, categoria, descripcion, deleted_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        householdId,
+        movimiento.fecha,
+        movimiento.tipo,
+        movimiento.origen,
+        movimiento.destino,
+        movimiento.monto,
+        movimiento.categoria ?? '',
+        movimiento.descripcion ?? '',
+        movimiento.borrado === true ? '2026-08-25T00:00:00Z' : null,
+      ],
+    );
   }
 
   await cliente.query("select set_config('request.jwt.claims', $1, true)", [
     JSON.stringify({ sub: userId, role: 'authenticated' }),
   ]);
   await cliente.query("select set_config('role', 'authenticated', true)");
-  return { householdId, ids };
+  return { householdId, usuarioId: userId, ids };
 }
 
 async function correrPaso(cliente: pg.Client, contexto: Contexto, paso: Paso): Promise<string[]> {
@@ -897,6 +949,285 @@ export async function compararSeed(cliente: pg.Client): Promise<string[]> {
   return diferencias;
 }
 
+interface FilaDelLibro {
+  origen: string;
+  asiento_id: string;
+  fecha: string;
+  tesoro: string;
+  contrapartida: string | null;
+  monto_centavos: string;
+  concepto: string;
+  categoria: string;
+  descripcion: string;
+  proyecto_id: string | null;
+}
+
+const COLUMNAS_DEL_LIBRO = `origen, asiento_id, fecha::text as fecha, tesoro::text as tesoro,
+  contrapartida::text as contrapartida, monto_centavos::text as monto_centavos,
+  concepto, categoria, descripcion, proyecto_id`;
+
+function comoTextoSql(fila: FilaDelLibro): string {
+  return JSON.stringify([
+    fila.origen,
+    fila.asiento_id,
+    fila.fecha,
+    fila.tesoro,
+    fila.contrapartida,
+    Number(fila.monto_centavos),
+    fila.concepto,
+    fila.categoria,
+    fila.descripcion,
+    fila.proyecto_id,
+  ]);
+}
+
+function comoTextoTs(asiento: Asiento): string {
+  return JSON.stringify([
+    asiento.origen,
+    asiento.asientoId,
+    asiento.fecha,
+    asiento.tesoro,
+    asiento.contrapartida,
+    asiento.monto,
+    asiento.concepto,
+    asiento.categoria,
+    asiento.descripcion,
+    asiento.proyectoId,
+  ]);
+}
+
+// La vista es un union all: puede repetir la misma fila (los dos lados de una distribución caen en
+// maun con distinta contrapartida). Se comparan como multiconjuntos, no como listas ordenadas.
+function diferenciasDeMultiset(enSql: readonly string[], enTs: readonly string[]): string[] {
+  const cuenta = new Map<string, number>();
+  for (const fila of enSql) cuenta.set(fila, (cuenta.get(fila) ?? 0) + 1);
+  for (const fila of enTs) cuenta.set(fila, (cuenta.get(fila) ?? 0) - 1);
+
+  const diferencias: string[] = [];
+  for (const [fila, saldo] of [...cuenta].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    if (saldo > 0) diferencias.push(`solo en SQL (${String(saldo)}x): ${fila}`);
+    if (saldo < 0) diferencias.push(`solo en TS (${String(-saldo)}x): ${fila}`);
+  }
+  return diferencias;
+}
+
+// El TypeScript lee lo mismo que lee la app: bootstrap() arma la réplica y de ahí sale el libro.
+// Filtrar acá las filas borradas a mano sería copiar en el comparador el where de la vista, que es
+// justo una de las mitades que puede diverger.
+async function asientosDeLaReplica(cliente: pg.Client, usuarioId: string): Promise<Asiento[]> {
+  const { rows } = await cliente.query<{ lote: unknown }>('select public.bootstrap() as lote');
+  const replica = aplicarLote(replicaVacia(usuarioId), leerLote(rows[0]?.lote), 'reconcile', 0);
+  return asientosDelLibro(datosDelLibro(replica));
+}
+
+async function leerLibro(cliente: pg.Client, householdId: string): Promise<FilaDelLibro[]> {
+  const { rows } = await cliente.query<FilaDelLibro>(
+    `select ${COLUMNAS_DEL_LIBRO} from public.libro_mayor where household_id = $1`,
+    [householdId],
+  );
+  return rows;
+}
+
+async function compararSaldos(
+  cliente: pg.Client,
+  householdId: string,
+  asientos: readonly Asiento[],
+): Promise<string[]> {
+  const { rows } = await cliente.query<{ tesoro: string; saldo: string }>(
+    `select t.tesoro::text as tesoro, coalesce(sum(l.monto_centavos), 0)::text as saldo
+     from unnest(enum_range(null::public.tesoro)) as t (tesoro)
+     left join public.libro_mayor l on l.tesoro = t.tesoro and l.household_id = $1
+     group by t.tesoro`,
+    [householdId],
+  );
+  const enTs = saldosPorTesoro(asientos);
+  return TESOROS.flatMap((tesoro) => {
+    const enSql = Number(rows.find((fila) => fila.tesoro === tesoro)?.saldo ?? NaN);
+    return enSql === enTs[tesoro]
+      ? []
+      : [`saldo de ${tesoro}: SQL ${String(enSql)}, TS ${String(enTs[tesoro])}`];
+  });
+}
+
+const MOVIMIENTOS_DE_TODOS_LOS_TIPOS: MovimientoDeEscenario[] = [
+  {
+    tipo: 'ingreso',
+    origen: null,
+    destino: 'hogar',
+    monto: 12_000_000,
+    fecha: '2026-09-01',
+    categoria: 'Otros ingresos',
+    descripcion: 'una changa',
+  },
+  {
+    tipo: 'gasto',
+    origen: 'hogar',
+    destino: null,
+    monto: 3_500_000,
+    fecha: '2026-09-02',
+    categoria: 'Supermercado',
+  },
+  {
+    tipo: 'transferencia',
+    origen: 'maun',
+    destino: 'hogar',
+    monto: 8_000_000,
+    fecha: '2026-09-03',
+  },
+  { tipo: 'pago_diezmo', origen: 'diezmo', destino: null, monto: 2_400_000, fecha: '2026-09-04' },
+  { tipo: 'aporte_cocos', origen: 'maun', destino: 'cocos', monto: 5_000_000, fecha: '2026-09-05' },
+  { tipo: 'ajuste', origen: null, destino: 'cocos', monto: 900_000, fecha: '2026-09-06' },
+  { tipo: 'ajuste', origen: 'cocos', destino: null, monto: 700_000, fecha: '2026-09-07' },
+  {
+    tipo: 'ingreso',
+    origen: null,
+    destino: 'maun',
+    monto: 99_000_000,
+    fecha: '2026-09-08',
+    descripcion: 'borrado: no va al libro',
+    borrado: true,
+  },
+  {
+    tipo: 'transferencia',
+    origen: 'hogar',
+    destino: 'diezmo',
+    monto: 77_000_000,
+    fecha: '2026-09-09',
+    descripcion: 'borrado de los dos lados',
+    borrado: true,
+  },
+];
+
+export const ESCENARIOS_DEL_LIBRO: EscenarioDeLiquidacion[] = [
+  {
+    nombre: 'los seis tipos de movimiento, con borrados que no tienen que aparecer',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {},
+    pasos: [],
+    movimientos: MOVIMIENTOS_DE_TODOS_LOS_TIPOS,
+  },
+  {
+    nombre: 'un proyecto borrado se lleva sus pagos y sus gastos del libro',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {
+      vivo: { estado: 'en_curso', pagos: [40_000_000, 10_000_000], gastos: [12_000_000] },
+      muerto: { estado: 'en_curso', pagos: [90_000_000], gastos: [30_000_000], borrado: true },
+      conFilasBorradas: {
+        estado: 'en_curso',
+        pagos: [20_000_000],
+        gastos: [],
+        pagosBorrados: [55_000_000],
+        gastosBorrados: [44_000_000],
+      },
+    },
+    pasos: [],
+    movimientos: MOVIMIENTOS_DE_TODOS_LOS_TIPOS,
+  },
+  {
+    nombre: 'el diezmo de un perdido mueve plata igual que el de un cobrado',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {
+      cobrado: { estado: 'entregado', pagos: [300_000_000], gastos: [40_000_000] },
+      perdido: { estado: 'presupuesto_enviado', pagos: [20_000_000], gastos: [1_500_000] },
+      perdidoSinSena: { estado: 'contacto', pagos: [], gastos: [] },
+    },
+    pasos: [
+      { liquidar: 'cobrado', proyecto: 'cobrado', fecha: '2026-09-10' },
+      { liquidar: 'perdido', proyecto: 'perdido', fecha: '2026-09-11' },
+      { liquidar: 'perdido', proyecto: 'perdidoSinSena', fecha: '2026-09-12' },
+    ],
+    movimientos: MOVIMIENTOS_DE_TODOS_LOS_TIPOS,
+  },
+  {
+    nombre: 'un perdido con sueldo y sin diezmo, y un cobro con pérdida: los ceros no dan asiento',
+    ajustes: {
+      sueldo: 180_000_000,
+      fijos: 25_000_000,
+      perdidoConSueldo: true,
+      perdidoConDiezmo: false,
+    },
+    proyectos: {
+      lead: { estado: 'relevamiento', pagos: [6_000_000], gastos: [800_000] },
+      enPerdida: { estado: 'entregado', pagos: [1_000_000], gastos: [9_000_000] },
+    },
+    pasos: [
+      { liquidar: 'perdido', proyecto: 'lead', fecha: '2026-09-13' },
+      { liquidar: 'cobrado', proyecto: 'enPerdida', fecha: '2026-09-14' },
+    ],
+  },
+  {
+    nombre: 'reabrir un cobro lo saca del libro y volver a cobrarlo lo devuelve',
+    ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
+    proyectos: { p: { estado: 'entregado', pagos: [120_000_000], gastos: [10_000_000] } },
+    pasos: [
+      { liquidar: 'cobrado', proyecto: 'p', fecha: '2026-09-15' },
+      { revertir: 'entregado', proyecto: 'p' },
+      { pago: 30_000_000, proyecto: 'p' },
+      { liquidar: 'cobrado', proyecto: 'p', fecha: '2026-09-16' },
+    ],
+    movimientos: MOVIMIENTOS_DE_TODOS_LOS_TIPOS,
+  },
+];
+
+export async function compararLibroMayor(cliente: pg.Client): Promise<string[]> {
+  const diferencias: string[] = [];
+  for (const escenario of [...ESCENARIOS_DEL_LIBRO, ...ESCENARIOS_DE_LIQUIDACION]) {
+    await cliente.query('savepoint libro');
+    try {
+      const contexto = await prepararEscenario(cliente, escenario);
+      for (const paso of escenario.pasos) await correrPaso(cliente, contexto, paso);
+      const asientos = await asientosDeLaReplica(cliente, contexto.usuarioId);
+      const filas = await leerLibro(cliente, contexto.householdId);
+      const delEscenario = [
+        ...diferenciasDeMultiset(filas.map(comoTextoSql), asientos.map(comoTextoTs)),
+        ...(await compararSaldos(cliente, contexto.householdId, asientos)),
+      ];
+      diferencias.push(...delEscenario.map((linea) => `"${escenario.nombre}", ${linea}`));
+    } catch (error) {
+      diferencias.push(
+        `"${escenario.nombre}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    await cliente.query('rollback to savepoint libro');
+  }
+  return diferencias;
+}
+
+export async function compararLibroDelSeed(cliente: pg.Client): Promise<string[]> {
+  const filas = await leerLibro(cliente, HOUSEHOLD_DEL_SEED);
+  if (filas.length === 0) {
+    return ['el seed no tiene asientos: cargalo con `pnpm --filter @maun/db db:seed`'];
+  }
+
+  // El household del seed no tiene miembros a propósito (ADR 0012), así que para leerlo por el
+  // camino real (bootstrap bajo RLS) hace falta uno. Se crea y se deshace en el savepoint.
+  await cliente.query('savepoint libro_del_seed');
+  const { rows: usuario } = await cliente.query<{ id: string }>(
+    `insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
+     values (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+             'libro-del-seed@maun.test', '', now(), now())
+     returning id`,
+  );
+  const usuarioId = usuario[0]?.id ?? '';
+  await cliente.query(
+    `insert into public.household_members (household_id, user_id, rol) values ($1, $2, 'titular')`,
+    [HOUSEHOLD_DEL_SEED, usuarioId],
+  );
+
+  await cliente.query("select set_config('request.jwt.claims', $1, true)", [
+    JSON.stringify({ sub: usuarioId, role: 'authenticated' }),
+  ]);
+  await cliente.query("select set_config('role', 'authenticated', true)");
+  const asientos = await asientosDeLaReplica(cliente, usuarioId);
+  const saldos = await compararSaldos(cliente, HOUSEHOLD_DEL_SEED, asientos);
+  await cliente.query('rollback to savepoint libro_del_seed');
+
+  return [
+    ...diferenciasDeMultiset(filas.map(comoTextoSql), asientos.map(comoTextoTs)),
+    ...saldos,
+  ].map((linea) => `libro del seed, ${linea}`);
+}
+
 export async function compararDominioYSql(cliente: pg.Client): Promise<string[]> {
   return [
     ...(await compararCascada(cliente)),
@@ -905,5 +1236,6 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararEstados(cliente)),
     ...(await compararTransiciones(cliente)),
     ...(await compararLiquidaciones(cliente)),
+    ...(await compararLibroMayor(cliente)),
   ];
 }
