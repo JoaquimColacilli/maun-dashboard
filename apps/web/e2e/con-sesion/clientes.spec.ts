@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-import { iniciarSesionDePrueba, leerCliente, vaciarClientes } from '../apoyo/taller';
+import { iniciarSesionDePrueba, leerCliente, vaciarTaller } from '../apoyo/taller';
 
 test.beforeEach(async () => {
-  await vaciarClientes(await iniciarSesionDePrueba());
+  await vaciarTaller(await iniciarSesionDePrueba());
 });
 
 async function cargarCliente(
