@@ -11,8 +11,10 @@ Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la fa
 - `aplicarFilaLocal` y `quitarFilaLocal` son la aplicación optimista de la cola de salida y su vuelta atrás cuando la base rechaza.
 - `necesitaReconcile(replica, ahora)` decide entre `bootstrap()` y `delta()`: reconcile completo al entrar y cada 24 horas.
 - `filaPorId(replica, tabla, id)` es la lectura puntual, y `faltaConfigurar(ajustes)` responde si el taller todavía está en cero: es lo que decide el estado vacío de la primera configuración (ADR 0012).
-- `src/sincronizacion.ts` son las llamadas (`traerBootstrap`, `traerDelta`, `guardarMovimiento`, `guardarAjustes`, `guardarNombreDelTaller`) y `src/errores.ts` clasifica los rechazos: los `MNxxx` y el `42501` no se reintentan. Las ediciones mandan solo las columnas que cambiaron; `COLUMNAS_DE_AJUSTES` es la lista con grant, y sale del tipo generado.
+- `src/sincronizacion.ts` son las llamadas (`traerBootstrap`, `traerDelta`, `guardarMovimiento`, `guardarAjustes`, `guardarNombreDelTaller`, `guardarProyecto`) y `src/errores.ts` clasifica los rechazos: los `MNxxx` y el `42501` no se reintentan. Las ediciones mandan solo las columnas que cambiaron; `COLUMNAS_DE_AJUSTES` es la lista con grant, y sale del tipo generado.
 - La conversión de `bigint` a `Money` vive en `src/dinero.ts`, en un solo lugar.
+- `src/vistas.ts` traduce la réplica para el dominio. `totalesPorProyecto` vive ahí y no en una pantalla: son los dos números que la app le manda a `cobrar_proyecto`, y si divergen de la suma de la base el cobro rebota con `MN006`. El comparador los verifica por el camino real (ADR 0015).
+- `guardarProyecto` llama al RPC `guardar_proyecto`, que guarda el proyecto con sus pagos y sus gastos en una transacción. Es la única forma de escribir pagos y gastos: no hay mutaciones sueltas para ellos (ADR 0015).
 
 ## El alta de una cuenta
 
@@ -92,7 +94,7 @@ Los scripts y los tests se conectan con `pg` al pooler (`supabase/.temp/pooler-u
 - Índice sobre toda columna que aparezca en una policy. Cada policy nombra sus roles en `to`.
 - Roles en `app_metadata` o en una tabla, nunca en `user_metadata`.
 - Vistas sobre tablas protegidas con `security_invoker = true`.
-- Postgres da `execute` a `public` en toda función nueva: revocalo en la misma migración.
+- Postgres da `execute` a `public` en toda función nueva, y Supabase se lo da además a `anon` y a `authenticated` por default privileges: el revoke de una función de `public` tiene que nombrar a los tres (`from public, anon, authenticated`). `00_estructura.sql` lo verifica.
 
 ## Convenciones de SQL
 
@@ -102,6 +104,8 @@ Los scripts y los tests se conectan con `pg` al pooler (`supabase/.temp/pooler-u
 - Los cuerpos de función van entre `$$`, no con `begin atomic`: el runner busca `begin`, `commit` y `rollback` sueltos, y el `end` de un `begin atomic` lo confundiría.
 - Ninguna migración ni el seed controlan la transacción: el ensayo los corre todos en la suya y los rechaza si traen `begin` o `commit`.
 - El ensayo corre todas las migraciones pendientes en una sola transacción: agregar un valor a un enum y usarlo en una migración posterior falla en el ensayo aunque `db push` ande. En ese caso, ensayá en dos tandas.
+- `jsonb_to_recordset` castea todas las columnas de todas las filas antes de que el `where` filtre nada: una fila que solo necesita su id no puede viajar con un texto vacío en una columna `date`. Leé esas columnas como `text` y casteá donde se usan (ADR 0015).
+- `insert ... on conflict (id) do update` evalúa los `check` de la tabla sobre la fila propuesta antes de resolver el conflicto: si el check depende de columnas que el upsert no manda, el alta y la edición van por separado (ADR 0015).
 - Una guarda que lee otra fila para decidir (el proyecto de un pago, el cliente de un proyecto, los ajustes de una liquidación) la bloquea antes de leerla: sin eso, una operación concurrente pasa con el estado viejo. La liquidación bloquea el proyecto y después los ajustes, en ese orden.
 - Rechazos de negocio con SQLSTATE de la clase `MN` (tabla en ADR 0010). Si el usuario puede hacer algo para destrabarlo, el `hint` lo dice: la app lo muestra.
 - `supabase-js` devuelve `bigint` como `number` y los tipos generados lo tipan así: la conversión a `Money` (entero con brand, ADR 0002) se hace acá, en un solo lugar.
