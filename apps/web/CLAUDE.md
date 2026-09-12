@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, y una pantalla de inicio técnica que muestra lo replicado, configura el taller y deja cargar un movimiento. Las pantallas de negocio llegan en la fase 2D.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, la pantalla de Inicio y la de Ajustes. Las secciones que faltan (Proyectos, Clientes, Seguimiento, Diezmo, Finanzas) son pantallas que dicen qué llega y cuándo, no rutas muertas.
 
 ## Capas (FSD, ADR 0006)
 
@@ -11,6 +11,7 @@ src/
   pages/       una carpeta por ruta, finas: componen features y entidades
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
                cerrar-sesion, configurar-taller, registrar-movimiento)
+  entities/    sesion, replica (la copia del household y su contexto) y tesoro
   entities/    sesion (estado y contexto) y replica (la copia del household)
   shared/      api (Supabase), config, lib (cache, plata, fechas, uuid, sync) y ui
 ```
@@ -32,9 +33,18 @@ src/
 - `/acceso/nueva-contrasena` exige que la sesión venga del enlace de recuperación: con la sesión abierta alcanzaría para cambiar la contraseña sin saber la anterior.
 - **El registro es auto-servicio:** quien confirma su mail sale con su propio taller, creado por un trigger de `auth.users` en la misma transacción que la cuenta. No hay pantalla de "sin acceso" y no la agregues: una sesión sin taller es un alta que quedó a medias, y cae en el error genérico con reintentar.
 - Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso, y al revés tampoco: son mensajes distintos sobre el mismo `ErrorDeCarga`.
-- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), `/` (inicio) y `/verificacion` (pantalla técnica de tokens, pública).
+- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/seguimiento`, `/proyectos`, `/clientes`, `/finanzas`, `/diezmo` y `/ajustes`.
 - **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
+
+## Pantallas y navegación (ADR 0013)
+
+- **La app renderiza desde la réplica local, nunca desde la red.** La réplica llega por contexto (`useReplicaDelTaller()`), provista por `RutaConAcceso`, que ya la tiene resuelta antes de dejar pasar. **Ninguna pantalla adentro del marco tiene estado de carga**: si te encontrás escribiendo un skeleton para una de ellas, la pantalla no puede quedarse sin datos y el skeleton está de más.
+- Sin `lazy` ni Suspense con spinner para las pantallas del taller: se importan directo. El code splitting queda para las de acceso, que son las únicas que dependen de la red.
+- `app/layout/destinos.ts` es el modelo de la navegación: los destinos, cuáles se ven en cada ancho y `destinoResaltado`, que marca Proyectos cuando estás en Seguimiento y no hay destino propio. `Navegacion.tsx` elige **una sola** de las tres barras con `matchMedia`: tres `<nav>` en el DOM son tres landmarks.
+- El foco y el anuncio al cambiar de ruta los hace `Marco.tsx` sobre el `<main>`, no cada pantalla. Las pantallas **no** renderizan `<main>`: ya hay uno.
+- Las transiciones van con `conTransicion()` (`document.startViewTransition` + `flushSync`), nunca con el componente `<ViewTransition>` de React.
+- El nodo raíz está anclado con `position: fixed; inset: 0` por el problema de `100vh` en PWA instalada, y el contenido lleva `calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom))` de padding inferior.
 
 ## Offline (ADR 0005 y 0010)
 
