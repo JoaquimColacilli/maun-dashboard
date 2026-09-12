@@ -112,6 +112,7 @@ test('un cliente cargado sobrevive a recargar la página, y su edición también
 test('solo el nombre es obligatorio: un desconocido que llama por teléfono se carga igual', async ({
   page,
 }) => {
+  const sesion = await iniciarSesionDePrueba();
   await page.goto('/clientes');
   await page.getByRole('button', { name: 'Cargá tu primer cliente' }).click();
 
@@ -120,11 +121,15 @@ test('solo el nombre es obligatorio: un desconocido que llama por teléfono se c
 
   await cargarCliente(page, { nombre: 'El del portón' });
   await expect(page.getByRole('button', { name: /El del portón/ })).toBeVisible();
+  await expect
+    .poll(async () => contarClientes(sesion, 'El del portón'), { timeout: 20_000 })
+    .toBe(1);
 });
 
 test('el CUIT con el verificador mal avisa pero deja guardar; el incompleto no pasa', async ({
   page,
 }) => {
+  const sesion = await iniciarSesionDePrueba();
   await page.goto('/clientes');
   await page.getByRole('button', { name: 'Cargá tu primer cliente' }).click();
 
@@ -141,11 +146,15 @@ test('el CUIT con el verificador mal avisa pero deja guardar; el incompleto no p
 
   await page.getByRole('button', { name: 'Guardar cliente' }).click();
   await expect(page.getByRole('button', { name: /Carpintería Sosa/ })).toBeVisible();
+  await expect
+    .poll(async () => contarClientes(sesion, 'Carpintería Sosa'), { timeout: 20_000 })
+    .toBe(1);
 });
 
 test('la búsqueda responde desde la primera letra y ofrece crear lo que no encuentra', async ({
   page,
 }) => {
+  const sesion = await iniciarSesionDePrueba();
   await page.goto('/clientes');
 
   await page.getByRole('button', { name: 'Cargá tu primer cliente' }).click();
@@ -168,6 +177,7 @@ test('la búsqueda responde desde la primera letra y ofrece crear lo que no encu
   await buscador.fill('zzz');
   await expect(page.getByText('Nadie coincide con «zzz».')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Crear «zzz» como cliente nuevo' })).toBeVisible();
+  await expect.poll(async () => contarClientes(sesion, 'Bruno Díaz'), { timeout: 20_000 }).toBe(1);
 });
 
 test('el corte de orígenes cuenta de dónde viene cada cliente', async ({ page }) => {
