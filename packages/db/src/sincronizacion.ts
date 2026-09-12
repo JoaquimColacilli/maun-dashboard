@@ -1,6 +1,6 @@
 import type { ClienteMaun } from './cliente.ts';
-import type { Database } from './database.types.ts';
-import { leerLote, type FilaDe, type Lote } from './replica.ts';
+import type { Database, Json } from './database.types.ts';
+import { leerLote, RespuestaInvalidaError, type FilaDe, type Lote } from './replica.ts';
 
 export type MovimientoNuevo = Pick<
   Database['public']['Tables']['movimientos']['Insert'],
@@ -128,6 +128,165 @@ export async function guardarCambiosDeCliente(
   const { data, error } = await cliente
     .from('clientes')
     .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Las columnas de proyectos que el usuario escribe, y que tienen grant en la base. Salen del tipo
+// generado, no de una copia a mano. Las de la distribución no están: las escribe private.liquidar.
+export const COLUMNAS_DE_PROYECTO = [
+  'cliente_id',
+  'titulo',
+  'descripcion',
+  'estado',
+  'presupuesto_centavos',
+  'forma_pago',
+  'comprobante',
+  'fecha_visita',
+  'ultimo_contacto',
+  'fecha_inicio',
+  'entrega_estimada',
+  'fecha_entrega',
+  'direccion_entrega',
+  'notas',
+] as const;
+
+export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];
+
+export type DatosDeProyecto = Pick<FilaDe<'proyectos'>, ColumnaDeProyecto>;
+
+export type CambiosDeProyecto = Partial<DatosDeProyecto>;
+
+interface FilaHijaViva {
+  id: string;
+  fecha: string;
+  monto_centavos: number;
+  borrado?: false;
+}
+
+// La baja de una fila hija lleva solo su id: la base no mira nada más, y mandar el resto en blanco
+// haría que jsonb_to_recordset intente castear una fecha vacía a date y corte la llamada entera.
+export interface BajaDeFilaHija {
+  id: string;
+  borrado: true;
+}
+
+export type PagoParaGuardar = (FilaHijaViva & { concepto: string }) | BajaDeFilaHija;
+
+export type GastoParaGuardar = (FilaHijaViva & { descripcion: string }) | BajaDeFilaHija;
+
+// El proyecto es el agregado: sus pagos y sus gastos no se guardan sueltos. `version` es la que vio
+// el cliente y va null en un alta. Las filas hijas que el usuario sacó del formulario viajan en el
+// mismo array con `borrado`, y solo las que existían: la base nunca borra lo que el cliente no vio.
+export interface ProyectoParaGuardar {
+  id: string;
+  version: number | null;
+  datos: DatosDeProyecto;
+  pagos: readonly PagoParaGuardar[];
+  gastos: readonly GastoParaGuardar[];
+}
+
+export interface ProyectoGuardado {
+  proyecto: FilaDe<'proyectos'>;
+  pagos: readonly FilaDe<'pagos'>[];
+  gastos: readonly FilaDe<'gastos'>[];
+}
+
+function filasDelAgregado<T extends 'pagos' | 'gastos'>(valor: unknown, tabla: T): FilaDe<T>[] {
+  if (!Array.isArray(valor)) {
+    throw new RespuestaInvalidaError(`guardar_proyecto no devolvió la lista de ${tabla}.`);
+  }
+  for (const fila of valor) {
+    if (
+      typeof fila !== 'object' ||
+      fila === null ||
+      typeof (fila as { id?: unknown }).id !== 'string'
+    ) {
+      throw new RespuestaInvalidaError(`Una fila de ${tabla} no trae id.`);
+    }
+  }
+  return valor as FilaDe<T>[];
+}
+
+export function leerProyectoGuardado(valor: unknown): ProyectoGuardado {
+  if (typeof valor !== 'object' || valor === null) {
+    throw new RespuestaInvalidaError('guardar_proyecto no devolvió un objeto.');
+  }
+  const cuerpo = valor as Record<string, unknown>;
+  const proyecto = cuerpo.proyecto;
+  if (
+    typeof proyecto !== 'object' ||
+    proyecto === null ||
+    typeof (proyecto as { id?: unknown }).id !== 'string'
+  ) {
+    throw new RespuestaInvalidaError('guardar_proyecto no devolvió el proyecto.');
+  }
+  return {
+    proyecto: proyecto as FilaDe<'proyectos'>,
+    pagos: filasDelAgregado(cuerpo.pagos, 'pagos'),
+    gastos: filasDelAgregado(cuerpo.gastos, 'gastos'),
+  };
+}
+
+export async function guardarProyecto(
+  cliente: ClienteMaun,
+  pedido: ProyectoParaGuardar,
+): Promise<ProyectoGuardado> {
+  const { data, error } = await cliente.rpc('guardar_proyecto', {
+    p_proyecto: { id: pedido.id, version: pedido.version, ...pedido.datos } as unknown as Json,
+    p_pagos: pedido.pagos as unknown as Json,
+    p_gastos: pedido.gastos as unknown as Json,
+  });
+  if (error) throw error;
+  return leerProyectoGuardado(data);
+}
+
+// La edición suelta de un proyecto, para lo que no toca la plata ni sus hijos: hoy, las notas de
+// obra que se escriben en línea desde el detalle. Manda solo las columnas que cambiaron (ADR 0010),
+// y gana la última escritura, que para texto libre es lo que corresponde.
+export async function guardarCambiosDeProyecto(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeProyecto,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// La baja de un proyecto y la de un cliente son lógicas y con la marca fijada al encolar, así el
+// reenvío conserva la primera (ADR 0010). No hay grant de delete para el cliente.
+export async function borrarCliente(
+  cliente: ClienteMaun,
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'clientes'>> {
+  const { data, error } = await cliente
+    .from('clientes')
+    .update({ deleted_at: borradoEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function borrarProyecto(
+  cliente: ClienteMaun,
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update({ deleted_at: borradoEn })
     .eq('id', id)
     .select()
     .single();
