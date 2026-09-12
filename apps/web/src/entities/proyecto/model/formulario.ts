@@ -1,12 +1,14 @@
 import { ESTADOS, puedeCambiarEstado, type EstadoProyecto } from '@maun/domain';
 import { z } from 'zod';
 
-import type {
-  BajaDeFilaHija,
-  DatosDeProyecto,
-  GastoParaGuardar,
-  PagoParaGuardar,
-  ProyectoParaGuardar,
+import {
+  COLUMNAS_DE_PROYECTO,
+  type BajaDeFilaHija,
+  type CambiosDeProyecto,
+  type DatosDeProyecto,
+  type GastoParaGuardar,
+  type PagoParaGuardar,
+  type ProyectoParaGuardar,
 } from '@/shared/api';
 import { hoyLocal, parsearPesos, parsearPesosDesdeCero, pesosEditables } from '@/shared/lib';
 
@@ -198,6 +200,20 @@ export function pedidoDeGuardado(
 // valen desde ahí. Un estado inválido rebota con MN007, que es un rechazo definitivo y tapa la cola.
 export function estadosDisponibles(actual: EstadoProyecto): EstadoProyecto[] {
   return ESTADOS.filter((estado) => estado === actual || puedeCambiarEstado(actual, estado));
+}
+
+export function cambiaLaFila(actual: Proyecto, cambios: CambiosDeProyecto): boolean {
+  return COLUMNAS_DE_PROYECTO.some(
+    (columna) => columna in cambios && actual[columna] !== cambios[columna],
+  );
+}
+
+export function versionDelGuardado(
+  actual: Proyecto | null | undefined,
+  datos: CambiosDeProyecto,
+): number {
+  if (actual === null || actual === undefined) return 1;
+  return cambiaLaFila(actual, datos) ? actual.version + 1 : actual.version;
 }
 
 export function totalDeLasFilas(filas: readonly { monto: string }[]): number {
