@@ -1,8 +1,11 @@
 export {
+  CLAVE_DE_BAJA_DE_CLIENTE,
   CLAVE_DE_CLIENTE,
   CLAVE_DE_CLIENTE_NUEVO,
+  MUTACION_DE_BAJA_DE_CLIENTE,
   MUTACION_DE_CLIENTE,
   MUTACION_DE_CLIENTE_NUEVO,
+  type BajaDeCliente,
   type EdicionDeCliente,
 } from './api/mutacion';
 export {

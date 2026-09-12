@@ -1,11 +1,21 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import {
+  CLAVE_DE_BAJA_DE_CLIENTE,
   CLAVE_DE_CLIENTE,
   CLAVE_DE_CLIENTE_NUEVO,
+  MUTACION_DE_BAJA_DE_CLIENTE,
   MUTACION_DE_CLIENTE,
   MUTACION_DE_CLIENTE_NUEVO,
 } from '@/entities/cliente';
+import {
+  CLAVE_DE_BAJA_DE_PROYECTO,
+  CLAVE_DE_NOTAS,
+  CLAVE_DE_PROYECTO,
+  MUTACION_DE_BAJA_DE_PROYECTO,
+  MUTACION_DE_NOTAS,
+  MUTACION_DE_PROYECTO,
+} from '@/entities/proyecto';
 import {
   CLAVE_DE_AJUSTES,
   CLAVE_DEL_NOMBRE,
@@ -31,6 +41,18 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_CLIENTE, MUTACION_DE_CLIENTE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_CLIENTE, MUTACION_DE_BAJA_DE_CLIENTE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_PROYECTO, MUTACION_DE_PROYECTO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_NOTAS, MUTACION_DE_NOTAS);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_PROYECTO, MUTACION_DE_BAJA_DE_PROYECTO);
   },
 ];
 

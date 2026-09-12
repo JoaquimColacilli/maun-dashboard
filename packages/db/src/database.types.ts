@@ -670,6 +670,10 @@ export type Database = {
         };
       };
       delta: { Args: { p_desde: string }; Returns: Json };
+      guardar_proyecto: {
+        Args: { p_gastos: Json; p_pagos: Json; p_proyecto: Json };
+        Returns: Json;
+      };
       reabrir_proyecto: {
         Args: { p_proyecto_id: string; p_version: number };
         Returns: {

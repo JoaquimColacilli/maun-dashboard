@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   compararCascada,
   compararEstados,
+  compararGuardadoDeProyecto,
   compararLibroDelSeed,
   compararLibroMayor,
   compararLiquidaciones,
@@ -48,5 +49,9 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
 
   it('el libro mayor del seed sale igual de la vista y de la réplica', async () => {
     expect(await enTransaccionConRollback(compararLibroDelSeed)).toEqual([]);
+  });
+
+  it('lo que escribe guardar_proyecto es lo que la app lee de su réplica', async () => {
+    expect(await enTransaccionConRollback(compararGuardadoDeProyecto)).toEqual([]);
   });
 });

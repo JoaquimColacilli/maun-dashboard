@@ -1,19 +1,26 @@
 import {
   aplicarLote,
+  borrarCliente,
+  borrarProyecto,
   guardarAjustes,
   guardarCambiosDeCliente,
+  guardarCambiosDeProyecto,
   guardarClienteNuevo,
   guardarMovimiento,
   guardarNombreDelTaller,
+  guardarProyecto,
   necesitaReconcile,
   replicaVacia,
   traerBootstrap,
   traerDelta,
   type CambiosDeAjustes,
   type CambiosDeCliente,
+  type CambiosDeProyecto,
   type ClienteNuevo,
   type FilaDe,
   type MovimientoNuevo,
+  type ProyectoGuardado,
+  type ProyectoParaGuardar,
   type Replica,
 } from '@maun/db';
 
@@ -78,4 +85,26 @@ export async function editarCliente(
   cambios: CambiosDeCliente,
 ): Promise<FilaDe<'clientes'>> {
   return guardarCambiosDeCliente(clienteMaun(), id, cambios);
+}
+
+export async function guardarElProyecto(pedido: ProyectoParaGuardar): Promise<ProyectoGuardado> {
+  return guardarProyecto(clienteMaun(), pedido);
+}
+
+export async function editarProyecto(
+  id: string,
+  cambios: CambiosDeProyecto,
+): Promise<FilaDe<'proyectos'>> {
+  return guardarCambiosDeProyecto(clienteMaun(), id, cambios);
+}
+
+export async function darDeBajaCliente(id: string, borradoEn: string): Promise<FilaDe<'clientes'>> {
+  return borrarCliente(clienteMaun(), id, borradoEn);
+}
+
+export async function darDeBajaProyecto(
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'proyectos'>> {
+  return borrarProyecto(clienteMaun(), id, borradoEn);
 }

@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes y **Clientes** (lista, ficha y formulario), que es el primer camino de escritura. Las secciones que faltan (Proyectos, Seguimiento, Diezmo, Finanzas) son pantallas que dicen qué llega y cuándo, no rutas muertas.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Hoy tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes** (lista, ficha y formulario) y **Proyectos** (lista con su control segmentado, formulario y detalle), que es la superficie más grande. Las secciones que faltan (Seguimiento, Diezmo, Finanzas) son pantallas que dicen qué llega y cuándo, no rutas muertas.
 
 ## Capas (FSD, ADR 0006)
 
@@ -10,9 +10,11 @@ src/
   app/         arranque, providers, router con sus guardas y layout del shell
   pages/       una carpeta por ruta, finas: componen features y entidades
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
-               cerrar-sesion, configurar-taller, registrar-movimiento, editar-cliente)
-  entities/    sesion, replica (la copia del household y su contexto), tesoro y cliente
-  shared/      api (Supabase), config, lib (cache, claves, plata, fechas, uuid, sync) y ui
+               cerrar-sesion, configurar-taller, registrar-movimiento, editar-cliente,
+               editar-proyecto)
+  entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente y proyecto
+  shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
+               uuid, sync) y ui
 ```
 
 - Solo se importa hacia capas de abajo, y un slice no importa a otro de su misma capa.
@@ -22,6 +24,7 @@ src/
 - Supabase (`@maun/db`, `@supabase/supabase-js`) se importa solo desde `shared/api`, que es la única puerta: ahí viven el cliente, las operaciones de auth, `sincronizar()` y las mutaciones.
 - `@/` apunta a `src/`. Está definido en `tsconfig.app.json` y en `vite.config.ts`: si cambia, cambia en los dos.
 - El estado del servidor vive en TanStack Query, dentro de `entities/*/api`. Las query keys llevan ids. El resto es estado local de React; no hay state manager global.
+- **El catálogo de tesoros y el ordenamiento de listas también viven en `shared/lib`** (`tesoros.ts`, `orden.ts`): los usan dos slices de `entities` cada uno, y un slice no puede importar a otro. `entities/tesoro` re-exporta el catálogo, así que su API pública no cambió (ADR 0015).
 - **Las claves de la réplica viven en `shared/lib/claves.ts`**, no en `entities/replica`: la mutación de cada entidad las necesita para aplicarse optimista, y un slice de `entities` no puede importar a otro. `entities/replica` las re-exporta, así que su API pública no cambió (ADR 0014).
 - La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002). Para mostrarla y leerla, `formatearPesos` y `parsearPesos` de `@/shared/lib`.
 
@@ -62,6 +65,7 @@ src/
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
 - El service worker precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
+- El bundle se parte en dos: el vendor en su propio chunk y el código de la app en otro (`manualChunks` en `vite.config.ts`). No baja el arranque, pero un cambio de pantalla deja de obligar a rebajar el bundle entero del precache (ADR 0015).
 
 ## Sistema de diseño
 
@@ -84,6 +88,7 @@ src/
 
 - Vitest y Testing Library, al lado del archivo (`*.test.ts[x]`).
 - `shared/lib/cache/cola.test.ts` es el test de la cola: usa IndexedDB de verdad (`fake-indexeddb`) y prueba que sin red la mutación queda en pausa, sobrevive a cerrar la app y se aplica en orden al volver la señal.
+- El household de prueba se vacía con `vaciarTaller` (proyectos primero, después clientes): la base rechaza con `MN003` la baja de un cliente con proyectos vivos.
 - Playwright en `e2e/`, con cinco proyectos: `setup`, `acceso-celular` y `acceso-escritorio` (sin sesión, en `e2e/sin-sesion/`), y `celular` y `escritorio` (con sesión, en `e2e/con-sesion/`).
   - La primera vez hay que instalar chromium: `pnpm --filter @maun/web exec playwright install chromium`.
   - Necesita `apps/web/.env` con `VITE_SUPABASE_URL`, la publishable key y **`E2E_EMAIL` / `E2E_PASSWORD`**, que van sin prefijo `VITE_` porque no entran al bundle. Están en `.env.example`.
@@ -91,3 +96,16 @@ src/
   - **Corre contra el build (`vite build && vite preview`), no contra el dev server**: el service worker solo existe en el artefacto real, y sin él no se puede probar cerrar la app y reabrirla sin señal.
   - `workers: 1`: los proyectos comparten el household de la cuenta de prueba y cada test con sesión lo vacía antes de empezar (`e2e/apoyo/taller.ts`).
   - Ese taller se vacía en cada corrida: no lo uses para mirar datos a mano.
+
+## Proyectos (ADR 0015)
+
+- **El proyecto es un agregado: se guarda entero, con sus pagos y sus gastos, por `guardar_proyecto`.** Una sola mutación en la cola, una sola transacción en la base. No hay mutaciones sueltas de pagos ni de gastos, y no las agregues: el orden de la foreign key, la atomicidad y la cola que drena de a una son el motivo.
+- La edición manda la fila entera del proyecto y la `version` que vio el usuario. Si la base cambió, rechaza con `MN006`. **Las filas hijas que el usuario sacó viajan marcadas con `borrado` en el mismo array, y solo las que existían**: la base nunca borra lo que el cliente no vio, porque `proyectos.version` no se mueve cuando solo cambian sus hijos.
+- Una baja de fila hija lleva **solo su id**. El tipo `BajaDeFilaHija` lo hace irrepresentable de otra forma: mandar una fecha vacía rompía la llamada entera con un `22007` sin mensaje.
+- **El formulario no se cierra hasta que la mutación resuelve o queda en pausa.** Con señal, un rechazo se ve ahí, con lo que el usuario escribió todavía en pantalla; sin señal, la mutación se pausa y el formulario se cierra igual.
+- El select de estado ofrece solo el estado actual y sus transiciones válidas (`estadosDisponibles`): un estado inválido rebota con `MN007`, que es definitivo y tapa la cola.
+- **El foco de una fila nueva lo pone `shouldFocus` de `useFieldArray`.** No agregues otro foco propio: compiten y el que llega tarde escribe en el campo equivocado.
+- Las tres pestañas (`Seguimiento · Activos · Historial`) son rutas, no estado local: `/seguimiento` y `/proyectos` montan la misma pantalla. No hay `pages/seguimiento`.
+- `despieceDelProyecto` y `DistribucionDespiece` son los que va a usar la pantalla de cobro: lo que cambia entre las dos es el modo (`real` o `proyeccion`), no la cuenta. La proyección sale de `calcularLiquidacion` del dominio, nunca del `despiece` del diseño, que reparte sobre el presupuesto.
+- **El ordenamiento de listas es `shared/lib/orden.ts`**, compartido con Clientes. Lo que falta va al final en los dos sentidos y el desempate es estable. Si agregás una columna, es un `Criterio` más, no otro `sort`.
+- `entregaEstimada` cuenta solo días de semana: acepta feriados por parámetro, pero **nadie le pasa una lista todavía**.

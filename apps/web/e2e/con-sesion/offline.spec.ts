@@ -2,13 +2,16 @@ import { expect, test } from '@playwright/test';
 
 import {
   contarClientes,
+  contarHijos,
+  crearCliente,
   iniciarSesionDePrueba,
+  leerProyecto,
   upsertCliente,
-  vaciarClientes,
+  vaciarTaller,
 } from '../apoyo/taller';
 
 test.beforeEach(async () => {
-  await vaciarClientes(await iniciarSesionDePrueba());
+  await vaciarTaller(await iniciarSesionDePrueba());
 });
 
 test('en modo avión el cliente aparece al instante, sobrevive a cerrar la app y se sincroniza una sola vez', async ({
@@ -68,4 +71,81 @@ test('drenar la cola dos veces con la misma mutación no duplica ni vuelve a toc
   // Un upsert que no cambia ningún valor no toca updated_at ni version, así que no genera delta.
   expect(segunda.version).toBe(primera.version);
   expect(segunda.updated_at).toBe(primera.updated_at);
+});
+
+test('en modo avión un proyecto con pagos y gastos es un solo cambio pendiente, no seis', async ({
+  page,
+  context,
+}) => {
+  const sesion = await iniciarSesionDePrueba();
+  await crearCliente(sesion, 'Marcela Sosa');
+
+  await page.goto('/proyectos');
+  // Antes de cortar la red hay que esperar dos cosas: que el service worker esté activo, porque es
+  // el que sirve el shell, y que la réplica ya esté guardada en IndexedDB. Sin lo segundo, reabrir
+  // sin señal encuentra el dispositivo vacío.
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await expect(page.getByRole('button', { name: 'Nuevo proyecto' })).toBeVisible();
+  await expect(page.getByRole('status')).toBeHidden({ timeout: 20_000 });
+
+  await context.setOffline(true);
+
+  await page.getByRole('button', { name: 'Nuevo proyecto' }).click();
+  await page.getByRole('combobox', { name: 'Cliente' }).fill('Marcela');
+  await page
+    .getByRole('option', { name: /Marcela Sosa/ })
+    .first()
+    .click();
+  await page.getByLabel('Trabajo').fill('Placard sin señal');
+  await page.getByLabel('Presupuesto').fill('1200000');
+
+  const pagos = page.getByRole('region', { name: 'Pagos recibidos' });
+  for (const numero of [1, 2]) {
+    await pagos.getByRole('button', { name: 'Agregar un pago' }).click();
+    await pagos
+      .getByLabel(`Concepto ${String(numero)}`, { exact: true })
+      .fill(`Pago ${String(numero)}`);
+    await pagos.getByLabel(`Monto ${String(numero)}`, { exact: true }).fill('200000');
+  }
+  const gastos = page.getByRole('region', { name: 'Gastos e insumos' });
+  for (const numero of [1, 2]) {
+    await gastos.getByRole('button', { name: 'Agregar un gasto' }).click();
+    await gastos
+      .getByLabel(`Descripción ${String(numero)}`, { exact: true })
+      .fill(`Gasto ${String(numero)}`);
+    await gastos.getByLabel(`Monto ${String(numero)}`, { exact: true }).fill('50000');
+  }
+
+  await page.getByRole('button', { name: 'Guardar proyecto' }).click();
+
+  // Aparece al instante, sin haber tocado la red, y la cola cuenta UN cambio: el proyecto entero
+  // es una sola mutación, no una por fila.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Placard sin señal');
+  await expect(page.getByRole('status').first()).toContainText('Sin conexión');
+  await expect(page.getByRole('status').first()).toContainText('1 cambio');
+  expect(await leerProyecto(sesion, 'Placard sin señal')).toBeUndefined();
+
+  // Cerrar la app y volver a abrirla, todavía sin señal: sigue entero.
+  await page.close();
+  const reabierta = await context.newPage();
+  await reabierta.goto('/proyectos');
+  await expect(reabierta.getByRole('link', { name: 'Placard sin señal' })).toBeVisible();
+  await expect(reabierta.getByRole('status').first()).toContainText('1 cambio');
+  await reabierta.getByRole('link', { name: 'Placard sin señal' }).click();
+  await expect(reabierta.getByRole('region', { name: 'Pagos recibidos' })).toContainText('Pago 2');
+  await expect(reabierta.getByRole('region', { name: 'Gastos e insumos' })).toContainText(
+    'Gasto 2',
+  );
+
+  // Vuelve la señal: la cola drena y no duplica nada.
+  await context.setOffline(false);
+  await expect(reabierta.getByRole('status').first()).toBeHidden({ timeout: 20_000 });
+
+  const guardado = await leerProyecto(sesion, 'Placard sin señal');
+  expect(guardado).toBeDefined();
+  expect(await contarHijos(sesion, 'pagos', guardado?.id ?? '')).toBe(2);
+  expect(await contarHijos(sesion, 'gastos', guardado?.id ?? '')).toBe(2);
+
+  await reabierta.reload();
+  await expect(reabierta.getByRole('region', { name: 'Pagos recibidos' })).toContainText('Pago 1');
 });

@@ -52,6 +52,39 @@ export function saldosDeLaReplica(replica: Replica): SaldosPorTesoro {
   return saldosDelLibro(datosDelLibro(replica));
 }
 
+export interface TotalesDelProyecto {
+  cobrado: Money;
+  gastos: Money;
+}
+
+// Lo cobrado y lo gastado de cada proyecto, en una sola pasada sobre la réplica. Vive acá y no en
+// cada pantalla porque son los dos números que la app le manda a cobrar_proyecto: si divergen de la
+// suma de la base, el cobro rebota con MN006. Las filas borradas no están en la réplica.
+export function totalesPorProyecto(replica: Replica): Map<string, TotalesDelProyecto> {
+  const cobrado = new Map<string, number>();
+  const gastos = new Map<string, number>();
+
+  for (const pago of filasDe(replica, 'pagos')) {
+    cobrado.set(pago.proyecto_id, (cobrado.get(pago.proyecto_id) ?? 0) + pago.monto_centavos);
+  }
+  for (const gasto of filasDe(replica, 'gastos')) {
+    gastos.set(gasto.proyecto_id, (gastos.get(gasto.proyecto_id) ?? 0) + gasto.monto_centavos);
+  }
+
+  const totales = new Map<string, TotalesDelProyecto>();
+  for (const proyecto of filasDe(replica, 'proyectos')) {
+    totales.set(proyecto.id, {
+      cobrado: dinero(cobrado.get(proyecto.id) ?? 0),
+      gastos: dinero(gastos.get(proyecto.id) ?? 0),
+    });
+  }
+  return totales;
+}
+
+export function totalesDelProyecto(replica: Replica, proyectoId: string): TotalesDelProyecto {
+  return totalesPorProyecto(replica).get(proyectoId) ?? { cobrado: dinero(0), gastos: dinero(0) };
+}
+
 function liquidacionDe(proyecto: FilaDe<'proyectos'>): LiquidacionRegistrada | undefined {
   const {
     estado,
@@ -86,9 +119,15 @@ function liquidacionDe(proyecto: FilaDe<'proyectos'>): LiquidacionRegistrada | u
   };
 }
 
-export function liquidacionesDeLaReplica(replica: Replica): LiquidacionRegistrada[] {
+// `excepto` es el proyecto que se está por liquidar: el tope del mes sale de lo que ya llevan los
+// otros, sin contarse a sí mismo. Es la misma exclusión que hace private.liquidar.
+export function liquidacionesDeLaReplica(
+  replica: Replica,
+  excepto?: string,
+): LiquidacionRegistrada[] {
   const liquidaciones: LiquidacionRegistrada[] = [];
   for (const proyecto of filasDe(replica, 'proyectos')) {
+    if (proyecto.id === excepto) continue;
     const liquidacion = liquidacionDe(proyecto);
     if (liquidacion) liquidaciones.push(liquidacion);
   }
