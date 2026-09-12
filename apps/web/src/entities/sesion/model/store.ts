@@ -11,7 +11,10 @@ function iguales(a: EstadoSesion, b: EstadoSesion): boolean {
   if (a.tipo !== b.tipo) return false;
   if (a.tipo === 'activa' && b.tipo === 'activa') {
     return (
-      a.usuarioId === b.usuarioId && a.email === b.email && a.porRecuperacion === b.porRecuperacion
+      a.usuarioId === b.usuarioId &&
+      a.email === b.email &&
+      a.nombre === b.nombre &&
+      a.porRecuperacion === b.porRecuperacion
     );
   }
   return true;

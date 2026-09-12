@@ -22,7 +22,9 @@ export function RutaConSesion() {
   if (sesion.tipo === 'anonimo') return <Navigate to="/acceso" replace />;
 
   return (
-    <ProveedorDeSesion sesion={{ usuarioId: sesion.usuarioId, email: sesion.email }}>
+    <ProveedorDeSesion
+      sesion={{ usuarioId: sesion.usuarioId, email: sesion.email, nombre: sesion.nombre }}
+    >
       <Outlet />
     </ProveedorDeSesion>
   );

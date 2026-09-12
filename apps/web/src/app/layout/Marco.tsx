@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useRoutes, type Location } from 'react-router';
 
-import { useSesionActiva } from '@/entities/sesion';
+import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import {
   describirEstadoSync,
   esRutaDeHoja,
@@ -31,6 +31,7 @@ function CapaDeHoja() {
 
 export function Marco() {
   const { email } = useSesionActiva();
+  const nombre = useNombreDeLaPersona();
   const estadoSync = useEstadoSync();
   const ancho = useAnchoDePantalla();
   const visible = useUbicacionVisible();
@@ -63,7 +64,7 @@ export function Marco() {
         Saltar al contenido
       </a>
 
-      <Navegacion email={email} sincronizacion={describirEstadoSync(estadoSync)} />
+      <Navegacion email={email} nombre={nombre} sincronizacion={describirEstadoSync(estadoSync)} />
 
       <main
         id="contenido"

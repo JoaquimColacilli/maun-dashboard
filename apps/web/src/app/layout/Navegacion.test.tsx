@@ -17,10 +17,10 @@ function pantallaDe(ancho: number) {
   }));
 }
 
-function montar(ruta: string) {
+function montar(ruta: string, nombre = '') {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
-      <Navegacion email="taller@maun.com.ar" sincronizacion="Todo sincronizado." />
+      <Navegacion email="taller@maun.com.ar" nombre={nombre} sincronizacion="Todo sincronizado." />
     </MemoryRouter>,
   );
 }
@@ -142,5 +142,14 @@ describe('en el escritorio', () => {
 
     expect(screen.getByText('taller@maun.com.ar')).toBeInTheDocument();
     expect(screen.getByText('Todo sincronizado.')).toBeInTheDocument();
+  });
+
+  it('con nombre cargado lo muestra arriba del mail, con sus iniciales', () => {
+    pantallaDe(1440);
+    montar('/', 'Joaquim Colacilli');
+
+    expect(screen.getByText('Joaquim Colacilli')).toBeInTheDocument();
+    expect(screen.getByText('taller@maun.com.ar')).toBeInTheDocument();
+    expect(screen.getByText('JC')).toHaveAttribute('aria-hidden', 'true');
   });
 });

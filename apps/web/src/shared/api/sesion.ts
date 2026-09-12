@@ -6,26 +6,42 @@ import { esFalloDeRed } from './errores';
 export interface Claims {
   usuarioId: string;
   email: string;
+  nombre: string;
 }
 
 interface SesionMinima {
-  user: { id: string; email?: string };
+  user: { id: string; email?: string; user_metadata?: unknown };
+}
+
+function nombreDeLosMetadatos(metadatos: unknown): string {
+  if (typeof metadatos !== 'object' || metadatos === null || !('nombre' in metadatos)) return '';
+  return typeof metadatos.nombre === 'string' ? metadatos.nombre : '';
 }
 
 function claimsDeSesion(sesion: SesionMinima | null): Claims | undefined {
   if (!sesion) return undefined;
-  return { usuarioId: sesion.user.id, email: sesion.user.email ?? '' };
+  return {
+    usuarioId: sesion.user.id,
+    email: sesion.user.email ?? '',
+    nombre: nombreDeLosMetadatos(sesion.user.user_metadata),
+  };
 }
 
 function sesionGuardada(): Claims | undefined {
   try {
     const crudo = globalThis.localStorage.getItem(CLAVE_DE_SESION);
     if (crudo === null) return undefined;
-    const guardado = JSON.parse(crudo) as { user?: { id?: unknown; email?: unknown } };
+    const guardado = JSON.parse(crudo) as {
+      user?: { id?: unknown; email?: unknown; user_metadata?: unknown };
+    };
     const id = guardado.user?.id;
     if (typeof id !== 'string') return undefined;
     const email = guardado.user?.email;
-    return { usuarioId: id, email: typeof email === 'string' ? email : '' };
+    return {
+      usuarioId: id,
+      email: typeof email === 'string' ? email : '',
+      nombre: nombreDeLosMetadatos(guardado.user?.user_metadata),
+    };
   } catch {
     return undefined;
   }
@@ -37,7 +53,15 @@ export async function leerClaims(): Promise<Claims | undefined> {
     if (error) throw error;
     if (!data) return undefined;
     const { sub, email } = data.claims;
-    return { usuarioId: sub, email: typeof email === 'string' ? email : '' };
+    const guardada = sesionGuardada();
+    return {
+      usuarioId: sub,
+      email: typeof email === 'string' ? email : '',
+      nombre:
+        guardada?.usuarioId === sub
+          ? guardada.nombre
+          : nombreDeLosMetadatos(data.claims.user_metadata),
+    };
   } catch (error) {
     if (!esFalloDeRed(error)) throw error;
     const { data } = await clienteMaun().auth.getSession();
@@ -89,6 +113,11 @@ export async function pedirRecuperacion(email: string, volverA: string): Promise
 
 export async function cambiarContrasena(contrasena: string): Promise<void> {
   const { error } = await clienteMaun().auth.updateUser({ password: contrasena });
+  if (error) throw error;
+}
+
+export async function guardarNombreDeLaPersona(nombre: string): Promise<void> {
+  const { error } = await clienteMaun().auth.updateUser({ data: { nombre } });
   if (error) throw error;
 }
 

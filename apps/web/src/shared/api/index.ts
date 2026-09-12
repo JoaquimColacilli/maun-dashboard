@@ -11,6 +11,7 @@ export {
   crearCuenta,
   entrar,
   escucharSesion,
+  guardarNombreDeLaPersona,
   leerClaims,
   pedirRecuperacion,
   salir,

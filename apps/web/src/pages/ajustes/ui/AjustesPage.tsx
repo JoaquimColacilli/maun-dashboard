@@ -5,8 +5,8 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
+import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
-import { useSesionActiva } from '@/entities/sesion';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
 import { Pagina, PanelDeAvisos } from '@/shared/ui';
@@ -78,7 +78,6 @@ function Avisos() {
 
 export function AjustesPage() {
   const replica = useReplicaDelTaller();
-  const { email } = useSesionActiva();
   const estadoSync = useEstadoSync();
   const household = householdDe(replica);
   const ajustes = ajustesDe(replica);
@@ -129,6 +128,13 @@ export function AjustesPage() {
         </section>
 
         <div className="flex min-w-0 flex-col gap-8">
+          <section aria-labelledby="titulo-perfil" className={SECCION}>
+            <h2 id="titulo-perfil" className="text-section font-semibold">
+              Tu perfil
+            </h2>
+            <FormularioDePerfil />
+          </section>
+
           <section aria-labelledby="titulo-apariencia" className={SECCION}>
             <h2 id="titulo-apariencia" className="text-section font-semibold">
               Apariencia
@@ -140,7 +146,6 @@ export function AjustesPage() {
             <h2 id="titulo-cuenta" className="text-section font-semibold">
               Cuenta
             </h2>
-            <p className="text-body text-text-2">{email}</p>
             <BotonSalir />
           </section>
         </div>

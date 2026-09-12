@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { conFondo, esRutaDeHoja, useAnchoDePantalla, useUbicacionVisible } from '@/shared/lib';
-import { Icono } from '@/shared/ui';
+import { Avatar, Icono } from '@/shared/ui';
 
 import { conTransicion } from '../router/transicion';
 import {
@@ -284,11 +284,13 @@ function Sidebar({
   activo,
   irA,
   email,
+  nombre,
   sincronizacion,
 }: {
   activo: IdDeSeccion | undefined;
   irA: (r: string) => void;
   email: string;
+  nombre: string;
   sincronizacion: string;
 }) {
   const { abierto, setAbierto } = useMenuDeAcciones();
@@ -347,15 +349,31 @@ function Sidebar({
         );
       })}
       <div className="flex-1" />
-      <div className="flex flex-col gap-0.5 border-t border-hairline px-2.5 pt-3 text-meta text-text-3">
-        <span className="text-label font-medium text-ink">{email}</span>
-        <span>{sincronizacion}</span>
+      <div className="flex items-start gap-2.5 border-t border-hairline px-2.5 pt-3">
+        <Avatar nombre={nombre === '' ? email : nombre} className="mt-0.5" />
+        <div className="flex min-w-0 flex-col gap-0.5 text-meta text-text-3">
+          {nombre !== '' && (
+            <span className="truncate text-label font-medium text-ink">{nombre}</span>
+          )}
+          <span className={nombre === '' ? 'truncate text-label font-medium text-ink' : 'truncate'}>
+            {email}
+          </span>
+          <span>{sincronizacion}</span>
+        </div>
       </div>
     </nav>
   );
 }
 
-export function Navegacion({ email, sincronizacion }: { email: string; sincronizacion: string }) {
+export function Navegacion({
+  email,
+  nombre,
+  sincronizacion,
+}: {
+  email: string;
+  nombre: string;
+  sincronizacion: string;
+}) {
   const ancho = useAnchoDePantalla();
   const visible = useUbicacionVisible();
   const irA = useIrA();
@@ -372,6 +390,7 @@ export function Navegacion({ email, sincronizacion }: { email: string; sincroniz
       activo={destinoResaltado(seccion, NAV_ESCRITORIO)}
       irA={irA}
       email={email}
+      nombre={nombre}
       sincronizacion={sincronizacion}
     />
   );

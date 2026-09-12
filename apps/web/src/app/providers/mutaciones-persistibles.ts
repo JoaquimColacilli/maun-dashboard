@@ -28,6 +28,7 @@ import {
   MUTACION_DE_PROYECTO,
   MUTACION_DE_REVERSION,
 } from '@/entities/proyecto';
+import { CLAVE_DEL_PERFIL, MUTACION_DEL_PERFIL } from '@/entities/sesion';
 import {
   CLAVE_DE_AJUSTES,
   CLAVE_DEL_NOMBRE,
@@ -54,6 +55,9 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DEL_NOMBRE, MUTACION_DEL_NOMBRE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DEL_PERFIL, MUTACION_DEL_PERFIL);
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_CLIENTE_NUEVO, MUTACION_DE_CLIENTE_NUEVO);
