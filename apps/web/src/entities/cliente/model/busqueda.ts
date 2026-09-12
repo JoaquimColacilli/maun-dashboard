@@ -1,12 +1,32 @@
+import { criterioPorId, ordenar, type Criterio } from '@/shared/lib';
+
 import { ORIGEN, ORIGENES_EN_ORDEN, type DatosDelOrigen } from './catalogos';
 import type { ResumenDeCliente } from './resumen';
 
 export type Orden = 'nombre' | 'ultimo' | 'facturado';
 
-export const ORDENES: readonly { id: Orden; etiqueta: string }[] = [
-  { id: 'nombre', etiqueta: 'Nombre' },
-  { id: 'ultimo', etiqueta: 'Último trabajo' },
-  { id: 'facturado', etiqueta: 'Total facturado' },
+export const ORDENES: readonly (Criterio<ResumenDeCliente> & { id: Orden })[] = [
+  {
+    id: 'nombre',
+    etiqueta: 'Nombre',
+    tipo: 'texto',
+    leer: (resumen) => resumen.cliente.nombre,
+    inicial: 'asc',
+  },
+  {
+    id: 'ultimo',
+    etiqueta: 'Último trabajo',
+    tipo: 'fecha',
+    leer: (resumen) => resumen.fechaDelUltimo,
+    inicial: 'desc',
+  },
+  {
+    id: 'facturado',
+    etiqueta: 'Total facturado',
+    tipo: 'numero',
+    leer: (resumen) => resumen.facturado,
+    inicial: 'desc',
+  },
 ];
 
 function sinAcentos(texto: string): string {
@@ -36,18 +56,9 @@ export function ordenarClientes(
   resumenes: readonly ResumenDeCliente[],
   orden: Orden,
 ): ResumenDeCliente[] {
-  const lista = [...resumenes];
-  if (orden === 'nombre') {
-    return lista.sort((uno, otro) =>
-      uno.cliente.nombre.localeCompare(otro.cliente.nombre, 'es', { sensitivity: 'base' }),
-    );
-  }
-  if (orden === 'facturado') {
-    return lista.sort((uno, otro) => otro.facturado - uno.facturado);
-  }
-  return lista.sort((uno, otro) =>
-    (otro.fechaDelUltimo ?? '').localeCompare(uno.fechaDelUltimo ?? ''),
-  );
+  const criterio = criterioPorId(ORDENES, orden) ?? ORDENES[0];
+  if (criterio === undefined) return [...resumenes];
+  return ordenar(resumenes, criterio, criterio.inicial, (resumen) => resumen.cliente.nombre);
 }
 
 export interface CorteDeOrigen extends DatosDelOrigen {

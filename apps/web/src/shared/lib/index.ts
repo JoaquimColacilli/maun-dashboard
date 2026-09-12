@@ -13,9 +13,18 @@ export {
   nombreDelMes,
   relativa,
 } from './fechas';
+export {
+  alternar,
+  criterioPorId,
+  ordenar,
+  type Criterio,
+  type Sentido,
+  type TipoDeOrden,
+} from './orden';
 export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible } from './teclado';
 export { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';
+export { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from './tesoros';
 export { formatearPorcentaje, parsearPorcentaje } from './porcentaje';
 export { calcularEstadoSync, describirEstadoSync, type EstadoSync } from './sync/estado-sync';
 export { useEstadoSync } from './sync/useEstadoSync';
