@@ -15,7 +15,10 @@ import {
   TABLAS_REPLICADAS,
 } from '@/shared/api';
 import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
-import { PanelDeAvisos } from '@/shared/ui';
+import { Pagina, PanelDeAvisos } from '@/shared/ui';
+
+const SECCION =
+  'flex min-w-0 max-w-[560px] flex-col gap-3.5 border-t border-hairline pt-5 xl:max-w-none';
 
 function Fecha({ valor }: { valor: string }) {
   const marca = Date.parse(valor);
@@ -79,73 +82,79 @@ export function AjustesPage() {
   const ajustes = ajustesDe(replica);
 
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-8 px-(--page-pad-mobile) py-6 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
-      <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
+    <Pagina className="gap-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
+      </header>
 
-      {household && ajustes && (
-        <section aria-labelledby="titulo-reparto" className="flex max-w-[520px] flex-col gap-3.5">
-          <h2 id="titulo-reparto" className="text-section font-semibold">
-            Reparto y metas
+      <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2">
+        {household && ajustes && (
+          <section aria-labelledby="titulo-reparto" className={SECCION}>
+            <h2 id="titulo-reparto" className="text-section font-semibold">
+              Reparto y metas
+            </h2>
+            <FormularioDeConfiguracion household={household} ajustes={ajustes} />
+          </section>
+        )}
+
+        <div className="flex min-w-0 flex-col gap-8">
+          <section aria-labelledby="titulo-cocos" className={SECCION}>
+            <h2 id="titulo-cocos" className="text-section font-semibold">
+              Corregir el saldo de Cocos
+            </h2>
+            <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
+          </section>
+
+          <section aria-labelledby="titulo-rechazos" className={SECCION}>
+            <h2 id="titulo-rechazos" className="text-section font-semibold">
+              Lo que la base rechazó o ajustó
+            </h2>
+            <p className="text-label leading-relaxed text-text-2">
+              Queda acá hasta que lo descartes, aunque cierres la app.
+            </p>
+            <Avisos />
+          </section>
+        </div>
+
+        <section aria-labelledby="titulo-dispositivo" className={SECCION}>
+          <h2 id="titulo-dispositivo" className="text-section font-semibold">
+            Este dispositivo
           </h2>
-          <FormularioDeConfiguracion household={household} ajustes={ajustes} />
+          <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
+          <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            {TABLAS_REPLICADAS.map((tabla) => (
+              <li key={tabla} className="flex flex-col gap-1 rounded-panel bg-surface p-3.5">
+                <span className="text-meta text-text-2">{tabla}</span>
+                <span className="text-money-lg font-semibold tabular-nums">
+                  {cantidadDe(replica, tabla)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <dl className="flex flex-col text-label">
+            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
+              <dt className="text-text-2">Último delta</dt>
+              <dd className="tabular-nums">
+                <Fecha valor={replica.cursor} />
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
+              <dt className="text-text-2">Última copia completa</dt>
+              <dd className="tabular-nums">
+                <Fecha valor={replica.reconciliadoEn} />
+              </dd>
+            </div>
+          </dl>
         </section>
-      )}
 
-      <section aria-labelledby="titulo-cocos" className="flex max-w-[520px] flex-col gap-3.5">
-        <h2 id="titulo-cocos" className="text-section font-semibold">
-          Corregir el saldo de Cocos
-        </h2>
-        <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
-      </section>
-
-      <section aria-labelledby="titulo-rechazos" className="flex max-w-[520px] flex-col gap-2.5">
-        <h2 id="titulo-rechazos" className="text-section font-semibold">
-          Lo que la base rechazó o ajustó
-        </h2>
-        <p className="text-label leading-relaxed text-text-2">
-          Queda acá hasta que lo descartes, aunque cierres la app.
-        </p>
-        <Avisos />
-      </section>
-
-      <section aria-labelledby="titulo-dispositivo" className="flex flex-col gap-3.5">
-        <h2 id="titulo-dispositivo" className="text-section font-semibold">
-          Este dispositivo
-        </h2>
-        <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
-        <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          {TABLAS_REPLICADAS.map((tabla) => (
-            <li key={tabla} className="flex flex-col gap-1 rounded-panel bg-surface p-3.5">
-              <span className="text-meta text-text-2">{tabla}</span>
-              <span className="text-money-lg font-semibold tabular-nums">
-                {cantidadDe(replica, tabla)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <dl className="flex flex-col text-label">
-          <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-            <dt className="text-text-2">Último delta</dt>
-            <dd className="tabular-nums">
-              <Fecha valor={replica.cursor} />
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-            <dt className="text-text-2">Última copia completa</dt>
-            <dd className="tabular-nums">
-              <Fecha valor={replica.reconciliadoEn} />
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section aria-labelledby="titulo-cuenta" className="flex flex-col items-start gap-2.5">
-        <h2 id="titulo-cuenta" className="text-section font-semibold">
-          Cuenta
-        </h2>
-        <p className="text-body text-text-2">{email}</p>
-        <BotonSalir />
-      </section>
-    </div>
+        <section aria-labelledby="titulo-cuenta" className={`${SECCION} items-start`}>
+          <h2 id="titulo-cuenta" className="text-section font-semibold">
+            Cuenta
+          </h2>
+          <p className="text-body text-text-2">{email}</p>
+          <BotonSalir />
+        </section>
+      </div>
+    </Pagina>
   );
 }

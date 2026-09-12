@@ -45,7 +45,7 @@ import {
   RUTA_DE_DIEZMO,
   RUTA_DE_FINANZAS,
 } from '@/shared/lib';
-import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
+import { Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const DIAS_DE_PROYECCION = 365;
 
@@ -297,7 +297,7 @@ export function InicioPage() {
   ];
 
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-4 px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
+    <Pagina className="gap-4">
       <header className="flex flex-col gap-0.5">
         <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
@@ -465,6 +465,6 @@ export function InicioPage() {
           </div>
         </div>
       )}
-    </div>
+    </Pagina>
   );
 }

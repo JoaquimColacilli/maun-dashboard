@@ -23,7 +23,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { fechaLarga, formatearPesos, hoyLocal, relativa } from '@/shared/lib';
-import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
+import { Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
   contacto: 'Contacto',
@@ -181,7 +181,7 @@ export function ClienteFichaPage() {
 
   if (!resumen) {
     return (
-      <div className="mx-auto flex max-w-content flex-col items-start gap-3 px-(--page-pad-mobile) py-8 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+      <Pagina className="items-start gap-3">
         <h1 className="font-display text-h1 leading-tight">Ese cliente no está</h1>
         <p className="max-w-[520px] text-body leading-relaxed text-text-2">
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente de
@@ -194,7 +194,7 @@ export function ClienteFichaPage() {
         >
           Volver a Clientes
         </Button>
-      </div>
+      </Pagina>
     );
   }
 
@@ -220,7 +220,7 @@ export function ClienteFichaPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) md:py-5 lg:px-(--page-pad-desktop) lg:py-6">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to="/clientes"
@@ -416,6 +416,6 @@ export function ClienteFichaPage() {
           </div>
         </div>
       )}
-    </div>
+    </Pagina>
   );
 }

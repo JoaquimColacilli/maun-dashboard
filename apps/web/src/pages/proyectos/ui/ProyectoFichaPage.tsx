@@ -24,7 +24,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
-import { Button, Icono, PanelDeAvisos } from '@/shared/ui';
+import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 
@@ -63,7 +63,7 @@ export function ProyectoFichaPage() {
 
   if (!resumen) {
     return (
-      <div className="mx-auto flex max-w-content flex-col items-start gap-3 px-(--page-pad-mobile) py-8 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+      <Pagina className="items-start gap-3">
         <h1 className="font-display text-h1 leading-tight">Ese proyecto no está</h1>
         <p className="max-w-[520px] text-body leading-relaxed text-text-2">
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto de
@@ -76,7 +76,7 @@ export function ProyectoFichaPage() {
         >
           Volver a Proyectos
         </Button>
-      </div>
+      </Pagina>
     );
   }
 
@@ -129,7 +129,7 @@ export function ProyectoFichaPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) md:py-5 lg:px-(--page-pad-desktop) lg:py-6">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to={RUTA_DE_PROYECTOS}
@@ -414,6 +414,6 @@ export function ProyectoFichaPage() {
           )}
         </div>
       </div>
-    </div>
+    </Pagina>
   );
 }

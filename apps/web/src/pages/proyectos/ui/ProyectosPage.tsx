@@ -25,7 +25,7 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { alternar, formatearPesos, hoyLocal, useAnchoDePantalla, type Sentido } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, Icono, Pagina } from '@/shared/ui';
 
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
@@ -345,7 +345,7 @@ export function ProyectosPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
+    <Pagina>
       <header className="mb-3.5 flex items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
         {etapa === 'seguimiento' ? (
@@ -496,6 +496,6 @@ export function ProyectosPage() {
       )}
 
       <Outlet />
-    </div>
+    </Pagina>
   );
 }

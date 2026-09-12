@@ -31,7 +31,7 @@ import {
   TESORO,
   TESOROS_EN_ORDEN,
 } from '@/shared/lib';
-import { Button, ComparacionMensual, Icono } from '@/shared/ui';
+import { Button, ComparacionMensual, Icono, Pagina } from '@/shared/ui';
 
 const SENTIDOS: readonly { id: SentidoDeLinea | 'todos'; etiqueta: string }[] = [
   { id: 'todos', etiqueta: 'Todo' },
@@ -109,7 +109,7 @@ export function FinanzasPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-4 px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
+    <Pagina className="gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Finanzas</h1>
         <Button
@@ -277,6 +277,6 @@ export function FinanzasPage() {
         />
       )}
       <Outlet />
-    </div>
+    </Pagina>
   );
 }

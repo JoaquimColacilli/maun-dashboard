@@ -20,7 +20,7 @@ import {
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { formatearPesos, hoyLocal, parsearPesosDesdeCero, pesosEditables } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { Button, Campo, Icono, Pagina } from '@/shared/ui';
 
 export interface PantallaDePasajeProps {
   resumen: ResumenDeProyecto;
@@ -111,7 +111,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
   }
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+    <Pagina className="[&>*]:max-w-[720px]">
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -296,6 +296,6 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           )}
         </div>
       </form>
-    </div>
+    </Pagina>
   );
 }

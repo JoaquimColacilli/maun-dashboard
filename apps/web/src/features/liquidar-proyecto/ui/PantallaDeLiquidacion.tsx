@@ -19,7 +19,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { mensajeDeSincronizacion, type ProyectoParaGuardar } from '@/shared/api';
 import { formatearPesos, hoyLocal, parsearPesos, pesosEditables, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { Button, Campo, Icono, Pagina } from '@/shared/ui';
 
 const TEXTOS = {
   cobrado: {
@@ -132,7 +132,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const aRepartir = despiece.piezas.filter((pieza) => pieza.monto > 0);
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+    <Pagina className="[&>*]:max-w-[720px]">
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -274,6 +274,6 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
           </p>
         )}
       </div>
-    </div>
+    </Pagina>
   );
 }

@@ -15,7 +15,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { formatearPesos, relativa } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, Icono, Pagina } from '@/shared/ui';
 
 function detalleDe(resumen: ResumenDeCliente, hoy: string): string {
   const partes: string[] = [];
@@ -125,7 +125,7 @@ export function ClientesPage() {
   const buscando = consulta.trim() !== '';
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
+    <Pagina>
       <header className="mb-3.5 flex items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Clientes</h1>
         <Button
@@ -236,6 +236,6 @@ export function ClientesPage() {
           }}
         />
       )}
-    </div>
+    </Pagina>
   );
 }

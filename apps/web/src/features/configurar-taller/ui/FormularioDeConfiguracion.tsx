@@ -185,7 +185,7 @@ export function FormularioDeConfiguracion({
       )}
       {guardado && <p className="text-label text-hogar">Guardado.</p>}
 
-      <Button type="submit" cargando={guardando} className="mt-1">
+      <Button type="submit" cargando={guardando} className="mt-1 self-start">
         Guardar la configuración
       </Button>
     </form>
