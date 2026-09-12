@@ -9,6 +9,7 @@ import {
   MUTACION_DE_PROYECTO,
   pasoSiguiente,
   rutaDeAprobacion,
+  ultimoContactoAlGuardar,
   type EtapaDeSeguimiento,
   type Proyecto,
   type SituacionDelContacto,
@@ -44,14 +45,18 @@ export function AvanceDelContacto({
     if (presupuestando) campoDelPresupuesto.current?.focus();
   }, [presupuestando]);
 
-  function mover(cambios: CambiosDeProyecto): void {
+  function mover(cambios: CambiosDeProyecto, dia?: string): void {
     setRechazo(null);
+    const datos = { ...datosActualesDelProyecto(proyecto), ...cambios };
     guardar.mutate(
       {
         pedido: {
           id: proyecto.id,
           version: proyecto.version,
-          datos: { ...datosActualesDelProyecto(proyecto), ...cambios },
+          datos: {
+            ...datos,
+            ultimo_contacto: ultimoContactoAlGuardar(proyecto, datos.estado, hoyLocal(), dia),
+          },
           pagos: [],
           gastos: [],
         },
@@ -70,9 +75,11 @@ export function AvanceDelContacto({
       case 'contacto':
         alAgendar();
         return;
-      case 'relevamiento':
-        mover({ estado: 'a_presupuestar', fecha_visita: proyecto.fecha_visita ?? hoyLocal() });
+      case 'relevamiento': {
+        const visita = proyecto.fecha_visita ?? hoyLocal();
+        mover({ estado: 'a_presupuestar', fecha_visita: visita }, visita);
         return;
+      }
       case 'a_presupuestar':
         setPresupuestando(true);
         return;

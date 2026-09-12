@@ -21,6 +21,7 @@ export interface SituacionDelContacto {
 export interface ContactoEnLista {
   resumen: ResumenDeProyecto;
   situacion: SituacionDelContacto;
+  ultimoContacto: string;
   ultimaActividad: string;
 }
 
@@ -30,6 +31,20 @@ export function esEtapaDeSeguimiento(estado: EstadoProyecto): estado is EtapaDeS
 
 export function diaDeLaMarca(marca: string): string {
   return hoyLocal(new Date(marca));
+}
+
+export function diaDelUltimoContacto(proyecto: Proyecto, ultimaActividad: string): string {
+  return proyecto.ultimo_contacto ?? diaDeLaMarca(ultimaActividad);
+}
+
+export function ultimoContactoAlGuardar(
+  actual: Proyecto | undefined,
+  estado: EstadoProyecto,
+  hoy: string,
+  dia: string = hoy,
+): string | null {
+  if (actual === undefined || actual.estado !== estado) return dia < hoy ? dia : hoy;
+  return actual.ultimo_contacto;
 }
 
 export function ultimasActividades(replica: Replica): Map<string, string> {
@@ -60,7 +75,7 @@ export function situacionDelContacto(
   ultimaActividad: string,
   hoy: string,
 ): SituacionDelContacto {
-  const dia = diaDeLaMarca(ultimaActividad);
+  const dia = diaDelUltimoContacto(proyecto, ultimaActividad);
   const dias = Math.max(0, -diasHasta(dia, hoy));
   const conEspera = (proximoPaso: string, espera: string): SituacionDelContacto => ({
     proximoPaso,
@@ -120,6 +135,8 @@ function compararContactos(uno: ContactoEnLista, otro: ContactoEnLista): number 
     const visitaUno = uno.resumen.proyecto.fecha_visita ?? '';
     const visitaOtro = otro.resumen.proyecto.fecha_visita ?? '';
     if (visitaUno !== visitaOtro) return visitaUno < visitaOtro ? -1 : 1;
+  } else if (uno.ultimoContacto !== otro.ultimoContacto) {
+    return uno.ultimoContacto < otro.ultimoContacto ? -1 : 1;
   } else if (uno.ultimaActividad !== otro.ultimaActividad) {
     return uno.ultimaActividad < otro.ultimaActividad ? -1 : 1;
   }
@@ -139,6 +156,7 @@ export function contactosEnOrden(
       const ultimaActividad = ultimas.get(resumen.proyecto.id) ?? resumen.proyecto.updated_at;
       return {
         resumen,
+        ultimoContacto: diaDelUltimoContacto(resumen.proyecto, ultimaActividad),
         ultimaActividad,
         situacion: situacionDelContacto(resumen.proyecto, ultimaActividad, hoy),
       };

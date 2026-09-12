@@ -9,6 +9,7 @@ import {
   pasoSiguiente,
   situacionDelContacto,
   ultimasActividades,
+  ultimoContactoAlGuardar,
 } from './seguimiento';
 
 type Proyecto = FilaDe<'proyectos'>;
@@ -184,6 +185,19 @@ describe('situacionDelContacto', () => {
     });
   });
 
+  it('con el último contacto anotado, la espera cuenta desde ahí y no desde la última edición', () => {
+    const situacion = situacionDelContacto(
+      proyecto('p', { estado: 'presupuesto_enviado', ultimo_contacto: '2026-09-03' }),
+      marca(HOY),
+      HOY,
+    );
+    expect(situacion).toMatchObject({
+      espera: 'Presupuesto enviado hace 9 días, sin respuesta',
+      dias: 9,
+      fria: true,
+    });
+  });
+
   it('un relevamiento sin fecha pide ponérsela', () => {
     expect(
       situacionDelContacto(proyecto('p', { estado: 'relevamiento' }), marca(HOY), HOY),
@@ -245,6 +259,27 @@ describe('contactosEnOrden', () => {
     expect(orden).toEqual(['b', 'a']);
   });
 
+  it('ordena por el día del último contacto, y dentro del mismo día por la última actividad', () => {
+    const replica = replicaCon({
+      proyectos: [
+        proyecto('sin-anotar', { updated_at: marca('2026-09-08') }),
+        proyecto('corregido-hoy', {
+          estado: 'presupuesto_enviado',
+          ultimo_contacto: '2026-09-05',
+          updated_at: marca(HOY),
+        }),
+        proyecto('mismo-dia', {
+          ultimo_contacto: '2026-09-08',
+          updated_at: '2026-09-08T09:00:00Z',
+        }),
+      ],
+    });
+    const orden = contactosEnOrden(resumenesDeProyectos(replica, HOY), replica, HOY).map(
+      (contacto) => contacto.resumen.proyecto.id,
+    );
+    expect(orden).toEqual(['corregido-hoy', 'mismo-dia', 'sin-anotar']);
+  });
+
   it('con la misma marca el desempate es estable, por id', () => {
     const replica = replicaCon({ proyectos: [proyecto('z'), proyecto('a'), proyecto('m')] });
     const orden = contactosEnOrden(resumenesDeProyectos(replica, HOY), replica, HOY).map(
@@ -268,6 +303,23 @@ describe('etapaAlGuardarElContacto', () => {
     expect(etapaAlGuardarElContacto('presupuesto_enviado', '2026-09-20', HOY)).toBe(
       'presupuesto_enviado',
     );
+  });
+});
+
+describe('ultimoContactoAlGuardar', () => {
+  it('un contacto nuevo lo anota con el día que se pasa, o con hoy si ese día todavía no llegó', () => {
+    expect(ultimoContactoAlGuardar(undefined, 'contacto', HOY)).toBe(HOY);
+    expect(ultimoContactoAlGuardar(undefined, 'a_presupuestar', HOY, '2026-09-10')).toBe(
+      '2026-09-10',
+    );
+    expect(ultimoContactoAlGuardar(undefined, 'relevamiento', HOY, '2026-09-20')).toBe(HOY);
+  });
+
+  it('cambiar de etapa lo mueve; editar sin cambiar de etapa lo deja donde estaba', () => {
+    const enviado = proyecto('p', { estado: 'presupuesto_enviado', ultimo_contacto: '2026-09-01' });
+    expect(ultimoContactoAlGuardar(enviado, 'presupuesto_enviado', HOY)).toBe('2026-09-01');
+    expect(ultimoContactoAlGuardar(enviado, 'a_presupuestar', HOY)).toBe(HOY);
+    expect(ultimoContactoAlGuardar(proyecto('q'), 'contacto', HOY)).toBeNull();
   });
 });
 
