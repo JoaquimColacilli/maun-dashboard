@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router';
 
-import { useReplica } from '@/entities/replica';
+import { ProveedorDeReplica, useReplica } from '@/entities/replica';
 import { ProveedorDeSesion, useSesion, useSesionActiva } from '@/entities/sesion';
 import { tieneAcceso } from '@/shared/api';
 import { Cargando } from '@/shared/ui';
@@ -41,7 +41,13 @@ export function RutaConAcceso() {
   };
 
   if (replica.data) {
-    if (tieneAcceso(replica.data)) return <Outlet />;
+    if (tieneAcceso(replica.data)) {
+      return (
+        <ProveedorDeReplica replica={replica.data}>
+          <Outlet />
+        </ProveedorDeReplica>
+      );
+    }
     return (
       <ErrorDeCarga
         error={SIN_TALLER}
