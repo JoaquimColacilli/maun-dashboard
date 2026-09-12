@@ -27,8 +27,9 @@ import {
 import type pg from 'pg';
 
 import type { Tesoro, TipoMovimiento } from '../src/enums.ts';
-import { aplicarLote, leerLote, replicaVacia } from '../src/replica.ts';
-import { datosDelLibro } from '../src/vistas.ts';
+import { aplicarLote, leerLote, replicaVacia, type Replica } from '../src/replica.ts';
+import { leerProyectoGuardado, type ProyectoGuardado } from '../src/sincronizacion.ts';
+import { datosDelLibro, totalesDelProyecto } from '../src/vistas.ts';
 
 export const HOUSEHOLD_DEL_SEED = '5eed0000-0000-7000-8000-000000000001';
 
@@ -741,6 +742,7 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
 interface Contexto {
   householdId: string;
   usuarioId: string;
+  clienteId: string;
   ids: Map<string, string>;
 }
 
@@ -833,7 +835,7 @@ async function prepararEscenario(
     JSON.stringify({ sub: userId, role: 'authenticated' }),
   ]);
   await cliente.query("select set_config('role', 'authenticated', true)");
-  return { householdId, usuarioId: userId, ids };
+  return { householdId, usuarioId: userId, clienteId: clienteDelTaller[0]?.id ?? '', ids };
 }
 
 async function correrPaso(cliente: pg.Client, contexto: Contexto, paso: Paso): Promise<string[]> {
@@ -1014,10 +1016,13 @@ function diferenciasDeMultiset(enSql: readonly string[], enTs: readonly string[]
 // El TypeScript lee lo mismo que lee la app: bootstrap() arma la réplica y de ahí sale el libro.
 // Filtrar acá las filas borradas a mano sería copiar en el comparador el where de la vista, que es
 // justo una de las mitades que puede diverger.
-async function asientosDeLaReplica(cliente: pg.Client, usuarioId: string): Promise<Asiento[]> {
+async function replicaDeLaBase(cliente: pg.Client, usuarioId: string): Promise<Replica> {
   const { rows } = await cliente.query<{ lote: unknown }>('select public.bootstrap() as lote');
-  const replica = aplicarLote(replicaVacia(usuarioId), leerLote(rows[0]?.lote), 'reconcile', 0);
-  return asientosDelLibro(datosDelLibro(replica));
+  return aplicarLote(replicaVacia(usuarioId), leerLote(rows[0]?.lote), 'reconcile', 0);
+}
+
+async function asientosDeLaReplica(cliente: pg.Client, usuarioId: string): Promise<Asiento[]> {
+  return asientosDelLibro(datosDelLibro(await replicaDeLaBase(cliente, usuarioId)));
 }
 
 async function leerLibro(cliente: pg.Client, householdId: string): Promise<FilaDelLibro[]> {
@@ -1228,6 +1233,246 @@ export async function compararLibroDelSeed(cliente: pg.Client): Promise<string[]
   ].map((linea) => `libro del seed, ${linea}`);
 }
 
+export interface PasoDeGuardado {
+  titulo: string;
+  estado: EstadoProyecto;
+  pagos: readonly (readonly [string, number, boolean?])[];
+  gastos: readonly (readonly [string, number, boolean?])[];
+}
+
+export interface EscenarioDeGuardado {
+  nombre: string;
+  pasos: readonly PasoDeGuardado[];
+}
+
+export const ESCENARIOS_DE_GUARDADO: EscenarioDeGuardado[] = [
+  {
+    nombre: 'el alta con dos pagos y dos gastos, en una sola llamada',
+    pasos: [
+      {
+        titulo: 'Placard',
+        estado: 'en_curso',
+        pagos: [
+          ['sena', 40_000_000],
+          ['adelanto', 20_000_000],
+        ],
+        gastos: [
+          ['melamina', 30_000_000],
+          ['herrajes', 5_000_000],
+        ],
+      },
+    ],
+  },
+  {
+    nombre: 'editar sacando un pago y agregando un gasto',
+    pasos: [
+      {
+        titulo: 'Vanitory',
+        estado: 'en_curso',
+        pagos: [
+          ['sena', 40_000_000],
+          ['adelanto', 20_000_000],
+        ],
+        gastos: [['guayubira', 30_000_000]],
+      },
+      {
+        titulo: 'Vanitory colgante',
+        estado: 'entregado',
+        pagos: [
+          ['sena', 40_000_000],
+          ['adelanto', 20_000_000, true],
+        ],
+        gastos: [
+          ['guayubira', 30_000_000],
+          ['flete', 8_000_000],
+        ],
+      },
+    ],
+  },
+  {
+    nombre: 'un proyecto que nace sin pagos ni gastos y después los suma',
+    pasos: [
+      { titulo: 'Biblioteca', estado: 'en_curso', pagos: [], gastos: [] },
+      {
+        titulo: 'Biblioteca',
+        estado: 'en_curso',
+        pagos: [['sena', 15_000_000]],
+        gastos: [['mdf', 3_000_000]],
+      },
+    ],
+  },
+  {
+    nombre: 'corregirle el monto a un pago ya guardado y sacar todos los gastos',
+    pasos: [
+      {
+        titulo: 'Escritorio',
+        estado: 'en_curso',
+        pagos: [['sena', 12_000_000]],
+        gastos: [
+          ['tablero', 4_000_000],
+          ['pasacables', 500_000],
+        ],
+      },
+      {
+        titulo: 'Escritorio',
+        estado: 'en_curso',
+        pagos: [['sena', 18_500_000]],
+        gastos: [
+          ['tablero', 4_000_000, true],
+          ['pasacables', 500_000, true],
+        ],
+      },
+    ],
+  },
+];
+
+function idDelEscenario(clave: string, ids: Map<string, string>): string {
+  const existente = ids.get(clave);
+  if (existente !== undefined) return existente;
+  const nuevo = `11111111-0000-7000-8000-${String(ids.size + 1).padStart(12, '0')}`;
+  ids.set(clave, nuevo);
+  return nuevo;
+}
+
+async function guardarPorRpc(
+  cliente: pg.Client,
+  contexto: Contexto,
+  proyectoId: string,
+  version: number | null,
+  paso: PasoDeGuardado,
+): Promise<ProyectoGuardado> {
+  const hija = ([clave, monto, borrado]: readonly [string, number, boolean?]) => ({
+    id: idDelEscenario(clave, contexto.ids),
+    fecha: '2026-08-01',
+    monto_centavos: monto,
+    borrado: borrado === true,
+  });
+
+  const { rows } = await cliente.query<{ agregado: unknown }>(
+    'select public.guardar_proyecto($1::jsonb, $2::jsonb, $3::jsonb) as agregado',
+    [
+      JSON.stringify({
+        id: proyectoId,
+        version,
+        cliente_id: contexto.clienteId,
+        titulo: paso.titulo,
+        descripcion: '',
+        estado: paso.estado,
+        presupuesto_centavos: 120_000_000,
+        forma_pago: 'transferencia',
+        comprobante: 'remito',
+        fecha_visita: null,
+        ultimo_contacto: null,
+        fecha_inicio: '2026-08-01',
+        entrega_estimada: '2026-08-31',
+        fecha_entrega: null,
+        direccion_entrega: 'Olazábal 1240',
+        notas: '',
+      }),
+      JSON.stringify(paso.pagos.map((pago) => ({ ...hija(pago), concepto: 'Seña' }))),
+      JSON.stringify(paso.gastos.map((gasto) => ({ ...hija(gasto), descripcion: 'Insumo' }))),
+    ],
+  );
+  return leerProyectoGuardado(rows[0]?.agregado);
+}
+
+async function idsVivos(cliente: pg.Client, tabla: string, proyectoId: string): Promise<string[]> {
+  const { rows } = await cliente.query<{ id: string }>(
+    `select id from public.${tabla} where proyecto_id = $1 and deleted_at is null order by id`,
+    [proyectoId],
+  );
+  return rows.map((fila) => fila.id);
+}
+
+// Lo que devuelve guardar_proyecto tiene que ser lo que quedó en la base: el cliente lo aplica a su
+// réplica sin volver a preguntar, así que una respuesta incompleta se le queda pegada hasta el
+// próximo delta.
+async function compararRespuesta(
+  cliente: pg.Client,
+  proyectoId: string,
+  guardado: ProyectoGuardado,
+): Promise<string[]> {
+  const diferencias: string[] = [];
+  for (const [tabla, filas] of [
+    ['pagos', guardado.pagos],
+    ['gastos', guardado.gastos],
+  ] as const) {
+    const enSql = JSON.stringify(await idsVivos(cliente, tabla, proyectoId));
+    const devueltos = JSON.stringify(
+      filas
+        .filter((fila) => fila.deleted_at === null)
+        .map((fila) => fila.id)
+        .sort(),
+    );
+    if (enSql !== devueltos) {
+      diferencias.push(`${tabla} vivos: la base tiene ${enSql}, la respuesta trae ${devueltos}`);
+    }
+  }
+  return diferencias;
+}
+
+// Los dos números que la app le manda a cobrar_proyecto, leídos por el camino real (bootstrap →
+// réplica → totalesDelProyecto) contra la suma de la base. Si divergen, todo cobro rebota con
+// MN006 y el taller se queda sin poder cobrar, que es su operación más importante.
+async function compararTotalesDelProyecto(
+  cliente: pg.Client,
+  contexto: Contexto,
+  proyectoId: string,
+): Promise<string[]> {
+  const enSql = await totales(cliente, proyectoId);
+  const enTs = totalesDelProyecto(await replicaDeLaBase(cliente, contexto.usuarioId), proyectoId);
+  const diferencias: string[] = [];
+  if (enTs.cobrado !== enSql.cobrado) {
+    diferencias.push(`cobrado: SQL ${String(enSql.cobrado)}, TS ${String(enTs.cobrado)}`);
+  }
+  if (enTs.gastos !== enSql.gastos) {
+    diferencias.push(`gastos: SQL ${String(enSql.gastos)}, TS ${String(enTs.gastos)}`);
+  }
+  return diferencias;
+}
+
+export async function compararGuardadoDeProyecto(cliente: pg.Client): Promise<string[]> {
+  const diferencias: string[] = [];
+  for (const escenario of ESCENARIOS_DE_GUARDADO) {
+    await cliente.query('savepoint guardado');
+    try {
+      const contexto = await prepararEscenario(cliente, {
+        nombre: escenario.nombre,
+        ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+        proyectos: {},
+        pasos: [],
+      });
+      const proyectoId = idDelEscenario('proyecto', contexto.ids);
+      let version: number | null = null;
+
+      for (const paso of escenario.pasos) {
+        const guardado = await guardarPorRpc(cliente, contexto, proyectoId, version, paso);
+        version = guardado.proyecto.version;
+        diferencias.push(
+          ...(await compararRespuesta(cliente, proyectoId, guardado)).map(
+            (linea) => `"${escenario.nombre}", ${linea}`,
+          ),
+        );
+      }
+
+      const asientos = await asientosDeLaReplica(cliente, contexto.usuarioId);
+      const filas = await leerLibro(cliente, contexto.householdId);
+      const delEscenario = [
+        ...(await compararTotalesDelProyecto(cliente, contexto, proyectoId)),
+        ...diferenciasDeMultiset(filas.map(comoTextoSql), asientos.map(comoTextoTs)),
+        ...(await compararSaldos(cliente, contexto.householdId, asientos)),
+      ];
+      diferencias.push(...delEscenario.map((linea) => `"${escenario.nombre}", ${linea}`));
+    } catch (error) {
+      diferencias.push(
+        `"${escenario.nombre}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    await cliente.query('rollback to savepoint guardado');
+  }
+  return diferencias;
+}
+
 export async function compararDominioYSql(cliente: pg.Client): Promise<string[]> {
   return [
     ...(await compararCascada(cliente)),
@@ -1237,5 +1482,6 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararTransiciones(cliente)),
     ...(await compararLiquidaciones(cliente)),
     ...(await compararLibroMayor(cliente)),
+    ...(await compararGuardadoDeProyecto(cliente)),
   ];
 }
