@@ -1,5 +1,7 @@
 import { rechazoDeLaBase } from '@maun/db';
 
+import { traducirRechazo, type ContextoDelRechazo } from './rechazos';
+
 const POR_CODIGO: Record<string, string> = {
   invalid_credentials: 'El mail o la contraseña no coinciden.',
   email_not_confirmed:
@@ -65,9 +67,9 @@ export function mensajeDeAcceso(error: unknown): string {
   return 'No pudimos completar la operación. Probá de nuevo.';
 }
 
-export function mensajeDeSincronizacion(error: unknown): string {
+export function mensajeDeSincronizacion(error: unknown, contexto?: ContextoDelRechazo): string {
   if (esFalloDeRed(error)) return SIN_RED;
-  const rechazo = rechazoDeLaBase(error);
-  if (rechazo?.codigo === '42501') return 'Tu cuenta no quedó asociada a ningún taller.';
+  const traducido = traducirRechazo(error, contexto);
+  if (traducido) return `${traducido.titulo} ${traducido.queHacer}`;
   return mensajeDeAcceso(error);
 }
