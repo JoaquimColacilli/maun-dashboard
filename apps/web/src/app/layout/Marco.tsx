@@ -25,7 +25,9 @@ export function Marco() {
       montado.current = true;
       return;
     }
-    principal.current?.focus();
+    const enfocado = document.activeElement;
+    const yaEstaEnUnaHoja = enfocado instanceof HTMLElement && enfocado.closest('[role="dialog"]');
+    if (!yaEstaEnUnaHoja) principal.current?.focus();
     setAnuncio(etiqueta);
   }, [location.pathname, etiqueta]);
 
