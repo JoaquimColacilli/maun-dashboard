@@ -62,7 +62,7 @@ export interface AccionRapida {
 export const ACCIONES_RAPIDAS: readonly AccionRapida[] = [
   { etiqueta: 'Movimiento', icono: 'arrow-left-right', ruta: '/finanzas' },
   { etiqueta: 'Cobro de proyecto', icono: 'hand-coins', ruta: '/proyectos' },
-  { etiqueta: 'Proyecto nuevo', icono: 'folder-plus', ruta: '/proyectos' },
+  { etiqueta: 'Proyecto nuevo', icono: 'folder-plus', ruta: '/proyectos/nuevo' },
   { etiqueta: 'Contacto de seguimiento', icono: 'user-plus', ruta: '/seguimiento' },
 ];
 

@@ -6,8 +6,12 @@ import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
 import { FinanzasPage } from '@/pages/finanzas';
 import { InicioPage } from '@/pages/inicio';
-import { ProyectosPage } from '@/pages/proyectos';
-import { SeguimientoPage } from '@/pages/seguimiento';
+import {
+  ProyectoEdicionPage,
+  ProyectoFichaPage,
+  ProyectoNuevoPage,
+  ProyectosPage,
+} from '@/pages/proyectos';
 
 import { Marco } from '../layout/Marco';
 import { Shell } from '../layout/Shell';
@@ -37,8 +41,14 @@ export const router = createBrowserRouter([
                 element: <Marco />,
                 children: [
                   { index: true, element: <InicioPage /> },
-                  { path: '/seguimiento', element: <SeguimientoPage /> },
+                  // Seguimiento es la primera pestaña de Proyectos y no una pantalla aparte: el
+                  // control segmentado es el modelo mental del dueño, y en escritorio Seguimiento
+                  // es además un destino propio, así que la pestaña tiene que ser una ruta.
+                  { path: '/seguimiento', element: <ProyectosPage /> },
                   { path: '/proyectos', element: <ProyectosPage /> },
+                  { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
+                  { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
+                  { path: '/proyectos/:id/editar', element: <ProyectoEdicionPage /> },
                   { path: '/clientes', element: <ClientesPage /> },
                   { path: '/clientes/:id', element: <ClienteFichaPage /> },
                   { path: '/finanzas', element: <FinanzasPage /> },
