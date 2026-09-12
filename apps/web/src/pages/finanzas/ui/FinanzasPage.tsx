@@ -32,7 +32,7 @@ import {
   TESORO,
   TESOROS_EN_ORDEN,
 } from '@/shared/lib';
-import { Button, ComparacionMensual, Icono, Pagina } from '@/shared/ui';
+import { Button, ComparacionMensual, ConSalida, Icono, Pagina } from '@/shared/ui';
 
 const SENTIDOS: readonly { id: SentidoDeLinea | 'todos'; etiqueta: string }[] = [
   { id: 'todos', etiqueta: 'Todo' },
@@ -273,15 +273,17 @@ export function FinanzasPage() {
         </div>
       </div>
 
-      {ficha !== null && (
-        <FichaDelMovimiento
-          linea={ficha}
-          hoy={hoy}
-          alCerrar={() => {
-            setFicha(null);
-          }}
-        />
-      )}
+      <ConSalida valor={ficha}>
+        {(linea) => (
+          <FichaDelMovimiento
+            linea={linea}
+            hoy={hoy}
+            alCerrar={() => {
+              setFicha(null);
+            }}
+          />
+        )}
+      </ConSalida>
     </Pagina>
   );
 }

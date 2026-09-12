@@ -18,7 +18,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
 import { fechaLarga, formatearPesos, hoyLocal, relativa, useAvisosDelProyecto } from '@/shared/lib';
-import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
+import { Button, ConSalida, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 function Dato({ clave, valor, tono = '' }: { clave: string; valor: string; tono?: string }) {
   return (
@@ -201,7 +201,9 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       </div>
 
-      {editando && <HojaDeContacto proyecto={proyecto} alCerrar={cerrarLaHoja} />}
+      <ConSalida valor={editando}>
+        {() => <HojaDeContacto proyecto={proyecto} alCerrar={cerrarLaHoja} />}
+      </ConSalida>
     </Pagina>
   );
 }

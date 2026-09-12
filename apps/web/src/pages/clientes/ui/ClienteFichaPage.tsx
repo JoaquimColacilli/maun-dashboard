@@ -23,7 +23,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { fechaLarga, formatearPesos, hoyLocal, relativa } from '@/shared/lib';
-import { Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
+import { Button, ConSalida, Hoja, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
   contacto: 'Contacto',
@@ -349,73 +349,69 @@ export function ClienteFichaPage() {
         </div>
       </div>
 
-      {editando && (
-        <HojaDeCliente
-          cliente={cliente}
-          alCerrar={() => {
-            setEditando(false);
-          }}
-        />
-      )}
+      <ConSalida valor={editando}>
+        {() => (
+          <HojaDeCliente
+            cliente={cliente}
+            alCerrar={() => {
+              setEditando(false);
+            }}
+          />
+        )}
+      </ConSalida>
 
-      {confirmando && (
-        <div className="fixed inset-0 z-40">
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => {
+      <ConSalida valor={confirmando}>
+        {() => (
+          <Hoja
+            titulo={`¿Borrás a ${cliente.nombre}?`}
+            rol="alertdialog"
+            ancho="angosto"
+            alCerrar={() => {
               setConfirmando(false);
             }}
-            className="absolute inset-0 cursor-default bg-velo"
-          />
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="Confirmar el borrado"
-            className="absolute inset-x-0 bottom-0 flex flex-col gap-3.5 rounded-t-sheet bg-paper p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-sheet md:inset-auto md:top-1/2 md:left-1/2 md:w-[min(440px,calc(100%-40px))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-dialog"
           >
-            <h2 className="text-body-lg leading-snug font-semibold">¿Borrás a {cliente.nombre}?</h2>
-            <p className="text-label leading-relaxed text-text-2">
-              {resumen.proyectos.length === 0
-                ? 'No tiene trabajos cargados, así que no se pierde historia.'
-                : 'Si todavía tiene proyectos vivos, la base lo va a rechazar: primero hay que borrarlos o reasignarlos.'}
-            </p>
-            {borrar.isError && (
-              <p role="alert" className="text-label font-medium text-alerta">
-                {mensajeDeSincronizacion(borrar.error)}
+            <div className="flex flex-col gap-3.5 px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:px-6 md:pb-5">
+              <p className="text-label leading-relaxed text-text-2">
+                {resumen.proyectos.length === 0
+                  ? 'No tiene trabajos cargados, así que no se pierde historia.'
+                  : 'Si todavía tiene proyectos vivos, la base lo va a rechazar: primero hay que borrarlos o reasignarlos.'}
               </p>
-            )}
-            <div className="flex gap-2.5">
-              <Button
-                variant="secundario"
-                className="flex-1"
-                onClick={() => {
-                  setConfirmando(false);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="peligro"
-                className="flex-1"
-                cargando={borrar.isPending}
-                onClick={() => {
-                  borrar.mutate({
-                    id: cliente.id,
-                    borradoEn: new Date().toISOString(),
-                    previo: cliente,
-                  });
-                  setConfirmando(false);
-                  void navegar('/clientes');
-                }}
-              >
-                Borrar el cliente
-              </Button>
+              {borrar.isError && (
+                <p role="alert" className="text-label font-medium text-alerta">
+                  {mensajeDeSincronizacion(borrar.error)}
+                </p>
+              )}
+              <div className="flex gap-2.5">
+                <Button
+                  variant="secundario"
+                  className="flex-1"
+                  onClick={() => {
+                    setConfirmando(false);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="peligro"
+                  className="flex-1"
+                  cargando={borrar.isPending}
+                  onClick={() => {
+                    borrar.mutate({
+                      id: cliente.id,
+                      borradoEn: new Date().toISOString(),
+                      previo: cliente,
+                    });
+                    setConfirmando(false);
+                    void navegar('/clientes');
+                  }}
+                >
+                  Borrar el cliente
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </Hoja>
+        )}
+      </ConSalida>
     </Pagina>
   );
 }

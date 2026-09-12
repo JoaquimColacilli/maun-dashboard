@@ -21,7 +21,7 @@ import {
   rutaDeMovimientoNuevo,
   rutaDelMovimiento,
 } from '@/shared/lib';
-import { Icono, Pagina } from '@/shared/ui';
+import { ConSalida, Icono, Pagina } from '@/shared/ui';
 
 const RUTA_DEL_PAGO = rutaDeMovimientoNuevo({ clase: 'pago_diezmo' });
 
@@ -162,15 +162,17 @@ export function DiezmoPage() {
         </section>
       </div>
 
-      {ficha !== null && (
-        <FichaDelMovimiento
-          linea={ficha}
-          hoy={hoy}
-          alCerrar={() => {
-            setFicha(null);
-          }}
-        />
-      )}
+      <ConSalida valor={ficha}>
+        {(linea) => (
+          <FichaDelMovimiento
+            linea={linea}
+            hoy={hoy}
+            alCerrar={() => {
+              setFicha(null);
+            }}
+          />
+        )}
+      </ConSalida>
     </Pagina>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useRoutes } from 'react-router';
+import { useLocation, useRoutes, type Location } from 'react-router';
 
 import { useSesionActiva } from '@/entities/sesion';
 import {
@@ -9,21 +9,30 @@ import {
   useEstadoSync,
   useUbicacionVisible,
 } from '@/shared/lib';
+import { ConSalida } from '@/shared/ui';
 
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
 import { AvisoDeRechazo } from './AvisoDeRechazo';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
 
+function HojaEnSuUbicacion({ ubicacion }: { ubicacion: Location }) {
+  return useRoutes(RUTAS_DE_HOJA, ubicacion);
+}
+
 function CapaDeHoja() {
-  return useRoutes(RUTAS_DE_HOJA);
+  const location = useLocation();
+  return (
+    <ConSalida valor={esRutaDeHoja(location.pathname) ? location : null}>
+      {(ubicacion) => <HojaEnSuUbicacion ubicacion={ubicacion} />}
+    </ConSalida>
+  );
 }
 
 export function Marco() {
   const { email } = useSesionActiva();
   const estadoSync = useEstadoSync();
   const ancho = useAnchoDePantalla();
-  const location = useLocation();
   const visible = useUbicacionVisible();
   const pantalla = useRoutes(RUTAS_DE_PANTALLA, visible);
   const principal = useRef<HTMLElement>(null);
@@ -39,7 +48,8 @@ export function Marco() {
       return;
     }
     const enfocado = document.activeElement;
-    const yaEstaEnUnaHoja = enfocado instanceof HTMLElement && enfocado.closest('[role="dialog"]');
+    const yaEstaEnUnaHoja =
+      enfocado instanceof HTMLElement && enfocado.closest('dialog[open], [role="dialog"]');
     if (!yaEstaEnUnaHoja) principal.current?.focus();
     setAnuncio(etiqueta);
   }, [visible.pathname, etiqueta]);
@@ -68,7 +78,7 @@ export function Marco() {
         {pantalla}
       </main>
 
-      {esRutaDeHoja(location.pathname) && <CapaDeHoja />}
+      <CapaDeHoja />
 
       <AvisoDeRechazo />
 

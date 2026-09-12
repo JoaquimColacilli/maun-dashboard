@@ -15,7 +15,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { formatearPesos, relativa } from '@/shared/lib';
-import { Button, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, Icono, Pagina } from '@/shared/ui';
 
 function detalleDe(resumen: ResumenDeCliente, hoy: string): string {
   const partes: string[] = [];
@@ -225,17 +225,19 @@ export function ClientesPage() {
         </>
       )}
 
-      {abierta && (
-        <HojaDeCliente
-          nombreInicial={filas.length === 0 && buscando ? consulta.trim() : undefined}
-          alCerrar={() => {
-            setAbierta(false);
-          }}
-          alGuardar={() => {
-            setConsulta('');
-          }}
-        />
-      )}
+      <ConSalida valor={abierta}>
+        {() => (
+          <HojaDeCliente
+            nombreInicial={filas.length === 0 && buscando ? consulta.trim() : undefined}
+            alCerrar={() => {
+              setAbierta(false);
+            }}
+            alGuardar={() => {
+              setConsulta('');
+            }}
+          />
+        )}
+      </ConSalida>
     </Pagina>
   );
 }

@@ -32,7 +32,7 @@ import {
   useAnchoDePantalla,
   type Sentido,
 } from '@/shared/lib';
-import { Button, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
@@ -239,22 +239,8 @@ function HojaDeOrden({
   alCerrar: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-40">
-      <button
-        type="button"
-        aria-hidden
-        tabIndex={-1}
-        onClick={alCerrar}
-        className="absolute inset-0 cursor-default bg-velo"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Ordenar por"
-        className="absolute inset-x-0 bottom-0 rounded-t-sheet bg-paper px-4 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-sheet"
-      >
-        <span aria-hidden className="mx-auto mt-1 mb-3.5 block h-1 w-9 rounded-control bg-border" />
-        <h2 className="mb-1.5 text-body-lg font-semibold">Ordenar por</h2>
+    <Hoja titulo="Ordenar por" desdeAbajo alCerrar={alCerrar}>
+      <div className="px-5 pt-1 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         {CRITERIOS.map((criterio) => (
           <button
             key={criterio.id}
@@ -271,7 +257,7 @@ function HojaDeOrden({
           </button>
         ))}
       </div>
-    </div>
+    </Hoja>
   );
 }
 
@@ -492,18 +478,20 @@ export function ProyectosPage() {
         </>
       )}
 
-      {hojaAbierta && (
-        <HojaDeOrden
-          orden={orden}
-          alElegir={(id) => {
-            ordenarPor(id);
-            setHojaAbierta(false);
-          }}
-          alCerrar={() => {
-            setHojaAbierta(false);
-          }}
-        />
-      )}
+      <ConSalida valor={hojaAbierta}>
+        {() => (
+          <HojaDeOrden
+            orden={orden}
+            alElegir={(id) => {
+              ordenarPor(id);
+              setHojaAbierta(false);
+            }}
+            alCerrar={() => {
+              setHojaAbierta(false);
+            }}
+          />
+        )}
+      </ConSalida>
     </Pagina>
   );
 }

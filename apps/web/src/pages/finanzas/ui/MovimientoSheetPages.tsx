@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router';
 
 import { CLASES_EN_ORDEN, type ClaseDeMovimiento } from '@/entities/movimiento';
@@ -30,7 +31,9 @@ export function MovimientoEdicionPage() {
   const replica = useReplicaDelTaller();
   const cerrar = useCerrarHoja();
   const { id = '' } = useParams();
-  const movimiento = filaPorId(replica, 'movimientos', id);
+  const encontrado = filaPorId(replica, 'movimientos', id);
+  const [alAbrir] = useState(encontrado);
+  const movimiento = encontrado ?? alAbrir;
 
   if (!movimiento) return <Navigate to={RUTA_DE_FINANZAS} replace />;
 

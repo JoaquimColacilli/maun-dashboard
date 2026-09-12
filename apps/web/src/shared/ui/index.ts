@@ -7,6 +7,6 @@ export {
   type ComparacionMensualProps,
 } from './ComparacionMensual';
 export { EnConstruccion } from './EnConstruccion';
-export { Hoja, type HojaProps } from './Hoja';
+export { ConSalida, Hoja, type ConSalidaProps, type HojaProps } from './Hoja';
 export { PanelDeAvisos, type PanelDeAvisosProps } from './PanelDeAvisos';
 export { PantallaDeAcceso } from './PantallaDeAcceso';
