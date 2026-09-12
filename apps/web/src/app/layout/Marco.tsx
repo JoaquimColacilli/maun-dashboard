@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router';
 import { useSesionActiva } from '@/entities/sesion';
 import { describirEstadoSync, useAnchoDePantalla, useEstadoSync } from '@/shared/lib';
 
+import { AvisoDeRechazo } from './AvisoDeRechazo';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
 
@@ -51,6 +52,8 @@ export function Marco() {
       >
         <Outlet />
       </main>
+
+      <AvisoDeRechazo />
 
       <span aria-live="polite" className="sr-only">
         {anuncio}

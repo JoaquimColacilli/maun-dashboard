@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router';
 
 import { useReplicaDelTaller } from '@/entities/replica';
+import { LiquidacionesSinConfirmar } from '@/entities/proyecto';
 import { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from '@/entities/tesoro';
 import {
   ajustesDe,
@@ -255,6 +256,8 @@ export function InicioPage() {
           />
         ))}
       </div>
+
+      <LiquidacionesSinConfirmar replica={replica} />
 
       {faltaConfigurar(ajustes) ? (
         <section
