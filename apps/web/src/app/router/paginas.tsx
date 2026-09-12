@@ -16,10 +16,6 @@ export const NuevaContrasenaPage = lazy(async () => ({
   default: (await import('@/pages/nueva-contrasena')).NuevaContrasenaPage,
 }));
 
-export const SinAccesoPage = lazy(async () => ({
-  default: (await import('@/pages/sin-acceso')).SinAccesoPage,
-}));
-
 export const VerificacionPage = lazy(async () => ({
   default: (await import('@/pages/verificacion')).VerificacionPage,
 }));

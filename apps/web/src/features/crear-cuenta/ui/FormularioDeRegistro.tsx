@@ -58,7 +58,7 @@ export function FormularioDeRegistro() {
         <h2 className="text-section font-semibold">Revisá tu correo</h2>
         <p className="text-body leading-relaxed text-text-2">
           Le mandamos un enlace de confirmación a <strong className="text-ink">{email}</strong>.
-          Abrilo desde este mismo dispositivo y ya podés entrar.
+          Abrilo desde este mismo dispositivo: al confirmar se crea tu taller y entrás.
         </p>
         <p className="text-meta leading-relaxed text-text-3">
           Si no llega, fijate en el correo no deseado. El servidor de mails del proyecto manda pocos

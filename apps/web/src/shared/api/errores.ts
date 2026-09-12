@@ -68,6 +68,6 @@ export function mensajeDeAcceso(error: unknown): string {
 export function mensajeDeSincronizacion(error: unknown): string {
   if (esFalloDeRed(error)) return SIN_RED;
   const rechazo = rechazoDeLaBase(error);
-  if (rechazo?.codigo === '42501') return 'Tu cuenta no tiene acceso a ningún taller.';
+  if (rechazo?.codigo === '42501') return 'Tu cuenta no quedó asociada a ningún taller.';
   return mensajeDeAcceso(error);
 }

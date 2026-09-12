@@ -9,7 +9,6 @@ import {
   InicioPage,
   NuevaContrasenaPage,
   RecuperarPage,
-  SinAccesoPage,
   VerificacionPage,
 } from './paginas';
 
@@ -30,7 +29,6 @@ export const router = createBrowserRouter([
       {
         element: <RutaConSesion />,
         children: [
-          { path: '/sin-acceso', element: <SinAccesoPage /> },
           { element: <RutaConAcceso />, children: [{ index: true, element: <InicioPage /> }] },
         ],
       },
