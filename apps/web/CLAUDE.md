@@ -27,7 +27,7 @@ src/
 - El estado del servidor vive en TanStack Query, dentro de `entities/*/api`. Las query keys llevan ids. El resto es estado local de React; no hay state manager global.
 - **El catálogo de tesoros y el ordenamiento de listas también viven en `shared/lib`** (`tesoros.ts`, `orden.ts`): los usan dos slices de `entities` cada uno, y un slice no puede importar a otro. `entities/tesoro` re-exporta el catálogo, así que su API pública no cambió (ADR 0015).
 - **Las claves de la réplica viven en `shared/lib/claves.ts`**, no en `entities/replica`: la mutación de cada entidad las necesita para aplicarse optimista, y un slice de `entities` no puede importar a otro. `entities/replica` las re-exporta, así que su API pública no cambió (ADR 0014).
-- La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002). Para mostrarla y leerla, `formatearPesos` y `parsearPesos` de `@/shared/lib`.
+- La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002). Para mostrarla, `formatearPesos` de `@/shared/lib`. Para cargarla, `MoneyInput` de `@/shared/ui`: entrega centavos enteros (`number | null`), así que el estado de un formulario guarda el número y no el texto (ADR 0020).
 
 ## Acceso y sesión (ADR 0012)
 
@@ -51,7 +51,10 @@ src/
 - Las transiciones van con `conTransicion()` (`document.startViewTransition` + `flushSync`), nunca con el componente `<ViewTransition>` de React.
 - El nodo raíz está anclado con `position: fixed; inset: 0` por el problema de `100vh` en PWA instalada, y el contenido lleva `calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom))` de padding inferior.
 - Las búsquedas de Clientes y Proyectos filtran la réplica en memoria desde la primera letra, **sin debounce**: no hay red de por medio que cuidar.
-- **La barra «Sueldo del mes» de Inicio sale de `sueldoDelMes`, no de `resumenDelMes`.** El tope de sueldo es por cobro, así que cada cobro del mes espera su propio sueldo y la barra nunca pasa del 100% (ADR 0011). El mensaje de arriba, en cambio, sigue leyendo el mes contra un sueldo: es a propósito.
+- **La barra «Sueldo del mes» de Inicio sale de `sueldoDelMes`, no de `resumenDelMes`.** El tope de sueldo es por cobro, así que cada cobro del mes espera su propio sueldo y la barra nunca pasa del 100% (ADR 0011). **El mensaje de arriba lee lo mismo que la barra** (`faltaDelSueldo`): con un cobro entero y uno a medias no dice «cubierto» (ADR 0020).
+- **Las cifras del mes no cuentan los `ajuste`** (`resumenMensual`): la apertura de la migración acomoda el saldo, no es plata que entró ni que se gastó ese mes (ADR 0020).
+- **Todas las pantallas van adentro de `Pagina`** (`@/shared/ui`): el ancho, los márgenes y el padding son uno solo. Si una pantalla necesita una columna más angosta, la angosta adentro (`[&>*]:max-w-[720px]`), no cambia el molde.
+- **Un proyecto sin presupuesto no tiene saldo: `saldo` es `null`**, y se muestra «—», no «Sin saldo» en verde. «Sin saldo» es que ya pagó todo.
 
 ## Offline (ADR 0005 y 0010)
 
@@ -67,6 +70,8 @@ src/
 - Los rechazos con SQLSTATE `MNxxx` y `42501` no se reintentan: se le muestran al usuario. Tampoco se reintenta ningún otro SQLSTATE definitivo (una violación de check nunca va a andar y tapa la cola, que drena de a una). La red, los timeouts y las clases transitorias sí.
 - **Un corte de red no llega como `TypeError`.** PostgREST devuelve un objeto con `code` vacío y el mensaje del `fetch` adentro («Failed to fetch», «Load failed»…). `esFalloDeRed` lo reconoce por ese par: sin eso, la pantalla mostraba «TypeError: Failed to fetch» en vez de «sin conexión».
 - Nunca muestres "guardado" para una mutación en cola. Para el estado real usá `useEstadoSync` y `describirEstadoSync` de `@/shared/lib`. El `IndicadorSync` global es el que lo dice y **desaparece cuando no hay nada pendiente**: en un test, que no esté es la señal de que ya llegó a la base.
+- **Las confirmaciones salen de la cola, no del formulario** (`app/providers/avisos-de-la-cola.ts`, ADR 0020). La mutación lleva `meta: metaDeAvisos('clienteNuevo')` y el suscriptor del `MutationCache` decide qué decir: «guardado» solo con `success`, «anotado sin señal» con `pause`, y el error con el motivo traducido. La `meta` se deshidrata con la mutación, así que una que drena después de reabrir la app avisa igual. Si el formulario muestra su propio rechazo mientras está abierto, `errorEnPantalla: true` evita la alerta repetida.
+- Lo transitorio va en un solo `role="status"` y cada error en su `role="alert"`: el lector anuncia lo primero cuando puede y lo segundo en el acto. El tono no depende del color: cada aviso lleva su ícono y su verbo.
 - `crearQueryClient()` siembra `onlineManager` con `navigator.onLine`. **No lo saques**: `onlineManager` arranca en `true` fijo y solo cambia con los eventos de `window`, así que abrir la app ya sin señal la dejaba creyendo que hay red, con las mutaciones fallando en vez de encolarse (ADR 0014).
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
@@ -177,8 +182,17 @@ src/
   del contacto.
 - **La seña se edita desde la hoja solo si hay cero o un pago.** Con varios, el campo muestra el total y
   manda al detalle.
-- **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `role="dialog"`**: si no, una hoja
+- **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `dialog[open]`**: si no, una hoja
   abierta por ruta (`/seguimiento/nuevo`, `/finanzas/nuevo`) perdía el foco del primer campo.
+- **Una hoja por ruta se abre encima de la pantalla desde la que se abrió** (`shared/lib/hojas.ts`,
+  ADR 0020). El link manda `state={conFondo(location)}`, `Marco` renderiza las pantallas con esa
+  ubicación de fondo y las hojas en su propia capa. Cerrar es `useCerrarHoja()`: con fondo es volver
+  atrás (así el botón atrás del navegador la cierra), y entrando directo por la URL cae en el fondo por
+  defecto de `HOJAS_POR_RUTA`. No vuelvas a un `?volverA=`: el fondo viaja en el `state`.
+- **Toda hoja es `Hoja` de `@/shared/ui`**, un `<dialog>` nativo con `showModal`, y entra y sale con
+  CSS (`@starting-style` y `transition-behavior: allow-discrete`). Para que la salida se vea, quien la
+  abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. jsdom no tiene
+  `showModal`: el polyfill vive en `vitest.setup.ts`.
 - **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). Es una diferencia
   deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
   «arregles».
@@ -200,4 +214,6 @@ src/
 - **`page.clock.setFixedTime` antes del `goto` manda al login**: con el reloj adelantado días, el token
   guardado está vencido. Para probar «hace N días» se adelanta el reloj **después** de que la app cargó y
   se fuerza un render navegando (una pestaña y vuelta).
-- **`getByRole('status')` no es el indicador de sincronización a secas.** Cualquier confirmación con `role="status"` entra en ese locator y rompe el `toBeHidden`. Para esperar a que la cola drene conviene preguntarle a la base (`expect.poll` sobre un helper de `apoyo/taller.ts`), que además es la afirmación que importa.
+- **`getByRole('status')` no es el indicador de sincronización a secas.** Los avisos viven en un `role="status"` que está siempre en el DOM, y `Cargando` también es un `status`. Usá `indicadorDeSync(page)` y `avisosEnPantalla(page)` de `apoyo/pantalla.ts`. Para esperar a que la cola drene conviene preguntarle a la base (`expect.poll` sobre un helper de `apoyo/taller.ts`), que además es la afirmación que importa.
+- **`listoParaCortar` espera una señal positiva**: el `<main>` a la vista y ningún `Cargando`. Esperar solo a que el indicador se vaya no alcanza: con la réplica todavía bajando el indicador no está, y cortar ahí deja el dispositivo vacío («No pudimos leer tus datos»).
+- **`not.toContainText` sobre un locator que no existe falla** («element(s) not found»). Para decir que un aviso no apareció, `filter({ hasText })` y `toHaveCount(0)`.

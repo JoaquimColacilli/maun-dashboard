@@ -45,6 +45,8 @@ La fase 2C dejó la réplica del household en IndexedDB, la cola de salida y el 
 
 **Ajustes entra en este paso, aunque era del siguiente.** La pantalla técnica de verificación se borra acá, y lo que mostraba y sigue sirviendo (los contadores de la réplica, la fecha del último delta y de la última copia completa) tiene que aterrizar donde el usuario lo encuentre. Ajustes es además un destino de la sidebar. Monta el formulario de `features/configurar-taller` tal cual: no se duplica. Suma la lista de cambios que la base rechazó, que la fase 2C dejó pendiente.
 
+**Corregido por el ADR 0020.** Los contadores de la réplica («households 1», «household_members»…) eran nombres de tabla en inglés que el dueño no tiene por qué leer. Ajustes muestra el estado de la sincronización y la fecha de la última, en una línea.
+
 **Las secciones que todavía no existen son pantallas, no rutas muertas.** Proyectos, Clientes, Seguimiento y Diezmo dicen qué llega y cuándo. Finanzas además hospeda el formulario de movimientos que vivía en la pantalla técnica: la funcionalidad de la 2C no se pierde en el camino.
 
 ## Criterio de mutaciones (para el paso que viene)

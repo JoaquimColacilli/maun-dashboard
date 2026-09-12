@@ -23,3 +23,5 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0017](0017-los-datos-del-sistema-viejo.md)                    | Los datos del sistema viejo entran por un script         | Aceptada, pendiente  |
 | [0018](0018-finanzas-el-diezmo-y-los-movimientos-a-mano.md)    | Finanzas, el diezmo y los movimientos a mano             | Aceptada             |
 | [0019](0019-seguimiento-el-contacto-es-la-misma-fila.md)       | Seguimiento: el contacto es la misma fila, sin tablero   | Aceptada             |
+| [0020](0020-pulido-visual.md)                                  | Pulido visual: tema oscuro, hojas, plata, avisos y molde | Aceptada             |
+| [0021](0021-perfil-sin-foto.md)                                | Perfil: el nombre en la cuenta, iniciales en vez de foto | Aceptada             |
