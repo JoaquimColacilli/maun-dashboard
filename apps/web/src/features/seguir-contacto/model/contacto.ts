@@ -7,7 +7,6 @@ import {
   type Proyecto,
 } from '@/entities/proyecto';
 import type { DatosDeProyecto, PagoParaGuardar, ProyectoParaGuardar } from '@/shared/api';
-import { parsearPesosDesdeCero, pesosEditables } from '@/shared/lib';
 
 export const CONCEPTO_DE_LA_SENA = 'Seña de la visita';
 
@@ -15,14 +14,13 @@ export interface ValoresDelContacto {
   clienteId: string;
   titulo: string;
   visita: string;
-  sena: string;
+  sena: number | null;
   notas: string;
 }
 
 export interface ErroresDelContacto {
   cliente?: string;
   titulo?: string;
-  sena?: string;
   telefono?: string;
   notas?: string;
 }
@@ -39,7 +37,7 @@ export function valoresDelContacto(
     clienteId: proyecto?.cliente_id ?? '',
     titulo: proyecto?.titulo ?? '',
     visita: proyecto?.fecha_visita ?? '',
-    sena: sena === undefined ? '' : pesosEditables(sena.monto_centavos),
+    sena: sena === undefined ? null : sena.monto_centavos,
     notas: proyecto?.notas ?? '',
   };
 }
@@ -56,9 +54,6 @@ export function erroresDelContacto(
   }
   if (titulo === '') errores.titulo = 'Contá qué pide, aunque sea en dos palabras.';
   else if (titulo.length > 200) errores.titulo = 'No puede pasar de 200 caracteres.';
-  if (valores.sena.trim() !== '' && parsearPesosDesdeCero(valores.sena) === undefined) {
-    errores.sena = 'Revisá la seña: va en pesos, por ejemplo 150.000.';
-  }
   if (telefono.trim().length > 200) errores.telefono = 'No puede pasar de 200 caracteres.';
   if (valores.notas.trim().length > 10_000) errores.notas = 'Las notas son demasiado largas.';
   return errores;
@@ -87,7 +82,7 @@ function pagosDeLaSena(
   idDeSenaNueva: string,
   hoy: string,
 ): PagoParaGuardar[] {
-  const monto = parsearPesosDesdeCero(valores.sena) ?? 0;
+  const monto = valores.sena ?? 0;
 
   if (sena !== undefined) {
     if (monto === 0) return [{ id: sena.id, borrado: true }];

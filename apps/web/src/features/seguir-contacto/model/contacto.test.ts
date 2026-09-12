@@ -15,7 +15,7 @@ import {
 const HOY = '2026-09-12';
 
 function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
-  return { clienteId: 'c', titulo: 'Placard', visita: '', sena: '', notas: '', ...extra };
+  return { clienteId: 'c', titulo: 'Placard', visita: '', sena: null, notas: '', ...extra };
 }
 
 function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'> {
@@ -109,7 +109,7 @@ describe('pedidoDelContacto', () => {
     const pedido = pedidoDelContacto({
       id: 'p',
       proyecto: undefined,
-      valores: valores({ visita: '2026-09-10', sena: '150.000' }),
+      valores: valores({ visita: '2026-09-10', sena: 15_000_000 }),
       sena: undefined,
       idDeSenaNueva: 'nueva',
       hoy: HOY,
@@ -131,7 +131,7 @@ describe('pedidoDelContacto', () => {
     const pedido = pedidoDelContacto({
       id: 'p',
       proyecto: undefined,
-      valores: valores({ visita: '2026-09-20', sena: '50000' }),
+      valores: valores({ visita: '2026-09-20', sena: 5_000_000 }),
       sena: undefined,
       idDeSenaNueva: 'nueva',
       hoy: HOY,
@@ -172,7 +172,7 @@ describe('pedidoDelContacto', () => {
     const pedido = pedidoDelContacto({
       id: 'p',
       proyecto: fila,
-      valores: valores({ sena: '180.000' }),
+      valores: valores({ sena: 18_000_000 }),
       sena: pago(),
       idDeSenaNueva: 'no-se-usa',
       hoy: HOY,
@@ -205,7 +205,7 @@ describe('pedidoDelContacto', () => {
     const sinSena = pedidoDelContacto({
       id: 'p',
       proyecto: fila,
-      valores: valores({ sena: '' }),
+      valores: valores({ sena: null }),
       sena: pago(),
       idDeSenaNueva: 'x',
       hoy: HOY,
@@ -254,8 +254,16 @@ describe('erroresDelContacto', () => {
     expect(erroresDelContacto(valores(), '')).toEqual({});
   });
 
-  it('una seña que no es plata se frena, y cero es no tener seña', () => {
-    expect(erroresDelContacto(valores({ sena: 'mucho' }), '').sena).toBeDefined();
-    expect(erroresDelContacto(valores({ sena: '0' }), '')).toEqual({});
+  it('la seña ya llega en centavos, así que no hay seña mal escrita que frenar, y cero es no tener seña', () => {
+    expect(erroresDelContacto(valores({ sena: 0 }), '')).toEqual({});
+    const pedido = pedidoDelContacto({
+      id: 'p',
+      proyecto: undefined,
+      valores: valores({ sena: 0 }),
+      sena: undefined,
+      idDeSenaNueva: 'nueva',
+      hoy: HOY,
+    });
+    expect(pedido.pagos).toEqual([]);
   });
 });

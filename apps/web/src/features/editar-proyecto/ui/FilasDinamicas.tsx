@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Control, FieldErrors, UseFieldArrayReturn, UseFormRegister } from 'react-hook-form';
-import { useWatch } from 'react-hook-form';
+import { Controller, useWatch } from 'react-hook-form';
 
 import { filaVacia, totalDeLasFilas, type FormularioDeProyecto } from '@/entities/proyecto';
-import { formatearPesos, hoyLocal, parsearPesos, uuidv7 } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
+import { Button, Icono, MoneyInput } from '@/shared/ui';
 
 type Lista = 'pagos' | 'gastos';
 
@@ -69,19 +69,17 @@ export function FilasDinamicas({
 
   function quitar(indice: number): void {
     const fila = filas[indice];
-    const tieneDatos =
-      fila !== undefined && (fila.detalle.trim() !== '' || parsearPesos(fila.monto) !== undefined);
+    const tieneDatos = fila !== undefined && (fila.detalle.trim() !== '' || (fila.monto ?? 0) > 0);
 
     if (fila !== undefined && tieneDatos) {
-      const monto = parsearPesos(fila.monto);
       setDeshacer({
         indice,
         fila,
         descripcion:
           fila.detalle.trim() === ''
-            ? monto === undefined
+            ? fila.monto === null
               ? 'la fila'
-              : formatearPesos(monto)
+              : formatearPesos(fila.monto)
             : fila.detalle.trim(),
       });
     }
@@ -134,13 +132,22 @@ export function FilasDinamicas({
                 <span aria-hidden className="text-text-3">
                   $
                 </span>
-                <input
-                  {...register(`${lista}.${indice}.monto` as const)}
-                  inputMode="decimal"
-                  aria-label={`Monto ${String(indice + 1)}`}
-                  placeholder="0"
-                  disabled={bloqueado}
-                  className="min-w-0 flex-1 bg-transparent text-right text-body font-semibold tabular-nums outline-none"
+                <Controller
+                  control={control}
+                  name={`${lista}.${indice}.monto` as const}
+                  render={({ field }) => (
+                    <MoneyInput
+                      ref={field.ref}
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      aria-label={`Monto ${String(indice + 1)}`}
+                      placeholder="0"
+                      disabled={bloqueado}
+                      className="min-w-0 flex-1 bg-transparent text-right text-body font-semibold outline-none"
+                    />
+                  )}
                 />
               </div>
               <button

@@ -4,15 +4,8 @@ import { useState, type SyntheticEvent } from 'react';
 
 import { MUTACION_DE_MOVIMIENTO } from '@/entities/movimiento';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import {
-  formatearPesos,
-  hoyLocal,
-  parsearPesosDesdeCero,
-  pesosEditables,
-  useEstadoSync,
-  uuidv7,
-} from '@/shared/lib';
-import { Button, Campo } from '@/shared/ui';
+import { formatearPesos, hoyLocal, useEstadoSync, uuidv7 } from '@/shared/lib';
+import { Button, MoneyInput } from '@/shared/ui';
 
 import { ajusteDeCocos } from '../model/ajuste';
 
@@ -21,19 +14,18 @@ export interface AjusteDeCocosProps {
 }
 
 export function AjusteDeCocos({ saldo }: AjusteDeCocosProps) {
-  const [escrito, setEscrito] = useState(() => pesosEditables(saldo));
+  const [leido, setLeido] = useState<number | null>(saldo);
   const [error, setError] = useState<string | undefined>(undefined);
   const [hecho, setHecho] = useState<string | undefined>(undefined);
 
   const mutacion = useMutation(MUTACION_DE_MOVIMIENTO);
   const estadoSync = useEstadoSync();
 
-  const leido = parsearPesosDesdeCero(escrito);
-  const ajuste = leido === undefined ? null : ajusteDeCocos(saldo, centavos(leido));
+  const ajuste = leido === null ? null : ajusteDeCocos(saldo, centavos(leido));
 
   function enviar(evento: SyntheticEvent<HTMLFormElement>) {
     evento.preventDefault();
-    if (leido === undefined) {
+    if (leido === null) {
       setError('Escribí el saldo que tenés de verdad, por ejemplo 1.250.000.');
       return;
     }
@@ -71,14 +63,12 @@ export function AjusteDeCocos({ saldo }: AjusteDeCocosProps) {
         <dd className="text-body font-semibold tabular-nums">{formatearPesos(saldo)}</dd>
       </dl>
 
-      <Campo
+      <MoneyInput
         etiqueta="El saldo que tenés de verdad"
-        inputMode="decimal"
-        value={escrito}
+        value={leido}
         error={error}
-        className="tabular-nums"
-        onChange={(evento) => {
-          setEscrito(evento.target.value);
+        onChange={(centavos) => {
+          setLeido(centavos);
           setError(undefined);
           setHecho(undefined);
         }}

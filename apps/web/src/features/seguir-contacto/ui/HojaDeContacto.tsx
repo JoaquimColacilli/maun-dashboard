@@ -11,7 +11,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filasDe, mensajeDeSincronizacion } from '@/shared/api';
 import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Hoja } from '@/shared/ui';
+import { Button, Campo, Hoja, MoneyInput } from '@/shared/ui';
 
 import {
   erroresDelContacto,
@@ -66,7 +66,10 @@ export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContacto
     else alCerrar();
   }, [guardar.isPaused, alGuardar, alCerrar]);
 
-  function cambiar(campo: keyof ValoresDelContacto, valor: string): void {
+  function cambiar<Campo extends keyof ValoresDelContacto>(
+    campo: Campo,
+    valor: ValoresDelContacto[Campo],
+  ): void {
     setValores((previos) => ({ ...previos, [campo]: valor }));
     setErrores((previos) => ({
       ...previos,
@@ -199,21 +202,14 @@ export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContacto
                 </span>
               </div>
             ) : (
-              <Campo
+              <MoneyInput
                 etiqueta="Seña cobrada"
-                inputMode="decimal"
                 placeholder="$ 0"
-                className="tabular-nums"
                 value={valores.sena}
-                onChange={(evento) => {
-                  cambiar('sena', evento.target.value);
+                onChange={(centavos) => {
+                  cambiar('sena', centavos);
                 }}
-                error={errores.sena}
-                ayuda={
-                  errores.sena === undefined
-                    ? 'Lo que te dejó en la visita. Entra a la caja del taller.'
-                    : undefined
-                }
+                ayuda="Lo que te dejó en la visita. Entra a la caja del taller."
               />
             )}
           </div>

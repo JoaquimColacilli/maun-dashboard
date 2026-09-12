@@ -15,8 +15,8 @@ import {
   type SituacionDelContacto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeProyecto } from '@/shared/api';
-import { hoyLocal, parsearPesosDesdeCero } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { hoyLocal } from '@/shared/lib';
+import { Button, Icono, MoneyInput } from '@/shared/ui';
 
 export interface AvanceDelContactoProps {
   proyecto: Proyecto;
@@ -35,8 +35,7 @@ export function AvanceDelContacto({
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const [rechazo, setRechazo] = useState<unknown>(null);
   const [presupuestando, setPresupuestando] = useState(false);
-  const [presupuesto, setPresupuesto] = useState('');
-  const [errorDelPresupuesto, setErrorDelPresupuesto] = useState<string | undefined>(undefined);
+  const [presupuesto, setPresupuesto] = useState<number | null>(null);
   const campoDelPresupuesto = useRef<HTMLInputElement>(null);
 
   const paso = pasoSiguiente(etapa);
@@ -91,20 +90,13 @@ export function AvanceDelContacto({
 
   function marcarEnviado(evento: SyntheticEvent<HTMLFormElement>): void {
     evento.preventDefault();
-    const texto = presupuesto.trim();
-    const monto = texto === '' ? null : parsearPesosDesdeCero(texto);
-    if (monto === undefined) {
-      setErrorDelPresupuesto('Revisá el monto: va en pesos, por ejemplo 1.200.000.');
-      return;
-    }
     mover(
-      monto === null
+      presupuesto === null
         ? { estado: 'presupuesto_enviado' }
-        : { estado: 'presupuesto_enviado', presupuesto_centavos: monto },
+        : { estado: 'presupuesto_enviado', presupuesto_centavos: presupuesto },
     );
     setPresupuestando(false);
-    setPresupuesto('');
-    setErrorDelPresupuesto(undefined);
+    setPresupuesto(null);
   }
 
   return (
@@ -122,23 +114,13 @@ export function AvanceDelContacto({
 
       {presupuestando ? (
         <form noValidate onSubmit={marcarEnviado} className="mt-3 flex flex-col gap-2.5">
-          <Campo
+          <MoneyInput
             ref={campoDelPresupuesto}
             etiqueta="Cuánto presupuestaste"
-            inputMode="decimal"
             placeholder="Opcional"
-            className="tabular-nums"
             value={presupuesto}
-            onChange={(evento) => {
-              setPresupuesto(evento.target.value);
-              setErrorDelPresupuesto(undefined);
-            }}
-            error={errorDelPresupuesto}
-            ayuda={
-              errorDelPresupuesto === undefined
-                ? 'Si lo dejás vacío, lo cargás cuando lo apruebe.'
-                : undefined
-            }
+            onChange={setPresupuesto}
+            ayuda="Si lo dejás vacío, lo cargás cuando lo apruebe."
           />
           <div className="flex flex-wrap gap-2">
             <Button type="submit">Marcar como enviado</Button>

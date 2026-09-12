@@ -35,7 +35,7 @@ export {
 } from './hojas';
 export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible } from './teclado';
-export { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';
+export { formatearPesos } from './plata';
 export {
   rutaDeAprobacion,
   rutaDeCierre,

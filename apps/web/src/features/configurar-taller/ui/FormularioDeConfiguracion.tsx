@@ -7,14 +7,8 @@ import {
   type CambiosDeAjustes,
   type FilaDe,
 } from '@/shared/api';
-import {
-  formatearPorcentaje,
-  parsearPesosDesdeCero,
-  parsearPorcentaje,
-  pesosEditables,
-  useEstadoSync,
-} from '@/shared/lib';
-import { Button, Campo } from '@/shared/ui';
+import { formatearPorcentaje, parsearPorcentaje, useEstadoSync } from '@/shared/lib';
+import { Button, Campo, MoneyInput } from '@/shared/ui';
 
 import { MUTACION_DE_AJUSTES, MUTACION_DEL_NOMBRE } from '../api/mutacion';
 
@@ -50,9 +44,9 @@ export function FormularioDeConfiguracion({
   ajustes: FilaDe<'ajustes'>;
 }) {
   const [nombre, setNombre] = useState(household.nombre);
-  const [sueldo, setSueldo] = useState(() => pesosEditables(ajustes.sueldo_mensual_centavos));
-  const [fijos, setFijos] = useState(() => pesosEditables(ajustes.costos_fijos_centavos));
-  const [meta, setMeta] = useState(() => pesosEditables(ajustes.meta_cocos_centavos));
+  const [sueldo, setSueldo] = useState<number | null>(ajustes.sueldo_mensual_centavos);
+  const [fijos, setFijos] = useState<number | null>(ajustes.costos_fijos_centavos);
+  const [meta, setMeta] = useState<number | null>(ajustes.meta_cocos_centavos);
   const [tasa, setTasa] = useState(() => formatearPorcentaje(ajustes.tasa_cocos_anual_bp));
   const [error, setError] = useState<ErrorDelFormulario | undefined>(undefined);
 
@@ -82,19 +76,19 @@ export function FormularioDeConfiguracion({
     }
 
     const valores = {
-      sueldo_mensual_centavos: parsearPesosDesdeCero(sueldo),
-      costos_fijos_centavos: parsearPesosDesdeCero(fijos),
-      meta_cocos_centavos: parsearPesosDesdeCero(meta),
+      sueldo_mensual_centavos: sueldo,
+      costos_fijos_centavos: fijos,
+      meta_cocos_centavos: meta,
       tasa_cocos_anual_bp: parsearPorcentaje(tasa),
     };
 
-    const faltante: [CampoDelFormulario, number | undefined][] = [
+    const faltante: [CampoDelFormulario, number | null | undefined][] = [
       ['sueldo', valores.sueldo_mensual_centavos],
       ['fijos', valores.costos_fijos_centavos],
       ['meta', valores.meta_cocos_centavos],
       ['tasa', valores.tasa_cocos_anual_bp],
     ];
-    const invalido = faltante.find(([, valor]) => valor === undefined);
+    const invalido = faltante.find(([, valor]) => valor === undefined || valor === null);
     if (invalido) {
       setError({
         campo: invalido[0],
@@ -132,35 +126,26 @@ export function FormularioDeConfiguracion({
           setNombre(evento.target.value);
         }}
       />
-      <Campo
+      <MoneyInput
         etiqueta="Sueldo que te asignás"
-        inputMode="decimal"
         ayuda="Lo que cada trabajo cobrado transfiere al hogar."
         value={sueldo}
         error={error?.campo === 'sueldo' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          setSueldo(evento.target.value);
-        }}
+        onChange={setSueldo}
       />
-      <Campo
+      <MoneyInput
         etiqueta="Costos fijos por mes"
-        inputMode="decimal"
         ayuda="Alquiler, servicios y todo lo que se paga aunque no entre trabajo."
         value={fijos}
         error={error?.campo === 'fijos' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          setFijos(evento.target.value);
-        }}
+        onChange={setFijos}
       />
-      <Campo
+      <MoneyInput
         etiqueta="Meta de Cocos"
-        inputMode="decimal"
         ayuda="A cuánto querés llegar en el ahorro invertido."
         value={meta}
         error={error?.campo === 'meta' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          setMeta(evento.target.value);
-        }}
+        onChange={setMeta}
       />
       <Campo
         etiqueta="Tasa anual de Cocos (%)"

@@ -10,7 +10,7 @@ import {
   type PagoParaGuardar,
   type ProyectoParaGuardar,
 } from '@/shared/api';
-import { hoyLocal, parsearPesos, parsearPesosDesdeCero, pesosEditables } from '@/shared/lib';
+import { hoyLocal } from '@/shared/lib';
 
 import {
   COMPROBANTES_EN_ORDEN,
@@ -34,7 +34,11 @@ const filaDinamica = z.object({
   id: z.string(),
   fecha: z.string().min(1, { error: 'Poné la fecha.' }),
   detalle: texto(500),
-  monto: z.string().refine((valor) => parsearPesos(valor) !== undefined, { error: SIN_MONTO }),
+  monto: z
+    .number()
+    .int()
+    .nullable()
+    .refine((valor) => valor !== null && valor > 0, { error: SIN_MONTO }),
 });
 
 export const esquemaDeProyecto = z.object({
@@ -43,10 +47,10 @@ export const esquemaDeProyecto = z.object({
   descripcion: texto(10_000),
   estado: z.enum(ESTADOS),
   presupuesto: z
-    .string()
-    .refine((valor) => valor.trim() === '' || parsearPesosDesdeCero(valor) !== undefined, {
-      error: 'Revisá el presupuesto: va en pesos.',
-    }),
+    .number()
+    .int()
+    .nonnegative({ error: 'Revisá el presupuesto: va en pesos.' })
+    .nullable(),
   forma_pago: z.enum(FORMAS_EN_ORDEN).nullable(),
   comprobante: z.enum(COMPROBANTES_EN_ORDEN),
   fecha_visita: z.string(),
@@ -72,7 +76,7 @@ function fechaOnNull(valor: string): string | null {
 }
 
 export function filaVacia(id: string, hoy: string = hoyLocal()): FilaDinamica {
-  return { id, fecha: hoy, detalle: '', monto: '' };
+  return { id, fecha: hoy, detalle: '', monto: null };
 }
 
 export function valoresDelFormulario(
@@ -87,7 +91,7 @@ export function valoresDelFormulario(
       titulo: '',
       descripcion: '',
       estado: 'en_curso',
-      presupuesto: '',
+      presupuesto: null,
       forma_pago: 'transferencia',
       comprobante: inicial.comprobante ?? 'sin_comprobante',
       fecha_visita: '',
@@ -107,8 +111,7 @@ export function valoresDelFormulario(
     titulo: proyecto.titulo,
     descripcion: proyecto.descripcion,
     estado: proyecto.estado,
-    presupuesto:
-      proyecto.presupuesto_centavos === null ? '' : pesosEditables(proyecto.presupuesto_centavos),
+    presupuesto: proyecto.presupuesto_centavos,
     forma_pago: proyecto.forma_pago,
     comprobante: proyecto.comprobante,
     fecha_visita: fecha(proyecto.fecha_visita),
@@ -122,25 +125,24 @@ export function valoresDelFormulario(
       id: pago.id,
       fecha: pago.fecha,
       detalle: pago.concepto,
-      monto: pesosEditables(pago.monto_centavos),
+      monto: pago.monto_centavos,
     })),
     gastos: gastos.map((gasto) => ({
       id: gasto.id,
       fecha: gasto.fecha,
       detalle: gasto.descripcion,
-      monto: pesosEditables(gasto.monto_centavos),
+      monto: gasto.monto_centavos,
     })),
   };
 }
 
 export function datosDelFormulario(valores: FormularioDeProyecto): DatosDeProyecto {
-  const presupuesto = parsearPesosDesdeCero(valores.presupuesto);
   return {
     cliente_id: valores.cliente_id,
     titulo: valores.titulo.trim(),
     descripcion: valores.descripcion.trim(),
     estado: valores.estado,
-    presupuesto_centavos: valores.presupuesto.trim() === '' ? null : (presupuesto ?? null),
+    presupuesto_centavos: valores.presupuesto,
     forma_pago: valores.forma_pago,
     comprobante: valores.comprobante,
     fecha_visita: fechaOnNull(valores.fecha_visita),
@@ -167,7 +169,7 @@ export function pedidoDeGuardado(
   valores: FormularioDeProyecto,
   existentes: { pagos: readonly string[]; gastos: readonly string[] },
 ): ProyectoParaGuardar {
-  const monto = (valor: string) => parsearPesos(valor) ?? 0;
+  const monto = (valor: number | null) => valor ?? 0;
 
   const pagos: PagoParaGuardar[] = valores.pagos.map((fila) => ({
     id: fila.id,
@@ -210,6 +212,6 @@ export function versionDelGuardado(
   return cambiaLaFila(actual, datos) ? actual.version + 1 : actual.version;
 }
 
-export function totalDeLasFilas(filas: readonly { monto: string }[]): number {
-  return filas.reduce((suma, fila) => suma + (parsearPesos(fila.monto) ?? 0), 0);
+export function totalDeLasFilas(filas: readonly { monto: number | null }[]): number {
+  return filas.reduce((suma, fila) => suma + (fila.monto ?? 0), 0);
 }

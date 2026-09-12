@@ -18,8 +18,8 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { mensajeDeSincronizacion, type ProyectoParaGuardar } from '@/shared/api';
-import { formatearPesos, hoyLocal, parsearPesos, pesosEditables, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Icono, Pagina } from '@/shared/ui';
+import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
+import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 const TEXTOS = {
   cobrado: {
@@ -85,11 +85,11 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
 
   const faltaCobrar = destino === 'cobrado' && resumen.saldo > 0;
   const [conPagoFinal, setConPagoFinal] = useState(faltaCobrar);
-  const [monto, setMonto] = useState(() => pesosEditables(resumen.saldo));
+  const [monto, setMonto] = useState<number | null>(resumen.saldo);
   const [fecha, setFecha] = useState(hoyLocal);
   const [concepto, setConcepto] = useState('Saldo final en la entrega');
 
-  const pagoExtra = centavos(conPagoFinal && faltaCobrar ? (parsearPesos(monto) ?? 0) : 0);
+  const pagoExtra = centavos(conPagoFinal && faltaCobrar ? (monto ?? 0) : 0);
   const liquidacion = liquidacionProyectada(replica, proyecto, hoyLocal(), { destino, pagoExtra });
   const despiece = despieceDeLaLiquidacion(liquidacion);
   const ajustes = ajustesDeLaReplica(replica);
@@ -177,14 +177,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
                   setConcepto(evento.target.value);
                 }}
               />
-              <Campo
-                etiqueta="Monto"
-                inputMode="decimal"
-                value={monto}
-                onChange={(evento) => {
-                  setMonto(evento.target.value);
-                }}
-              />
+              <MoneyInput etiqueta="Monto" value={monto} onChange={setMonto} />
               <Campo
                 etiqueta="Fecha"
                 type="date"

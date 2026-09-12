@@ -2,7 +2,7 @@ import { entregaEstimada, estaLiquidado, faseDe, type EstadoProyecto } from '@ma
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import { useFieldArray, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { ClienteCombobox, CONDICION, enlaceDeMapa } from '@/entities/cliente';
@@ -33,15 +33,8 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filaPorId, filasDe, mensajeDeSincronizacion } from '@/shared/api';
-import {
-  formatearPesos,
-  hoyLocal,
-  parsearPesosDesdeCero,
-  useAltoVisible,
-  useAnchoDePantalla,
-  uuidv7,
-} from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { formatearPesos, hoyLocal, useAltoVisible, useAnchoDePantalla, uuidv7 } from '@/shared/lib';
+import { Button, Campo, Icono, MoneyInput } from '@/shared/ui';
 
 import { FilasDinamicas } from './FilasDinamicas';
 
@@ -143,7 +136,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
   const totalCobrado = totalDeLasFilas(filasDePagos);
   const totalGastos = totalDeLasFilas(filasDeGastos);
-  const presupuestoEnPesos = parsearPesosDesdeCero(presupuesto) ?? 0;
+  const presupuestoEnPesos = presupuesto ?? 0;
   const saldo = Math.max(0, presupuestoEnPesos - totalCobrado);
   const neta = totalCobrado - totalGastos;
 
@@ -248,12 +241,21 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
                 <span aria-hidden className="text-money-lg text-text-3">
                   $
                 </span>
-                <input
-                  {...register('presupuesto')}
-                  id={`${idCampos}-presupuesto`}
-                  inputMode="decimal"
-                  placeholder="0"
-                  className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold tabular-nums outline-none"
+                <Controller
+                  control={control}
+                  name="presupuesto"
+                  render={({ field }) => (
+                    <MoneyInput
+                      ref={field.ref}
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      id={`${idCampos}-presupuesto`}
+                      placeholder="0"
+                      className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+                    />
+                  )}
                 />
               </div>
               {errors.presupuesto ? (
