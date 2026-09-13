@@ -35,8 +35,11 @@ La app consume `@maun/ui/theme.css` y `@maun/ui/fonts.css` (IBM Plex Sans 400/50
 
 - Props en inglés, valores en español (`variant="primario"`, `size="chico"`, `cargando`).
 - `Campo` acepta `ref` (sus props extienden `ComponentPropsWithRef<'input'>`): es lo que React Hook Form necesita para registrar el input.
+- `Campo` acepta `contenedor`, clases que se suman al `div` que envuelve etiqueta, input y ayuda. La ayuda y el error van juntos en una sola celda, así que con `row-span-3 grid grid-rows-subgrid` dos campos en fila alinean sus inputs aunque una etiqueta o una ayuda ocupe dos líneas (ADR 0020).
+- **`Avatar`** son las iniciales del nombre sobre un color que sale de un hash del nombre (`--color-avatar-1` a `-6`, con sus pares del oscuro). Con `foto`, la imagen se pone encima recién cuando carga, y si falla vuelven las iniciales; `data-foto` dice en qué estado está (`sin-foto`, `cargando`, `lista`, `fallo`). Es `aria-hidden`: el nombre siempre está escrito al lado (ADR 0021 y 0022).
 - **`MoneyInput` es el campo de plata** (ADR 0020). Entrega centavos enteros (`number | null`) y muestra el importe formateado mientras se escribe: los dígitos entran por la derecha con el cursor fijo al final (5, 50, 500, 5.000), la coma abre los decimales y pegar un importe con puntos o coma lo lee entero. Decide con `InputEvent.inputType`, no comparando textos. `inputMode="decimal"` y no `numeric`: el teclado numérico de iOS no tiene coma.
 - `Icono` importa de `lucide-react` uno por uno. Se verificó sobre el build que Vite lo tree-shakea: en el bundle están los paths de los íconos que se usan, no la librería (ADR 0014).
 - Área táctil mínima de 44px (`--tap-min`), foco visible y estados de carga, vacío y error según `Tokens.dc.html`.
+- **Un componente que puede vivir en una columna se adapta a su ancho, no al de la ventana**: consultas de contenedor de Tailwind 4 (`@container` en un ancestro, `@sm:`, `@min-[21rem]:`), no `sm:` ni `md:`. `--container-*` no está reseteado, así que valen los tamaños de fábrica (`@xs` 20rem, `@sm` 24rem, `@md` 28rem, `@lg` 32rem). **`@container` y `@sm:` no van en el mismo elemento**: la consulta mira al ancestro, nunca a sí mismo.
 - Imports relativos con extensión (`./Button.tsx`).
 - Test con Testing Library al lado del componente.

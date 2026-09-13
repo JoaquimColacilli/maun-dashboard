@@ -24,4 +24,5 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0018](0018-finanzas-el-diezmo-y-los-movimientos-a-mano.md)    | Finanzas, el diezmo y los movimientos a mano             | Aceptada             |
 | [0019](0019-seguimiento-el-contacto-es-la-misma-fila.md)       | Seguimiento: el contacto es la misma fila, sin tablero   | Aceptada             |
 | [0020](0020-pulido-visual.md)                                  | Pulido visual: tema oscuro, hojas, plata, avisos y molde | Aceptada             |
-| [0021](0021-perfil-sin-foto.md)                                | Perfil: el nombre en la cuenta, iniciales en vez de foto | Aceptada             |
+| [0021](0021-perfil-sin-foto.md)                                | Perfil: el nombre en la cuenta, iniciales en vez de foto | Reemplazada por 0022 |
+| [0022](0022-foto-de-perfil.md)                                 | Foto de perfil: recorte en el navegador y bucket público | Aceptada             |

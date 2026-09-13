@@ -1,6 +1,6 @@
 # 0021. Perfil: el nombre en la cuenta, iniciales en vez de foto
 
-- Estado: aceptada
+- Estado: aceptada; la foto, reemplazada por el [0022](0022-foto-de-perfil.md)
 - Fecha: 2026-09-12
 
 ## Contexto
