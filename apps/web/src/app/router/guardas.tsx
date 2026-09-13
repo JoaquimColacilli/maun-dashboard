@@ -2,7 +2,9 @@ import { Navigate, Outlet } from 'react-router';
 
 import { ProveedorDeReplica, useReplica } from '@/entities/replica';
 import { ProveedorDeSesion, useSesion, useSesionActiva } from '@/entities/sesion';
+import { PantallaDeBloqueo } from '@/features/desbloquear-la-app';
 import { tieneAcceso } from '@/shared/api';
+import { esCelular, useAppBloqueada } from '@/shared/lib';
 import { Cargando } from '@/shared/ui';
 
 import { ErrorDeCarga } from '../layout/ErrorDeCarga';
@@ -12,6 +14,12 @@ export function RutaPublica() {
 
   if (sesion.tipo === 'cargando') return <Cargando que="Abriendo la app" />;
   if (sesion.tipo === 'activa') return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
+function ConBloqueo({ usuarioId }: { usuarioId: string }) {
+  const bloqueada = useAppBloqueada(usuarioId);
+  if (bloqueada && esCelular()) return <PantallaDeBloqueo />;
   return <Outlet />;
 }
 
@@ -30,7 +38,7 @@ export function RutaConSesion() {
         foto: sesion.foto,
       }}
     >
-      <Outlet />
+      <ConBloqueo usuarioId={sesion.usuarioId} />
     </ProveedorDeSesion>
   );
 }

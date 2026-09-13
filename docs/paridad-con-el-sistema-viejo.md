@@ -206,6 +206,14 @@ Del paso 12:
 - **La barra del sueldo del mes dice algo con cualquier cantidad de cobros**: el original se llenaba
   con el primero.
 
+Del paso 14 (ADR 0023):
+
+- **Bloqueo con huella al abrir la app en el celular**, también sin señal. El original no tenía cuenta
+  ni sesión: lo abría cualquiera que tuviera la PC.
+- **Passkeys en el autocompletado del mail**, para entrar desde un dispositivo nuevo sin escribir la
+  contraseña.
+- **El botón para ver la contraseña**, siempre presente, y los rechazos del acceso en castellano.
+
 ---
 
 ## 8. Seguimiento, contra lo que obligaba el original

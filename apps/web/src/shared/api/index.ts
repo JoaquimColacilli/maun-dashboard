@@ -1,5 +1,12 @@
-export { clienteMaun } from './cliente';
-export { esFalloDeRed, mensajeDeAcceso, mensajeDeSincronizacion } from './errores';
+export { clienteMaun, vinoPorRecuperacion } from './cliente';
+export {
+  codigoDeAcceso,
+  errorDelEnlace,
+  esFalloDeRed,
+  mensajeDeAcceso,
+  mensajeDeSincronizacion,
+} from './errores';
+export { esperarHuellaDelAutocompletado, registrarHuella } from './passkeys';
 export {
   traducirRechazo,
   type ContextoDelRechazo,
@@ -14,6 +21,7 @@ export {
   guardarNombreDeLaPersona,
   leerClaims,
   pedirRecuperacion,
+  reenviarConfirmacion,
   salir,
   subirFotoDeLaPersona,
   type CambioDeSesion,

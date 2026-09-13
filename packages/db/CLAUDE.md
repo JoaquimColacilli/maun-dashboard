@@ -2,6 +2,10 @@
 
 Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed, el alta de households y la migración de una sola vez desde el sistema viejo (`db:migrar`).
 
+## El cliente
+
+`crearClienteMaun` usa PKCE, persiste la sesión en `maun.sesion` y prende las passkeys de Supabase con `auth: { experimental: { passkey: true } }` (ADR 0023). Son beta y la API puede cambiar sin aviso; sin el flag, todos los métodos de passkeys tiran. Las passkeys se activan además en el proyecto (Authentication → Passkeys, con el RP ID en dominio pelado).
+
 ## La réplica del household
 
 `src/replica.ts` es la copia local del household y la lógica que la mantiene al día (ADR 0010). Es pura y sin dependencias: se testea con `src/replica.test.ts`, sin base.

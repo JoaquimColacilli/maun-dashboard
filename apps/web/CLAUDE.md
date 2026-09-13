@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas** y **Diezmo**. Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas** y **Diezmo**. Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño.
 
 ## Capas (FSD, ADR 0006)
 
@@ -10,12 +10,13 @@ src/
   app/         arranque, providers, router con sus guardas y layout del shell
   pages/       una carpeta por ruta, finas: componen features y entidades
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
+               desbloquear-la-app, activar-huella,
                cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
                editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto)
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
                proyecto y movimiento
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
-               uuid, sync) y ui
+               uuid, sync, huella, teclado) y ui
 ```
 
 - Solo se importa hacia capas de abajo, y un slice no importa a otro de su misma capa.
@@ -42,10 +43,24 @@ src/
 - **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
 
+## Pantallas de sesión, bloqueo con huella y passkeys (ADR 0023)
+
+- **Toda pantalla de sesión es `PantallaDeAcceso`** (`shared/ui`): el tablero con el canto de los tesoros y el formulario. En el celular toma el alto y el desplazamiento del `visualViewport` (`useVentanaVisible`), no `min-h-dvh`: `#root` tiene `overflow: hidden` y sin eso el teclado cortaba el formulario. Al enfocar un campo acomoda primero el botón de enviar y después el campo.
+- **Todo campo de contraseña es `CampoDeContrasena`.** El ojo que desaparecía era el `::-ms-reveal` de Edge, que ahora está escondido. En el e2e, `getByLabel('Contraseña', { exact: true })`: el botón se llama «Mostrar la contraseña» y sin `exact` son dos elementos.
+- Autocompletado: `username webauthn` en el mail del login, `username` en los otros mails, `current-password` al entrar y `new-password` al registrarse y al restablecer.
+- **`mensajeDeAcceso` nunca devuelve el `message` de un error**: lo que no está traducido dice el código entre paréntesis. Un código nuevo va a `POR_CODIGO`. Supabase no da error con un mail ya registrado (`esAltaRepetida`), y un enlace vencido vuelve en la URL (`errorDelEnlace`).
+- **`PASSWORD_RECOVERY` lo escucha `clienteMaun()` al crear el cliente** (`vinoPorRecuperacion`). No lo muevas a una suscripción de componente: el canje del código puede terminar antes de que monte la pantalla, y el evento no se repite.
+- **El bloqueo es una barrera de uso, no una frontera de seguridad.** `ConBloqueo` (en `guardas.tsx`) reemplaza todo lo que cuelga de `RutaConSesion`, réplica incluida. `esCelular()` mide el lado corto de la pantalla y se fija al abrir. La marca `maun:bloqueo` es por usuario y la borra `limpiarDatosLocales`.
+- **La ceremonia local (`pedirHuella`) sale una vez por montaje y no se reintenta sola**: Safari limita la frecuencia sin publicar umbrales. El reintento es el botón.
+- **Activar la huella marca la apertura en curso como desbloqueada.** Si no, la guarda bloquearía la app en el mismo momento en que el usuario la activa.
+- Passkeys: el opt-in experimental está en `crearClienteMaun`. El autocompletado del mail (`esperarHuellaDelAutocompletado`) es la ceremonia en dos pasos, porque `signInWithPasskey` no admite mediación condicional. Es silenciosa salvo cuando falla la verificación.
+- **`IndicadorSync` vive en `Marco`, no en `Shell`**: en las pantallas de sesión no hay nada que sincronizar, y tapaba el botón de la huella.
+
 ## Pantallas y navegación (ADR 0013)
 
 - **La app renderiza desde la réplica local, nunca desde la red.** La réplica llega por contexto (`useReplicaDelTaller()`), provista por `RutaConAcceso`, que ya la tiene resuelta antes de dejar pasar. **Ninguna pantalla adentro del marco tiene estado de carga**: si te encontrás escribiendo un skeleton para una de ellas, la pantalla no puede quedarse sin datos y el skeleton está de más.
 - Sin `lazy` ni Suspense con spinner para las pantallas del taller: se importan directo. El code splitting queda para las de acceso, que son las únicas que dependen de la red.
+- **En el celular, Ajustes se abre desde el avatar del encabezado de Inicio** (ADR 0024): es el único destino del sidebar sin lugar en la barra inferior, y ahí vive el registro de lo que la base rechazó. La barra inferior no se toca. Si un destino nuevo no entra en ella, el avatar pasa a abrir una hoja corta desde abajo con los que falten. `destinos-en-celular.spec.ts` recorre el camino a cada uno.
 - `app/layout/destinos.ts` es el modelo de la navegación: los destinos, cuáles se ven en cada ancho y `destinoResaltado`, que marca Proyectos cuando estás en Seguimiento y no hay destino propio. `Navegacion.tsx` elige **una sola** de las tres barras con `matchMedia`: tres `<nav>` en el DOM son tres landmarks.
 - El foco y el anuncio al cambiar de ruta los hace `Marco.tsx` sobre el `<main>`, no cada pantalla. Las pantallas **no** renderizan `<main>`: ya hay uno.
 - Las transiciones van con `conTransicion()` (`document.startViewTransition` + `flushSync`), nunca con el componente `<ViewTransition>` de React.
@@ -224,3 +239,7 @@ src/
 - **`not.toContainText` sobre un locator que no existe falla** («element(s) not found»). Para decir que un aviso no apareció, `filter({ hasText })` y `toHaveCount(0)`.
 - **`request.postDataBuffer()` no trae el cuerpo de una subida multipart con un `Blob`**: da `null`. Para medir lo que sube la app, `foto.spec.ts` envuelve `fetch` con `addInitScript` y anota el tamaño, el tipo y el SHA-256 del archivo; con la huella se comprueba que la URL nueva sirve la foto nueva.
 - `foto.spec.ts` escribe en Storage con la cuenta de prueba: la subida corre una vez por corrida, solo en `escritorio`. `scroll.spec.ts` corre en `celular`, porque en 1440×900 Inicio no llega a scrollear.
+- **La huella se prueba con el autenticador virtual del protocolo de DevTools** (`e2e/apoyo/huella.ts`). La sesión de CDP y el autenticador se crean antes de navegar, y las respuestas de passkeys de Supabase se simulan: con el RP ID de producción, `localhost` no puede registrar nada.
+- **Cerrar sesión en un test intercepta `**/auth/v1/logout**`.** `signOut()` es global y revocaría la sesión guardada que usan los demás proyectos.
+- Chromium headless sin autenticador rechaza la mediación condicional con `NotSupportedError`. La app lo calla; un test que espera la ceremonia necesita el autenticador virtual.
+- **Un `vite preview` que quedó levantado en el 4173 se reusa** (`reuseExistingServer`), y el e2e corre contra un build viejo. Bajalo antes de correr.

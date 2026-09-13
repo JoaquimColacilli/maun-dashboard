@@ -9,7 +9,7 @@ setup('la cuenta de prueba entra una vez y deja su sesión guardada', async ({ p
 
   await page.goto('/acceso');
   await page.getByLabel('Email').fill(sesion.entorno.email);
-  await page.getByLabel('Contraseña').fill(sesion.entorno.password);
+  await page.getByLabel('Contraseña', { exact: true }).fill(sesion.entorno.password);
   await page.getByRole('button', { name: 'Entrar' }).click();
 
   await expect(page.getByRole('heading', { level: 1, name: 'Inicio' })).toBeVisible();

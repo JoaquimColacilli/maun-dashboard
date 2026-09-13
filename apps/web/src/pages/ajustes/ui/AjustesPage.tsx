@@ -2,13 +2,14 @@ import { useMutationState } from '@tanstack/react-query';
 import { Link } from 'react-router';
 
 import { useReplicaDelTaller } from '@/entities/replica';
+import { AjusteDeHuella } from '@/features/activar-huella';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
-import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
+import { describirEstadoSync, esCelular, useAvisos, useEstadoSync } from '@/shared/lib';
 import { Pagina, PanelDeAvisos } from '@/shared/ui';
 
 const SECCION =
@@ -117,6 +118,15 @@ export function AjustesPage() {
               {ultimaSincronizacion(replica.cursor)}
             </p>
           </section>
+
+          {esCelular() && (
+            <section aria-labelledby="titulo-huella" className={SECCION}>
+              <h2 id="titulo-huella" className="text-section font-semibold">
+                Entrar con la huella
+              </h2>
+              <AjusteDeHuella />
+            </section>
+          )}
 
           <section aria-labelledby="titulo-rechazos" className={SECCION}>
             <h2 id="titulo-rechazos" className="text-section font-semibold">
