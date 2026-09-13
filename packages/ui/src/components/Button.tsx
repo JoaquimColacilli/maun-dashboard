@@ -11,6 +11,7 @@ const VARIANTES = {
 } as const;
 
 const TAMANOS = {
+  grande: 'h-field text-body-lg',
   normal: 'h-button text-body',
   chico: 'h-button-sm text-label',
 } as const;

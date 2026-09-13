@@ -14,6 +14,7 @@ export {
   guardarNombreDeLaPersona,
   leerClaims,
   pedirRecuperacion,
+  reenviarConfirmacion,
   salir,
   subirFotoDeLaPersona,
   type CambioDeSesion,

@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
 
 import { entrar, mensajeDeAcceso } from '@/shared/api';
 import { Button, Campo, CampoDeContrasena } from '@/shared/ui';
@@ -10,7 +10,7 @@ interface ErrorDelFormulario {
   mensaje: string;
 }
 
-export function FormularioDeIngreso() {
+export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
   const [email, setEmail] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState<ErrorDelFormulario | undefined>(undefined);
@@ -41,16 +41,17 @@ export function FormularioDeIngreso() {
   return (
     <form
       noValidate
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-4"
       onSubmit={(evento) => {
         void enviar(evento);
       }}
     >
       <Campo
         etiqueta="Email"
+        name="email"
         type="email"
         inputMode="email"
-        autoComplete="email"
+        autoComplete="username"
         value={email}
         error={error?.campo === 'email' ? error.mensaje : undefined}
         onChange={(evento) => {
@@ -60,7 +61,9 @@ export function FormularioDeIngreso() {
       />
       <CampoDeContrasena
         etiqueta="Contraseña"
+        name="password"
         autoComplete="current-password"
+        accesorio={olvido}
         value={contrasena}
         error={error?.campo === 'contrasena' ? error.mensaje : undefined}
         onChange={(evento) => {
@@ -68,11 +71,11 @@ export function FormularioDeIngreso() {
         }}
       />
       {error !== undefined && error.campo === undefined && (
-        <p role="alert" className="text-label font-medium text-alerta">
+        <p role="alert" className="text-label leading-relaxed font-medium text-alerta">
           {error.mensaje}
         </p>
       )}
-      <Button type="submit" cargando={entrando} className="mt-1">
+      <Button type="submit" size="grande" cargando={entrando} className="mt-1 w-full">
         {entrando ? 'Entrando…' : 'Entrar'}
       </Button>
     </form>

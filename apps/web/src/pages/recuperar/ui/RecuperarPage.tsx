@@ -1,20 +1,50 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 
-import { FormularioDePedido } from '@/features/recuperar-acceso';
-import { PantallaDeAcceso } from '@/shared/ui';
+import { ConfirmacionDelPedido, FormularioDePedido } from '@/features/recuperar-acceso';
+import { ENLACE_DE_ACCESO, PantallaDeAcceso } from '@/shared/ui';
 
 export function RecuperarPage() {
+  const [email, setEmail] = useState('');
+  const [enviado, setEnviado] = useState(false);
+
+  if (enviado) {
+    return (
+      <PantallaDeAcceso
+        titulo="Revisá tu correo"
+        bajada="El enlace te lleva a poner una contraseña nueva."
+        nota="El servidor de mails manda pocos por hora. Si pediste varios seguidos, esperá un rato antes de volver a intentar."
+      >
+        <ConfirmacionDelPedido
+          email={email}
+          alCambiar={() => {
+            setEnviado(false);
+          }}
+        />
+      </PantallaDeAcceso>
+    );
+  }
+
   return (
     <PantallaDeAcceso
-      titulo="Recuperar el acceso"
-      bajada="Te mandamos un enlace para poner una contraseña nueva. Abrilo desde este mismo dispositivo."
+      titulo="Recuperá el acceso"
+      bajada="Te mandamos un enlace para poner una contraseña nueva."
       pie={
-        <Link to="/acceso" className="underline underline-offset-3">
-          Volver a entrar
-        </Link>
+        <p>
+          ¿Te acordaste?{' '}
+          <Link to="/acceso" className={ENLACE_DE_ACCESO}>
+            Entrá
+          </Link>
+        </p>
       }
     >
-      <FormularioDePedido />
+      <FormularioDePedido
+        emailInicial={email}
+        alPedir={(pedido) => {
+          setEmail(pedido);
+          setEnviado(true);
+        }}
+      />
     </PantallaDeAcceso>
   );
 }

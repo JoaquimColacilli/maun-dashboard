@@ -127,6 +127,15 @@ export async function crearCuenta(
   if (error) throw error;
 }
 
+export async function reenviarConfirmacion(email: string, volverA: string): Promise<void> {
+  const { error } = await clienteMaun().auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: volverA },
+  });
+  if (error) throw error;
+}
+
 export async function pedirRecuperacion(email: string, volverA: string): Promise<void> {
   const { error } = await clienteMaun().auth.resetPasswordForEmail(email, { redirectTo: volverA });
   if (error) throw error;

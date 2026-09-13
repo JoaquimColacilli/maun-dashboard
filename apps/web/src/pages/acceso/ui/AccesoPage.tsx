@@ -1,25 +1,29 @@
 import { Link } from 'react-router';
 
 import { FormularioDeIngreso } from '@/features/iniciar-sesion';
-import { PantallaDeAcceso } from '@/shared/ui';
+import { ENLACE_DE_ACCESO, ENLACE_DE_CAMPO, PantallaDeAcceso } from '@/shared/ui';
 
 export function AccesoPage() {
   return (
     <PantallaDeAcceso
-      titulo="MAUN"
-      bajada="La gestión del taller. Entrá con tu mail y tu contraseña: una vez adentro, la app anda aunque no haya señal."
+      titulo="Entrá al taller"
+      nota="Una vez adentro, la app anda aunque no haya señal."
       pie={
-        <>
-          <Link to="/acceso/recuperar" className="underline underline-offset-3">
-            Me olvidé la contraseña
+        <p>
+          ¿No tenés cuenta?{' '}
+          <Link to="/acceso/crear-cuenta" className={ENLACE_DE_ACCESO}>
+            Creá una
           </Link>
-          <Link to="/acceso/crear-cuenta" className="underline underline-offset-3">
-            Todavía no tengo cuenta
-          </Link>
-        </>
+        </p>
       }
     >
-      <FormularioDeIngreso />
+      <FormularioDeIngreso
+        olvido={
+          <Link to="/acceso/recuperar" className={ENLACE_DE_CAMPO}>
+            ¿La olvidaste?
+          </Link>
+        }
+      />
     </PantallaDeAcceso>
   );
 }
