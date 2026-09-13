@@ -192,7 +192,9 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
     <div
       style={enCelular && altoVisible !== undefined ? { height: altoVisible } : undefined}
       className={
-        enCelular ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-paper' : 'flex flex-col'
+        enCelular
+          ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-paper'
+          : 'flex min-h-full flex-col'
       }
     >
       <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
@@ -222,7 +224,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
           className={`mx-auto grid min-h-0 w-full max-w-content flex-1 grid-cols-1 gap-6 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:grid-cols-2 lg:gap-x-12 lg:px-(--page-pad-desktop) lg:py-6 ${
             enCelular
               ? 'overflow-y-auto'
-              : '[&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
+              : 'content-start [&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
           }`}
         >
           <div className="flex min-w-0 flex-col gap-5">

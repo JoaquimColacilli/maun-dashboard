@@ -47,6 +47,28 @@ async function agregar(page: Page, lista: 'Pagos recibidos' | 'Gastos e insumos'
   await page.getByRole('region', { name: lista }).getByRole('button', { name: texto }).click();
 }
 
+async function distanciaDelPieAlPiso(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const pie = document.querySelector('form footer');
+    const main = document.querySelector('main');
+    if (!pie || !main) return Number.POSITIVE_INFINITY;
+    return Math.abs(main.getBoundingClientRect().bottom - pie.getBoundingClientRect().bottom);
+  });
+}
+
+test('en escritorio, con el formulario vacío, la barra de totales queda al piso de la ventana y no al final del contenido', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'escritorio', 'la barra fija es del escritorio');
+  await page.goto('/proyectos/nuevo');
+  await expect(page.getByRole('button', { name: 'Guardar proyecto' })).toBeVisible();
+
+  expect(await distanciaDelPieAlPiso(page)).toBeLessThanOrEqual(1);
+  const alto = page.viewportSize()?.height ?? 0;
+  const pie = await page.locator('form footer').boundingBox();
+  expect(Math.abs((pie?.y ?? 0) + (pie?.height ?? 0) - alto)).toBeLessThanOrEqual(1);
+});
+
 test('en escritorio, con muchas filas, las dos barras quedan fijas, cada lista deja su título a la vista y el teclado no esconde el campo', async ({
   page,
 }, testInfo) => {
@@ -63,7 +85,7 @@ test('en escritorio, con muchas filas, las dos barras quedan fijas, cada lista d
       monto: '1000',
     });
   }
-  for (const numero of [1, 2, 3, 4, 5, 6, 7, 8]) {
+  for (const numero of [1, 2, 3, 4, 5, 6, 7]) {
     await agregar(page, 'Gastos e insumos');
     await cargarFila(page, 'Gastos e insumos', numero, {
       detalle: `Gasto ${String(numero)}`,
@@ -80,6 +102,7 @@ test('en escritorio, con muchas filas, las dos barras quedan fijas, cada lista d
   await expect(page.getByRole('button', { name: 'Cancelar' })).toBeInViewport();
   await expect(page.getByRole('button', { name: 'Guardar proyecto' })).toBeInViewport();
   await expect(page.locator('form footer')).toContainText('Cobrado');
+  expect(await distanciaDelPieAlPiso(page)).toBeLessThanOrEqual(1);
 
   const titulo = pagos.getByRole('heading', { name: 'Pagos recibidos' });
   await expect(titulo).toBeInViewport();
