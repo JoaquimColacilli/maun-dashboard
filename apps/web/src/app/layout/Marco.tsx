@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useLocation, useRoutes, type Location } from 'react-router';
 
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
@@ -18,6 +18,34 @@ import { Avisos } from './Avisos';
 import { IndicadorSync } from './IndicadorSync';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
+
+const MARGEN_SOBRE_LO_QUE_FLOTA = 8;
+
+function useHuellaDeAbajo(principal: RefObject<HTMLElement | null>) {
+  const [huella, setHuella] = useState(0);
+
+  const medir = useCallback(
+    (nodo: HTMLDivElement | null) => {
+      if (!nodo) return;
+      const actualizar = () => {
+        const fondo = principal.current?.getBoundingClientRect().bottom ?? window.innerHeight;
+        setHuella(Math.max(0, Math.ceil(fondo - nodo.getBoundingClientRect().top)));
+      };
+      actualizar();
+      const observador = 'ResizeObserver' in globalThis ? new ResizeObserver(actualizar) : null;
+      observador?.observe(nodo);
+      window.addEventListener('resize', actualizar);
+      return () => {
+        observador?.disconnect();
+        window.removeEventListener('resize', actualizar);
+        setHuella(0);
+      };
+    },
+    [principal],
+  );
+
+  return [huella, medir] as const;
+}
 
 function HojaEnSuUbicacion({ ubicacion }: { ubicacion: Location }) {
   return useRoutes(RUTAS_DE_HOJA, ubicacion);
@@ -42,6 +70,7 @@ export function Marco() {
   const principal = useRef<HTMLElement>(null);
   const montado = useRef(false);
   const [anuncio, setAnuncio] = useState('');
+  const [huellaDeAbajo, medirLoQueFlota] = useHuellaDeAbajo(principal);
   useScrollPorPantalla(principal, visible);
 
   const seccion = seccionDeLaRuta(visible.pathname);
@@ -79,6 +108,11 @@ export function Marco() {
         id="contenido"
         ref={principal}
         tabIndex={-1}
+        style={
+          huellaDeAbajo > 0
+            ? { paddingBottom: `${String(huellaDeAbajo + MARGEN_SOBRE_LO_QUE_FLOTA)}px` }
+            : undefined
+        }
         className={`min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable] ${
           ancho === 'movil'
             ? 'pb-[calc(var(--bottom-nav-clearance)+env(safe-area-inset-bottom))]'
@@ -92,7 +126,7 @@ export function Marco() {
 
       <Avisos />
 
-      <IndicadorSync />
+      <IndicadorSync ref={medirLoQueFlota} />
 
       <OfertaDeHuella />
 
