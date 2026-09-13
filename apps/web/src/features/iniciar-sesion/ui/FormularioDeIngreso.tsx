@@ -8,6 +8,7 @@ import {
   mensajeDeAcceso,
   reenviarConfirmacion,
 } from '@/shared/api';
+import { anotarIngresoConContrasena } from '@/shared/lib';
 import { Button, Campo, CampoDeContrasena } from '@/shared/ui';
 
 const MAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -97,6 +98,7 @@ export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
     setError(undefined);
     try {
       await entrar(email, contrasena);
+      anotarIngresoConContrasena();
     } catch (fallo) {
       setError({ mensaje: esFalloDeRed(fallo) ? SIN_SENAL_PARA_ENTRAR : mensajeDeAcceso(fallo) });
       setSinConfirmar(codigoDeAcceso(fallo) === 'email_not_confirmed');

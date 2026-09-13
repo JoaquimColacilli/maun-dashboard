@@ -33,7 +33,25 @@ export {
   type EstadoConFondo,
   type PatronDeHoja,
 } from './hojas';
-export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
+export {
+  activarBloqueo,
+  anotarCredencial,
+  anotarIngresoConContrasena,
+  anotarPreguntaPorLaHuella,
+  bloqueoDe,
+  CLAVE_DEL_BLOQUEO,
+  entroRecienConContrasena,
+  huellaDisponible,
+  marcarDesbloqueada,
+  olvidarBloqueo,
+  pedirHuella,
+  useAppBloqueada,
+  useBloqueoActivo,
+  yaSePreguntoPorLaHuella,
+  type BloqueoDelDispositivo,
+  type ResultadoDeLaHuella,
+} from './huella';
+export { esCelular, esMedidaDeCelular, useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible, useVentanaVisible, type VentanaVisible } from './teclado';
 export { useScrollPorPantalla } from './scroll';
 export { formatearPesos } from './plata';

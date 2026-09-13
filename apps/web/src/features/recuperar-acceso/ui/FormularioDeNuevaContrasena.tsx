@@ -1,6 +1,7 @@
 import { useState, type SyntheticEvent } from 'react';
 
 import { cambiarContrasena, mensajeDeAcceso } from '@/shared/api';
+import { marcarDesbloqueada } from '@/shared/lib';
 import { Button, CampoDeContrasena } from '@/shared/ui';
 
 const LARGO_MINIMO = 6;
@@ -26,6 +27,7 @@ export function FormularioDeNuevaContrasena({ alCambiar }: { alCambiar: () => vo
     setError(undefined);
     try {
       await cambiarContrasena(contrasena);
+      marcarDesbloqueada();
       alCambiar();
     } catch (fallo) {
       setError({ mensaje: mensajeDeAcceso(fallo) });

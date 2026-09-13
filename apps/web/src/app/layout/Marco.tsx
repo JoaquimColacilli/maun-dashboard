@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useRoutes, type Location } from 'react-router';
 
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
+import { OfertaDeHuella } from '@/features/activar-huella';
 import {
   describirEstadoSync,
   esRutaDeHoja,
@@ -14,6 +15,7 @@ import { ConSalida } from '@/shared/ui';
 
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
 import { Avisos } from './Avisos';
+import { IndicadorSync } from './IndicadorSync';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
 
@@ -89,6 +91,10 @@ export function Marco() {
       <CapaDeHoja />
 
       <Avisos />
+
+      <IndicadorSync />
+
+      <OfertaDeHuella />
 
       <span aria-live="polite" className="sr-only">
         {anuncio}
