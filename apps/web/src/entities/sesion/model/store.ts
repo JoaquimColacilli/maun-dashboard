@@ -1,9 +1,8 @@
-import { escucharSesion, leerClaims } from '@/shared/api';
+import { escucharSesion, leerClaims, vinoPorRecuperacion } from '@/shared/api';
 
 import { SESION_ANONIMA, SESION_CARGANDO, sesionDe, type EstadoSesion } from './estado';
 
 let estado: EstadoSesion = SESION_CARGANDO;
-let porRecuperacion = false;
 let arrancado = false;
 const oyentes = new Set<() => void>();
 
@@ -31,15 +30,13 @@ function arrancar(): void {
   if (arrancado) return;
   arrancado = true;
 
-  escucharSesion((claims, cambio) => {
-    if (cambio === 'recuperacion') porRecuperacion = true;
-    if (cambio === 'cerrada') porRecuperacion = false;
-    guardar(sesionDe(claims, porRecuperacion));
+  escucharSesion((claims) => {
+    guardar(sesionDe(claims, vinoPorRecuperacion()));
   });
 
   leerClaims()
     .then((claims) => {
-      guardar(sesionDe(claims, porRecuperacion));
+      guardar(sesionDe(claims, vinoPorRecuperacion()));
     })
     .catch(() => {
       guardar(SESION_ANONIMA);

@@ -3,6 +3,7 @@ import { crearClienteMaun, type ClienteMaun } from '@maun/db';
 import { leerEnv } from '@/shared/config';
 
 let cliente: ClienteMaun | undefined;
+let porRecuperacion = false;
 
 export function clienteMaun(): ClienteMaun {
   if (!cliente) {
@@ -11,6 +12,14 @@ export function clienteMaun(): ClienteMaun {
       url: env.VITE_SUPABASE_URL,
       publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
     });
+    cliente.auth.onAuthStateChange((evento) => {
+      if (evento === 'PASSWORD_RECOVERY') porRecuperacion = true;
+      if (evento === 'SIGNED_OUT') porRecuperacion = false;
+    });
   }
   return cliente;
+}
+
+export function vinoPorRecuperacion(): boolean {
+  return porRecuperacion;
 }

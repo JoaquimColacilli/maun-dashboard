@@ -1,4 +1,4 @@
-export { clienteMaun } from './cliente';
+export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   codigoDeAcceso,
   errorDelEnlace,
