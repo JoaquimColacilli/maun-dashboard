@@ -149,9 +149,13 @@ export function RecortadorDeFoto({
         data-zoom={encuadre.zoom.toFixed(2)}
         className="relative mx-auto aspect-square w-full max-w-[320px] cursor-grab touch-none overflow-hidden rounded-field bg-surface-2 select-none active:cursor-grabbing"
         onPointerDown={(evento) => {
-          evento.currentTarget.setPointerCapture(evento.pointerId);
           punteros.current.set(evento.pointerId, puntoRelativo(evento.currentTarget, evento));
           empezarGesto();
+          try {
+            evento.currentTarget.setPointerCapture(evento.pointerId);
+          } catch {
+            return;
+          }
         }}
         onPointerMove={(evento) => {
           const previo = punteros.current.get(evento.pointerId);
