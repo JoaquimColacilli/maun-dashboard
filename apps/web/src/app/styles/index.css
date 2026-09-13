@@ -5,6 +5,11 @@
 @source not '../../../../../design-reference';
 
 @layer base {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
   #root {
     position: fixed;
     inset: 0;

@@ -49,6 +49,8 @@ Dos operaciones distintas usan la misma credencial:
 - **Al cerrar sesión se borra la marca**, en `limpiarDatosLocales`, que corre también con `SIGNED_OUT`.
 - **Activar la huella no bloquea la apertura en curso**: el que la activó acaba de demostrar que es él.
   La marca de «desbloqueada en esta apertura» vive en memoria y el store avisa por evento.
+  - **Corregido por el ADR 0026.** En memoria, una recarga era una apertura y volvía a pedir la huella.
+    Ahora la marca guarda el momento del desbloqueo y el de la salida, y se pide pasado un minuto afuera.
 
 **Solo en celular.** El corte es el de siempre (768 px), medido sobre **el lado corto de la pantalla**
 y fijado al abrir (`esCelular`): girar el teléfono no saca el bloqueo y achicar la ventana de la PC no
@@ -136,6 +138,7 @@ castellano, y lo que no se conoce dice el código entre paréntesis. Dos casos q
   de duplicarla.
 - **El bloqueo es al abrir, no al volver de segundo plano.** Monzo vuelve a pedir después de cinco
   minutos afuera; acá no, porque el pedido fue «al abrir».
+  - **Resuelta por el ADR 0026**: se pide también al volver de segundo plano, pasado un minuto.
 - **Nada de esto se probó en un teléfono.** Que Chrome en Android dispare el `get()` modal al cargar,
   sin gesto, no está confirmado en ninguna fuente primaria (sí que exige que la página tenga el foco).
   Que la ceremonia ande en modo avión con una passkey de Google Password Manager tampoco. El teclado

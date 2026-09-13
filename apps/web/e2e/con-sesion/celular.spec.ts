@@ -40,6 +40,17 @@ test('con el formulario abierto la barra inferior se esconde y el botón de guar
   await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();
 });
 
+test('tirar hacia abajo no recarga la app: la raíz no encadena el overscroll', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('main')).toBeVisible({ timeout: 30_000 });
+
+  const overscroll = await page.evaluate(() => ({
+    html: getComputedStyle(document.documentElement).overscrollBehaviorY,
+    body: getComputedStyle(document.body).overscrollBehaviorY,
+  }));
+  expect(overscroll).toEqual({ html: 'none', body: 'none' });
+});
+
 test('los campos abren el teclado que corresponde', async ({ page }) => {
   await page.goto('/clientes');
   await page.getByRole('button', { name: 'Cargá tu primer cliente' }).click();

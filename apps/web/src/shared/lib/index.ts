@@ -47,6 +47,7 @@ export {
   pedirHuella,
   useAppBloqueada,
   useBloqueoActivo,
+  vigilarElBloqueo,
   yaSePreguntoPorLaHuella,
   type BloqueoDelDispositivo,
   type ResultadoDeLaHuella,
