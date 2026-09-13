@@ -19,6 +19,7 @@ export function crearClienteMaun({ url, publishableKey }: OpcionesCliente): Clie
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: CLAVE_DE_SESION,
+      experimental: { passkey: true },
     },
   });
 }

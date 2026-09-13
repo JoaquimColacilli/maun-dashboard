@@ -1,9 +1,10 @@
-import { useState, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useState, type ReactNode, type SyntheticEvent } from 'react';
 
 import {
   codigoDeAcceso,
   entrar,
   esFalloDeRed,
+  esperarHuellaDelAutocompletado,
   mensajeDeAcceso,
   reenviarConfirmacion,
 } from '@/shared/api';
@@ -69,6 +70,17 @@ export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
   const [sinConfirmar, setSinConfirmar] = useState(false);
   const [entrando, setEntrando] = useState(false);
 
+  useEffect(() => {
+    const control = new AbortController();
+    esperarHuellaDelAutocompletado(control.signal).catch((fallo: unknown) => {
+      if (control.signal.aborted) return;
+      setError({ mensaje: esFalloDeRed(fallo) ? SIN_SENAL_PARA_ENTRAR : mensajeDeAcceso(fallo) });
+    });
+    return () => {
+      control.abort();
+    };
+  }, []);
+
   async function enviar(evento: SyntheticEvent<HTMLFormElement>) {
     evento.preventDefault();
     setSinConfirmar(false);
@@ -106,7 +118,7 @@ export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
         name="email"
         type="email"
         inputMode="email"
-        autoComplete="username"
+        autoComplete="username webauthn"
         value={email}
         error={error?.campo === 'email' ? error.mensaje : undefined}
         onChange={(evento) => {

@@ -6,6 +6,7 @@ export {
   mensajeDeAcceso,
   mensajeDeSincronizacion,
 } from './errores';
+export { esperarHuellaDelAutocompletado, registrarHuella } from './passkeys';
 export {
   traducirRechazo,
   type ContextoDelRechazo,
