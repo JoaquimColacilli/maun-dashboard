@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from 'react';
 
 import { entrar, mensajeDeAcceso } from '@/shared/api';
-import { Button, Campo } from '@/shared/ui';
+import { Button, Campo, CampoDeContrasena } from '@/shared/ui';
 
 const MAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -58,9 +58,8 @@ export function FormularioDeIngreso() {
         }}
         placeholder="vos@taller.com.ar"
       />
-      <Campo
+      <CampoDeContrasena
         etiqueta="Contraseña"
-        type="password"
         autoComplete="current-password"
         value={contrasena}
         error={error?.campo === 'contrasena' ? error.mensaje : undefined}

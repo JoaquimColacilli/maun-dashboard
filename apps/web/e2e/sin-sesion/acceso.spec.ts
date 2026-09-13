@@ -6,7 +6,7 @@ test('sin sesión, la app manda al login en vez de mostrar un tablero vacío', a
   await expect(page).toHaveURL(/\/acceso$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('MAUN');
   await expect(page.getByLabel('Email')).toBeVisible();
-  await expect(page.getByLabel('Contraseña')).toBeVisible();
+  await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible();
 });
 
 test('el formulario avisa lo que falta antes de salir a la red', async ({ page }) => {

@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from 'react';
 
 import { crearCuenta, mensajeDeAcceso } from '@/shared/api';
-import { Button, Campo } from '@/shared/ui';
+import { Button, Campo, CampoDeContrasena } from '@/shared/ui';
 
 const MAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const LARGO_MINIMO = 6;
@@ -88,9 +88,8 @@ export function FormularioDeRegistro() {
         }}
         placeholder="vos@taller.com.ar"
       />
-      <Campo
+      <CampoDeContrasena
         etiqueta="Contraseña"
-        type="password"
         autoComplete="new-password"
         ayuda={`Al menos ${String(LARGO_MINIMO)} caracteres.`}
         value={contrasena}
@@ -99,9 +98,8 @@ export function FormularioDeRegistro() {
           setContrasena(evento.target.value);
         }}
       />
-      <Campo
+      <CampoDeContrasena
         etiqueta="Repetí la contraseña"
-        type="password"
         autoComplete="new-password"
         value={repetida}
         error={error?.campo === 'repetida' ? error.mensaje : undefined}

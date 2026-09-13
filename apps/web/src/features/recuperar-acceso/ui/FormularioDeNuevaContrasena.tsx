@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from 'react';
 
 import { cambiarContrasena, mensajeDeAcceso } from '@/shared/api';
-import { Button, Campo } from '@/shared/ui';
+import { Button, CampoDeContrasena } from '@/shared/ui';
 
 const LARGO_MINIMO = 6;
 
@@ -50,9 +50,8 @@ export function FormularioDeNuevaContrasena({ alCambiar }: { alCambiar: () => vo
         void enviar(evento);
       }}
     >
-      <Campo
+      <CampoDeContrasena
         etiqueta="Contraseña nueva"
-        type="password"
         autoComplete="new-password"
         ayuda={`Al menos ${String(LARGO_MINIMO)} caracteres.`}
         value={contrasena}
@@ -61,9 +60,8 @@ export function FormularioDeNuevaContrasena({ alCambiar }: { alCambiar: () => vo
           setContrasena(evento.target.value);
         }}
       />
-      <Campo
+      <CampoDeContrasena
         etiqueta="Repetí la contraseña"
-        type="password"
         autoComplete="new-password"
         value={repetida}
         error={error?.campo === 'repetida' ? error.mensaje : undefined}
