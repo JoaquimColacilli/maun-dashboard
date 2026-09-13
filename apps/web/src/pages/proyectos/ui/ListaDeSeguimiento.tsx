@@ -1,6 +1,6 @@
 import { ESTADOS_DE_SEGUIMIENTO, type EstadoProyecto } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
 import { AccionesDeContacto, EnlaceACliente } from '@/entities/cliente';
 import {
@@ -14,7 +14,7 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
-import { fechaLarga, formatearPesos } from '@/shared/lib';
+import { conFondo, fechaLarga, formatearPesos } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
 function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: string }) {
@@ -42,7 +42,7 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
 
   return (
     <li
-      className={`flex flex-col gap-2 rounded-panel border px-3.5 pt-3.5 pb-3 ${
+      className={`relative flex flex-col gap-2 rounded-panel border px-3.5 pt-3.5 pb-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink ${
         situacion.fria ? 'border-atencion' : 'border-hairline'
       }`}
     >
@@ -53,7 +53,7 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
           <EnlaceACliente
             id={cliente.id}
             nombre={cliente.nombre}
-            className="text-meta font-medium text-text-2"
+            className="relative z-10 -my-2 py-2 pr-3 text-meta font-medium text-text-2"
           />
         )}
         <EstadoBadge estado={proyecto.estado} />
@@ -61,7 +61,8 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
 
       <Link
         to={rutaDelProyecto(proyecto.id)}
-        className="text-body-lg leading-snug font-medium text-pretty"
+        data-tarjeta
+        className="text-body-lg leading-snug font-medium text-pretty after:absolute after:inset-0 after:rounded-panel after:content-[''] focus-visible:outline-none"
       >
         {proyecto.titulo}
       </Link>
@@ -93,7 +94,7 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
         <p className="line-clamp-2 text-meta leading-snug text-text-2">{proyecto.notas}</p>
       )}
 
-      <div className="mt-1">
+      <div className="relative z-10 -mx-3.5 mt-1 -mb-3 rounded-b-panel border-t border-hairline-soft px-3.5 pt-2.5 pb-3">
         <AccionesDeContacto
           nombre={cliente?.nombre ?? resumen.nombreDelCliente}
           telefono={cliente?.telefono ?? ''}
@@ -111,6 +112,7 @@ export interface ListaDeSeguimientoProps {
 
 export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimientoProps) {
   const navegar = useNavigate();
+  const location = useLocation();
   const [consulta, setConsulta] = useState('');
   const [filtro, setFiltro] = useState<EstadoProyecto | 'todos'>('todos');
 
@@ -142,7 +144,7 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
         </p>
         <Button
           onClick={() => {
-            void navegar(RUTA_DE_CONTACTO_NUEVO);
+            void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
           }}
         >
           <Icono nombre="user-plus" tamano={18} />

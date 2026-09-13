@@ -22,8 +22,8 @@ import {
   type FormularioDeCliente,
 } from '@/entities/cliente';
 import { mensajeDeSincronizacion, type DatosDeCliente } from '@/shared/api';
-import { useAltoVisible, useAnchoDePantalla, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { metaDeAvisos, uuidv7 } from '@/shared/lib';
+import { Button, Campo, Hoja } from '@/shared/ui';
 
 export interface HojaDeClienteProps {
   cliente?: Cliente;
@@ -33,13 +33,11 @@ export interface HojaDeClienteProps {
 }
 
 export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: HojaDeClienteProps) {
-  const ancho = useAnchoDePantalla();
-  const altoVisible = useAltoVisible();
   const idTitulo = useId();
   const primerCampo = useRef<HTMLInputElement>(null);
 
-  const crear = useMutation(MUTACION_DE_CLIENTE_NUEVO);
-  const editar = useMutation(MUTACION_DE_CLIENTE);
+  const crear = useMutation({ ...MUTACION_DE_CLIENTE_NUEVO, meta: metaDeAvisos('clienteNuevo') });
+  const editar = useMutation({ ...MUTACION_DE_CLIENTE, meta: metaDeAvisos('clienteEditado') });
   const enVuelo = crear.isPending || editar.isPending;
   const fallo: unknown = crear.error ?? editar.error;
 
@@ -66,16 +64,6 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
     primerCampo.current?.focus();
   }, []);
 
-  useEffect(() => {
-    function alApretar(evento: KeyboardEvent) {
-      if (evento.key === 'Escape') alCerrar();
-    }
-    document.addEventListener('keydown', alApretar);
-    return () => {
-      document.removeEventListener('keydown', alApretar);
-    };
-  }, [alCerrar]);
-
   const guardar: SubmitHandler<FormularioDeCliente> = (valores) => {
     const datos: DatosDeCliente = datosDelFormulario(valores);
 
@@ -95,46 +83,16 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
   };
 
   const { ref: refDelNombre, ...restoDelNombre } = register('nombre');
-  const enCelular = ancho === 'movil';
 
   return (
-    <div className="fixed inset-0 z-40">
-      <button
-        type="button"
-        aria-hidden
-        tabIndex={-1}
-        onClick={alCerrar}
-        className="absolute inset-0 cursor-default bg-ink/35"
-      />
+    <Hoja titulo={cliente ? 'Editar cliente' : 'Cliente nuevo'} alCerrar={alCerrar} ancho="amplio">
       <form
         noValidate
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={idTitulo}
         onSubmit={(evento) => {
           void handleSubmit(guardar)(evento);
         }}
-        style={enCelular && altoVisible !== undefined ? { height: altoVisible - 40 } : undefined}
-        className={`absolute flex flex-col bg-paper shadow-float ${
-          enCelular
-            ? 'inset-x-0 bottom-0 max-h-[calc(100dvh-40px)] rounded-t-panel'
-            : 'top-1/2 left-1/2 max-h-[88dvh] w-[min(600px,calc(100%-40px))] -translate-x-1/2 -translate-y-1/2 rounded-panel'
-        }`}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <header className="flex flex-none items-center justify-between border-b border-hairline py-2.5 pr-2.5 pl-5 md:py-3.5 md:pr-3.5 md:pl-6">
-          <h2 id={idTitulo} className="text-body-lg font-semibold">
-            {cliente ? 'Editar cliente' : 'Cliente nuevo'}
-          </h2>
-          <button
-            type="button"
-            onClick={alCerrar}
-            aria-label="Cerrar"
-            className="flex size-11 items-center justify-center rounded-field text-text-2 hover:bg-surface"
-          >
-            <Icono nombre="x" tamano={20} />
-          </button>
-        </header>
-
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 md:px-6 md:py-5">
           <Campo
             {...restoDelNombre}
@@ -231,7 +189,7 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
                   }}
                   className={`min-h-tap rounded-control text-label ${
                     condicion === id
-                      ? 'bg-paper font-semibold text-ink shadow-float'
+                      ? 'bg-elevado font-semibold text-ink shadow-float'
                       : 'font-medium text-text-2'
                   }`}
                 >
@@ -306,6 +264,6 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
           </Button>
         </footer>
       </form>
-    </div>
+    </Hoja>
   );
 }

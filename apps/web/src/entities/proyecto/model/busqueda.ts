@@ -76,7 +76,7 @@ export const CRITERIOS: readonly Criterio<ResumenDeProyecto>[] = [
     id: 'saldo',
     etiqueta: 'Saldo',
     tipo: 'numero',
-    leer: (resumen) => resumen.saldo,
+    leer: (resumen) => resumen.saldo ?? undefined,
     inicial: 'desc',
   },
   {

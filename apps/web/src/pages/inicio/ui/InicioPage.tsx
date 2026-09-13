@@ -5,13 +5,13 @@ import {
   estadoDelDiezmo,
   proyeccionCocos,
   restar,
-  resumenDelMes,
   sueldoDelMes,
   type Money,
 } from '@maun/domain';
 import { useNavigate } from 'react-router';
 
 import {
+  faltaDelSueldo,
   fraseDelDiezmo,
   fraseDelSueldo,
   resumenMensual,
@@ -43,9 +43,9 @@ import {
   nombreDelMes,
   relativa,
   RUTA_DE_DIEZMO,
-  RUTA_DE_FINANZAS,
+  rutaDeFinanzasDelTesoro,
 } from '@/shared/lib';
-import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
+import { Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const DIAS_DE_PROYECCION = 365;
 
@@ -138,26 +138,28 @@ function Tarjeta({
     <button
       type="button"
       onClick={alElegir}
-      className={`flex min-h-[118px] flex-col justify-between gap-3 rounded-panel p-3.5 text-left ${
-        enNegativo ? 'bg-ink text-paper' : tesoro.fondo
+      className={`@container flex min-h-[118px] flex-col justify-between gap-3 rounded-panel p-3.5 text-left ${
+        enNegativo
+          ? 'border border-negativo-borde bg-negativo-bg text-negativo-texto'
+          : tesoro.fondo
       }`}
     >
       <span className="flex w-full items-center justify-between gap-2">
         <span
-          className={`flex items-center gap-2 text-label font-semibold ${enNegativo ? 'text-paper' : tesoro.texto}`}
+          className={`flex items-center gap-2 text-label font-semibold ${enNegativo ? 'text-negativo-texto' : tesoro.texto}`}
         >
-          <Icono nombre={tesoro.icono} tamano={18} />
+          <Icono nombre={enNegativo ? 'triangle-alert' : tesoro.icono} tamano={18} />
           {tesoro.nombre}
         </span>
         {enNegativo && (
-          <span className="rounded-control border border-paper px-1.5 text-badge font-semibold">
+          <span className="rounded-control border border-current px-1.5 text-badge font-semibold">
             en negativo
           </span>
         )}
       </span>
       <span className="flex flex-col gap-0.5">
         {frase === undefined ? (
-          <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
+          <span className="text-body-lg font-semibold whitespace-nowrap tabular-nums @min-[8.5rem]:text-money-lg @min-[13rem]:text-money-lg-desktop">
             {formatearPesos(saldo)}
           </span>
         ) : frase.importe === null ? (
@@ -165,12 +167,12 @@ function Tarjeta({
         ) : (
           <>
             <span className="text-label leading-tight font-medium">{encabezado(frase)}</span>
-            <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
+            <span className="text-body-lg font-semibold whitespace-nowrap tabular-nums @min-[8.5rem]:text-money-lg @min-[13rem]:text-money-lg-desktop">
               {frase.importe}
             </span>
           </>
         )}
-        <span className={`text-meta ${enNegativo ? 'text-paper/70' : 'text-text-2'}`}>
+        <span className={`text-meta ${enNegativo ? 'text-negativo-texto/80' : 'text-text-2'}`}>
           {detalle}
         </span>
       </span>
@@ -272,11 +274,10 @@ export function InicioPage() {
 
   const liquidaciones = liquidacionesDeLaReplica(replica);
   const objetivos = objetivosDeLaReplica(replica);
-  const resumen = resumenDelMes(liquidaciones, mes, objetivos, mes);
   const sueldo = sueldoDelMes(liquidaciones, mes, objetivos, mes);
   const fraseSueldo = fraseDelSueldo(sueldo);
   const metaCocos = centavos(ajustes?.meta_cocos_centavos ?? 0);
-  const mensaje = mensajeDelMes(mes, saldos.hogar, del, resumen.sueldo.falta);
+  const mensaje = mensajeDelMes(mes, saldos.hogar, del, faltaDelSueldo(sueldo));
 
   const proyectos = filasDe(replica, 'proyectos');
   const pendientes = proyectos.filter(
@@ -297,7 +298,7 @@ export function InicioPage() {
   ];
 
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-4 px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
+    <Pagina className="gap-4">
       <header className="flex flex-col gap-0.5">
         <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
@@ -311,7 +312,7 @@ export function InicioPage() {
             saldo={saldos[id]}
             meta={metaCocos}
             frase={id === 'diezmo' ? frase : undefined}
-            alElegir={irA(id === 'diezmo' ? RUTA_DE_DIEZMO : RUTA_DE_FINANZAS)}
+            alElegir={irA(id === 'diezmo' ? RUTA_DE_DIEZMO : rutaDeFinanzasDelTesoro(id))}
           />
         ))}
       </section>
@@ -352,7 +353,7 @@ export function InicioPage() {
 
             <section
               aria-label={nombreDelMes(mes)}
-              className="rounded-panel bg-surface px-4 py-3.5"
+              className="@container rounded-panel bg-surface px-4 py-3.5"
             >
               <div className="mb-2.5 flex items-baseline justify-between">
                 <span className="text-label font-semibold">{nombreDelMes(mes)}</span>
@@ -360,15 +361,18 @@ export function InicioPage() {
                   día {diaDelMes(hoy)} de {diasDelMes(mes)}
                 </span>
               </div>
-              <dl className="grid grid-cols-3 gap-3">
+              <dl className="grid grid-cols-1 gap-2 @min-[19rem]:grid-cols-3 @min-[19rem]:gap-3">
                 {estadisticas.map((estadistica) => {
                   const vs = comparacion(estadistica.valor, estadistica.previo, mes);
                   return (
-                    <div key={estadistica.etiqueta} className="min-w-0">
+                    <div
+                      key={estadistica.etiqueta}
+                      className="flex min-w-0 items-baseline justify-between gap-3 @min-[19rem]:block"
+                    >
                       <dt className="text-meta leading-tight text-text-2">
                         {estadistica.etiqueta}
                       </dt>
-                      <dd className="mt-0.5">
+                      <dd className="text-right @min-[19rem]:mt-0.5 @min-[19rem]:text-left">
                         <span className="block text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
                           {formatearPesos(estadistica.valor)}
                         </span>
@@ -465,6 +469,6 @@ export function InicioPage() {
           </div>
         </div>
       )}
-    </div>
+    </Pagina>
   );
 }

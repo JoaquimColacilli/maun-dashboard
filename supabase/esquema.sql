@@ -516,6 +516,24 @@ grant delete, insert, maintain, references, select, trigger, truncate, update on
 CREATE TRIGGER taller_al_confirmar_el_mail AFTER UPDATE OF email_confirmed_at ON auth.users FOR EACH ROW WHEN (old.email_confirmed_at IS NULL AND new.email_confirmed_at IS NOT NULL) EXECUTE FUNCTION private.crear_taller_del_usuario();
 CREATE TRIGGER taller_al_crear_la_cuenta AFTER INSERT ON auth.users FOR EACH ROW WHEN (new.email_confirmed_at IS NOT NULL) EXECUTE FUNCTION private.crear_taller_del_usuario();
 
+-- Storage ----------------------------------------------------------------------------------------
+
+-- bucket fotos-de-perfil: público, tope 524288 bytes, tipos image/webp, image/jpeg
+create policy fotos_de_perfil_borrar_la_propia on storage.objects as permissive
+  for delete to authenticated
+  using (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+create policy fotos_de_perfil_reemplazar_la_propia on storage.objects as permissive
+  for update to authenticated
+  using (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)))
+  with check (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+create policy fotos_de_perfil_subir_a_la_carpeta_propia on storage.objects as permissive
+  for insert to authenticated
+  with check (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+create policy fotos_de_perfil_ver_la_propia on storage.objects as permissive
+  for select to authenticated
+  using (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
+comment on policy fotos_de_perfil_ver_la_propia on storage.objects is 'No es para leer las fotos (el bucket es público y se leen por URL): es para la subida con upsert, que chequea si el objeto existe con un select bajo la RLS del usuario. Sin esta política ese chequeo nunca encuentra la foto anterior y la subida falla con un error de RLS.';
+
 -- Funciones --------------------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.bootstrap()

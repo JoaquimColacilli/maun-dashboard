@@ -22,17 +22,32 @@ export {
   type Sentido,
   type TipoDeOrden,
 } from './orden';
+export {
+  conFondo,
+  esRutaDeHoja,
+  fondoDelEstado,
+  fondoPorDefecto,
+  HOJAS_POR_RUTA,
+  useCerrarHoja,
+  useUbicacionVisible,
+  type EstadoConFondo,
+  type PatronDeHoja,
+} from './hojas';
 export { useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible } from './teclado';
-export { formatearPesos, parsearPesos, parsearPesosDesdeCero, pesosEditables } from './plata';
+export { useScrollPorPantalla } from './scroll';
+export { formatearPesos } from './plata';
 export {
+  PARAMETRO_DE_TESORO,
   rutaDeAprobacion,
   rutaDeCierre,
   rutaDeCobro,
   rutaDeEdicion,
+  rutaDeFinanzasDelTesoro,
   rutaDeMovimientoNuevo,
   rutaDelMovimiento,
   rutaDelProyecto,
+  tesoroDelParametro,
   RUTA_DE_CONTACTO_NUEVO,
   RUTA_DE_DIEZMO,
   RUTA_DE_FINANZAS,
@@ -54,6 +69,26 @@ export {
   type AvisoAnotado,
   type TipoDeAviso,
 } from './avisos/bandeja';
+export {
+  avisarEnPantalla,
+  avisosDeLaMeta,
+  descartarDePantalla,
+  metaDeAvisos,
+  TEXTOS_DE_AVISO,
+  useAvisosEnPantalla,
+  vaciarAvisosEnPantalla,
+  type AvisoEnPantalla,
+  type AvisosDeUnaMutacion,
+  type QueSeGuarda,
+  type TonoDelAviso,
+} from './avisos/pantalla';
 export { calcularEstadoSync, describirEstadoSync, type EstadoSync } from './sync/estado-sync';
+export {
+  CLAVE_DEL_TEMA,
+  elegirTema,
+  preferenciaDeTema,
+  useTema,
+  type PreferenciaDeTema,
+} from './tema';
 export { useEstadoSync } from './sync/useEstadoSync';
 export { uuidv7 } from './uuid';

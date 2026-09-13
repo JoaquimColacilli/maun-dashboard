@@ -17,10 +17,15 @@ function pantallaDe(ancho: number) {
   }));
 }
 
-function montar(ruta: string) {
+function montar(ruta: string, nombre = '') {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
-      <Navegacion email="taller@maun.com.ar" sincronizacion="Todo sincronizado." />
+      <Navegacion
+        email="taller@maun.com.ar"
+        nombre={nombre}
+        foto=""
+        sincronizacion="Todo sincronizado."
+      />
     </MemoryRouter>,
   );
 }
@@ -98,6 +103,15 @@ describe('en el celular', () => {
   });
 });
 
+describe('en la tablet', () => {
+  it('la M del riel también lleva a Inicio', () => {
+    pantallaDe(900);
+    montar('/proyectos');
+
+    expect(screen.getByRole('link', { name: 'MAUN, ir a Inicio' })).toHaveAttribute('href', '/');
+  });
+});
+
 describe('en el escritorio', () => {
   it('Seguimiento, Diezmo y Ajustes son destinos propios', () => {
     pantallaDe(1440);
@@ -120,11 +134,27 @@ describe('en el escritorio', () => {
     );
   });
 
+  it('el logo es un link a Inicio con un nombre que lo dice', () => {
+    pantallaDe(1440);
+    montar('/clientes');
+
+    expect(screen.getByRole('link', { name: 'MAUN, ir a Inicio' })).toHaveAttribute('href', '/');
+  });
+
   it('muestra el mail y el estado de sincronización', () => {
     pantallaDe(1440);
     montar('/');
 
     expect(screen.getByText('taller@maun.com.ar')).toBeInTheDocument();
     expect(screen.getByText('Todo sincronizado.')).toBeInTheDocument();
+  });
+
+  it('con nombre cargado lo muestra arriba del mail, con sus iniciales', () => {
+    pantallaDe(1440);
+    montar('/', 'Joaquim Colacilli');
+
+    expect(screen.getByText('Joaquim Colacilli')).toBeInTheDocument();
+    expect(screen.getByText('taller@maun.com.ar')).toBeInTheDocument();
+    expect(screen.getByText('JC')).toHaveAttribute('aria-hidden', 'true');
   });
 });

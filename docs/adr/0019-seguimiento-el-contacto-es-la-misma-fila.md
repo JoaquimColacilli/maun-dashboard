@@ -149,6 +149,8 @@ corría después del de la hoja y le sacaba el foco al campo de cliente. Ahora n
 el foco ya está adentro de un `role="dialog"`. La hoja de movimientos de Finanzas tenía el mismo
 problema y queda arreglada de rebote.
 
+Desde el ADR 0020 las hojas son `<dialog>` nativos y el selector pasó a `dialog[open]`.
+
 ### 12. `Despiece.dc` no se construye
 
 No es una pantalla: es la especificación de un componente (`$preview` de 480×360, sin cabecera ni

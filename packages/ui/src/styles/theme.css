@@ -1,5 +1,17 @@
 @source '..';
 
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) {
+    @slot;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+}
+
 @theme static {
   --color-*: initial;
   --color-ink: #141414;
@@ -13,10 +25,20 @@
   --color-surface-2: #f0f0f0;
   --color-surface-3: #fafafa;
   --color-paper: #ffffff;
+  --color-elevado: #ffffff;
+  --color-marca: #141414;
+  --color-sobre-marca: #ffffff;
   --color-atencion: #9a6700;
   --color-atencion-tint: #fff8e6;
   --color-alerta: #b3261e;
   --color-alerta-tint: rgba(179, 38, 30, 0.1);
+  --color-avatar-1: #7a4b8c;
+  --color-avatar-2: #2f6f8f;
+  --color-avatar-3: #8c5a2b;
+  --color-avatar-4: #4f6b2f;
+  --color-avatar-5: #a1473f;
+  --color-avatar-6: #5a5f9e;
+  --color-sobre-avatar: #ffffff;
 
   --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
   --font-display: 'Young Serif', Georgia, serif;
@@ -48,11 +70,6 @@
   --radius-pill: 999px;
 
   --shadow-*: initial;
-  --shadow-float: 0 8px 24px rgba(20, 20, 20, 0.1), 0 1px 2px rgba(20, 20, 20, 0.05);
-  --shadow-fab: 0 8px 18px rgba(20, 20, 20, 0.28);
-  --shadow-sheet: 0 -8px 30px rgba(20, 20, 20, 0.18);
-  --shadow-menu: 0 12px 32px rgba(20, 20, 20, 0.14);
-  --shadow-toast: 0 8px 24px rgba(20, 20, 20, 0.25);
 
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
@@ -94,7 +111,17 @@
 
 @theme inline static {
   --color-ok: var(--tesoro-hogar);
-  --color-negativo-bg: var(--color-ink);
+  --color-negativo-bg: var(--negativo-fondo);
+  --color-negativo-texto: var(--negativo-texto);
+  --color-negativo-borde: var(--negativo-borde);
+  --color-velo: var(--velo);
+  --color-velo-suave: var(--velo-suave);
+
+  --shadow-float: var(--sombra-float);
+  --shadow-fab: var(--sombra-fab);
+  --shadow-sheet: var(--sombra-sheet);
+  --shadow-menu: var(--sombra-menu);
+  --shadow-toast: var(--sombra-toast);
   --color-hogar: var(--tesoro-hogar);
   --color-hogar-tint: var(--tesoro-hogar-tint);
   --color-maun: var(--tesoro-maun);
@@ -119,6 +146,20 @@
 }
 
 :root {
+  color-scheme: light;
+
+  --negativo-fondo: var(--color-ink);
+  --negativo-texto: var(--color-paper);
+  --negativo-borde: var(--color-ink);
+  --velo: rgba(20, 20, 20, 0.35);
+  --velo-suave: rgba(20, 20, 20, 0.2);
+
+  --sombra-float: 0 8px 24px rgba(20, 20, 20, 0.1), 0 1px 2px rgba(20, 20, 20, 0.05);
+  --sombra-fab: 0 8px 18px rgba(20, 20, 20, 0.28);
+  --sombra-sheet: 0 -8px 30px rgba(20, 20, 20, 0.18);
+  --sombra-menu: 0 12px 32px rgba(20, 20, 20, 0.14);
+  --sombra-toast: 0 8px 24px rgba(20, 20, 20, 0.25);
+
   --tesoro-hogar: #0f6e56;
   --tesoro-hogar-tint: #e3f0eb;
   --tesoro-maun: #8a5612;
@@ -158,6 +199,62 @@
   --button-h-sm: 36px;
   --fab-size: 58px;
   --bottom-nav-h: 62px;
+}
+
+:root {
+  @variant dark {
+    color-scheme: dark;
+
+    --color-ink: #ededed;
+    --color-ink-hover: #d4d4d4;
+    --color-text-2: #a3a3a3;
+    --color-text-3: #7a7a7a;
+    --color-hairline: #2a2a2a;
+    --color-hairline-soft: #212121;
+    --color-border: #3d3d3d;
+    --color-surface: #1c1c1c;
+    --color-surface-2: #232323;
+    --color-surface-3: #171717;
+    --color-paper: #121212;
+    --color-elevado: #2e2e2e;
+    --color-marca: #1c1c1c;
+    --color-sobre-marca: #ededed;
+    --color-atencion: #e2b54f;
+    --color-atencion-tint: #2b2310;
+    --color-alerta: #f28b82;
+    --color-alerta-tint: rgba(242, 139, 130, 0.14);
+    --color-avatar-1: #c9a3d9;
+    --color-avatar-2: #8fc3dc;
+    --color-avatar-3: #d6a878;
+    --color-avatar-4: #a9c47f;
+    --color-avatar-5: #e8998f;
+    --color-avatar-6: #a9addf;
+    --color-sobre-avatar: #121212;
+
+    --sombra-float: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --sombra-fab: 0 8px 18px rgba(0, 0, 0, 0.55);
+    --sombra-sheet: 0 -8px 30px rgba(0, 0, 0, 0.5);
+    --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --sombra-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+    --negativo-fondo: #3a1c19;
+    --negativo-texto: #ffdad5;
+    --negativo-borde: #f28b82;
+    --velo: rgba(0, 0, 0, 0.6);
+    --velo-suave: rgba(0, 0, 0, 0.4);
+
+    --tesoro-hogar: #6fc2a9;
+    --tesoro-hogar-tint: #1b2e29;
+    --tesoro-maun: #cba271;
+    --tesoro-maun-tint: #30271b;
+    --tesoro-diezmo: #a59fdb;
+    --tesoro-diezmo-tint: #221f37;
+    --tesoro-cocos: #7ea8d4;
+    --tesoro-cocos-tint: #1b2835;
+
+    --paper-notas: #1a1916;
+    --paper-notas-line: #2f2c26;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

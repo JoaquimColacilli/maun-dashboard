@@ -1,22 +1,20 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 
-import { RUTA_DE_SEGUIMIENTO, rutaDelProyecto } from '@/entities/proyecto';
+import { rutaDelProyecto } from '@/entities/proyecto';
 import { HojaDeContacto } from '@/features/seguir-contacto';
+import { useCerrarHoja } from '@/shared/lib';
 
 export function ContactoNuevoPage() {
   const navegar = useNavigate();
-
-  const alCerrar = useCallback(() => {
-    void navegar(RUTA_DE_SEGUIMIENTO);
-  }, [navegar]);
+  const cerrar = useCerrarHoja();
 
   const alGuardar = useCallback(
     (id: string) => {
-      void navegar(rutaDelProyecto(id));
+      void navegar(rutaDelProyecto(id), { replace: true });
     },
     [navegar],
   );
 
-  return <HojaDeContacto alCerrar={alCerrar} alGuardar={alGuardar} />;
+  return <HojaDeContacto alCerrar={cerrar} alGuardar={alGuardar} />;
 }

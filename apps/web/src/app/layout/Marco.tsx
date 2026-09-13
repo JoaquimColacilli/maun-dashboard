@@ -1,23 +1,48 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation } from 'react-router';
+import { useLocation, useRoutes, type Location } from 'react-router';
 
-import { useSesionActiva } from '@/entities/sesion';
-import { describirEstadoSync, useAnchoDePantalla, useEstadoSync } from '@/shared/lib';
+import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
+import {
+  describirEstadoSync,
+  esRutaDeHoja,
+  useAnchoDePantalla,
+  useEstadoSync,
+  useScrollPorPantalla,
+  useUbicacionVisible,
+} from '@/shared/lib';
+import { ConSalida } from '@/shared/ui';
 
-import { AvisoDeRechazo } from './AvisoDeRechazo';
+import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
+import { Avisos } from './Avisos';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
 
+function HojaEnSuUbicacion({ ubicacion }: { ubicacion: Location }) {
+  return useRoutes(RUTAS_DE_HOJA, ubicacion);
+}
+
+function CapaDeHoja() {
+  const location = useLocation();
+  return (
+    <ConSalida valor={esRutaDeHoja(location.pathname) ? location : null}>
+      {(ubicacion) => <HojaEnSuUbicacion ubicacion={ubicacion} />}
+    </ConSalida>
+  );
+}
+
 export function Marco() {
-  const { email } = useSesionActiva();
+  const { email, foto } = useSesionActiva();
+  const nombre = useNombreDeLaPersona();
   const estadoSync = useEstadoSync();
   const ancho = useAnchoDePantalla();
-  const location = useLocation();
+  const visible = useUbicacionVisible();
+  const pantalla = useRoutes(RUTAS_DE_PANTALLA, visible);
   const principal = useRef<HTMLElement>(null);
   const montado = useRef(false);
   const [anuncio, setAnuncio] = useState('');
+  useScrollPorPantalla(principal, visible);
 
-  const seccion = seccionDeLaRuta(location.pathname);
+  const seccion = seccionDeLaRuta(visible.pathname);
   const etiqueta = DESTINOS[seccion].etiqueta;
 
   useEffect(() => {
@@ -26,10 +51,11 @@ export function Marco() {
       return;
     }
     const enfocado = document.activeElement;
-    const yaEstaEnUnaHoja = enfocado instanceof HTMLElement && enfocado.closest('[role="dialog"]');
-    if (!yaEstaEnUnaHoja) principal.current?.focus();
+    const yaEstaEnUnaHoja =
+      enfocado instanceof HTMLElement && enfocado.closest('dialog[open], [role="dialog"]');
+    if (!yaEstaEnUnaHoja) principal.current?.focus({ preventScroll: true });
     setAnuncio(etiqueta);
-  }, [location.pathname, etiqueta]);
+  }, [visible.pathname, etiqueta]);
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -40,22 +66,29 @@ export function Marco() {
         Saltar al contenido
       </a>
 
-      <Navegacion email={email} sincronizacion={describirEstadoSync(estadoSync)} />
+      <Navegacion
+        email={email}
+        nombre={nombre}
+        foto={foto}
+        sincronizacion={describirEstadoSync(estadoSync)}
+      />
 
       <main
         id="contenido"
         ref={principal}
         tabIndex={-1}
-        className={`min-h-0 flex-1 overflow-y-auto outline-none ${
+        className={`min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable] ${
           ancho === 'movil'
             ? 'pb-[calc(var(--bottom-nav-clearance)+env(safe-area-inset-bottom))]'
             : ''
         }`}
       >
-        <Outlet />
+        {pantalla}
       </main>
 
-      <AvisoDeRechazo />
+      <CapaDeHoja />
+
+      <Avisos />
 
       <span aria-live="polite" className="sr-only">
         {anuncio}

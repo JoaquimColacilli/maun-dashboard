@@ -40,6 +40,11 @@ export function esFalloDeRed(error: unknown): boolean {
 
   const { nombre, estado } = codigoDeAuth(error);
   if (nombre === 'AuthRetryableFetchError') return estado === 0 || estado >= 500;
+  if (nombre === 'StorageUnknownError') {
+    const original = (error as Record<string, unknown>).originalError;
+    const mensaje = error instanceof Error ? error.message : '';
+    return original instanceof TypeError || MENSAJE_DE_RED.test(mensaje);
+  }
 
   const rechazo = rechazoDeLaBase(error);
   return rechazo !== undefined && rechazo.codigo === '' && MENSAJE_DE_RED.test(rechazo.mensaje);

@@ -134,6 +134,10 @@ corte. El script **los recibe como parámetro; no los deduce**. Después de escr
 saldos de `libro_mayor` y agrega un `ajuste` por tesoro por la diferencia, con la categoría
 «Apertura» y la fecha del corte. Verifica que los cuatro saldos finales sean exactamente los leídos.
 
+**Corregido por el ADR 0020.** La apertura cae en el mes del corte y, tal como estaba, Inicio y Finanzas
+la sumaban a «Entró al hogar» o «Gastó el hogar» de ese mes. Ahora las cifras del mes excluyen todo
+`ajuste` (`resumenMensual`): la apertura mueve el saldo pero no es plata del mes. El script no cambia.
+
 Aparte, el script calcula los saldos que daba el sistema viejo con ese mismo JSON (la suma de
 `calcTesoros`) y los pone al lado de los leídos. No los usa para nada. Si difieren en más de 50
 centavos, que es el redondeo a pesos de la pantalla vieja, lo marca en el informe y en la terminal:

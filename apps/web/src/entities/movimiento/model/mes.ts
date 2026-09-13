@@ -13,7 +13,7 @@ export interface ResumenMensual {
 }
 
 export function resumenMensual(asientos: readonly Asiento[], mes: string): ResumenMensual {
-  const delMes = asientosDelMes(asientos, mes);
+  const delMes = asientosDelMes(asientos, mes).filter((asiento) => asiento.concepto !== 'ajuste');
   const hogar = entradasYSalidas(delMes, 'hogar');
   return {
     entroHogar: hogar.entro,

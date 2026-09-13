@@ -18,8 +18,8 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { mensajeDeSincronizacion, type ProyectoParaGuardar } from '@/shared/api';
-import { formatearPesos, hoyLocal, parsearPesos, pesosEditables, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
+import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 const TEXTOS = {
   cobrado: {
@@ -45,27 +45,39 @@ function Trio({ resumen }: { resumen: ResumenDeProyecto }) {
     { clave: 'Cobrado', valor: formatearPesos(resumen.cobrado), tono: 'text-hogar' },
     {
       clave: 'Saldo',
-      valor: resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo',
-      tono: resumen.saldo > 0 ? 'text-atencion' : 'text-hogar',
+      valor:
+        resumen.saldo === null
+          ? '—'
+          : resumen.saldo > 0
+            ? formatearPesos(resumen.saldo)
+            : 'Sin saldo',
+      tono:
+        resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-atencion' : 'text-hogar',
     },
   ];
 
   return (
-    <dl className="mt-4 grid grid-cols-3 border-t border-b border-ink border-b-hairline">
-      {celdas.map((celda, indice) => (
-        <div
-          key={celda.clave}
-          className={`py-3 ${indice === 0 ? 'pr-3' : 'border-l border-hairline px-3'}`}
-        >
-          <dt className="text-meta text-text-2">{celda.clave}</dt>
-          <dd
-            className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${celda.tono}`}
+    <div className="@container mt-4">
+      <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @lg:grid-cols-3">
+        {celdas.map((celda, indice) => (
+          <div
+            key={celda.clave}
+            className={`flex items-baseline justify-between gap-3 py-2.5 @lg:block @lg:py-3 ${
+              indice === 0
+                ? '@lg:pr-3'
+                : 'border-t border-hairline @lg:border-t-0 @lg:border-l @lg:px-3'
+            }`}
           >
-            {celda.valor}
-          </dd>
-        </div>
-      ))}
-    </dl>
+            <dt className="text-meta text-text-2">{celda.clave}</dt>
+            <dd
+              className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${celda.tono}`}
+            >
+              {celda.valor}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -83,13 +95,13 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const liquidar = useMutation(MUTACION_DE_LIQUIDACION);
 
-  const faltaCobrar = destino === 'cobrado' && resumen.saldo > 0;
+  const faltaCobrar = destino === 'cobrado' && resumen.saldo !== null && resumen.saldo > 0;
   const [conPagoFinal, setConPagoFinal] = useState(faltaCobrar);
-  const [monto, setMonto] = useState(() => pesosEditables(resumen.saldo));
+  const [monto, setMonto] = useState<number | null>(resumen.saldo);
   const [fecha, setFecha] = useState(hoyLocal);
   const [concepto, setConcepto] = useState('Saldo final en la entrega');
 
-  const pagoExtra = centavos(conPagoFinal && faltaCobrar ? (parsearPesos(monto) ?? 0) : 0);
+  const pagoExtra = centavos(conPagoFinal && faltaCobrar ? (monto ?? 0) : 0);
   const liquidacion = liquidacionProyectada(replica, proyecto, hoyLocal(), { destino, pagoExtra });
   const despiece = despieceDeLaLiquidacion(liquidacion);
   const ajustes = ajustesDeLaReplica(replica);
@@ -132,7 +144,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const aRepartir = despiece.piezas.filter((pieza) => pieza.monto > 0);
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+    <Pagina className="[&>*]:max-w-[720px]">
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -151,7 +163,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       <Trio resumen={resumen} />
 
       {faltaCobrar && (
-        <section aria-label="Pago final" className="mt-5">
+        <section aria-label="Pago final" className="@container mt-5">
           <label className="flex min-h-tap items-center gap-2.5 text-body font-medium">
             <input
               type="checkbox"
@@ -161,7 +173,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
               }}
               className="size-4 accent-ink"
             />
-            Registrar el pago final de {formatearPesos(resumen.saldo)}
+            Registrar el pago final de {formatearPesos(centavos(resumen.saldo ?? 0))}
           </label>
           <p className="mt-1 text-meta leading-normal text-text-3">
             Queda cargado como un pago más del proyecto, y entra en la cuenta de abajo. Si el
@@ -169,7 +181,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
           </p>
 
           {conPagoFinal && (
-            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_140px_150px]">
+            <div className="mt-3 grid gap-3 @xl:grid-cols-[minmax(0,1fr)_9rem_11.5rem]">
               <Campo
                 etiqueta="Concepto"
                 value={concepto}
@@ -177,14 +189,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
                   setConcepto(evento.target.value);
                 }}
               />
-              <Campo
-                etiqueta="Monto"
-                inputMode="decimal"
-                value={monto}
-                onChange={(evento) => {
-                  setMonto(evento.target.value);
-                }}
-              />
+              <MoneyInput etiqueta="Monto" value={monto} onChange={setMonto} />
               <Campo
                 etiqueta="Fecha"
                 type="date"
@@ -274,6 +279,6 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
           </p>
         )}
       </div>
-    </div>
+    </Pagina>
   );
 }

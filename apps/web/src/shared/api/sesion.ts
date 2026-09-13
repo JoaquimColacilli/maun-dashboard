@@ -1,31 +1,66 @@
 import { CLAVE_DE_SESION } from '@maun/db';
 
+import { leerEnv } from '@/shared/config';
+
 import { clienteMaun } from './cliente';
 import { esFalloDeRed } from './errores';
 
 export interface Claims {
   usuarioId: string;
   email: string;
+  nombre: string;
+  foto: string;
 }
 
 interface SesionMinima {
-  user: { id: string; email?: string };
+  user: { id: string; email?: string; user_metadata?: unknown };
+}
+
+const BUCKET_DE_FOTOS = 'fotos-de-perfil';
+
+function textoDeLosMetadatos(metadatos: unknown, clave: 'nombre' | 'foto'): string {
+  if (typeof metadatos !== 'object' || metadatos === null || !(clave in metadatos)) return '';
+  const valor = (metadatos as Record<string, unknown>)[clave];
+  return typeof valor === 'string' ? valor : '';
+}
+
+function nombreDeLosMetadatos(metadatos: unknown): string {
+  return textoDeLosMetadatos(metadatos, 'nombre');
+}
+
+function fotoDeLosMetadatos(metadatos: unknown): string {
+  const foto = textoDeLosMetadatos(metadatos, 'foto');
+  if (foto === '') return '';
+  const base = leerEnv(import.meta.env).VITE_SUPABASE_URL.replace(/\/+$/, '');
+  return foto.startsWith(`${base}/storage/v1/object/public/${BUCKET_DE_FOTOS}/`) ? foto : '';
 }
 
 function claimsDeSesion(sesion: SesionMinima | null): Claims | undefined {
   if (!sesion) return undefined;
-  return { usuarioId: sesion.user.id, email: sesion.user.email ?? '' };
+  return {
+    usuarioId: sesion.user.id,
+    email: sesion.user.email ?? '',
+    nombre: nombreDeLosMetadatos(sesion.user.user_metadata),
+    foto: fotoDeLosMetadatos(sesion.user.user_metadata),
+  };
 }
 
 function sesionGuardada(): Claims | undefined {
   try {
     const crudo = globalThis.localStorage.getItem(CLAVE_DE_SESION);
     if (crudo === null) return undefined;
-    const guardado = JSON.parse(crudo) as { user?: { id?: unknown; email?: unknown } };
+    const guardado = JSON.parse(crudo) as {
+      user?: { id?: unknown; email?: unknown; user_metadata?: unknown };
+    };
     const id = guardado.user?.id;
     if (typeof id !== 'string') return undefined;
     const email = guardado.user?.email;
-    return { usuarioId: id, email: typeof email === 'string' ? email : '' };
+    return {
+      usuarioId: id,
+      email: typeof email === 'string' ? email : '',
+      nombre: nombreDeLosMetadatos(guardado.user?.user_metadata),
+      foto: fotoDeLosMetadatos(guardado.user?.user_metadata),
+    };
   } catch {
     return undefined;
   }
@@ -37,7 +72,17 @@ export async function leerClaims(): Promise<Claims | undefined> {
     if (error) throw error;
     if (!data) return undefined;
     const { sub, email } = data.claims;
-    return { usuarioId: sub, email: typeof email === 'string' ? email : '' };
+    const guardada = sesionGuardada();
+    return {
+      usuarioId: sub,
+      email: typeof email === 'string' ? email : '',
+      nombre:
+        guardada?.usuarioId === sub
+          ? guardada.nombre
+          : nombreDeLosMetadatos(data.claims.user_metadata),
+      foto:
+        guardada?.usuarioId === sub ? guardada.foto : fotoDeLosMetadatos(data.claims.user_metadata),
+    };
   } catch (error) {
     if (!esFalloDeRed(error)) throw error;
     const { data } = await clienteMaun().auth.getSession();
@@ -90,6 +135,24 @@ export async function pedirRecuperacion(email: string, volverA: string): Promise
 export async function cambiarContrasena(contrasena: string): Promise<void> {
   const { error } = await clienteMaun().auth.updateUser({ password: contrasena });
   if (error) throw error;
+}
+
+export async function guardarNombreDeLaPersona(nombre: string): Promise<void> {
+  const { error } = await clienteMaun().auth.updateUser({ data: { nombre } });
+  if (error) throw error;
+}
+
+export async function subirFotoDeLaPersona(usuarioId: string, foto: Blob): Promise<string> {
+  const bucket = clienteMaun().storage.from(BUCKET_DE_FOTOS);
+  const ruta = `${usuarioId}/foto`;
+  const { error } = await bucket.upload(ruta, foto, { upsert: true, contentType: foto.type });
+  if (error) throw error;
+  const { data } = bucket.getPublicUrl(ruta, { cacheNonce: String(Date.now()) });
+  const { error: errorDeLaCuenta } = await clienteMaun().auth.updateUser({
+    data: { foto: data.publicUrl },
+  });
+  if (errorDeLaCuenta) throw errorDeLaCuenta;
+  return data.publicUrl;
 }
 
 export async function salir(): Promise<void> {

@@ -19,8 +19,8 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { formatearPesos, hoyLocal, parsearPesosDesdeCero, pesosEditables } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { formatearPesos, hoyLocal } from '@/shared/lib';
+import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 export interface PantallaDePasajeProps {
   resumen: ResumenDeProyecto;
@@ -35,9 +35,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const [rechazo, setRechazo] = useState<unknown>(null);
 
-  const [presupuesto, setPresupuesto] = useState(() =>
-    proyecto.presupuesto_centavos === null ? '' : pesosEditables(proyecto.presupuesto_centavos),
-  );
+  const [presupuesto, setPresupuesto] = useState<number | null>(proyecto.presupuesto_centavos);
   const [errorDelPresupuesto, setErrorDelPresupuesto] = useState<string | undefined>(undefined);
   const [forma, setForma] = useState<FormaDePago>(proyecto.forma_pago ?? 'transferencia');
   const [inicio, setInicio] = useState(proyecto.fecha_inicio ?? hoy);
@@ -56,8 +54,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
       : proyecto.comprobante,
   );
 
-  const monto = parsearPesosDesdeCero(presupuesto);
-  const saldo = Math.max(0, (monto ?? 0) - resumen.cobrado);
+  const saldo = Math.max(0, (presupuesto ?? 0) - resumen.cobrado);
 
   useEffect(() => {
     if (guardar.isPaused) {
@@ -70,7 +67,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
 
   function aprobar(evento: SyntheticEvent<HTMLFormElement>): void {
     evento.preventDefault();
-    if (presupuesto.trim() === '' || monto === undefined) {
+    if (presupuesto === null) {
       setErrorDelPresupuesto('Poné el presupuesto que aprobó, en pesos.');
       return;
     }
@@ -86,7 +83,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
             ...datosActualesDelProyecto(proyecto),
             estado: 'en_curso',
             ultimo_contacto: ultimoContactoAlGuardar(proyecto, 'en_curso', hoy),
-            presupuesto_centavos: monto,
+            presupuesto_centavos: presupuesto,
             forma_pago: forma,
             comprobante,
             fecha_inicio: inicio === '' ? null : inicio,
@@ -111,7 +108,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
   }
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+    <Pagina className="[&>*]:max-w-[720px]">
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -138,7 +135,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
         </p>
       </header>
 
-      <form noValidate onSubmit={aprobar} className="mt-5 flex flex-col gap-5">
+      <form noValidate onSubmit={aprobar} className="@container mt-5 flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
             Presupuesto aprobado
@@ -151,20 +148,19 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
             <span aria-hidden className="text-money-lg text-text-3">
               $
             </span>
-            <input
+            <MoneyInput
               id={`${idCampos}-presupuesto`}
-              inputMode="decimal"
               placeholder="0"
               value={presupuesto}
               aria-invalid={errorDelPresupuesto === undefined ? undefined : true}
               aria-describedby={
                 errorDelPresupuesto === undefined ? undefined : `${idCampos}-presupuesto-error`
               }
-              onChange={(evento) => {
-                setPresupuesto(evento.target.value);
+              onChange={(centavos) => {
+                setPresupuesto(centavos);
                 setErrorDelPresupuesto(undefined);
               }}
-              className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold tabular-nums outline-none"
+              className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
             />
           </div>
           {errorDelPresupuesto !== undefined && (
@@ -193,7 +189,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
 
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-          <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm:grid-cols-4">
             {FORMAS_EN_ORDEN.map((opcion) => (
               <button
                 key={opcion}
@@ -205,7 +201,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
                 }}
                 className={`min-h-tap rounded-control text-label ${
                   forma === opcion
-                    ? 'bg-paper font-semibold text-ink shadow-float'
+                    ? 'bg-elevado font-semibold text-ink shadow-float'
                     : 'font-medium text-text-2'
                 }`}
               >
@@ -215,10 +211,11 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           </div>
         </fieldset>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @sm:gap-x-3 @sm:gap-y-1.5">
           <Campo
             etiqueta="Fecha de inicio"
             type="date"
+            contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
             value={inicio}
             onChange={(evento) => {
               setInicio(evento.target.value);
@@ -230,8 +227,9 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           <Campo
             etiqueta="Entrega estimada"
             type="date"
+            contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
             value={entrega}
-            ayuda={entregaAuto ? '21 días hábiles' : undefined}
+            ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
             onChange={(evento) => {
               setEntrega(evento.target.value);
               setEntregaAuto(false);
@@ -296,6 +294,6 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           )}
         </div>
       </form>
-    </div>
+    </Pagina>
   );
 }

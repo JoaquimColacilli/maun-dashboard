@@ -11,9 +11,11 @@ export {
   crearCuenta,
   entrar,
   escucharSesion,
+  guardarNombreDeLaPersona,
   leerClaims,
   pedirRecuperacion,
   salir,
+  subirFotoDeLaPersona,
   type CambioDeSesion,
   type Claims,
 } from './sesion';

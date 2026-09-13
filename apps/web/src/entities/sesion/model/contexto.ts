@@ -3,6 +3,8 @@ import { createContext, useContext } from 'react';
 export interface SesionActiva {
   usuarioId: string;
   email: string;
+  nombre: string;
+  foto: string;
 }
 
 export const ContextoDeSesion = createContext<SesionActiva | undefined>(undefined);

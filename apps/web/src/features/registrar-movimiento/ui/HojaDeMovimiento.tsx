@@ -18,13 +18,12 @@ import { mensajeDeSincronizacion, type CambiosDeMovimiento, type FilaDe } from '
 import {
   formatearPesos,
   hoyLocal,
-  parsearPesos,
-  pesosEditables,
+  metaDeAvisos,
   TESORO,
   useEstadoSync,
   uuidv7,
 } from '@/shared/lib';
-import { Button, Campo, Hoja, Icono } from '@/shared/ui';
+import { Button, Campo, Hoja, Icono, MoneyInput } from '@/shared/ui';
 
 const UN_DIA_MS = 86_400_000;
 
@@ -60,7 +59,7 @@ function Segmentado({
           }}
           className={`min-h-tap rounded-control text-label ${
             grupo === opcion.id
-              ? 'bg-paper font-semibold text-ink shadow-float'
+              ? 'bg-elevado font-semibold text-ink shadow-float'
               : 'font-medium text-text-2'
           }`}
         >
@@ -95,9 +94,7 @@ export function HojaDeMovimiento({
     () => movimiento?.categoria ?? CLASE[inicial].categorias[0] ?? '',
   );
   const [descripcion, setDescripcion] = useState(movimiento?.descripcion ?? '');
-  const [monto, setMonto] = useState(() =>
-    movimiento ? pesosEditables(movimiento.monto_centavos) : '',
-  );
+  const [monto, setMonto] = useState<number | null>(movimiento?.monto_centavos ?? null);
   const [fecha, setFecha] = useState(movimiento?.fecha ?? hoy);
   const [error, setError] = useState<string | undefined>(undefined);
   const [confirmandoBaja, setConfirmandoBaja] = useState(false);
@@ -107,16 +104,22 @@ export function HojaDeMovimiento({
     campoDeMonto.current?.focus();
   }, []);
 
-  const crear = useMutation(MUTACION_DE_MOVIMIENTO);
-  const editar = useMutation(MUTACION_DE_EDICION_DE_MOVIMIENTO);
-  const borrar = useMutation(MUTACION_DE_BAJA_DE_MOVIMIENTO);
+  const crear = useMutation({ ...MUTACION_DE_MOVIMIENTO, meta: metaDeAvisos('movimientoNuevo') });
+  const editar = useMutation({
+    ...MUTACION_DE_EDICION_DE_MOVIMIENTO,
+    meta: metaDeAvisos('movimientoEditado'),
+  });
+  const borrar = useMutation({
+    ...MUTACION_DE_BAJA_DE_MOVIMIENTO,
+    meta: metaDeAvisos('movimientoBorrado'),
+  });
   const estadoSync = useEstadoSync();
   const enVuelo = crear.isPending || editar.isPending || borrar.isPending;
   const fallo: unknown = crear.error ?? editar.error ?? borrar.error;
 
   const datos = CLASE[clase];
   const tinte = TESORO[datos.tesoro];
-  const escritos = parsearPesos(monto) ?? 0;
+  const escritos = monto ?? 0;
   const ayuda = ayudaDelMovimiento(clase, {
     saldos,
     metaCocos: centavos(metaCocos),
@@ -136,8 +139,8 @@ export function HojaDeMovimiento({
 
   function enviar(evento: SyntheticEvent<HTMLFormElement>) {
     evento.preventDefault();
-    const importe = parsearPesos(monto);
-    if (importe === undefined) {
+    const importe = monto;
+    if (importe === null || importe === 0) {
       setError('Escribí cuánta plata es, por ejemplo 12.500.');
       return;
     }
@@ -227,18 +230,17 @@ export function HojaDeMovimiento({
               <span aria-hidden className="text-h1 text-text-3">
                 $
               </span>
-              <input
+              <MoneyInput
                 ref={campoDeMonto}
-                inputMode="decimal"
                 value={monto}
                 placeholder="0"
                 aria-label="Cuánta plata"
                 aria-invalid={error === undefined ? undefined : true}
-                onChange={(evento) => {
-                  setMonto(evento.target.value);
+                onChange={(centavos) => {
+                  setMonto(centavos);
                   setError(undefined);
                 }}
-                className="min-w-0 flex-1 border-0 bg-transparent text-money-xl font-semibold text-ink tabular-nums outline-none"
+                className="min-w-0 flex-1 border-0 bg-transparent text-money-xl font-semibold text-ink outline-none"
               />
             </span>
             {error !== undefined && (
@@ -280,9 +282,9 @@ export function HojaDeMovimiento({
             </label>
           )}
 
-          <div className="flex flex-col gap-1.5">
+          <div className="@container flex flex-col gap-1.5">
             <span className="text-label text-text-2">Cuándo</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
                 { id: hoy, etiqueta: 'Hoy' },
                 { id: ayer, etiqueta: 'Ayer' },
@@ -310,7 +312,7 @@ export function HojaDeMovimiento({
                 onChange={(evento) => {
                   setFecha(evento.target.value);
                 }}
-                className="h-field min-w-0 flex-1 rounded-field border border-border bg-paper px-3 text-body text-ink"
+                className="h-field min-w-0 basis-full rounded-field border border-border bg-paper px-3 text-body text-ink @xs:basis-0 @xs:flex-1"
               />
             </div>
           </div>

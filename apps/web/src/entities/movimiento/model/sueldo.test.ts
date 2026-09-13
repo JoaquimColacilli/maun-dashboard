@@ -1,7 +1,24 @@
 import { centavos } from '@maun/domain';
 import { describe, expect, it } from 'vitest';
 
-import { fraseDelSueldo } from './sueldo';
+import { faltaDelSueldo, fraseDelSueldo } from './sueldo';
+
+describe('faltaDelSueldo', () => {
+  it('un cobro entero y uno a medias no cubren el mes: falta lo mismo que muestra la barra', () => {
+    expect(faltaDelSueldo({ pagado: centavos(270_000_000), esperado: centavos(360_000_000) })).toBe(
+      90_000_000,
+    );
+  });
+
+  it('con lo esperado pagado no falta nada, y nunca da negativo', () => {
+    expect(faltaDelSueldo({ pagado: centavos(360_000_000), esperado: centavos(360_000_000) })).toBe(
+      0,
+    );
+    expect(faltaDelSueldo({ pagado: centavos(400_000_000), esperado: centavos(360_000_000) })).toBe(
+      0,
+    );
+  });
+});
 
 describe('fraseDelSueldo', () => {
   it('con dos cobros enteros en el mes dice dos sueldos, y por qué son dos', () => {

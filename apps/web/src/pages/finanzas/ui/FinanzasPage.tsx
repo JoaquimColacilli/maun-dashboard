@@ -1,6 +1,6 @@
 import { asientosDelLibro, type Tesoro } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import {
   agruparPorDia,
@@ -22,16 +22,19 @@ import { useLiquidacionesEnVuelo } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { datosDelLibro } from '@/shared/api';
 import {
+  conFondo,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
   nombreDelMes,
+  PARAMETRO_DE_TESORO,
   rutaDelMovimiento,
   RUTA_DE_MOVIMIENTO_NUEVO,
   TESORO,
+  tesoroDelParametro,
   TESOROS_EN_ORDEN,
 } from '@/shared/lib';
-import { Button, ComparacionMensual, Icono } from '@/shared/ui';
+import { Button, ComparacionMensual, ConSalida, Icono, Pagina } from '@/shared/ui';
 
 const SENTIDOS: readonly { id: SentidoDeLinea | 'todos'; etiqueta: string }[] = [
   { id: 'todos', etiqueta: 'Todo' },
@@ -71,10 +74,23 @@ function Chip({
 export function FinanzasPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
+  const location = useLocation();
   const hoy = hoyLocal();
   const mes = mesDeLaFecha(hoy);
 
-  const [filtro, setFiltro] = useState<FiltroDelLibro>(() => filtroInicial(mes));
+  function abrirHoja(ruta: string) {
+    void navegar(ruta, { state: conFondo(location) });
+  }
+
+  const [parametros, setParametros] = useSearchParams();
+  const [resto, setResto] = useState<Omit<FiltroDelLibro, 'tesoro'>>(() => {
+    const { sentido, mes: mesInicial, texto } = filtroInicial(mes);
+    return { sentido, mes: mesInicial, texto };
+  });
+  const filtro: FiltroDelLibro = {
+    ...resto,
+    tesoro: tesoroDelParametro(parametros.get(PARAMETRO_DE_TESORO)),
+  };
   const [ficha, setFicha] = useState<LineaDelTaller | null>(null);
 
   const enVuelo = useMovimientosEnVuelo();
@@ -90,13 +106,23 @@ export function FinanzasPage() {
   const previo = resumenMensual(asientos, mesAnterior(mes));
 
   const conFiltro = hayFiltroPuesto(filtro, mes);
-  const cambiar = (parte: Partial<FiltroDelLibro>) => {
-    setFiltro((previa) => ({ ...previa, ...parte }));
+  const cambiar = ({ tesoro, ...otros }: Partial<FiltroDelLibro>) => {
+    if (Object.keys(otros).length > 0) setResto((previo) => ({ ...previo, ...otros }));
+    if (tesoro === undefined) return;
+    setParametros(
+      (previos) => {
+        const siguientes = new URLSearchParams(previos);
+        if (tesoro === 'todos') siguientes.delete(PARAMETRO_DE_TESORO);
+        else siguientes.set(PARAMETRO_DE_TESORO, tesoro);
+        return siguientes;
+      },
+      { replace: true },
+    );
   };
 
   function abrir(linea: LineaDelTaller) {
     if (linea.bloqueo === null) {
-      void navegar(rutaDelMovimiento(linea.asientoId));
+      abrirHoja(rutaDelMovimiento(linea.asientoId));
       return;
     }
     setFicha(linea);
@@ -109,12 +135,12 @@ export function FinanzasPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-4 px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
+    <Pagina className="gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Finanzas</h1>
         <Button
           onClick={() => {
-            void navegar(RUTA_DE_MOVIMIENTO_NUEVO);
+            abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
           }}
         >
           <Icono nombre="plus" tamano={18} />
@@ -208,7 +234,7 @@ export function FinanzasPage() {
                 <Button
                   variant="secundario"
                   onClick={() => {
-                    setFiltro(filtroInicial(mes));
+                    cambiar(filtroInicial(mes));
                   }}
                 >
                   Limpiar los filtros
@@ -216,7 +242,7 @@ export function FinanzasPage() {
               ) : (
                 <Button
                   onClick={() => {
-                    void navegar(RUTA_DE_MOVIMIENTO_NUEVO);
+                    abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
                   }}
                 >
                   Cargar el primero
@@ -267,16 +293,17 @@ export function FinanzasPage() {
         </div>
       </div>
 
-      {ficha !== null && (
-        <FichaDelMovimiento
-          linea={ficha}
-          hoy={hoy}
-          alCerrar={() => {
-            setFicha(null);
-          }}
-        />
-      )}
-      <Outlet />
-    </div>
+      <ConSalida valor={ficha}>
+        {(linea) => (
+          <FichaDelMovimiento
+            linea={linea}
+            hoy={hoy}
+            alCerrar={() => {
+              setFicha(null);
+            }}
+          />
+        )}
+      </ConSalida>
+    </Pagina>
   );
 }

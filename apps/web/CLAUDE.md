@@ -27,7 +27,7 @@ src/
 - El estado del servidor vive en TanStack Query, dentro de `entities/*/api`. Las query keys llevan ids. El resto es estado local de React; no hay state manager global.
 - **El catálogo de tesoros y el ordenamiento de listas también viven en `shared/lib`** (`tesoros.ts`, `orden.ts`): los usan dos slices de `entities` cada uno, y un slice no puede importar a otro. `entities/tesoro` re-exporta el catálogo, así que su API pública no cambió (ADR 0015).
 - **Las claves de la réplica viven en `shared/lib/claves.ts`**, no en `entities/replica`: la mutación de cada entidad las necesita para aplicarse optimista, y un slice de `entities` no puede importar a otro. `entities/replica` las re-exporta, así que su API pública no cambió (ADR 0014).
-- La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002). Para mostrarla y leerla, `formatearPesos` y `parsearPesos` de `@/shared/lib`.
+- La plata es `Money` de `@maun/domain`: un `number` entero de centavos con brand. Nunca `BigInt` de JavaScript (ADR 0002). Para mostrarla, `formatearPesos` de `@/shared/lib`. Para cargarla, `MoneyInput` de `@/shared/ui`: entrega centavos enteros (`number | null`), así que el estado de un formulario guarda el número y no el texto (ADR 0020).
 
 ## Acceso y sesión (ADR 0012)
 
@@ -51,7 +51,13 @@ src/
 - Las transiciones van con `conTransicion()` (`document.startViewTransition` + `flushSync`), nunca con el componente `<ViewTransition>` de React.
 - El nodo raíz está anclado con `position: fixed; inset: 0` por el problema de `100vh` en PWA instalada, y el contenido lleva `calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom))` de padding inferior.
 - Las búsquedas de Clientes y Proyectos filtran la réplica en memoria desde la primera letra, **sin debounce**: no hay red de por medio que cuidar.
-- **La barra «Sueldo del mes» de Inicio sale de `sueldoDelMes`, no de `resumenDelMes`.** El tope de sueldo es por cobro, así que cada cobro del mes espera su propio sueldo y la barra nunca pasa del 100% (ADR 0011). El mensaje de arriba, en cambio, sigue leyendo el mes contra un sueldo: es a propósito.
+- **La barra «Sueldo del mes» de Inicio sale de `sueldoDelMes`, no de `resumenDelMes`.** El tope de sueldo es por cobro, así que cada cobro del mes espera su propio sueldo y la barra nunca pasa del 100% (ADR 0011). **El mensaje de arriba lee lo mismo que la barra** (`faltaDelSueldo`): con un cobro entero y uno a medias no dice «cubierto» (ADR 0020).
+- **Las cifras del mes no cuentan los `ajuste`** (`resumenMensual`): la apertura de la migración acomoda el saldo, no es plata que entró ni que se gastó ese mes (ADR 0020).
+- **Todas las pantallas van adentro de `Pagina`** (`@/shared/ui`): el ancho, los márgenes y el padding son uno solo. Si una pantalla necesita una columna más angosta, la angosta adentro (`[&>*]:max-w-[720px]`), no cambia el molde.
+- **Un proyecto sin presupuesto no tiene saldo: `saldo` es `null`**, y se muestra «—», no «Sin saldo» en verde. «Sin saldo» es que ya pagó todo.
+- **El scroll es del `<main>`, no de la ventana**: el nodo raíz está anclado con `position: fixed`, así que `window.scrollTo` no hace nada. `useScrollPorPantalla` (en `Marco`) guarda la posición del `<main>` por entrada del historial: al ir a otra pantalla arranca arriba y con el botón atrás vuelve a donde estaba. Cambiar solo los parámetros de la misma pantalla (un filtro) no lo mueve, y abrir una hoja por ruta tampoco, porque la ubicación visible sigue siendo la del fondo.
+- **Los filtros que tienen que sobrevivir a un enlace van en la URL.** Hogar, Maun y Cocos llegan a Finanzas con `?tesoro=` (`rutaDeFinanzasDelTesoro`); Finanzas lo lee con `tesoroDelParametro`, que ignora cualquier valor que no sea un tesoro. Cambiar el chip reemplaza la entrada del historial, así que atrás vuelve a Inicio y no a cada chip. El mes, el sentido y el texto siguen en estado local y el mes arranca en el mes en curso. Diezmo tiene su propia pantalla y no pasa por Finanzas.
+- **Ajustes está agrupado por tema**: a la izquierda vos y este dispositivo (perfil, apariencia, sincronización, rechazos) y a la derecha el taller (reparto y metas, Cocos). Cuenta va última, también en una sola columna.
 
 ## Offline (ADR 0005 y 0010)
 
@@ -67,10 +73,13 @@ src/
 - Los rechazos con SQLSTATE `MNxxx` y `42501` no se reintentan: se le muestran al usuario. Tampoco se reintenta ningún otro SQLSTATE definitivo (una violación de check nunca va a andar y tapa la cola, que drena de a una). La red, los timeouts y las clases transitorias sí.
 - **Un corte de red no llega como `TypeError`.** PostgREST devuelve un objeto con `code` vacío y el mensaje del `fetch` adentro («Failed to fetch», «Load failed»…). `esFalloDeRed` lo reconoce por ese par: sin eso, la pantalla mostraba «TypeError: Failed to fetch» en vez de «sin conexión».
 - Nunca muestres "guardado" para una mutación en cola. Para el estado real usá `useEstadoSync` y `describirEstadoSync` de `@/shared/lib`. El `IndicadorSync` global es el que lo dice y **desaparece cuando no hay nada pendiente**: en un test, que no esté es la señal de que ya llegó a la base.
+- **Las confirmaciones salen de la cola, no del formulario** (`app/providers/avisos-de-la-cola.ts`, ADR 0020). La mutación lleva `meta: metaDeAvisos('clienteNuevo')` y el suscriptor del `MutationCache` decide qué decir: «guardado» solo con `success`, «anotado sin señal» con `pause`, y el error con el motivo traducido. La `meta` se deshidrata con la mutación, así que una que drena después de reabrir la app avisa igual. Si el formulario muestra su propio rechazo mientras está abierto, `errorEnPantalla: true` evita la alerta repetida.
+- Lo transitorio va en un solo `role="status"` y cada error en su `role="alert"`: el lector anuncia lo primero cuando puede y lo segundo en el acto. El tono no depende del color: cada aviso lleva su ícono y su verbo.
 - `crearQueryClient()` siembra `onlineManager` con `navigator.onLine`. **No lo saques**: `onlineManager` arranca en `true` fijo y solo cambia con los eventos de `window`, así que abrir la app ya sin señal la dejaba creyendo que hay red, con las mutaciones fallando en vez de encolarse (ADR 0014).
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
 - El service worker precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
+- **La foto de perfil es la única escritura que no pasa por la cola** (ADR 0022): la cola maneja mutaciones de JSON, no archivos. `FormularioDePerfil` recorta y achica en el navegador (`features/editar-perfil/model`) y `subirFotoDeLaPersona` sube con `upsert` a `fotos-de-perfil/{usuario}/foto` y guarda la URL con `cacheNonce` en `user_metadata.foto`. Sin señal no abre el selector y lo dice. `esFalloDeRed` reconoce el `StorageUnknownError` de storage-js. Otro dispositivo ve la foto nueva recién cuando renueva la sesión, igual que el nombre.
 - El bundle se parte en dos: el vendor en su propio chunk y el código de la app en otro (`manualChunks` en `vite.config.ts`). No baja el arranque, pero un cambio de pantalla deja de obligar a rebajar el bundle entero del precache (ADR 0015).
 
 ## Sistema de diseño
@@ -78,6 +87,7 @@ src/
 - Las pantallas se portan desde `design-reference/*.dc.html`, con el mismo markup y los mismos tokens. Cada pantalla tiene cuatro estados (cargando, vacío, con datos y error) y tres anchos (390, tablet y 1440).
 - Solo se usan utilidades de tokens: `bg-ink`, `text-text-2`, `bg-hogar-tint`, `text-money-lg`, `rounded-panel`, `h-button`, `px-(--page-pad-mobile)`. Los colores y tamaños por defecto de Tailwind no existen, y no hay hex sueltos.
 - Los componentes de `design-reference/src/components/app` conocen el dominio: van a `entities` o a `features`, no a `packages/ui`.
+- **Nada se sale de su contenedor en 320 px**, y 360 tiene que verse cómodo. Lo que puede vivir en una columna (el formulario de proyecto, los tríos de importes, las filas de dos campos, los selectores segmentados) se adapta con consultas de contenedor, no con `sm:`/`md:` del viewport: el mismo formulario va a ancho completo en el celular y en media pantalla en la PC. Un selector que no entra pasa a dos filas; **nunca scroll horizontal**, que esconde opciones. `@container` va en un ancestro, no en el mismo elemento que usa `@sm:`.
 - El error de un campo va en el `error` de su `Campo`, que lo ata con `aria-describedby` y marca el input inválido. El `<p role="alert">` suelto queda solo para lo que no es de ningún campo, y nunca los dos a la vez: serían dos alertas.
 - `Cargando` y `Aviso` viven en `shared/ui` porque los usan `app/` y `pages/`. `Cargando` lleva `role="status"` y su texto para el lector de pantalla.
 - `design-reference/src/lib/format.ts` calcula la cascada sobre el presupuesto: no se porta, se usa `@maun/domain`.
@@ -177,8 +187,17 @@ src/
   del contacto.
 - **La seña se edita desde la hoja solo si hay cero o un pago.** Con varios, el campo muestra el total y
   manda al detalle.
-- **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `role="dialog"`**: si no, una hoja
+- **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `dialog[open]`**: si no, una hoja
   abierta por ruta (`/seguimiento/nuevo`, `/finanzas/nuevo`) perdía el foco del primer campo.
+- **Una hoja por ruta se abre encima de la pantalla desde la que se abrió** (`shared/lib/hojas.ts`,
+  ADR 0020). El link manda `state={conFondo(location)}`, `Marco` renderiza las pantallas con esa
+  ubicación de fondo y las hojas en su propia capa. Cerrar es `useCerrarHoja()`: con fondo es volver
+  atrás (así el botón atrás del navegador la cierra), y entrando directo por la URL cae en el fondo por
+  defecto de `HOJAS_POR_RUTA`. No vuelvas a un `?volverA=`: el fondo viaja en el `state`.
+- **Toda hoja es `Hoja` de `@/shared/ui`**, un `<dialog>` nativo con `showModal`, y entra y sale con
+  CSS (`@starting-style` y `transition-behavior: allow-discrete`). Para que la salida se vea, quien la
+  abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. jsdom no tiene
+  `showModal`: el polyfill vive en `vitest.setup.ts`.
 - **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). Es una diferencia
   deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
   «arregles».
@@ -200,4 +219,8 @@ src/
 - **`page.clock.setFixedTime` antes del `goto` manda al login**: con el reloj adelantado días, el token
   guardado está vencido. Para probar «hace N días» se adelanta el reloj **después** de que la app cargó y
   se fuerza un render navegando (una pestaña y vuelta).
-- **`getByRole('status')` no es el indicador de sincronización a secas.** Cualquier confirmación con `role="status"` entra en ese locator y rompe el `toBeHidden`. Para esperar a que la cola drene conviene preguntarle a la base (`expect.poll` sobre un helper de `apoyo/taller.ts`), que además es la afirmación que importa.
+- **`getByRole('status')` no es el indicador de sincronización a secas.** Los avisos viven en un `role="status"` que está siempre en el DOM, y `Cargando` también es un `status`. Usá `indicadorDeSync(page)` y `avisosEnPantalla(page)` de `apoyo/pantalla.ts`. Para esperar a que la cola drene conviene preguntarle a la base (`expect.poll` sobre un helper de `apoyo/taller.ts`), que además es la afirmación que importa.
+- **`listoParaCortar` espera una señal positiva**: el `<main>` a la vista y ningún `Cargando`. Esperar solo a que el indicador se vaya no alcanza: con la réplica todavía bajando el indicador no está, y cortar ahí deja el dispositivo vacío («No pudimos leer tus datos»).
+- **`not.toContainText` sobre un locator que no existe falla** («element(s) not found»). Para decir que un aviso no apareció, `filter({ hasText })` y `toHaveCount(0)`.
+- **`request.postDataBuffer()` no trae el cuerpo de una subida multipart con un `Blob`**: da `null`. Para medir lo que sube la app, `foto.spec.ts` envuelve `fetch` con `addInitScript` y anota el tamaño, el tipo y el SHA-256 del archivo; con la huella se comprueba que la URL nueva sirve la foto nueva.
+- `foto.spec.ts` escribe en Storage con la cuenta de prueba: la subida corre una vez por corrida, solo en `escritorio`. `scroll.spec.ts` corre en `celular`, porque en 1440×900 Inicio no llega a scrollear.

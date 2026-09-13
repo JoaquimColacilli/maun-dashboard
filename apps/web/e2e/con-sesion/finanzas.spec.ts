@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
+import {
+  avisosEnPantalla,
+  indicadorDeSync,
+  listoParaCortar,
+  saldosEnInicio,
+} from '../apoyo/pantalla';
 import {
   ajustarTaller,
   cobrarPorRpc,
@@ -77,7 +82,7 @@ async function esperarMovimientos(cuantos: number): Promise<void> {
 }
 
 async function pagarDiezmo(page: Page, monto: string, descripcion: string): Promise<void> {
-  await page.getByRole('link', { name: 'Registrar un pago' }).click();
+  await page.getByRole('link', { name: 'Registrar diezmo' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByLabel('Cuánta plata').fill(monto);
   await page.getByLabel('Qué fue').fill(descripcion);
@@ -159,7 +164,7 @@ test('los ocho tipos manuales mueven los cuatro tesoros, con la contrapartida de
   await cargar(page, { grupo: 'Cocos', clase: 'Gasto', monto: '1.000', descripcion: 'Sellos' });
   await cargar(page, { grupo: 'Diezmo', monto: '2.000', descripcion: 'Diezmo de septiembre' });
 
-  await expect(page.getByRole('status').last()).toBeHidden({ timeout: 30_000 });
+  await expect(indicadorDeSync(page)).toBeHidden({ timeout: 30_000 });
 
   const filas = await movimientosDelTaller(sesion);
   expect(filas).toHaveLength(8);
@@ -230,6 +235,10 @@ test('en modo avión el movimiento aparece sin confirmar, sobrevive a cerrar la 
   const fila = page.getByRole('button', { name: /Súper sin señal/ });
   await expect(fila).toBeVisible();
   await expect(fila).toContainText('sin confirmar');
+  await expect(avisosEnPantalla(page)).toContainText(
+    'Movimiento anotado sin señal: se guarda solo cuando vuelva.',
+  );
+  await expect(avisosEnPantalla(page)).not.toContainText('Movimiento guardado.');
   expect(await movimientosDelTaller(sesion)).toHaveLength(0);
 
   await page.close();
@@ -260,6 +269,55 @@ test('el pago de diezmo se registra desde su pantalla y el texto cambia con el s
   await expect(estado).toContainText('Debés');
   await expect(estado).toContainText('$ 20.000');
   await expect(page.getByRole('button', { name: /Pago parcial/ })).toBeVisible();
+});
+
+test('registrar diezmo abre la hoja encima de Diezmo y el botón atrás la cierra sin salir de ahí', async ({
+  page,
+}) => {
+  await page.goto('/diezmo');
+  await page.getByRole('link', { name: 'Registrar diezmo' }).click();
+
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page).toHaveURL(/\/finanzas\/nuevo\?clase=pago_diezmo$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
+  await expect(page.getByRole('radio', { name: 'Diezmo' })).toHaveAttribute('aria-checked', 'true');
+  expect(
+    await page
+      .getByRole('dialog')
+      .evaluate((hoja) => Number.parseFloat(getComputedStyle(hoja).transitionDuration)),
+  ).toBeGreaterThan(0.1);
+
+  await page.goBack();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page).toHaveURL(/\/diezmo$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
+
+  await page.goto('/finanzas/nuevo?clase=pago_diezmo');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Finanzas');
+  await page.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(page).toHaveURL(/\/finanzas$/);
+});
+
+test.describe('con prefers-reduced-motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('la hoja abre y cierra sin transición, y anda igual con Escape', async ({ page }) => {
+    await page.goto('/diezmo');
+    await page.getByRole('link', { name: 'Registrar diezmo' }).click();
+
+    const hoja = page.getByRole('dialog');
+    await expect(hoja).toBeVisible();
+    const duracion = await hoja.evaluate((dialogo) =>
+      Number.parseFloat(getComputedStyle(dialogo).transitionDuration),
+    );
+    expect(duracion).toBeLessThan(0.001);
+
+    await page.keyboard.press('Escape');
+    await expect(hoja).toBeHidden();
+    await expect(page).toHaveURL(/\/diezmo$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Diezmo');
+  });
 });
 
 test('los tres estados del diezmo: con deuda, al día y pagado de más', async ({ page }) => {
@@ -351,7 +409,8 @@ test('un movimiento cargado a mano se edita y se borra desde su ficha', async ({
     monto: '40.000',
     descripcion: 'Hoja de sierra',
   });
-  await expect(page.getByRole('status').last()).toBeHidden({ timeout: 30_000 });
+  await expect(indicadorDeSync(page)).toBeHidden({ timeout: 30_000 });
+  await expect(avisosEnPantalla(page)).toContainText('Movimiento guardado.');
 
   await page.getByRole('button', { name: /Hoja de sierra/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -469,6 +528,6 @@ test('finanzas y diezmo se recorren enteros con el teclado', async ({ page }) =>
 
   await page.goto('/diezmo');
   const enDiezmo = await recorrerConTab(page, 40);
-  expect(enDiezmo.some((foco) => foco.includes('Registrar un pago'))).toBe(true);
+  expect(enDiezmo.some((foco) => foco.includes('Registrar diezmo'))).toBe(true);
   expect(enDiezmo.some((foco) => foco.includes('Farmacia'))).toBe(false);
 });

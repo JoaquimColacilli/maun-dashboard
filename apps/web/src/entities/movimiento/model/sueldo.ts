@@ -1,6 +1,13 @@
-import type { SueldoDelMes } from '@maun/domain';
+import { CERO, restar, type Money, type SueldoDelMes } from '@maun/domain';
 
 import { formatearPesos } from '@/shared/lib';
+
+export function faltaDelSueldo({
+  pagado,
+  esperado,
+}: Pick<SueldoDelMes, 'pagado' | 'esperado'>): Money {
+  return pagado >= esperado ? CERO : restar(esperado, pagado);
+}
 
 export interface FraseDelSueldo {
   texto: string;

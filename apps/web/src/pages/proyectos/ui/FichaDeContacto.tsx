@@ -18,7 +18,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
 import { fechaLarga, formatearPesos, hoyLocal, relativa, useAvisosDelProyecto } from '@/shared/lib';
-import { Button, Icono, PanelDeAvisos } from '@/shared/ui';
+import { Button, ConSalida, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 function Dato({ clave, valor, tono = '' }: { clave: string; valor: string; tono?: string }) {
   return (
@@ -52,7 +52,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const nombre = cliente?.nombre ?? resumen.nombreDelCliente;
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) md:py-5 lg:px-(--page-pad-desktop) lg:py-6">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to={RUTA_DE_SEGUIMIENTO}
@@ -201,7 +201,9 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       </div>
 
-      {editando && <HojaDeContacto proyecto={proyecto} alCerrar={cerrarLaHoja} />}
-    </div>
+      <ConSalida valor={editando}>
+        {() => <HojaDeContacto proyecto={proyecto} alCerrar={cerrarLaHoja} />}
+      </ConSalida>
+    </Pagina>
   );
 }

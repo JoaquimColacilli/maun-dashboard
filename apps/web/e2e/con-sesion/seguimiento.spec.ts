@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
+import { indicadorDeSync, listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
 import {
   contactoPorRpc,
   crearCliente,
@@ -257,6 +257,41 @@ test('la lista va primero con lo que hace más que espera, y tocar un contacto l
   await expect(tarjetas(page).nth(1)).toContainText('Primero en llegar');
 });
 
+test('toda la tarjeta lleva al trabajo, el nombre del cliente a su ficha, y con el teclado se llega a los dos por separado', async ({
+  page,
+}) => {
+  const { id } = await contactoPorRpc(sesion, {
+    titulo: 'Rack de living',
+    estado: 'a_presupuestar',
+    telefono: '11 5555-2222',
+  });
+
+  await abrir(page, '/seguimiento');
+  await tarjetas(page).first().getByText('Falta presupuestar').click({ force: true });
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`));
+
+  await page.goBack();
+  const cliente = tarjetas(page)
+    .first()
+    .getByRole('link', { name: 'Cliente de Rack de living', exact: true });
+  await cliente.click();
+  await expect(page).toHaveURL(/\/clientes\/[^/]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Cliente de Rack de living');
+
+  await page.goBack();
+  await cliente.focus();
+  await page.keyboard.press('Tab');
+  await expect(
+    tarjetas(page).first().getByRole('link', { name: 'Rack de living', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(
+    tarjetas(page)
+      .first()
+      .getByRole('link', { name: /^Llamar a/ }),
+  ).toBeFocused();
+});
+
 test('pasados nueve días, la tarjeta dice hace cuánto y se marca como fría', async ({ page }) => {
   await contactoPorRpc(sesion, {
     titulo: 'Presupuesto sin respuesta',
@@ -313,7 +348,7 @@ test('en modo avión el contacto con su seña queda entero, sobrevive a cerrar l
     'aria-checked',
     'true',
   );
-  await expect(page.getByRole('status').first()).toContainText('Sin conexión');
+  await expect(indicadorDeSync(page)).toContainText('Sin conexión');
   expect(await leerProyecto(sesion, 'Biblioteca sin señal')).toBeUndefined();
 
   await page.close();
@@ -323,7 +358,7 @@ test('en modo avión el contacto con su seña queda entero, sobrevive a cerrar l
   await expect(tarjeta).toContainText('Biblioteca sin señal', { timeout: 30_000 });
   await expect(tarjeta).toContainText('A presupuestar');
   await expect(tarjeta).toContainText('$ 80.000');
-  await expect(reabierta.getByRole('status').first()).toContainText('Sin conexión');
+  await expect(indicadorDeSync(reabierta)).toContainText('Sin conexión');
   expect(await leerProyecto(sesion, 'Biblioteca sin señal')).toBeUndefined();
 
   await context.setOffline(false);

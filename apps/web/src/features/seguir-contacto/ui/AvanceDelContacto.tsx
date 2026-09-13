@@ -15,8 +15,8 @@ import {
   type SituacionDelContacto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeProyecto } from '@/shared/api';
-import { hoyLocal, parsearPesosDesdeCero } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { hoyLocal, metaDeAvisos } from '@/shared/lib';
+import { Button, Icono, MoneyInput } from '@/shared/ui';
 
 export interface AvanceDelContactoProps {
   proyecto: Proyecto;
@@ -32,11 +32,13 @@ export function AvanceDelContacto({
   alAgendar,
 }: AvanceDelContactoProps) {
   const navegar = useNavigate();
-  const guardar = useMutation(MUTACION_DE_PROYECTO);
+  const guardar = useMutation({
+    ...MUTACION_DE_PROYECTO,
+    meta: metaDeAvisos('contactoAvanzado', { errorEnPantalla: true, sujeto: proyecto.titulo }),
+  });
   const [rechazo, setRechazo] = useState<unknown>(null);
   const [presupuestando, setPresupuestando] = useState(false);
-  const [presupuesto, setPresupuesto] = useState('');
-  const [errorDelPresupuesto, setErrorDelPresupuesto] = useState<string | undefined>(undefined);
+  const [presupuesto, setPresupuesto] = useState<number | null>(null);
   const campoDelPresupuesto = useRef<HTMLInputElement>(null);
 
   const paso = pasoSiguiente(etapa);
@@ -91,24 +93,20 @@ export function AvanceDelContacto({
 
   function marcarEnviado(evento: SyntheticEvent<HTMLFormElement>): void {
     evento.preventDefault();
-    const texto = presupuesto.trim();
-    const monto = texto === '' ? null : parsearPesosDesdeCero(texto);
-    if (monto === undefined) {
-      setErrorDelPresupuesto('Revisá el monto: va en pesos, por ejemplo 1.200.000.');
-      return;
-    }
     mover(
-      monto === null
+      presupuesto === null
         ? { estado: 'presupuesto_enviado' }
-        : { estado: 'presupuesto_enviado', presupuesto_centavos: monto },
+        : { estado: 'presupuesto_enviado', presupuesto_centavos: presupuesto },
     );
     setPresupuestando(false);
-    setPresupuesto('');
-    setErrorDelPresupuesto(undefined);
+    setPresupuesto(null);
   }
 
   return (
-    <section aria-label="Qué falta" className="rounded-panel border border-hairline px-4 py-3.5">
+    <section
+      aria-label="Qué falta"
+      className="@container rounded-panel border border-hairline px-4 py-3.5"
+    >
       <h2 className="text-meta font-medium text-text-2">Qué falta</h2>
       <p className="mt-0.5 text-body-lg leading-snug font-semibold">{situacion.proximoPaso}</p>
       <p
@@ -122,23 +120,13 @@ export function AvanceDelContacto({
 
       {presupuestando ? (
         <form noValidate onSubmit={marcarEnviado} className="mt-3 flex flex-col gap-2.5">
-          <Campo
+          <MoneyInput
             ref={campoDelPresupuesto}
             etiqueta="Cuánto presupuestaste"
-            inputMode="decimal"
             placeholder="Opcional"
-            className="tabular-nums"
             value={presupuesto}
-            onChange={(evento) => {
-              setPresupuesto(evento.target.value);
-              setErrorDelPresupuesto(undefined);
-            }}
-            error={errorDelPresupuesto}
-            ayuda={
-              errorDelPresupuesto === undefined
-                ? 'Si lo dejás vacío, lo cargás cuando lo apruebe.'
-                : undefined
-            }
+            onChange={setPresupuesto}
+            ayuda="Si lo dejás vacío, lo cargás cuando lo apruebe."
           />
           <div className="flex flex-wrap gap-2">
             <Button type="submit">Marcar como enviado</Button>
@@ -168,7 +156,7 @@ export function AvanceDelContacto({
         <div
           role="radiogroup"
           aria-label="Etapa"
-          className="mt-1 grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 sm:grid-cols-4"
+          className="mt-1 grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @md:grid-cols-4"
         >
           {ESTADOS_DE_SEGUIMIENTO.map((estado) => (
             <button
@@ -181,7 +169,7 @@ export function AvanceDelContacto({
               }}
               className={`min-h-tap rounded-control px-1 text-label leading-tight ${
                 estado === etapa
-                  ? 'bg-paper font-semibold text-ink shadow-float'
+                  ? 'bg-elevado font-semibold text-ink shadow-float'
                   : 'font-medium text-text-2'
               }`}
             >

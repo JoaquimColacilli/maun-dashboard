@@ -2,7 +2,7 @@ import { entregaEstimada, estaLiquidado, faseDe, type EstadoProyecto } from '@ma
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import { useFieldArray, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
 import { ClienteCombobox, CONDICION, enlaceDeMapa } from '@/entities/cliente';
@@ -36,14 +36,16 @@ import { filaPorId, filasDe, mensajeDeSincronizacion } from '@/shared/api';
 import {
   formatearPesos,
   hoyLocal,
-  parsearPesosDesdeCero,
+  metaDeAvisos,
   useAltoVisible,
   useAnchoDePantalla,
   uuidv7,
 } from '@/shared/lib';
-import { Button, Campo, Icono } from '@/shared/ui';
+import { Button, Campo, Icono, MoneyInput } from '@/shared/ui';
 
 import { FilasDinamicas } from './FilasDinamicas';
+
+const FECHA_ALINEADA = '@sm/datos:row-span-3 @sm/datos:grid @sm/datos:grid-rows-subgrid';
 
 function rutaAlTerminar(id: string, volverALiquidar: 'cierre' | 'cobro' | null): string {
   if (volverALiquidar === 'cierre') return rutaDeCierre(id);
@@ -75,7 +77,10 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
     gastos: proyectoId === undefined ? [] : gastosDelProyecto(replica, proyectoId).map((g) => g.id),
   });
 
-  const guardar = useMutation(MUTACION_DE_PROYECTO);
+  const guardar = useMutation({
+    ...MUTACION_DE_PROYECTO,
+    meta: metaDeAvisos('proyectoGuardado', { errorEnPantalla: true }),
+  });
   const [rechazo, setRechazo] = useState<unknown>(null);
   const [volverALiquidar, setVolverALiquidar] = useState<'cierre' | 'cobro' | null>(null);
   const revertir = useMutation(MUTACION_DE_REVERSION);
@@ -143,8 +148,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
   const totalCobrado = totalDeLasFilas(filasDePagos);
   const totalGastos = totalDeLasFilas(filasDeGastos);
-  const presupuestoEnPesos = parsearPesosDesdeCero(presupuesto) ?? 0;
-  const saldo = Math.max(0, presupuestoEnPesos - totalCobrado);
+  const saldo = presupuesto === null ? null : Math.max(0, presupuesto - totalCobrado);
   const neta = totalCobrado - totalGastos;
 
   function reabrirParaEditar(fila: NonNullable<typeof proyecto>): void {
@@ -190,21 +194,25 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
     <div
       style={enCelular && altoVisible !== undefined ? { height: altoVisible } : undefined}
       className={
-        enCelular ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-paper' : 'flex flex-col'
+        enCelular
+          ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-paper'
+          : 'flex min-h-full flex-col'
       }
     >
-      <header className="flex flex-none items-center justify-between border-b border-hairline px-3 py-2 md:px-6 md:py-3">
-        <Button
-          variant="terciario"
-          onClick={() => {
-            void navegar(proyecto === undefined ? '/proyectos' : rutaDelProyecto(proyecto.id));
-          }}
-        >
-          <Icono nombre="x" tamano={20} />
-          Cancelar
-        </Button>
-        <span className="text-body-lg font-semibold">{titulo}</span>
-        <span className="w-[92px]" />
+      <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
+        <div className="mx-auto grid w-full max-w-content grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
+          <Button
+            variant="terciario"
+            className="justify-self-start"
+            onClick={() => {
+              void navegar(proyecto === undefined ? '/proyectos' : rutaDelProyecto(proyecto.id));
+            }}
+          >
+            <Icono nombre="x" tamano={20} />
+            Cancelar
+          </Button>
+          <span className="text-center text-body-lg font-semibold">{titulo}</span>
+        </div>
       </header>
 
       <form
@@ -214,8 +222,14 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
         }}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="mx-auto grid min-h-0 w-full max-w-content flex-1 grid-cols-1 gap-6 overflow-y-auto px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:grid-cols-2 lg:gap-x-12 lg:px-(--page-pad-desktop) lg:py-6">
-          <div className="flex min-w-0 flex-col gap-5">
+        <div
+          className={`mx-auto grid min-h-0 w-full max-w-content flex-1 grid-cols-1 gap-6 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:grid-cols-2 lg:gap-x-12 lg:px-(--page-pad-desktop) lg:py-6 ${
+            enCelular
+              ? 'overflow-y-auto'
+              : 'content-start [&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
+          }`}
+        >
+          <div className="@container/datos flex min-w-0 flex-col gap-5">
             <ClienteCombobox
               clientes={clientes}
               elegidoId={clienteId === '' ? null : clienteId}
@@ -248,12 +262,21 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
                 <span aria-hidden className="text-money-lg text-text-3">
                   $
                 </span>
-                <input
-                  {...register('presupuesto')}
-                  id={`${idCampos}-presupuesto`}
-                  inputMode="decimal"
-                  placeholder="0"
-                  className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold tabular-nums outline-none"
+                <Controller
+                  control={control}
+                  name="presupuesto"
+                  render={({ field }) => (
+                    <MoneyInput
+                      ref={field.ref}
+                      name={field.name}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      id={`${idCampos}-presupuesto`}
+                      placeholder="0"
+                      className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+                    />
+                  )}
                 />
               </div>
               {errors.presupuesto ? (
@@ -269,7 +292,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
             <fieldset className="flex flex-col gap-1.5">
               <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-              <div className="grid grid-cols-4 gap-0.5 rounded-field bg-surface p-1">
+              <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm/datos:grid-cols-4">
                 {FORMAS_EN_ORDEN.map((forma) => (
                   <BotonDeOpcion
                     key={forma}
@@ -283,32 +306,28 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               </div>
             </fieldset>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div
+              data-fila="fechas"
+              className="grid grid-cols-1 gap-4 @sm/datos:grid-cols-2 @sm/datos:gap-x-3 @sm/datos:gap-y-1.5"
+            >
               <Campo
                 {...register('fecha_inicio')}
                 etiqueta="Fecha de inicio"
                 type="date"
                 error={errors.fecha_inicio?.message}
+                contenedor={FECHA_ALINEADA}
               />
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`${idCampos}-entrega`}
-                  className="flex items-baseline justify-between gap-2 text-label text-text-2"
-                >
-                  Entrega estimada
-                  {entregaAuto && <span className="text-meta text-text-3">21 días hábiles</span>}
-                </label>
-                <input
-                  {...register('entrega_estimada', {
-                    onChange: () => {
-                      setEntregaAuto(false);
-                    },
-                  })}
-                  id={`${idCampos}-entrega`}
-                  type="date"
-                  className="h-field rounded-field border border-border bg-paper px-3.5 text-body-lg text-ink"
-                />
-              </div>
+              <Campo
+                {...register('entrega_estimada', {
+                  onChange: () => {
+                    setEntregaAuto(false);
+                  },
+                })}
+                etiqueta="Entrega estimada"
+                type="date"
+                ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
+                contenedor={FECHA_ALINEADA}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -454,6 +473,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               etiquetaDelDetalle="Concepto"
               placeholderDelDetalle="Seña, adelanto, saldo…"
               textoDeAgregar="Agregar un pago"
+              ayuda="Lo que te pagó el cliente por este trabajo. Entra a la caja del taller."
               vacio="Todavía no cobraste nada de este trabajo. La seña suele ir primero."
               control={control}
               register={register}
@@ -467,7 +487,8 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               etiquetaDelDetalle="Descripción"
               placeholderDelDetalle="Melamina, herrajes, flete…"
               textoDeAgregar="Agregar un gasto"
-              vacio="Todo lo que compres para este mueble va acá y se descuenta de la ganancia."
+              ayuda="Materiales y compras de este mueble. Se descuentan de la ganancia."
+              vacio="Todavía no cargaste gastos para este mueble."
               control={control}
               register={register}
               errores={errors}
@@ -477,38 +498,39 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
           </div>
         </div>
 
-        <footer className="flex flex-none flex-wrap items-center gap-3 border-t border-hairline bg-paper px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
-          <dl className="flex min-w-[210px] flex-1 gap-4 tabular-nums">
-            <Total etiqueta="Presupuesto" valor={formatearPesos(presupuestoEnPesos)} />
-            <Total etiqueta="Cobrado" valor={formatearPesos(totalCobrado)} tono="text-hogar" />
-            <Total etiqueta="Saldo" valor={formatearPesos(saldo)} />
-            <Total
-              etiqueta="Neta"
-              valor={formatearPesos(neta)}
-              tono={neta < 0 ? 'text-alerta' : 'text-maun'}
-            />
-          </dl>
-          <Button
-            type="submit"
-            cargando={guardar.isPending}
-            className="min-w-[170px] flex-1 md:flex-none"
-          >
-            {proyecto === undefined ? 'Guardar proyecto' : 'Guardar los cambios'}
-          </Button>
+        <footer className="flex-none border-t border-hairline bg-paper md:sticky md:bottom-0 md:z-20">
+          <div className="@container/barra mx-auto flex w-full max-w-content flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
+            {rechazo !== null && (
+              <p role="alert" className="basis-full text-label font-medium text-alerta">
+                {mensajeDeSincronizacion(rechazo, {
+                  operacion: 'proyecto',
+                  sujeto: proyecto?.titulo,
+                  estado: proyecto?.estado === 'perdido' ? 'perdido' : 'cobrado',
+                })}
+              </p>
+            )}
+            <dl className="grid w-full grid-cols-2 gap-x-4 gap-y-1 tabular-nums @min-[21rem]/barra:flex @min-[21rem]/barra:w-auto @min-[21rem]/barra:min-w-[210px] @min-[21rem]/barra:flex-1 md:gap-6 lg:gap-8">
+              <Total
+                etiqueta="Presupuesto"
+                valor={presupuesto === null ? '—' : formatearPesos(presupuesto)}
+              />
+              <Total etiqueta="Cobrado" valor={formatearPesos(totalCobrado)} tono="text-hogar" />
+              <Total etiqueta="Saldo" valor={saldo === null ? '—' : formatearPesos(saldo)} />
+              <Total
+                etiqueta="Neta"
+                valor={formatearPesos(neta)}
+                tono={neta < 0 ? 'text-alerta' : 'text-maun'}
+              />
+            </dl>
+            <Button
+              type="submit"
+              cargando={guardar.isPending}
+              className="min-w-[170px] flex-1 md:flex-none"
+            >
+              {proyecto === undefined ? 'Guardar proyecto' : 'Guardar los cambios'}
+            </Button>
+          </div>
         </footer>
-
-        {rechazo !== null && (
-          <p
-            role="alert"
-            className="px-(--page-pad-mobile) pb-3 text-label font-medium text-alerta"
-          >
-            {mensajeDeSincronizacion(rechazo, {
-              operacion: 'proyecto',
-              sujeto: proyecto?.titulo,
-              estado: proyecto?.estado === 'perdido' ? 'perdido' : 'cobrado',
-            })}
-          </p>
-        )}
       </form>
     </div>
   );
@@ -517,8 +539,12 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 function Total({ etiqueta, valor, tono = '' }: { etiqueta: string; valor: string; tono?: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-meta text-text-3">{etiqueta}</dt>
-      <dd className={`text-label font-semibold ${tono}`}>{valor}</dd>
+      <dt className="text-meta text-text-3 lg:text-label">{etiqueta}</dt>
+      <dd
+        className={`text-label font-semibold whitespace-nowrap md:text-body-lg lg:text-money-lg ${tono}`}
+      >
+        {valor}
+      </dd>
     </div>
   );
 }
@@ -539,7 +565,7 @@ function BotonDeOpcion({
       aria-checked={elegido}
       onClick={alElegir}
       className={`min-h-tap rounded-control text-label ${
-        elegido ? 'bg-paper font-semibold text-ink shadow-float' : 'font-medium text-text-2'
+        elegido ? 'bg-elevado font-semibold text-ink shadow-float' : 'font-medium text-text-2'
       }`}
     >
       {etiqueta}

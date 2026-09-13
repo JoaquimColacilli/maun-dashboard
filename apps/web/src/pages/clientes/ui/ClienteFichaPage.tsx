@@ -22,8 +22,8 @@ import { RUTA_DE_PROYECTO_NUEVO } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { fechaLarga, formatearPesos, hoyLocal, relativa } from '@/shared/lib';
-import { Button, Icono, type NombreDeIcono } from '@/shared/ui';
+import { fechaLarga, formatearPesos, hoyLocal, metaDeAvisos, relativa } from '@/shared/lib';
+import { Button, ConSalida, Hoja, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
   contacto: 'Contacto',
@@ -106,24 +106,26 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
         )}
       </div>
 
-      <dl className="grid grid-cols-2 border-t border-b border-ink border-b-hairline">
-        <div className="py-2.5 pr-3">
-          <dt className="text-meta text-text-2">Total facturado</dt>
-          <dd className="text-money-lg font-semibold tabular-nums">
-            {formatearPesos(resumen.facturado)}
-          </dd>
-        </div>
-        <div className="border-l border-hairline py-2.5 pl-3">
-          <dt className="text-meta text-text-2">Saldo pendiente</dt>
-          <dd
-            className={`text-money-lg font-semibold tabular-nums ${
-              resumen.saldo > 0 ? 'text-atencion' : 'text-hogar'
-            }`}
-          >
-            {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
-          </dd>
-        </div>
-      </dl>
+      <div className="@container">
+        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @min-[22.5rem]:grid-cols-2">
+          <div className="py-2.5 @min-[22.5rem]:pr-3">
+            <dt className="text-meta text-text-2">Total facturado</dt>
+            <dd className="text-money-lg font-semibold tabular-nums">
+              {formatearPesos(resumen.facturado)}
+            </dd>
+          </div>
+          <div className="border-t border-hairline py-2.5 @min-[22.5rem]:border-t-0 @min-[22.5rem]:border-l @min-[22.5rem]:pl-3">
+            <dt className="text-meta text-text-2">Saldo pendiente</dt>
+            <dd
+              className={`text-money-lg font-semibold tabular-nums ${
+                resumen.saldo > 0 ? 'text-atencion' : 'text-hogar'
+              }`}
+            >
+              {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       {proyectos.length === 0 ? (
         <p className="py-4 text-body leading-relaxed text-text-2">
@@ -174,14 +176,18 @@ export function ClienteFichaPage() {
   const { id = '' } = useParams();
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
-  const borrar = useMutation(MUTACION_DE_BAJA_DE_CLIENTE);
-
   const hoy = hoyLocal();
   const resumen = resumenDeCliente(replica, id);
+  const borrar = useMutation({
+    ...MUTACION_DE_BAJA_DE_CLIENTE,
+    meta: metaDeAvisos('clienteBorrado', {
+      ...(resumen ? { sujeto: resumen.cliente.nombre } : {}),
+    }),
+  });
 
   if (!resumen) {
     return (
-      <div className="mx-auto flex max-w-content flex-col items-start gap-3 px-(--page-pad-mobile) py-8 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+      <Pagina className="items-start gap-3">
         <h1 className="font-display text-h1 leading-tight">Ese cliente no está</h1>
         <p className="max-w-[520px] text-body leading-relaxed text-text-2">
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente de
@@ -194,7 +200,7 @@ export function ClienteFichaPage() {
         >
           Volver a Clientes
         </Button>
-      </div>
+      </Pagina>
     );
   }
 
@@ -220,7 +226,7 @@ export function ClienteFichaPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) md:py-5 lg:px-(--page-pad-desktop) lg:py-6">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to="/clientes"
@@ -349,73 +355,69 @@ export function ClienteFichaPage() {
         </div>
       </div>
 
-      {editando && (
-        <HojaDeCliente
-          cliente={cliente}
-          alCerrar={() => {
-            setEditando(false);
-          }}
-        />
-      )}
+      <ConSalida valor={editando}>
+        {() => (
+          <HojaDeCliente
+            cliente={cliente}
+            alCerrar={() => {
+              setEditando(false);
+            }}
+          />
+        )}
+      </ConSalida>
 
-      {confirmando && (
-        <div className="fixed inset-0 z-40">
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => {
+      <ConSalida valor={confirmando}>
+        {() => (
+          <Hoja
+            titulo={`¿Borrás a ${cliente.nombre}?`}
+            rol="alertdialog"
+            ancho="angosto"
+            alCerrar={() => {
               setConfirmando(false);
             }}
-            className="absolute inset-0 cursor-default bg-ink/35"
-          />
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="Confirmar el borrado"
-            className="absolute inset-x-0 bottom-0 flex flex-col gap-3.5 rounded-t-sheet bg-paper p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-sheet md:inset-auto md:top-1/2 md:left-1/2 md:w-[min(440px,calc(100%-40px))] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-dialog"
           >
-            <h2 className="text-body-lg leading-snug font-semibold">¿Borrás a {cliente.nombre}?</h2>
-            <p className="text-label leading-relaxed text-text-2">
-              {resumen.proyectos.length === 0
-                ? 'No tiene trabajos cargados, así que no se pierde historia.'
-                : 'Si todavía tiene proyectos vivos, la base lo va a rechazar: primero hay que borrarlos o reasignarlos.'}
-            </p>
-            {borrar.isError && (
-              <p role="alert" className="text-label font-medium text-alerta">
-                {mensajeDeSincronizacion(borrar.error)}
+            <div className="flex flex-col gap-3.5 px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:px-6 md:pb-5">
+              <p className="text-label leading-relaxed text-text-2">
+                {resumen.proyectos.length === 0
+                  ? 'No tiene trabajos cargados, así que no se pierde historia.'
+                  : 'Si todavía tiene proyectos vivos, la base lo va a rechazar: primero hay que borrarlos o reasignarlos.'}
               </p>
-            )}
-            <div className="flex gap-2.5">
-              <Button
-                variant="secundario"
-                className="flex-1"
-                onClick={() => {
-                  setConfirmando(false);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="peligro"
-                className="flex-1"
-                cargando={borrar.isPending}
-                onClick={() => {
-                  borrar.mutate({
-                    id: cliente.id,
-                    borradoEn: new Date().toISOString(),
-                    previo: cliente,
-                  });
-                  setConfirmando(false);
-                  void navegar('/clientes');
-                }}
-              >
-                Borrar el cliente
-              </Button>
+              {borrar.isError && (
+                <p role="alert" className="text-label font-medium text-alerta">
+                  {mensajeDeSincronizacion(borrar.error)}
+                </p>
+              )}
+              <div className="flex gap-2.5">
+                <Button
+                  variant="secundario"
+                  className="flex-1"
+                  onClick={() => {
+                    setConfirmando(false);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="peligro"
+                  className="flex-1"
+                  cargando={borrar.isPending}
+                  onClick={() => {
+                    borrar.mutate({
+                      id: cliente.id,
+                      borradoEn: new Date().toISOString(),
+                      previo: cliente,
+                    });
+                    setConfirmando(false);
+                    void navegar('/clientes');
+                  }}
+                >
+                  Borrar el cliente
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+          </Hoja>
+        )}
+      </ConSalida>
+    </Pagina>
   );
 }

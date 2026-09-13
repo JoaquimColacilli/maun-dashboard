@@ -1,6 +1,6 @@
 import { type EstadoProyecto, type Fase } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import { EnlaceACliente } from '@/entities/cliente';
 import {
@@ -24,8 +24,15 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { alternar, formatearPesos, hoyLocal, useAnchoDePantalla, type Sentido } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import {
+  alternar,
+  conFondo,
+  formatearPesos,
+  hoyLocal,
+  useAnchoDePantalla,
+  type Sentido,
+} from '@/shared/lib';
+import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
@@ -44,14 +51,16 @@ function Metricas({ resumenes }: { resumenes: readonly ResumenDeProyecto[] }) {
   ];
 
   return (
-    <dl className="grid grid-cols-4 border-t border-b border-hairline">
-      {filas.map((fila) => (
-        <div key={fila.etiqueta} className="min-w-0 py-3 pr-3">
-          <dd className="text-money-lg leading-tight font-semibold tabular-nums">{fila.valor}</dd>
-          <dt className="mt-0.5 text-meta leading-snug text-text-2">{fila.etiqueta}</dt>
-        </div>
-      ))}
-    </dl>
+    <div className="@container">
+      <dl className="grid grid-cols-2 border-t border-b border-hairline @xs:grid-cols-4">
+        {filas.map((fila) => (
+          <div key={fila.etiqueta} className="min-w-0 py-3 pr-3">
+            <dd className="text-money-lg leading-tight font-semibold tabular-nums">{fila.valor}</dd>
+            <dt className="mt-0.5 text-meta leading-snug text-text-2">{fila.etiqueta}</dt>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -59,7 +68,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
   const { proyecto } = resumen;
 
   return (
-    <article className="flex flex-col gap-2 border-t border-hairline py-3.5">
+    <article className="@container flex flex-col gap-2 border-t border-hairline py-3.5">
       <div className="flex items-center justify-between gap-2">
         {resumen.cliente === undefined ? (
           <span className="text-meta text-text-3">{resumen.nombreDelCliente}</span>
@@ -82,7 +91,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
         {proyecto.titulo}
       </Link>
 
-      <dl className="grid grid-cols-3 gap-2 tabular-nums">
+      <dl className="grid grid-cols-2 gap-2 tabular-nums @min-[23rem]:grid-cols-3">
         <div>
           <dt className="text-meta text-text-3">Presupuesto</dt>
           <dd className="text-body font-medium">
@@ -96,9 +105,15 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
         <div>
           <dt className="text-meta text-text-3">Saldo</dt>
           <dd
-            className={`text-body font-semibold ${resumen.saldo > 0 ? 'text-ink' : 'text-hogar'}`}
+            className={`text-body font-semibold ${
+              resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
+            }`}
           >
-            {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+            {resumen.saldo === null
+              ? '—'
+              : resumen.saldo > 0
+                ? formatearPesos(resumen.saldo)
+                : 'Sin saldo'}
           </dd>
         </div>
       </dl>
@@ -196,10 +211,18 @@ function Tabla({
             </td>
             <td
               className={`px-2.5 text-right font-semibold tabular-nums whitespace-nowrap ${
-                resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
+                resumen.saldo === null
+                  ? 'text-text-3'
+                  : resumen.saldo > 0
+                    ? 'text-ink'
+                    : 'text-hogar'
               }`}
             >
-              {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+              {resumen.saldo === null
+                ? '—'
+                : resumen.saldo > 0
+                  ? formatearPesos(resumen.saldo)
+                  : 'Sin saldo'}
             </td>
             <td className="px-2.5 whitespace-nowrap">
               <EntregaRelativa
@@ -232,22 +255,8 @@ function HojaDeOrden({
   alCerrar: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-40">
-      <button
-        type="button"
-        aria-hidden
-        tabIndex={-1}
-        onClick={alCerrar}
-        className="absolute inset-0 cursor-default bg-ink/35"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Ordenar por"
-        className="absolute inset-x-0 bottom-0 rounded-t-sheet bg-paper px-4 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-sheet"
-      >
-        <span aria-hidden className="mx-auto mt-1 mb-3.5 block h-1 w-9 rounded-control bg-border" />
-        <h2 className="mb-1.5 text-body-lg font-semibold">Ordenar por</h2>
+    <Hoja titulo="Ordenar por" desdeAbajo alCerrar={alCerrar}>
+      <div className="px-5 pt-1 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
         {CRITERIOS.map((criterio) => (
           <button
             key={criterio.id}
@@ -264,7 +273,7 @@ function HojaDeOrden({
           </button>
         ))}
       </div>
-    </div>
+    </Hoja>
   );
 }
 
@@ -306,7 +315,8 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'seguimiento'> }) {
 export function ProyectosPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const [busqueda] = useSearchParams();
   const ancho = useAnchoDePantalla();
 
@@ -345,13 +355,13 @@ export function ProyectosPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-3 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7">
-      <header className="mb-3.5 flex items-end justify-between gap-3">
+    <Pagina>
+      <header className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
         {etapa === 'seguimiento' ? (
           <Button
             onClick={() => {
-              void navegar(RUTA_DE_CONTACTO_NUEVO);
+              void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
             }}
           >
             <Icono nombre="user-plus" tamano={18} />
@@ -387,7 +397,9 @@ export function ProyectosPage() {
                 void navegar(opcion.ruta);
               }}
               className={`flex h-9.5 flex-1 items-center justify-center gap-1.5 rounded-field text-label ${
-                activa ? 'bg-paper font-semibold text-ink shadow-float' : 'font-medium text-text-2'
+                activa
+                  ? 'bg-elevado font-semibold text-ink shadow-float'
+                  : 'font-medium text-text-2'
               }`}
             >
               {opcion.etiqueta}
@@ -482,20 +494,20 @@ export function ProyectosPage() {
         </>
       )}
 
-      {hojaAbierta && (
-        <HojaDeOrden
-          orden={orden}
-          alElegir={(id) => {
-            ordenarPor(id);
-            setHojaAbierta(false);
-          }}
-          alCerrar={() => {
-            setHojaAbierta(false);
-          }}
-        />
-      )}
-
-      <Outlet />
-    </div>
+      <ConSalida valor={hojaAbierta}>
+        {() => (
+          <HojaDeOrden
+            orden={orden}
+            alElegir={(id) => {
+              ordenarPor(id);
+              setHojaAbierta(false);
+            }}
+            alCerrar={() => {
+              setHojaAbierta(false);
+            }}
+          />
+        )}
+      </ConSalida>
+    </Pagina>
   );
 }

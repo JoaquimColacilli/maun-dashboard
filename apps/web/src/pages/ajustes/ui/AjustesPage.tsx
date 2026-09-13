@@ -5,21 +5,27 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
-import { useSesionActiva } from '@/entities/sesion';
-import {
-  ajustesDe,
-  cantidadDe,
-  householdDe,
-  mensajeDeSincronizacion,
-  saldosDeLaReplica,
-  TABLAS_REPLICADAS,
-} from '@/shared/api';
+import { FormularioDePerfil } from '@/features/editar-perfil';
+import { SelectorDeTema } from '@/features/elegir-tema';
+import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import { describirEstadoSync, useAvisos, useEstadoSync } from '@/shared/lib';
-import { PanelDeAvisos } from '@/shared/ui';
+import { Pagina, PanelDeAvisos } from '@/shared/ui';
 
-function Fecha({ valor }: { valor: string }) {
+const SECCION =
+  'flex min-w-0 max-w-[560px] flex-col gap-3.5 border-t border-hairline pt-5 xl:max-w-none';
+
+const FORMATO_DE_LA_SINCRONIZACION = new Intl.DateTimeFormat('es-AR', {
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function ultimaSincronizacion(valor: string): string {
   const marca = Date.parse(valor);
-  return <>{Number.isNaN(marca) ? '—' : new Date(marca).toLocaleString('es-AR')}</>;
+  if (Number.isNaN(marca)) return 'Todavía no se sincronizó con el servidor.';
+  const cuando = FORMATO_DE_LA_SINCRONIZACION.format(new Date(marca));
+  return `Última sincronización: ${cuando}${cuando.endsWith('.') ? '' : '.'}`;
 }
 
 function RechazosDeLaCola() {
@@ -73,79 +79,87 @@ function Avisos() {
 
 export function AjustesPage() {
   const replica = useReplicaDelTaller();
-  const { email } = useSesionActiva();
   const estadoSync = useEstadoSync();
   const household = householdDe(replica);
   const ajustes = ajustesDe(replica);
 
   return (
-    <div className="mx-auto flex max-w-content flex-col gap-8 px-(--page-pad-mobile) py-6 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
-      <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
+    <Pagina className="gap-5">
+      <header className="flex min-h-button flex-wrap items-end justify-between gap-3">
+        <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
+      </header>
 
-      {household && ajustes && (
-        <section aria-labelledby="titulo-reparto" className="flex max-w-[520px] flex-col gap-3.5">
-          <h2 id="titulo-reparto" className="text-section font-semibold">
-            Reparto y metas
+      <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2 xl:grid-rows-[auto_1fr]">
+        <div
+          data-grupo="vos-y-este-dispositivo"
+          className="flex min-w-0 flex-col gap-8 xl:col-start-1 xl:row-start-1"
+        >
+          <section aria-labelledby="titulo-perfil" className={SECCION}>
+            <h2 id="titulo-perfil" className="text-section font-semibold">
+              Tu perfil
+            </h2>
+            <FormularioDePerfil />
+          </section>
+
+          <section aria-labelledby="titulo-apariencia" className={SECCION}>
+            <h2 id="titulo-apariencia" className="text-section font-semibold">
+              Apariencia
+            </h2>
+            <SelectorDeTema />
+          </section>
+
+          <section aria-labelledby="titulo-dispositivo" className={SECCION}>
+            <h2 id="titulo-dispositivo" className="text-section font-semibold">
+              Este dispositivo
+            </h2>
+            <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
+            <p className="text-label text-text-3 tabular-nums">
+              {ultimaSincronizacion(replica.cursor)}
+            </p>
+          </section>
+
+          <section aria-labelledby="titulo-rechazos" className={SECCION}>
+            <h2 id="titulo-rechazos" className="text-section font-semibold">
+              Lo que la base rechazó o ajustó
+            </h2>
+            <p className="text-label leading-relaxed text-text-2">
+              Queda acá hasta que lo descartes, aunque cierres la app.
+            </p>
+            <Avisos />
+          </section>
+        </div>
+
+        <div
+          data-grupo="el-taller"
+          className="flex min-w-0 flex-col gap-8 xl:col-start-2 xl:row-span-2 xl:row-start-1"
+        >
+          {household && ajustes && (
+            <section aria-labelledby="titulo-reparto" className={SECCION}>
+              <h2 id="titulo-reparto" className="text-section font-semibold">
+                Reparto y metas
+              </h2>
+              <FormularioDeConfiguracion household={household} ajustes={ajustes} />
+            </section>
+          )}
+
+          <section aria-labelledby="titulo-cocos" className={SECCION}>
+            <h2 id="titulo-cocos" className="text-section font-semibold">
+              Corregir el saldo de Cocos
+            </h2>
+            <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
+          </section>
+        </div>
+
+        <section
+          aria-labelledby="titulo-cuenta"
+          className={`${SECCION} items-start xl:col-start-1 xl:row-start-2`}
+        >
+          <h2 id="titulo-cuenta" className="text-section font-semibold">
+            Cuenta
           </h2>
-          <FormularioDeConfiguracion household={household} ajustes={ajustes} />
+          <BotonSalir />
         </section>
-      )}
-
-      <section aria-labelledby="titulo-cocos" className="flex max-w-[520px] flex-col gap-3.5">
-        <h2 id="titulo-cocos" className="text-section font-semibold">
-          Corregir el saldo de Cocos
-        </h2>
-        <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
-      </section>
-
-      <section aria-labelledby="titulo-rechazos" className="flex max-w-[520px] flex-col gap-2.5">
-        <h2 id="titulo-rechazos" className="text-section font-semibold">
-          Lo que la base rechazó o ajustó
-        </h2>
-        <p className="text-label leading-relaxed text-text-2">
-          Queda acá hasta que lo descartes, aunque cierres la app.
-        </p>
-        <Avisos />
-      </section>
-
-      <section aria-labelledby="titulo-dispositivo" className="flex flex-col gap-3.5">
-        <h2 id="titulo-dispositivo" className="text-section font-semibold">
-          Este dispositivo
-        </h2>
-        <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
-        <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          {TABLAS_REPLICADAS.map((tabla) => (
-            <li key={tabla} className="flex flex-col gap-1 rounded-panel bg-surface p-3.5">
-              <span className="text-meta text-text-2">{tabla}</span>
-              <span className="text-money-lg font-semibold tabular-nums">
-                {cantidadDe(replica, tabla)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <dl className="flex flex-col text-label">
-          <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-            <dt className="text-text-2">Último delta</dt>
-            <dd className="tabular-nums">
-              <Fecha valor={replica.cursor} />
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4 border-t border-hairline-soft py-2">
-            <dt className="text-text-2">Última copia completa</dt>
-            <dd className="tabular-nums">
-              <Fecha valor={replica.reconciliadoEn} />
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section aria-labelledby="titulo-cuenta" className="flex flex-col items-start gap-2.5">
-        <h2 id="titulo-cuenta" className="text-section font-semibold">
-          Cuenta
-        </h2>
-        <p className="text-body text-text-2">{email}</p>
-        <BotonSalir />
-      </section>
-    </div>
+      </div>
+    </Pagina>
   );
 }

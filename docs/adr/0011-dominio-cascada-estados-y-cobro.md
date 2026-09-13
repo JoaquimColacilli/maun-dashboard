@@ -225,6 +225,8 @@ Descartadas:
 
 **Objeción que queda.** El mensaje de arriba de la barra ("El sueldo de septiembre ya está cubierto", "Faltan $X para cubrir el sueldo") sigue leyendo el mes contra **un** sueldo, que es la necesidad del hogar. Con un cobro entero y otro a medias, el mensaje dice "cubierto" y la barra dice 75%. Las dos cosas son ciertas y miden cosas distintas. Se dejó así porque el mensaje viene del sistema viejo ("¡Sueldo del mes cubierto!") y es lo que el dueño está acostumbrado a leer.
 
+**Resuelta por el ADR 0020.** El dueño pidió alinearlos: el mensaje ahora lee lo mismo que la barra (`faltaDelSueldo`, sobre `sueldoDelMes`). Con un cobro entero y otro a medias dice "Faltan $X para cubrir el sueldo", igual que el 75% de abajo.
+
 ## La devolución
 
 Queda fuera de este cambio. Cuando llegue, se modela como un pago con importe negativo, porque es la reversión de un ingreso y no un gasto del trabajo. Como gasto daría la misma neta, pero la contaría como materiales en el libro mayor.

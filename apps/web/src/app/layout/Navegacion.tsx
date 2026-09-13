@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
-import { useAnchoDePantalla } from '@/shared/lib';
-import { Icono } from '@/shared/ui';
+import { conFondo, esRutaDeHoja, useAnchoDePantalla, useUbicacionVisible } from '@/shared/lib';
+import { Avatar, Icono } from '@/shared/ui';
 
 import { conTransicion } from '../router/transicion';
 import {
@@ -20,14 +20,40 @@ import {
 function useIrA(): (ruta: string) => void {
   const navegar = useNavigate();
   const location = useLocation();
+  const visible = useUbicacionVisible();
   return (ruta) => {
     if (ruta === location.pathname) return;
+    const opciones = esRutaDeHoja(ruta) ? { state: conFondo(visible) } : undefined;
     conTransicion(() => {
       flushSync(() => {
-        void navegar(ruta);
+        void navegar(ruta, opciones);
       });
     });
   };
+}
+
+function LogoAInicio({
+  irA,
+  className,
+  children,
+}: {
+  irA: (ruta: string) => void;
+  className: string;
+  children: string;
+}) {
+  return (
+    <Link
+      to={DESTINOS.inicio.ruta}
+      aria-label="MAUN, ir a Inicio"
+      className={className}
+      onClick={(evento) => {
+        evento.preventDefault();
+        irA(DESTINOS.inicio.ruta);
+      }}
+    >
+      {children}
+    </Link>
+  );
 }
 
 function useEditando(): boolean {
@@ -91,7 +117,7 @@ function MenuDeAcciones({
       <button
         type="button"
         aria-label="Cerrar el menú"
-        className="fixed inset-0 z-20 bg-ink/20"
+        className="fixed inset-0 z-20 bg-velo-suave"
         onClick={cerrar}
       />
       <div
@@ -191,7 +217,12 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
       aria-label="Principal"
       className="relative flex w-[76px] flex-none flex-col items-center gap-1.5 border-r border-hairline bg-surface-3 py-4.5"
     >
-      <span className="mb-3.5 font-display text-h1">M</span>
+      <LogoAInicio
+        irA={irA}
+        className="mb-3.5 flex size-tap items-center justify-center rounded-panel font-display text-h1 hover:bg-surface-2"
+      >
+        M
+      </LogoAInicio>
       <button
         type="button"
         aria-label="Cargar algo nuevo"
@@ -253,11 +284,15 @@ function Sidebar({
   activo,
   irA,
   email,
+  nombre,
+  foto,
   sincronizacion,
 }: {
   activo: IdDeSeccion | undefined;
   irA: (r: string) => void;
   email: string;
+  nombre: string;
+  foto: string;
   sincronizacion: string;
 }) {
   const { abierto, setAbierto } = useMenuDeAcciones();
@@ -267,8 +302,13 @@ function Sidebar({
       aria-label="Principal"
       className="relative flex w-[232px] flex-none flex-col gap-0.5 border-r border-hairline bg-surface-3 px-3.5 pt-5.5 pb-4.5"
     >
-      <div className="flex items-baseline justify-between px-2.5 pb-4.5">
-        <span className="font-display text-h1-lg">MAUN</span>
+      <div className="flex items-baseline justify-between pb-4.5">
+        <LogoAInicio
+          irA={irA}
+          className="rounded-field px-2.5 font-display text-h1-lg hover:bg-surface-2"
+        >
+          MAUN
+        </LogoAInicio>
         <span className="text-meta text-text-3">Taller</span>
       </div>
       <button
@@ -311,19 +351,37 @@ function Sidebar({
         );
       })}
       <div className="flex-1" />
-      <div className="flex flex-col gap-0.5 border-t border-hairline px-2.5 pt-3 text-meta text-text-3">
-        <span className="text-label font-medium text-ink">{email}</span>
-        <span>{sincronizacion}</span>
+      <div className="flex items-start gap-2.5 border-t border-hairline px-2.5 pt-3">
+        <Avatar nombre={nombre === '' ? email : nombre} foto={foto} className="mt-0.5" />
+        <div className="flex min-w-0 flex-col gap-0.5 text-meta text-text-3">
+          {nombre !== '' && (
+            <span className="truncate text-label font-medium text-ink">{nombre}</span>
+          )}
+          <span className={nombre === '' ? 'truncate text-label font-medium text-ink' : 'truncate'}>
+            {email}
+          </span>
+          <span>{sincronizacion}</span>
+        </div>
       </div>
     </nav>
   );
 }
 
-export function Navegacion({ email, sincronizacion }: { email: string; sincronizacion: string }) {
+export function Navegacion({
+  email,
+  nombre,
+  foto,
+  sincronizacion,
+}: {
+  email: string;
+  nombre: string;
+  foto: string;
+  sincronizacion: string;
+}) {
   const ancho = useAnchoDePantalla();
-  const location = useLocation();
+  const visible = useUbicacionVisible();
   const irA = useIrA();
-  const seccion = seccionDeLaRuta(location.pathname);
+  const seccion = seccionDeLaRuta(visible.pathname);
 
   if (ancho === 'movil') {
     return <BarraInferior activo={destinoResaltado(seccion, NAV_MOVIL)} irA={irA} />;
@@ -336,6 +394,8 @@ export function Navegacion({ email, sincronizacion }: { email: string; sincroniz
       activo={destinoResaltado(seccion, NAV_ESCRITORIO)}
       irA={irA}
       email={email}
+      nombre={nombre}
+      foto={foto}
       sincronizacion={sincronizacion}
     />
   );

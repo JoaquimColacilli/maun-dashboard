@@ -275,6 +275,53 @@ async function triggersDeAuth(cliente: pg.Client): Promise<string[]> {
   ).map((fila) => `${fila.definicion};`);
 }
 
+async function storage(cliente: pg.Client): Promise<string[]> {
+  const lineas: string[] = [];
+  for (const bucket of await filas<{
+    id: string;
+    publico: boolean;
+    tope: string | null;
+    tipos: string[] | null;
+  }>(
+    cliente,
+    `select id, public as publico, file_size_limit::text as tope, allowed_mime_types as tipos
+     from storage.buckets order by id`,
+  )) {
+    lineas.push(
+      `-- bucket ${bucket.id}: ${bucket.publico ? 'público' : 'privado'}, tope ${bucket.tope ?? 'sin tope'} bytes, tipos ${bucket.tipos === null ? 'cualquiera' : bucket.tipos.join(', ')}`,
+    );
+  }
+
+  for (const politica of await filas<{
+    nombre: string;
+    permisiva: string;
+    comando: string;
+    roles: string[];
+    usando: string | null;
+    chequeo: string | null;
+    comentario: string | null;
+  }>(
+    cliente,
+    `select p.policyname as nombre, p.permissive as permisiva, p.cmd as comando, p.roles::text[] as roles,
+            p.qual as usando, p.with_check as chequeo, obj_description(pol.oid, 'pg_policy') as comentario
+     from pg_policies p
+     join pg_policy pol on pol.polname = p.policyname and pol.polrelid = 'storage.objects'::regclass
+     where p.schemaname = 'storage' and p.tablename = 'objects'
+     order by p.policyname`,
+  )) {
+    lineas.push(
+      [
+        `create policy ${politica.nombre} on storage.objects as ${politica.permisiva.toLowerCase()}`,
+        `  for ${politica.comando.toLowerCase()} to ${politica.roles.join(', ')}`,
+        ...(politica.usando === null ? [] : [`  using (${politica.usando})`]),
+        ...(politica.chequeo === null ? [] : [`  with check (${politica.chequeo})`]),
+      ].join('\n') + ';',
+    );
+    lineas.push(...comentario(`policy ${politica.nombre} on storage.objects`, politica.comentario));
+  }
+  return lineas;
+}
+
 async function funciones(cliente: pg.Client): Promise<string[]> {
   const lineas: string[] = [];
   for (const funcion of await filas<{
@@ -320,6 +367,7 @@ export async function generarEsquema(cliente: pg.Client): Promise<string> {
     ['Tablas', await tablas(cliente)],
     ['Vistas', await vistas(cliente)],
     ['Triggers sobre auth.users', await triggersDeAuth(cliente)],
+    ['Storage', await storage(cliente)],
     ['Funciones', await funciones(cliente)],
   ];
   const cuerpo = secciones.map(([titulo, lineas]) =>

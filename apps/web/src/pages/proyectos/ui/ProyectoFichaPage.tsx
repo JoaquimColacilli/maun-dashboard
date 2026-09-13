@@ -24,7 +24,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
-import { Button, Icono, PanelDeAvisos } from '@/shared/ui';
+import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 
@@ -63,7 +63,7 @@ export function ProyectoFichaPage() {
 
   if (!resumen) {
     return (
-      <div className="mx-auto flex max-w-content flex-col items-start gap-3 px-(--page-pad-mobile) py-8 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+      <Pagina className="items-start gap-3">
         <h1 className="font-display text-h1 leading-tight">Ese proyecto no está</h1>
         <p className="max-w-[520px] text-body leading-relaxed text-text-2">
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto de
@@ -76,7 +76,7 @@ export function ProyectoFichaPage() {
         >
           Volver a Proyectos
         </Button>
-      </div>
+      </Pagina>
     );
   }
 
@@ -129,7 +129,7 @@ export function ProyectoFichaPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-content flex-col px-(--page-pad-mobile) py-2 md:px-(--page-pad-tablet) md:py-5 lg:px-(--page-pad-desktop) lg:py-6">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to={RUTA_DE_PROYECTOS}
@@ -204,30 +204,40 @@ export function ProyectoFichaPage() {
         </div>
       )}
 
-      <dl className="mt-4 grid grid-cols-3 border-t border-b border-ink border-b-hairline">
-        <div className="py-3 pr-3">
-          <dt className="text-meta text-text-2">Presupuesto</dt>
-          <dd className="text-money-lg font-semibold tabular-nums whitespace-nowrap">
-            {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
-          </dd>
-        </div>
-        <div className="border-l border-hairline px-3 py-3">
-          <dt className="text-meta text-text-2">Cobrado</dt>
-          <dd className="text-money-lg font-semibold text-hogar tabular-nums whitespace-nowrap">
-            {formatearPesos(resumen.cobrado)}
-          </dd>
-        </div>
-        <div className="border-l border-hairline py-3 pl-3">
-          <dt className="text-meta text-text-2">Saldo</dt>
-          <dd
-            className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${
-              resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
-            }`}
-          >
-            {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
-          </dd>
-        </div>
-      </dl>
+      <div className="@container mt-4">
+        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @lg:grid-cols-3">
+          <div className="flex items-baseline justify-between gap-3 py-2.5 @lg:block @lg:py-3 @lg:pr-3">
+            <dt className="text-meta text-text-2">Presupuesto</dt>
+            <dd className="text-money-lg font-semibold tabular-nums whitespace-nowrap">
+              {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 border-t border-hairline py-2.5 @lg:block @lg:border-t-0 @lg:border-l @lg:px-3 @lg:py-3">
+            <dt className="text-meta text-text-2">Cobrado</dt>
+            <dd className="text-money-lg font-semibold text-hogar tabular-nums whitespace-nowrap">
+              {formatearPesos(resumen.cobrado)}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 border-t border-hairline py-2.5 @lg:block @lg:border-t-0 @lg:border-l @lg:py-3 @lg:pl-3">
+            <dt className="text-meta text-text-2">Saldo</dt>
+            <dd
+              className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${
+                resumen.saldo === null
+                  ? 'text-text-3'
+                  : resumen.saldo > 0
+                    ? 'text-ink'
+                    : 'text-hogar'
+              }`}
+            >
+              {resumen.saldo === null
+                ? '—'
+                : resumen.saldo > 0
+                  ? formatearPesos(resumen.saldo)
+                  : 'Sin saldo'}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       <div className="mt-4 max-w-[520px]">
         {puedeCobrar(proyecto.estado) && (
@@ -238,7 +248,7 @@ export function ProyectoFichaPage() {
             }}
           >
             <Icono nombre="hand-coins" tamano={18} />
-            {resumen.saldo > 0
+            {resumen.saldo !== null && resumen.saldo > 0
               ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
               : 'Cobrar y repartir'}
           </Button>
@@ -414,6 +424,6 @@ export function ProyectoFichaPage() {
           )}
         </div>
       </div>
-    </div>
+    </Pagina>
   );
 }

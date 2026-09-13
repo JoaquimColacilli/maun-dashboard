@@ -1,28 +1,19 @@
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useState } from 'react';
+import { Navigate, useParams, useSearchParams } from 'react-router';
 
 import { CLASES_EN_ORDEN, type ClaseDeMovimiento } from '@/entities/movimiento';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeMovimiento } from '@/features/registrar-movimiento';
 import { ajustesDe, filaPorId, saldosDeLaReplica } from '@/shared/api';
-import { RUTA_DE_FINANZAS } from '@/shared/lib';
+import { RUTA_DE_FINANZAS, useCerrarHoja } from '@/shared/lib';
 
 function esClase(valor: string | null): valor is ClaseDeMovimiento {
   return valor !== null && (CLASES_EN_ORDEN as readonly string[]).includes(valor);
 }
 
-function useVuelta(): () => void {
-  const navegar = useNavigate();
-  const [parametros] = useSearchParams();
-  const volverA = parametros.get('volverA');
-  const destino = volverA !== null && volverA.startsWith('/') ? volverA : RUTA_DE_FINANZAS;
-  return () => {
-    void navegar(destino);
-  };
-}
-
 export function MovimientoNuevoPage() {
   const replica = useReplicaDelTaller();
-  const volver = useVuelta();
+  const cerrar = useCerrarHoja();
   const [parametros] = useSearchParams();
   const clase = parametros.get('clase');
 
@@ -31,16 +22,18 @@ export function MovimientoNuevoPage() {
       claseInicial={esClase(clase) ? clase : undefined}
       saldos={saldosDeLaReplica(replica)}
       metaCocos={ajustesDe(replica)?.meta_cocos_centavos ?? 0}
-      alCerrar={volver}
+      alCerrar={cerrar}
     />
   );
 }
 
 export function MovimientoEdicionPage() {
   const replica = useReplicaDelTaller();
-  const volver = useVuelta();
+  const cerrar = useCerrarHoja();
   const { id = '' } = useParams();
-  const movimiento = filaPorId(replica, 'movimientos', id);
+  const encontrado = filaPorId(replica, 'movimientos', id);
+  const [alAbrir] = useState(encontrado);
+  const movimiento = encontrado ?? alAbrir;
 
   if (!movimiento) return <Navigate to={RUTA_DE_FINANZAS} replace />;
 
@@ -49,7 +42,7 @@ export function MovimientoEdicionPage() {
       movimiento={movimiento}
       saldos={saldosDeLaReplica(replica)}
       metaCocos={ajustesDe(replica)?.meta_cocos_centavos ?? 0}
-      alCerrar={volver}
+      alCerrar={cerrar}
     />
   );
 }
