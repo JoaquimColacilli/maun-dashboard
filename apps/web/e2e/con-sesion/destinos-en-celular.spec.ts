@@ -28,6 +28,22 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
         todos.map((boton) => (boton.getAttribute('aria-label') ?? boton.textContent).trim()),
       );
     expect(botones).toEqual(['Inicio', 'Proyectos', 'Clientes', 'Finanzas', 'Cargar algo nuevo']);
+
+    const tapados = await barra(page)
+      .getByRole('button')
+      .evaluateAll((todos) =>
+        todos
+          .filter((boton) => {
+            const caja = boton.getBoundingClientRect();
+            const encima = document.elementFromPoint(
+              caja.left + caja.width / 2,
+              caja.top + caja.height / 2,
+            );
+            return encima === null || !boton.contains(encima);
+          })
+          .map((boton) => (boton.getAttribute('aria-label') ?? boton.textContent).trim()),
+      );
+    expect(tapados).toEqual([]);
   });
 
   test('cada destino tiene un camino tocando la pantalla, sin escribir la dirección', async ({

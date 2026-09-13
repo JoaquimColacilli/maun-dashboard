@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
 import { useLocation, useRoutes, type Location } from 'react-router';
 
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
@@ -19,32 +26,71 @@ import { IndicadorSync } from './IndicadorSync';
 import { Navegacion } from './Navegacion';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
 
-const MARGEN_SOBRE_LO_QUE_FLOTA = 8;
+const RESPIRO = 12;
 
-function useHuellaDeAbajo(principal: RefObject<HTMLElement | null>) {
-  const [huella, setHuella] = useState(0);
+interface Holgura {
+  anclados: number;
+  contenido: number;
+}
 
-  const medir = useCallback(
-    (nodo: HTMLDivElement | null) => {
-      if (!nodo) return;
-      const actualizar = () => {
-        const fondo = principal.current?.getBoundingClientRect().bottom ?? window.innerHeight;
-        setHuella(Math.max(0, Math.ceil(fondo - nodo.getBoundingClientRect().top)));
-      };
-      actualizar();
-      const observador = 'ResizeObserver' in globalThis ? new ResizeObserver(actualizar) : null;
-      observador?.observe(nodo);
-      window.addEventListener('resize', actualizar);
-      return () => {
-        observador?.disconnect();
-        window.removeEventListener('resize', actualizar);
-        setHuella(0);
-      };
-    },
-    [principal],
+const SIN_HOLGURA: Holgura = { anclados: 0, contenido: 0 };
+
+function seEstaEscribiendo(): boolean {
+  const activo = document.activeElement;
+  return (
+    activo instanceof HTMLElement &&
+    (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA' || activo.isContentEditable)
   );
+}
 
-  return [huella, medir] as const;
+function useHolguraInferior(
+  pie: HTMLDivElement | null,
+  principal: RefObject<HTMLElement | null>,
+): Holgura {
+  const [holgura, setHolgura] = useState(SIN_HOLGURA);
+
+  useLayoutEffect(() => {
+    if (!pie) return;
+    const contenedor = principal.current;
+
+    const actualizar = () => {
+      const caja = pie.getBoundingClientRect();
+      const fondoDelContenido = contenedor?.getBoundingClientRect().bottom ?? caja.bottom;
+      const anclados = Math.ceil(caja.height) + RESPIRO;
+      const medido =
+        pie.childElementCount === 0
+          ? 0
+          : Math.max(0, Math.ceil(fondoDelContenido - caja.top)) + RESPIRO;
+      setHolgura((previa) => {
+        const contenido = seEstaEscribiendo() ? Math.max(previa.contenido, medido) : medido;
+        return previa.anclados === anclados && previa.contenido === contenido
+          ? previa
+          : { anclados, contenido };
+      });
+    };
+
+    actualizar();
+    const observador = 'ResizeObserver' in globalThis ? new ResizeObserver(actualizar) : null;
+    observador?.observe(pie, { box: 'border-box' });
+    if (contenedor) observador?.observe(contenedor, { box: 'border-box' });
+    const alTerminarDeEscribir = () => {
+      requestAnimationFrame(actualizar);
+    };
+    window.addEventListener('resize', actualizar);
+    window.addEventListener('orientationchange', actualizar);
+    globalThis.visualViewport?.addEventListener('resize', actualizar);
+    document.addEventListener('focusout', alTerminarDeEscribir);
+    return () => {
+      observador?.disconnect();
+      window.removeEventListener('resize', actualizar);
+      window.removeEventListener('orientationchange', actualizar);
+      globalThis.visualViewport?.removeEventListener('resize', actualizar);
+      document.removeEventListener('focusout', alTerminarDeEscribir);
+      setHolgura(SIN_HOLGURA);
+    };
+  }, [pie, principal]);
+
+  return holgura;
 }
 
 function HojaEnSuUbicacion({ ubicacion }: { ubicacion: Location }) {
@@ -70,7 +116,8 @@ export function Marco() {
   const principal = useRef<HTMLElement>(null);
   const montado = useRef(false);
   const [anuncio, setAnuncio] = useState('');
-  const [huellaDeAbajo, medirLoQueFlota] = useHuellaDeAbajo(principal);
+  const [pie, setPie] = useState<HTMLDivElement | null>(null);
+  const holgura = useHolguraInferior(pie, principal);
   useScrollPorPantalla(principal, visible);
 
   const seccion = seccionDeLaRuta(visible.pathname);
@@ -88,8 +135,20 @@ export function Marco() {
     setAnuncio(etiqueta);
   }, [visible.pathname, etiqueta]);
 
+  const navegacion = (
+    <Navegacion
+      email={email}
+      nombre={nombre}
+      foto={foto}
+      sincronizacion={describirEstadoSync(estadoSync)}
+    />
+  );
+  const conHolgura: CSSProperties & Record<'--holgura-inferior', string> = {
+    '--holgura-inferior': `${String(holgura.anclados)}px`,
+  };
+
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="flex min-h-0 flex-1" style={conHolgura}>
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-40 focus:rounded-field focus:bg-ink focus:px-3 focus:py-2 focus:text-label focus:text-paper"
@@ -97,27 +156,23 @@ export function Marco() {
         Saltar al contenido
       </a>
 
-      <Navegacion
-        email={email}
-        nombre={nombre}
-        foto={foto}
-        sincronizacion={describirEstadoSync(estadoSync)}
-      />
+      {ancho !== 'movil' && navegacion}
+
+      <div
+        ref={setPie}
+        data-lo-que-flota-abajo
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-2 px-4 pb-[calc(14px+env(safe-area-inset-bottom))]"
+      >
+        <IndicadorSync />
+        {ancho === 'movil' && navegacion}
+      </div>
 
       <main
         id="contenido"
         ref={principal}
         tabIndex={-1}
-        style={
-          huellaDeAbajo > 0
-            ? { paddingBottom: `${String(huellaDeAbajo + MARGEN_SOBRE_LO_QUE_FLOTA)}px` }
-            : undefined
-        }
-        className={`min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable] ${
-          ancho === 'movil'
-            ? 'pb-[calc(var(--bottom-nav-clearance)+env(safe-area-inset-bottom))]'
-            : ''
-        }`}
+        style={{ paddingBottom: `${String(holgura.contenido)}px` }}
+        className="min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable]"
       >
         {pantalla}
       </main>
@@ -125,8 +180,6 @@ export function Marco() {
       <CapaDeHoja />
 
       <Avisos />
-
-      <IndicadorSync ref={medirLoQueFlota} />
 
       <OfertaDeHuella />
 
