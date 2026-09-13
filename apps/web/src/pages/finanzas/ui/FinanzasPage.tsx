@@ -1,6 +1,6 @@
 import { asientosDelLibro, type Tesoro } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import {
   agruparPorDia,
@@ -27,9 +27,11 @@ import {
   mesAnterior,
   mesDeLaFecha,
   nombreDelMes,
+  PARAMETRO_DE_TESORO,
   rutaDelMovimiento,
   RUTA_DE_MOVIMIENTO_NUEVO,
   TESORO,
+  tesoroDelParametro,
   TESOROS_EN_ORDEN,
 } from '@/shared/lib';
 import { Button, ComparacionMensual, ConSalida, Icono, Pagina } from '@/shared/ui';
@@ -80,7 +82,15 @@ export function FinanzasPage() {
     void navegar(ruta, { state: conFondo(location) });
   }
 
-  const [filtro, setFiltro] = useState<FiltroDelLibro>(() => filtroInicial(mes));
+  const [parametros, setParametros] = useSearchParams();
+  const [resto, setResto] = useState<Omit<FiltroDelLibro, 'tesoro'>>(() => {
+    const { sentido, mes: mesInicial, texto } = filtroInicial(mes);
+    return { sentido, mes: mesInicial, texto };
+  });
+  const filtro: FiltroDelLibro = {
+    ...resto,
+    tesoro: tesoroDelParametro(parametros.get(PARAMETRO_DE_TESORO)),
+  };
   const [ficha, setFicha] = useState<LineaDelTaller | null>(null);
 
   const enVuelo = useMovimientosEnVuelo();
@@ -96,8 +106,18 @@ export function FinanzasPage() {
   const previo = resumenMensual(asientos, mesAnterior(mes));
 
   const conFiltro = hayFiltroPuesto(filtro, mes);
-  const cambiar = (parte: Partial<FiltroDelLibro>) => {
-    setFiltro((previa) => ({ ...previa, ...parte }));
+  const cambiar = ({ tesoro, ...otros }: Partial<FiltroDelLibro>) => {
+    if (Object.keys(otros).length > 0) setResto((previo) => ({ ...previo, ...otros }));
+    if (tesoro === undefined) return;
+    setParametros(
+      (previos) => {
+        const siguientes = new URLSearchParams(previos);
+        if (tesoro === 'todos') siguientes.delete(PARAMETRO_DE_TESORO);
+        else siguientes.set(PARAMETRO_DE_TESORO, tesoro);
+        return siguientes;
+      },
+      { replace: true },
+    );
   };
 
   function abrir(linea: LineaDelTaller) {
@@ -214,7 +234,7 @@ export function FinanzasPage() {
                 <Button
                   variant="secundario"
                   onClick={() => {
-                    setFiltro(filtroInicial(mes));
+                    cambiar(filtroInicial(mes));
                   }}
                 >
                   Limpiar los filtros

@@ -38,13 +38,16 @@ export { useAltoVisible } from './teclado';
 export { useScrollPorPantalla } from './scroll';
 export { formatearPesos } from './plata';
 export {
+  PARAMETRO_DE_TESORO,
   rutaDeAprobacion,
   rutaDeCierre,
   rutaDeCobro,
   rutaDeEdicion,
+  rutaDeFinanzasDelTesoro,
   rutaDeMovimientoNuevo,
   rutaDelMovimiento,
   rutaDelProyecto,
+  tesoroDelParametro,
   RUTA_DE_CONTACTO_NUEVO,
   RUTA_DE_DIEZMO,
   RUTA_DE_FINANZAS,

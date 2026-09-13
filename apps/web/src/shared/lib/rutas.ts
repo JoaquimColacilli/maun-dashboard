@@ -1,3 +1,7 @@
+import type { Tesoro } from '@maun/domain';
+
+import { TESOROS_EN_ORDEN } from './tesoros';
+
 export function rutaDelProyecto(id: string): string {
   return `/proyectos/${id}`;
 }
@@ -27,6 +31,20 @@ export const RUTA_DE_SEGUIMIENTO = '/seguimiento';
 export const RUTA_DE_CONTACTO_NUEVO = '/seguimiento/nuevo';
 
 export const RUTA_DE_FINANZAS = '/finanzas';
+
+export const PARAMETRO_DE_TESORO = 'tesoro';
+
+function esTesoro(valor: string | null): valor is Tesoro {
+  return valor !== null && (TESOROS_EN_ORDEN as readonly string[]).includes(valor);
+}
+
+export function tesoroDelParametro(valor: string | null): Tesoro | 'todos' {
+  return esTesoro(valor) ? valor : 'todos';
+}
+
+export function rutaDeFinanzasDelTesoro(tesoro: Tesoro): string {
+  return `${RUTA_DE_FINANZAS}?${new URLSearchParams({ [PARAMETRO_DE_TESORO]: tesoro }).toString()}`;
+}
 
 export const RUTA_DE_MOVIMIENTO_NUEVO = '/finanzas/nuevo';
 

@@ -43,7 +43,7 @@ import {
   nombreDelMes,
   relativa,
   RUTA_DE_DIEZMO,
-  RUTA_DE_FINANZAS,
+  rutaDeFinanzasDelTesoro,
 } from '@/shared/lib';
 import { Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
@@ -312,7 +312,7 @@ export function InicioPage() {
             saldo={saldos[id]}
             meta={metaCocos}
             frase={id === 'diezmo' ? frase : undefined}
-            alElegir={irA(id === 'diezmo' ? RUTA_DE_DIEZMO : RUTA_DE_FINANZAS)}
+            alElegir={irA(id === 'diezmo' ? RUTA_DE_DIEZMO : rutaDeFinanzasDelTesoro(id))}
           />
         ))}
       </section>
