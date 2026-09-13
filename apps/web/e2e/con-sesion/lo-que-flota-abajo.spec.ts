@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type CDPSession, type Page } from '@playwright/test';
 
 import {
   ajustarTaller,
@@ -11,6 +11,8 @@ import {
 } from '../apoyo/taller';
 
 const CARGA = { timeout: 30_000 };
+const LETRA_DE_FABRICA = 16;
+const ESTILO_DE_LA_RAIZ_MAS_ALTA = 'e2e-raiz-mas-alta';
 
 let sesion: SesionDePrueba;
 
@@ -19,6 +21,46 @@ interface Taller {
   obraId: string;
   entregadoId: string;
   contactoId: string;
+}
+
+interface Condicion {
+  codigo: string;
+  nombre: string;
+  zonaSegura: number;
+  raizDeMas: number;
+  letra: number;
+}
+
+const BASE: Condicion = {
+  codigo: 'base',
+  nombre: 'base',
+  zonaSegura: 0,
+  raizDeMas: 0,
+  letra: LETRA_DE_FABRICA,
+};
+
+const CONDICIONES_DEL_CELULAR: Condicion[] = [
+  BASE,
+  { ...BASE, codigo: 'zs24', nombre: 'zona segura 24', zonaSegura: 24 },
+  { ...BASE, codigo: 'zs34', nombre: 'zona segura 34', zonaSegura: 34 },
+  { ...BASE, codigo: 'zs48', nombre: 'zona segura 48', zonaSegura: 48 },
+  { ...BASE, codigo: 'raiz48', nombre: 'raíz 48 px más alta que la ventana', raizDeMas: 48 },
+  { ...BASE, codigo: 'raiz64', nombre: 'raíz 64 px más alta que la ventana', raizDeMas: 64 },
+  {
+    ...BASE,
+    codigo: 'raiz64-zs48',
+    nombre: 'raíz 64 px más alta y zona segura 48',
+    raizDeMas: 64,
+    zonaSegura: 48,
+  },
+  { ...BASE, codigo: 'letra', nombre: 'letra grande', letra: 22 },
+];
+
+const CAPTURADAS = new Set(['base', 'raiz64']);
+
+function nombreDeCaptura(indice: number, senal: string, condicion: Condicion): string {
+  const numero = String(indice + 1).padStart(2, '0');
+  return `${numero}-${senal === 'con señal' ? 'con' : 'sin'}-${condicion.codigo}`;
 }
 
 function filas(cantidad: number, crear: (indice: number) => Record<string, unknown>): unknown[] {
@@ -132,15 +174,38 @@ async function alFinalDelScroll(page: Page): Promise<void> {
     }
     window.scrollTo(0, document.documentElement.scrollHeight);
   });
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(350);
 }
 
-async function tapadosAlFondo(page: Page): Promise<string[]> {
+async function aplicar(page: Page, cdp: CDPSession, condicion: Condicion): Promise<void> {
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+    insets: { bottom: condicion.zonaSegura },
+  });
+  await cdp.send('Page.setFontSizes', { fontSizes: { standard: condicion.letra } });
+  await page.evaluate(
+    ({ id, deMas }) => {
+      document.getElementById(id)?.remove();
+      if (deMas === 0) return;
+      const estilo = document.createElement('style');
+      estilo.id = id;
+      estilo.textContent = `#root { height: calc(100dvh + ${String(deMas)}px) !important; }`;
+      document.head.append(estilo);
+      window.dispatchEvent(new Event('resize'));
+    },
+    { id: ESTILO_DE_LA_RAIZ_MAS_ALTA, deMas: condicion.raizDeMas },
+  );
+  await page.waitForTimeout(250);
+}
+
+async function contenidoTapado(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const main = document.querySelector('main');
-    if (!main) return [];
-    const alto = window.visualViewport?.height ?? window.innerHeight;
+    const principal = document.querySelector('main');
+    if (!principal) return [];
+    const ancho = document.documentElement.clientWidth;
+    const alto = window.innerHeight;
+    const PASO = 6;
     const limpio = (texto: string | null) => (texto ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+
     const describir = (elemento: Element): string => {
       const conNombre = elemento.closest('nav, [role="status"], [role="alert"], [aria-label]');
       if (!conNombre) return elemento.tagName.toLowerCase();
@@ -148,32 +213,86 @@ async function tapadosAlFondo(page: Page): Promise<string[]> {
       const nombre = conNombre.getAttribute('aria-label') ?? limpio(conNombre.textContent);
       return `${conNombre.tagName.toLowerCase()}${rol === null ? '' : `[${rol}]`} «${nombre}»`;
     };
-    const controles = main.querySelectorAll<HTMLElement>(
-      'a[href], button, input, textarea, select, [role="tab"]',
+
+    const esDelContenido = (elemento: Element) => principal.contains(elemento);
+    const esDelMarco = (elemento: Element) => elemento.contains(principal);
+
+    const flotantes = Array.from(document.querySelectorAll<HTMLElement>('body *')).filter(
+      (elemento) =>
+        !esDelContenido(elemento) &&
+        !esDelMarco(elemento) &&
+        elemento.closest('dialog') === null &&
+        getComputedStyle(elemento).position === 'fixed',
     );
-    const tapados: string[] = [];
-    for (const control of controles) {
-      const caja = control.getBoundingClientRect();
-      if (caja.width === 0 || caja.height === 0 || caja.top >= alto || caja.bottom <= 0) continue;
-      const puntos = [
-        [caja.left + caja.width / 2, caja.top + caja.height / 2],
-        [caja.left + caja.width / 2, caja.bottom - 2],
-        [caja.left + 4, caja.bottom - 2],
-        [caja.right - 4, caja.bottom - 2],
-      ];
-      for (const [x, y] of puntos) {
-        if (x === undefined || y === undefined || y >= alto) continue;
-        const encima = document.elementFromPoint(x, y);
-        if (encima !== null && !main.contains(encima)) {
-          const nombre = limpio(control.getAttribute('aria-label') ?? control.textContent);
-          tapados.push(
-            `${control.tagName.toLowerCase()} «${nombre}», tapado por ${describir(encima)}`,
-          );
-          break;
+
+    const puntos = new Map<string, [number, number]>();
+    for (const flotante of flotantes) {
+      for (const pieza of [flotante, ...Array.from(flotante.querySelectorAll('*'))]) {
+        const caja = pieza.getBoundingClientRect();
+        if (caja.width === 0 || caja.height === 0) continue;
+        const desdeY = Math.max(0, Math.ceil(caja.top / PASO) * PASO);
+        const hastaY = Math.min(alto - 1, caja.bottom);
+        const desdeX = Math.max(0, Math.ceil(caja.left / PASO) * PASO);
+        const hastaX = Math.min(ancho - 1, caja.right);
+        for (let y = desdeY; y <= hastaY; y += PASO) {
+          for (let x = desdeX; x <= hastaX; x += PASO) {
+            puntos.set(`${String(x)},${String(y)}`, [x, y]);
+          }
         }
       }
     }
-    return tapados;
+
+    const encima = new Map<string, Element>();
+    for (const [clave, [x, y]] of puntos) {
+      const tocado = document.elementFromPoint(x, y);
+      if (tocado && !esDelContenido(tocado) && !esDelMarco(tocado)) encima.set(clave, tocado);
+    }
+
+    const textoEnElPunto = (elemento: Element, x: number, y: number): string | null => {
+      const estilo = getComputedStyle(elemento);
+      if (estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) return null;
+      const rango = document.createRange();
+      for (const nodo of Array.from(elemento.childNodes)) {
+        if (nodo.nodeType !== Node.TEXT_NODE || limpio(nodo.textContent) === '') continue;
+        rango.selectNodeContents(nodo);
+        for (const renglon of Array.from(rango.getClientRects())) {
+          if (renglon.width < 2 || renglon.height < 2) continue;
+          if (
+            x >= renglon.left - 1 &&
+            x <= renglon.right + 1 &&
+            y >= renglon.top - 1 &&
+            y <= renglon.bottom + 1
+          ) {
+            return limpio(nodo.textContent);
+          }
+        }
+      }
+      return null;
+    };
+
+    const tapados = new Map<string, string>();
+    const sinPuntero = document.createElement('style');
+    sinPuntero.textContent =
+      'body * { pointer-events: none !important; } main, main * { pointer-events: auto !important; }';
+    document.head.append(sinPuntero);
+    try {
+      for (const [clave, flotante] of encima) {
+        const [x, y] = puntos.get(clave) ?? [0, 0];
+        const debajo = document.elementFromPoint(x, y);
+        if (!debajo || !esDelContenido(debajo)) continue;
+        const control = debajo.closest('a[href], button, input, textarea, select, [role="tab"]');
+        const texto = textoEnElPunto(debajo, x, y);
+        if (control === null && texto === null) continue;
+        const que =
+          control === null
+            ? `texto «${texto ?? ''}»`
+            : `${control.tagName.toLowerCase()} «${limpio(control.getAttribute('aria-label') ?? control.textContent)}»`;
+        if (!tapados.has(que)) tapados.set(que, `${que}, tapado por ${describir(flotante)}`);
+      }
+    } finally {
+      sinPuntero.remove();
+    }
+    return Array.from(tapados.values());
   });
 }
 
@@ -181,12 +300,15 @@ test.beforeEach(async () => {
   sesion = await iniciarSesionDePrueba();
 });
 
-test('al final del scroll, con señal y sin señal, nada de lo que flota abajo tapa un control', async ({
+test('al final del scroll nada del contenido queda debajo de lo que flota abajo, con señal y sin señal', async ({
   page,
   context,
+  isMobile,
 }, testInfo) => {
-  test.setTimeout(300_000);
+  test.setTimeout(900_000);
   const taller = await sembrar();
+  const cdp = await context.newCDPSession(page);
+  const condiciones = isMobile ? CONDICIONES_DEL_CELULAR : [BASE];
 
   const pantallas = [
     '/',
@@ -208,7 +330,7 @@ test('al final del scroll, con señal y sin señal, nada de lo que flota abajo t
   ];
 
   const resultado: Record<string, string[]> = {};
-  for (const ruta of pantallas) {
+  for (const [indice, ruta] of pantallas.entries()) {
     await page.goto(ruta);
     await expect(page.getByRole('main')).toBeVisible(CARGA);
     await expect(
@@ -224,15 +346,19 @@ test('al final del scroll, con señal y sin señal, nada de lo que flota abajo t
         ).toBeAttached();
         await page.waitForTimeout(300);
       }
-      await alFinalDelScroll(page);
-      const tapados = await tapadosAlFondo(page);
-      if (tapados.length > 0) {
-        const clave = `${ruta} (${senal})`;
-        resultado[clave] = tapados;
-        await page.screenshot({
-          path: testInfo.outputPath(`tapado-${clave.replace(/[^a-z0-9]+/gi, '-')}.png`),
-        });
+      for (const condicion of condiciones) {
+        await aplicar(page, cdp, condicion);
+        await alFinalDelScroll(page);
+        const tapados = await contenidoTapado(page);
+        const clave = `${String(indice + 1).padStart(2, '0')} ${ruta} (${senal}, ${condicion.nombre})`;
+        if (tapados.length > 0) resultado[clave] = tapados;
+        if (CAPTURADAS.has(condicion.codigo) || tapados.length > 0) {
+          await page.screenshot({
+            path: testInfo.outputPath(`${nombreDeCaptura(indice, senal, condicion)}.png`),
+          });
+        }
       }
+      await aplicar(page, cdp, BASE);
     }
     await context.setOffline(false);
   }

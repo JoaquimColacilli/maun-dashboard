@@ -21,7 +21,21 @@ const NOTA =
 const SIN_SENAL_PARA_LA_CONTRASENA =
   'Sin señal no se puede entrar con la contraseña: se verifica contra el servidor. Probá con la huella.';
 
+function conElFoco(signal: AbortSignal): Promise<boolean> {
+  if (document.hasFocus()) return Promise.resolve(true);
+  return new Promise((resolver) => {
+    const listo = () => {
+      globalThis.removeEventListener('focus', listo);
+      signal.removeEventListener('abort', listo);
+      resolver(!signal.aborted);
+    };
+    globalThis.addEventListener('focus', listo);
+    signal.addEventListener('abort', listo);
+  });
+}
+
 async function desenlaceDeLaHuella(usuarioId: string, signal: AbortSignal): Promise<Fase | null> {
+  if (!(await conElFoco(signal))) return null;
   const resultado = await pedirHuella(bloqueoDe(usuarioId)?.credencial ?? null, signal);
   if (signal.aborted) return null;
   if (resultado.tipo === 'confirmada') {

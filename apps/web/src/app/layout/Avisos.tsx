@@ -55,7 +55,7 @@ export function Avisos() {
   const errores = avisos.filter((aviso) => aviso.tono === 'error');
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(var(--bottom-nav-clearance)+3.25rem+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[420px] flex-col gap-2 md:bottom-[calc(14px+3.25rem+env(safe-area-inset-bottom))]">
+    <div className="pointer-events-none fixed inset-x-4 bottom-(--holgura-inferior) z-20 mx-auto flex max-w-[420px] flex-col gap-2">
       <div role="status" className="flex flex-col gap-2">
         {transitorios.map((aviso) => (
           <Tarjeta key={aviso.id} aviso={aviso} />

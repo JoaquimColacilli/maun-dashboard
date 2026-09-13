@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router';
 
@@ -83,7 +83,6 @@ function useEditando(): boolean {
 
 function useMenuDeAcciones() {
   const [abierto, setAbierto] = useState(false);
-  const contenedor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!abierto) return;
@@ -96,7 +95,7 @@ function useMenuDeAcciones() {
     };
   }, [abierto]);
 
-  return { abierto, setAbierto, contenedor };
+  return { abierto, setAbierto };
 }
 
 function MenuDeAcciones({
@@ -117,7 +116,7 @@ function MenuDeAcciones({
       <button
         type="button"
         aria-label="Cerrar el menú"
-        className="fixed inset-0 z-20 bg-velo-suave"
+        className="pointer-events-auto fixed inset-0 z-20 bg-velo-suave"
         onClick={cerrar}
       />
       <div
@@ -152,51 +151,54 @@ function BarraInferior({
   activo: IdDeSeccion | undefined;
   irA: (r: string) => void;
 }) {
-  const { abierto, setAbierto, contenedor } = useMenuDeAcciones();
+  const { abierto, setAbierto } = useMenuDeAcciones();
   const editando = useEditando();
   const columnas = ['col-start-1', 'col-start-2', 'col-start-4', 'col-start-5'];
 
   if (editando) return null;
 
   return (
-    <div ref={contenedor}>
+    <>
       <MenuDeAcciones
         abierto={abierto}
         cerrar={() => {
           setAbierto(false);
         }}
         irA={irA}
-        className="fixed bottom-[calc(96px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2"
+        className="pointer-events-auto fixed bottom-(--holgura-inferior) left-1/2 -translate-x-1/2"
       />
-      <nav
-        aria-label="Principal"
-        className="fixed inset-x-4 bottom-[calc(14px+env(safe-area-inset-bottom))] z-30 grid h-bottom-nav grid-cols-[1fr_1fr_76px_1fr_1fr] items-center rounded-pill border border-ink/8 bg-paper/80 shadow-float backdrop-blur-nav"
-      >
-        {NAV_MOVIL.map((id, indice) => {
-          const destino = DESTINOS[id];
-          const esActivo = activo === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-current={esActivo ? 'page' : undefined}
-              className={`${columnas[indice] ?? ''} flex h-bottom-nav min-w-tap flex-col items-center justify-center gap-[3px] text-badge ${
-                esActivo ? 'font-semibold text-ink' : 'font-medium text-text-3'
-              }`}
-              onClick={() => {
-                irA(destino.ruta);
-              }}
-            >
-              <Icono nombre={destino.icono} tamano={22} grosor={esActivo ? 2.25 : 1.75} />
-              {destino.etiqueta}
-            </button>
-          );
-        })}
+      <nav aria-label="Principal" className="grid w-full grid-cols-1">
+        <div
+          aria-hidden
+          className="pointer-events-auto col-start-1 row-start-1 mt-3.75 h-bottom-nav rounded-pill border border-ink/8 bg-paper/80 shadow-float backdrop-blur-nav"
+        />
+        <div className="pointer-events-auto relative col-start-1 row-start-1 mt-3.75 grid h-bottom-nav grid-cols-[1fr_1fr_76px_1fr_1fr] items-center">
+          {NAV_MOVIL.map((id, indice) => {
+            const destino = DESTINOS[id];
+            const esActivo = activo === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-current={esActivo ? 'page' : undefined}
+                className={`${columnas[indice] ?? ''} flex h-bottom-nav min-w-tap flex-col items-center justify-center gap-[3px] text-badge ${
+                  esActivo ? 'font-semibold text-ink' : 'font-medium text-text-3'
+                }`}
+                onClick={() => {
+                  irA(destino.ruta);
+                }}
+              >
+                <Icono nombre={destino.icono} tamano={22} grosor={esActivo ? 2.25 : 1.75} />
+                {destino.etiqueta}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           aria-label="Cargar algo nuevo"
           aria-expanded={abierto}
-          className="absolute -top-4 left-1/2 flex size-fab -translate-x-1/2 items-center justify-center rounded-pill bg-ink text-paper shadow-fab transition-transform duration-(--dur-fast) ease-out"
+          className="pointer-events-auto relative col-start-1 row-start-1 flex size-fab items-center justify-center self-start justify-self-center rounded-pill bg-ink text-paper shadow-fab transition-transform duration-(--dur-fast) ease-out"
           style={{ rotate: abierto ? '45deg' : '0deg' }}
           onClick={() => {
             setAbierto(!abierto);
@@ -205,7 +207,7 @@ function BarraInferior({
           <Icono nombre="plus" tamano={26} grosor={2} />
         </button>
       </nav>
-    </div>
+    </>
   );
 }
 

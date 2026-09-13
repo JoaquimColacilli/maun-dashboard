@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router';
 
 import { ProveedorDeReplica, useReplica } from '@/entities/replica';
 import { ProveedorDeSesion, useSesion, useSesionActiva } from '@/entities/sesion';
-import { PantallaDeBloqueo } from '@/features/desbloquear-la-app';
+import { BloqueoAlVolver, PantallaDeBloqueo } from '@/features/desbloquear-la-app';
 import { tieneAcceso } from '@/shared/api';
-import { esCelular, useAppBloqueada } from '@/shared/lib';
+import { esCelular, useAppBloqueada, vigilarElBloqueo } from '@/shared/lib';
 import { Cargando } from '@/shared/ui';
 
 import { ErrorDeCarga } from '../layout/ErrorDeCarga';
@@ -18,9 +19,17 @@ export function RutaPublica() {
 }
 
 function ConBloqueo({ usuarioId }: { usuarioId: string }) {
-  const bloqueada = useAppBloqueada(usuarioId);
-  if (bloqueada && esCelular()) return <PantallaDeBloqueo />;
-  return <Outlet />;
+  const bloqueada = useAppBloqueada(usuarioId) && esCelular();
+  const [yaSeAbrio, setYaSeAbrio] = useState(!bloqueada);
+  if (!bloqueada && !yaSeAbrio) setYaSeAbrio(true);
+  useEffect(() => vigilarElBloqueo(), []);
+
+  return (
+    <>
+      {bloqueada && !yaSeAbrio ? <PantallaDeBloqueo /> : <Outlet />}
+      {bloqueada && yaSeAbrio && <BloqueoAlVolver />}
+    </>
+  );
 }
 
 export function RutaConSesion() {

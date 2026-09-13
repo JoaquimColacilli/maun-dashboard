@@ -178,10 +178,12 @@ export function ClienteFichaPage() {
   const [confirmando, setConfirmando] = useState(false);
   const hoy = hoyLocal();
   const resumen = resumenDeCliente(replica, id);
+  const [ultimoNombre, setUltimoNombre] = useState(resumen?.cliente.nombre);
+  if (resumen && resumen.cliente.nombre !== ultimoNombre) setUltimoNombre(resumen.cliente.nombre);
   const borrar = useMutation({
     ...MUTACION_DE_BAJA_DE_CLIENTE,
     meta: metaDeAvisos('clienteBorrado', {
-      ...(resumen ? { sujeto: resumen.cliente.nombre } : {}),
+      ...(ultimoNombre === undefined ? {} : { sujeto: ultimoNombre }),
     }),
   });
 

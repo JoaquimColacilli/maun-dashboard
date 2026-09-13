@@ -11,6 +11,40 @@ export interface TelefonoVirtual {
 
 type VentanaConPedidos = Window & { pedidosDeHuella: number };
 
+type VentanaConVisibilidad = Window & {
+  cambiarVisibilidad: (estado: DocumentVisibilityState) => void;
+};
+
+export async function visibilidadControlable(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    let estado: DocumentVisibilityState = 'visible';
+    Object.defineProperty(Document.prototype, 'visibilityState', {
+      configurable: true,
+      get: () => estado,
+    });
+    Object.defineProperty(Document.prototype, 'hidden', {
+      configurable: true,
+      get: () => estado === 'hidden',
+    });
+    (window as unknown as VentanaConVisibilidad).cambiarVisibilidad = (siguiente) => {
+      estado = siguiente;
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+  });
+}
+
+export async function aSegundoPlano(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as VentanaConVisibilidad).cambiarVisibilidad('hidden');
+  });
+}
+
+export async function alFrente(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as unknown as VentanaConVisibilidad).cambiarVisibilidad('visible');
+  });
+}
+
 export async function telefonoConHuella(page: Page, verifica = true): Promise<TelefonoVirtual> {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('WebAuthn.enable', { enableUI: false });

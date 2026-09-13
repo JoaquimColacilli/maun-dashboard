@@ -33,6 +33,7 @@ La fase 2C dejó la réplica del household en IndexedDB, la cola de salida y el 
 - `viewport-fit=cover` ya estaba en el `index.html` desde la fase 1; se verificó, no se asumió. Sin eso `env(safe-area-inset-*)` devuelve cero.
 - **El nodo raíz se ancla con `position: fixed; inset: 0`,** con `100dvh` de respaldo, y los contenedores de adentro heredan ese tamaño. En una PWA instalada `100vh` y `height: 100%` resuelven distinto y dejan una banda negra abajo con el contenido metido bajo la muesca.
 - **El padding inferior del contenido es `calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom))`.** En escritorio el inset da cero y no cambia nada.
+  - **Corregido por el ADR 0025.** La constante se quedaba corta cuando el contenido se sale de la ventana, que es lo que pasa en un Samsung con la app instalada. La holgura ahora se mide del rectángulo de todo lo que flota abajo.
 - **La barra se esconde mientras se escribe.** `env(keyboard-inset-height)` no tiene soporte parejo, así que se detecta el foco en un campo (`focusin`/`focusout`) y la barra se desmonta: no puede quedar flotando sobre el teclado.
 
 **Transiciones con `document.startViewTransition`, no con el componente de React.** `<ViewTransition>` depende de features de nivel 2 que Firefox todavía no tiene. La llamada directa es Baseline. Tres detalles:

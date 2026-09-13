@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react';
 
 export const CLAVE_DEL_BLOQUEO = 'maun:bloqueo';
 export const CLAVE_DE_LAS_PREGUNTAS = 'maun:huella-preguntada';
+export const UMBRAL_DEL_BLOQUEO_MS = 60_000;
+export const TOPE_DE_UNA_RECARGA_MS = 10 * 60_000;
 
 const EVENTO_DEL_BLOQUEO = 'maun:bloqueo-cambio';
 const ESPERA_DE_LA_HUELLA_MS = 60_000;
@@ -17,13 +19,22 @@ const NO_DISPONIBLE = new Set([
 export interface BloqueoDelDispositivo {
   usuarioId: string;
   credencial: string | null;
+  desbloqueadaEn: number | null;
+  salioEn: number | null;
 }
+
+export type SellosDelBloqueo = Pick<BloqueoDelDispositivo, 'desbloqueadaEn' | 'salioEn'>;
 
 export type ResultadoDeLaHuella =
   { tipo: 'confirmada'; credencial: string } | { tipo: 'cancelada' } | { tipo: 'no-disponible' };
 
-let desbloqueadaEnEstaApertura = false;
+type Apertura = 'sin-decidir' | 'abierta' | 'cerrada';
+
+const INICIO_DE_LA_APERTURA = Date.now();
+
+let apertura: Apertura = 'sin-decidir';
 let entroConContrasena = false;
+let ocultaDesde: number | null = null;
 
 function almacen(): Storage | undefined {
   try {
@@ -37,15 +48,24 @@ function avisar(): void {
   globalThis.dispatchEvent(new Event(EVENTO_DEL_BLOQUEO));
 }
 
+function instante(valor: unknown): number | null {
+  return typeof valor === 'number' && Number.isFinite(valor) ? valor : null;
+}
+
 function leerBloqueo(): BloqueoDelDispositivo | null {
   try {
     const crudo = almacen()?.getItem(CLAVE_DEL_BLOQUEO) ?? null;
     if (crudo === null) return null;
     const valor: unknown = JSON.parse(crudo);
     if (typeof valor !== 'object' || valor === null) return null;
-    const { usuarioId, credencial } = valor as Record<string, unknown>;
+    const { usuarioId, credencial, desbloqueadaEn, salioEn } = valor as Record<string, unknown>;
     if (typeof usuarioId !== 'string') return null;
-    return { usuarioId, credencial: typeof credencial === 'string' ? credencial : null };
+    return {
+      usuarioId,
+      credencial: typeof credencial === 'string' ? credencial : null,
+      desbloqueadaEn: instante(desbloqueadaEn),
+      salioEn: instante(salioEn),
+    };
   } catch {
     return null;
   }
@@ -59,21 +79,64 @@ function guardarBloqueo(bloqueo: BloqueoDelDispositivo): void {
   }
 }
 
+function sellar(sellos: Partial<SellosDelBloqueo>): void {
+  const bloqueo = leerBloqueo();
+  if (bloqueo !== null) guardarBloqueo({ ...bloqueo, ...sellos });
+}
+
+export function sigueAdentro(sellos: SellosDelBloqueo, ahora: number): boolean {
+  const ultimaVezAdentro = Math.max(
+    sellos.desbloqueadaEn ?? Number.NEGATIVE_INFINITY,
+    sellos.salioEn ?? Number.NEGATIVE_INFINITY,
+  );
+  const transcurrido = ahora - ultimaVezAdentro;
+  return transcurrido >= 0 && transcurrido < UMBRAL_DEL_BLOQUEO_MS;
+}
+
+export function abreSinHuella(
+  sellos: SellosDelBloqueo,
+  ahora: number,
+  tipoDeNavegacion: string | undefined,
+): boolean {
+  if (sigueAdentro(sellos, ahora)) return true;
+  if (tipoDeNavegacion !== 'reload' || sellos.desbloqueadaEn === null) return false;
+  if (sellos.salioEn !== null && sellos.salioEn >= sellos.desbloqueadaEn) return false;
+  const desdeElDesbloqueo = ahora - sellos.desbloqueadaEn;
+  return desdeElDesbloqueo >= 0 && desdeElDesbloqueo < TOPE_DE_UNA_RECARGA_MS;
+}
+
+function tipoDeNavegacion(): string | undefined {
+  if (typeof PerformanceNavigationTiming === 'undefined') return undefined;
+  const [entrada] = globalThis.performance.getEntriesByType('navigation');
+  return entrada instanceof PerformanceNavigationTiming ? entrada.type : undefined;
+}
+
 export function bloqueoDe(usuarioId: string): BloqueoDelDispositivo | null {
   const bloqueo = leerBloqueo();
   return bloqueo?.usuarioId === usuarioId ? bloqueo : null;
 }
 
+export function appBloqueada(usuarioId: string): boolean {
+  const bloqueo = bloqueoDe(usuarioId);
+  if (bloqueo === null) return false;
+  if (apertura === 'sin-decidir') {
+    apertura = abreSinHuella(bloqueo, INICIO_DE_LA_APERTURA, tipoDeNavegacion())
+      ? 'abierta'
+      : 'cerrada';
+  }
+  return apertura === 'cerrada';
+}
+
 export function activarBloqueo(usuarioId: string, credencial: string | null): void {
-  desbloqueadaEnEstaApertura = true;
-  guardarBloqueo({ usuarioId, credencial });
+  apertura = 'abierta';
+  guardarBloqueo({ usuarioId, credencial, desbloqueadaEn: Date.now(), salioEn: null });
   avisar();
 }
 
 export function anotarCredencial(usuarioId: string, credencial: string): void {
   const bloqueo = bloqueoDe(usuarioId);
   if (!bloqueo || bloqueo.credencial === credencial) return;
-  guardarBloqueo({ usuarioId, credencial });
+  guardarBloqueo({ ...bloqueo, credencial });
 }
 
 export function olvidarBloqueo(): void {
@@ -85,8 +148,9 @@ export function olvidarBloqueo(): void {
 }
 
 export function marcarDesbloqueada(): void {
-  if (desbloqueadaEnEstaApertura) return;
-  desbloqueadaEnEstaApertura = true;
+  sellar({ desbloqueadaEn: Date.now() });
+  if (apertura === 'abierta') return;
+  apertura = 'abierta';
   avisar();
 }
 
@@ -97,6 +161,43 @@ export function anotarIngresoConContrasena(): void {
 
 export function entroRecienConContrasena(): boolean {
   return entroConContrasena;
+}
+
+function alOcultarse(): void {
+  if (ocultaDesde !== null) return;
+  ocultaDesde = Date.now();
+  if (apertura !== 'abierta') return;
+  sellar({ salioEn: ocultaDesde });
+}
+
+function alVolver(): void {
+  ocultaDesde = null;
+  if (apertura !== 'abierta') return;
+  const bloqueo = leerBloqueo();
+  if (bloqueo === null || sigueAdentro(bloqueo, Date.now())) return;
+  apertura = 'cerrada';
+  avisar();
+}
+
+export function vigilarElBloqueo(): () => void {
+  const alCambiarLaVisibilidad = () => {
+    if (document.visibilityState === 'hidden') alOcultarse();
+    else alVolver();
+  };
+  const alDescargarse = () => {
+    if (document.visibilityState === 'visible') alOcultarse();
+  };
+  const alMostrarse = (evento: PageTransitionEvent) => {
+    if (evento.persisted) alVolver();
+  };
+  document.addEventListener('visibilitychange', alCambiarLaVisibilidad);
+  globalThis.addEventListener('pagehide', alDescargarse);
+  globalThis.addEventListener('pageshow', alMostrarse);
+  return () => {
+    document.removeEventListener('visibilitychange', alCambiarLaVisibilidad);
+    globalThis.removeEventListener('pagehide', alDescargarse);
+    globalThis.removeEventListener('pageshow', alMostrarse);
+  };
 }
 
 function usuariosPreguntados(): string[] {
@@ -142,11 +243,7 @@ export function useBloqueoActivo(usuarioId: string): boolean {
 }
 
 export function useAppBloqueada(usuarioId: string): boolean {
-  return useSyncExternalStore(
-    suscribir,
-    () => !desbloqueadaEnEstaApertura && bloqueoDe(usuarioId) !== null,
-    nunca,
-  );
+  return useSyncExternalStore(suscribir, () => appBloqueada(usuarioId), nunca);
 }
 
 function desdeBase64Url(texto: string): Uint8Array<ArrayBuffer> {
