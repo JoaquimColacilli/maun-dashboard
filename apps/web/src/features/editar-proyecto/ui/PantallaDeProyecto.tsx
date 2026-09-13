@@ -45,6 +45,8 @@ import { Button, Campo, Icono, MoneyInput } from '@/shared/ui';
 
 import { FilasDinamicas } from './FilasDinamicas';
 
+const FECHA_ALINEADA = '@sm/datos:row-span-3 @sm/datos:grid @sm/datos:grid-rows-subgrid';
+
 function rutaAlTerminar(id: string, volverALiquidar: 'cierre' | 'cobro' | null): string {
   if (volverALiquidar === 'cierre') return rutaDeCierre(id);
   if (volverALiquidar === 'cobro') return rutaDeCobro(id);
@@ -198,9 +200,10 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
       }
     >
       <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
-        <div className="mx-auto flex w-full max-w-content items-center justify-between px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
+        <div className="mx-auto grid w-full max-w-content grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
           <Button
             variant="terciario"
+            className="justify-self-start"
             onClick={() => {
               void navegar(proyecto === undefined ? '/proyectos' : rutaDelProyecto(proyecto.id));
             }}
@@ -208,8 +211,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
             <Icono nombre="x" tamano={20} />
             Cancelar
           </Button>
-          <span className="text-body-lg font-semibold">{titulo}</span>
-          <span className="w-[92px]" />
+          <span className="text-center text-body-lg font-semibold">{titulo}</span>
         </div>
       </header>
 
@@ -227,7 +229,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               : 'content-start [&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
           }`}
         >
-          <div className="flex min-w-0 flex-col gap-5">
+          <div className="@container/datos flex min-w-0 flex-col gap-5">
             <ClienteCombobox
               clientes={clientes}
               elegidoId={clienteId === '' ? null : clienteId}
@@ -290,7 +292,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
 
             <fieldset className="flex flex-col gap-1.5">
               <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-              <div className="grid grid-cols-4 gap-0.5 rounded-field bg-surface p-1">
+              <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm/datos:grid-cols-4">
                 {FORMAS_EN_ORDEN.map((forma) => (
                   <BotonDeOpcion
                     key={forma}
@@ -304,32 +306,28 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
               </div>
             </fieldset>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div
+              data-fila="fechas"
+              className="grid grid-cols-1 gap-4 @sm/datos:grid-cols-2 @sm/datos:gap-x-3 @sm/datos:gap-y-1.5"
+            >
               <Campo
                 {...register('fecha_inicio')}
                 etiqueta="Fecha de inicio"
                 type="date"
                 error={errors.fecha_inicio?.message}
+                contenedor={FECHA_ALINEADA}
               />
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`${idCampos}-entrega`}
-                  className="flex items-baseline justify-between gap-2 text-label text-text-2"
-                >
-                  Entrega estimada
-                  {entregaAuto && <span className="text-meta text-text-3">21 días hábiles</span>}
-                </label>
-                <input
-                  {...register('entrega_estimada', {
-                    onChange: () => {
-                      setEntregaAuto(false);
-                    },
-                  })}
-                  id={`${idCampos}-entrega`}
-                  type="date"
-                  className="h-field rounded-field border border-border bg-paper px-3.5 text-body-lg text-ink"
-                />
-              </div>
+              <Campo
+                {...register('entrega_estimada', {
+                  onChange: () => {
+                    setEntregaAuto(false);
+                  },
+                })}
+                etiqueta="Entrega estimada"
+                type="date"
+                ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
+                contenedor={FECHA_ALINEADA}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -501,7 +499,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
         </div>
 
         <footer className="flex-none border-t border-hairline bg-paper md:sticky md:bottom-0 md:z-20">
-          <div className="mx-auto flex w-full max-w-content flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
+          <div className="@container/barra mx-auto flex w-full max-w-content flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
             {rechazo !== null && (
               <p role="alert" className="basis-full text-label font-medium text-alerta">
                 {mensajeDeSincronizacion(rechazo, {
@@ -511,7 +509,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
                 })}
               </p>
             )}
-            <dl className="flex min-w-[210px] flex-1 gap-4 tabular-nums md:gap-6 lg:gap-8">
+            <dl className="grid w-full grid-cols-2 gap-x-4 gap-y-1 tabular-nums @min-[21rem]/barra:flex @min-[21rem]/barra:w-auto @min-[21rem]/barra:min-w-[210px] @min-[21rem]/barra:flex-1 md:gap-6 lg:gap-8">
               <Total
                 etiqueta="Presupuesto"
                 valor={presupuesto === null ? '—' : formatearPesos(presupuesto)}

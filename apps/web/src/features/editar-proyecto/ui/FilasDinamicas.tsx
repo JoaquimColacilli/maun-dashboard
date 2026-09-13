@@ -91,7 +91,7 @@ export function FilasDinamicas({
   const erroresDeLista = errores[lista];
 
   return (
-    <section aria-label={titulo} className="flex flex-col gap-2" ref={contenedor}>
+    <section aria-label={titulo} className="@container/filas flex flex-col gap-2" ref={contenedor}>
       <div className="flex flex-col gap-0.5 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-section font-semibold">{titulo}</h2>
@@ -111,14 +111,14 @@ export function FilasDinamicas({
             <li
               key={campo.clave}
               data-fila={campo.id}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] items-center gap-2 border-t border-hairline-soft py-2.5 md:grid-cols-[minmax(0,2fr)_150px_150px_44px]"
+              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] items-center gap-2 border-t border-hairline-soft py-2.5 @lg/filas:grid-cols-[minmax(0,1fr)_10.5rem_9rem_44px]"
             >
               <input
                 {...register(`${lista}.${indice}.detalle` as const)}
                 aria-label={`${etiquetaDelDetalle} ${String(indice + 1)}`}
                 placeholder={placeholderDelDetalle}
                 disabled={bloqueado}
-                className="col-span-3 h-11 min-w-0 rounded-field border border-border bg-paper px-3 text-body-lg text-ink md:col-span-1"
+                className="col-span-2 h-11 min-w-0 rounded-field border border-border bg-paper px-3 text-body-lg text-ink @lg/filas:col-span-1"
               />
               <input
                 {...register(`${lista}.${indice}.fecha` as const)}
@@ -130,7 +130,7 @@ export function FilasDinamicas({
                 }`}
               />
               <div
-                className={`flex h-11 min-w-0 items-center gap-1 rounded-field border bg-paper px-2.5 ${
+                className={`col-span-2 flex h-11 min-w-0 items-center gap-1 rounded-field border bg-paper px-2.5 @lg/filas:col-span-1 ${
                   errorDeFila?.monto ? 'border-alerta' : 'border-border'
                 }`}
               >
@@ -162,14 +162,14 @@ export function FilasDinamicas({
                 }}
                 disabled={bloqueado}
                 aria-label={`Quitar ${etiquetaDelDetalle.toLowerCase()} ${String(indice + 1)}`}
-                className="flex size-11 items-center justify-center justify-self-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
+                className="col-start-3 row-start-1 flex size-11 items-center justify-center justify-self-center rounded-field text-text-3 hover:bg-surface hover:text-alerta @lg/filas:col-start-auto @lg/filas:row-start-auto"
               >
                 <Icono nombre="trash-2" tamano={18} />
               </button>
               {(errorDeFila?.monto ?? errorDeFila?.fecha) && (
                 <span
                   role="alert"
-                  className="col-span-3 text-label font-medium text-alerta md:col-span-4"
+                  className="col-span-3 text-label font-medium text-alerta @lg/filas:col-span-4"
                 >
                   {errorDeFila.monto?.message ?? errorDeFila.fecha?.message}
                 </span>
