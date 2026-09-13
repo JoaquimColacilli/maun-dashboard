@@ -1,5 +1,11 @@
 export { clienteMaun } from './cliente';
-export { esFalloDeRed, mensajeDeAcceso, mensajeDeSincronizacion } from './errores';
+export {
+  codigoDeAcceso,
+  errorDelEnlace,
+  esFalloDeRed,
+  mensajeDeAcceso,
+  mensajeDeSincronizacion,
+} from './errores';
 export {
   traducirRechazo,
   type ContextoDelRechazo,

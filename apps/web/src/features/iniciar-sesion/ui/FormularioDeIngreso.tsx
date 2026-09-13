@@ -1,23 +1,77 @@
 import { useState, type ReactNode, type SyntheticEvent } from 'react';
 
-import { entrar, mensajeDeAcceso } from '@/shared/api';
+import {
+  codigoDeAcceso,
+  entrar,
+  esFalloDeRed,
+  mensajeDeAcceso,
+  reenviarConfirmacion,
+} from '@/shared/api';
 import { Button, Campo, CampoDeContrasena } from '@/shared/ui';
 
 const MAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+const SIN_SENAL_PARA_ENTRAR =
+  'Sin señal no se puede entrar: la cuenta se verifica contra el servidor. Una vez adentro, la app anda aunque no haya señal.';
 
 interface ErrorDelFormulario {
   campo?: 'email' | 'contrasena';
   mensaje: string;
 }
 
+function ReenvioDeConfirmacion({ email }: { email: string }) {
+  const [mandando, setMandando] = useState(false);
+  const [resultado, setResultado] = useState<{ error: boolean; texto: string } | undefined>(
+    undefined,
+  );
+
+  async function mandar(): Promise<void> {
+    setMandando(true);
+    setResultado(undefined);
+    try {
+      await reenviarConfirmacion(email, `${window.location.origin}/acceso`);
+      setResultado({ error: false, texto: `Te mandamos el enlace de nuevo a ${email}.` });
+    } catch (fallo) {
+      setResultado({ error: true, texto: mensajeDeAcceso(fallo) });
+    } finally {
+      setMandando(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <Button
+        variant="secundario"
+        size="chico"
+        cargando={mandando}
+        onClick={() => {
+          void mandar();
+        }}
+      >
+        {mandando ? 'Mandándolo…' : 'Mandarme el enlace de nuevo'}
+      </Button>
+      {resultado !== undefined && (
+        <p
+          role={resultado.error ? 'alert' : 'status'}
+          className={`text-label leading-relaxed ${resultado.error ? 'font-medium text-alerta' : 'text-text-2'}`}
+        >
+          {resultado.texto}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
   const [email, setEmail] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState<ErrorDelFormulario | undefined>(undefined);
+  const [sinConfirmar, setSinConfirmar] = useState(false);
   const [entrando, setEntrando] = useState(false);
 
   async function enviar(evento: SyntheticEvent<HTMLFormElement>) {
     evento.preventDefault();
+    setSinConfirmar(false);
     if (!MAIL.test(email)) {
       setError({ campo: 'email', mensaje: 'Escribí un mail válido.' });
       return;
@@ -32,7 +86,8 @@ export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
     try {
       await entrar(email, contrasena);
     } catch (fallo) {
-      setError({ mensaje: mensajeDeAcceso(fallo) });
+      setError({ mensaje: esFalloDeRed(fallo) ? SIN_SENAL_PARA_ENTRAR : mensajeDeAcceso(fallo) });
+      setSinConfirmar(codigoDeAcceso(fallo) === 'email_not_confirmed');
     } finally {
       setEntrando(false);
     }
@@ -71,9 +126,12 @@ export function FormularioDeIngreso({ olvido }: { olvido?: ReactNode }) {
         }}
       />
       {error !== undefined && error.campo === undefined && (
-        <p role="alert" className="text-label leading-relaxed font-medium text-alerta">
-          {error.mensaje}
-        </p>
+        <div className="flex flex-col gap-2.5">
+          <p role="alert" className="text-label leading-relaxed font-medium text-alerta">
+            {error.mensaje}
+          </p>
+          {sinConfirmar && <ReenvioDeConfirmacion email={email} />}
+        </div>
       )}
       <Button type="submit" size="grande" cargando={entrando} className="mt-1 w-full">
         {entrando ? 'Entrando…' : 'Entrar'}

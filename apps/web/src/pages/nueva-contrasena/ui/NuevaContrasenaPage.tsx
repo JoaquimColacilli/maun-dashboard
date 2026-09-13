@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { useSesion } from '@/entities/sesion';
 import { FormularioDeNuevaContrasena } from '@/features/recuperar-acceso';
+import { errorDelEnlace } from '@/shared/api';
 import { useEstadoSync } from '@/shared/lib';
 import { Button, ENLACE_DE_ACCESO, PantallaDeAcceso } from '@/shared/ui';
 
@@ -11,6 +12,7 @@ export function NuevaContrasenaPage() {
   const estadoSync = useEstadoSync();
   const navegar = useNavigate();
   const [listo, setListo] = useState(false);
+  const [delEnlace] = useState(() => errorDelEnlace(window.location.href));
 
   if (listo) {
     return (
@@ -49,7 +51,8 @@ export function NuevaContrasenaPage() {
         bajada={
           sinConexion
             ? 'El enlace se valida contra el servidor y ahora no hay señal.'
-            : 'Los enlaces del correo se abren en el mismo navegador desde el que los pediste, y vencen.'
+            : (delEnlace ??
+              'Los enlaces del correo se abren en el mismo navegador desde el que los pediste, y vencen.')
         }
         pie={
           <Link to="/acceso/recuperar" className={ENLACE_DE_ACCESO}>

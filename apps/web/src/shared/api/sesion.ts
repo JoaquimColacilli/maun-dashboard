@@ -3,7 +3,7 @@ import { CLAVE_DE_SESION } from '@maun/db';
 import { leerEnv } from '@/shared/config';
 
 import { clienteMaun } from './cliente';
-import { esFalloDeRed } from './errores';
+import { esAltaRepetida, esFalloDeRed, RechazoDeAcceso } from './errores';
 
 export interface Claims {
   usuarioId: string;
@@ -119,12 +119,13 @@ export async function crearCuenta(
   contrasena: string,
   volverA: string,
 ): Promise<void> {
-  const { error } = await clienteMaun().auth.signUp({
+  const { data, error } = await clienteMaun().auth.signUp({
     email,
     password: contrasena,
     options: { emailRedirectTo: volverA },
   });
   if (error) throw error;
+  if (esAltaRepetida(data.user)) throw new RechazoDeAcceso('user_already_exists');
 }
 
 export async function reenviarConfirmacion(email: string, volverA: string): Promise<void> {
