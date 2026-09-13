@@ -26,3 +26,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0020](0020-pulido-visual.md)                                  | Pulido visual: tema oscuro, hojas, plata, avisos y molde | Aceptada             |
 | [0021](0021-perfil-sin-foto.md)                                | Perfil: el nombre en la cuenta, iniciales en vez de foto | Reemplazada por 0022 |
 | [0022](0022-foto-de-perfil.md)                                 | Foto de perfil: recorte en el navegador y bucket público | Aceptada             |
+| [0023](0023-sesion-bloqueo-con-huella-y-passkeys.md)           | Pantallas de sesión, bloqueo con huella y passkeys       | Aceptada             |
