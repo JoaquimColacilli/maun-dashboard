@@ -8,7 +8,7 @@ import {
   sueldoDelMes,
   type Money,
 } from '@maun/domain';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import {
   faltaDelSueldo,
@@ -20,6 +20,7 @@ import {
 } from '@/entities/movimiento';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { LiquidacionesSinConfirmar } from '@/entities/proyecto';
+import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from '@/entities/tesoro';
 import {
   ajustesDe,
@@ -44,8 +45,9 @@ import {
   relativa,
   RUTA_DE_DIEZMO,
   rutaDeFinanzasDelTesoro,
+  useAnchoDePantalla,
 } from '@/shared/lib';
-import { Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
+import { Avatar, Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const DIAS_DE_PROYECCION = 365;
 
@@ -257,9 +259,25 @@ function Acceso({
   );
 }
 
+function AccesoAAjustes() {
+  const { email, foto } = useSesionActiva();
+  const nombre = useNombreDeLaPersona();
+
+  return (
+    <Link
+      to="/ajustes"
+      aria-label="Ajustes y tu cuenta"
+      className="-mr-1 flex size-tap flex-none items-center justify-center rounded-pill"
+    >
+      <Avatar nombre={nombre.trim() === '' ? email : nombre} foto={foto} />
+    </Link>
+  );
+}
+
 export function InicioPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
+  const ancho = useAnchoDePantalla();
 
   const hoy = hoyLocal();
   const mes = mesDeLaFecha(hoy);
@@ -299,9 +317,12 @@ export function InicioPage() {
 
   return (
     <Pagina className="gap-4">
-      <header className="flex flex-col gap-0.5">
-        <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>
-        <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>
+          <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
+        </div>
+        {ancho === 'movil' && <AccesoAAjustes />}
       </header>
 
       <section aria-label="Tesoros" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">

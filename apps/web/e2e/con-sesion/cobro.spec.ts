@@ -187,6 +187,7 @@ test('dos cobros del mismo mes hechos sin señal drenan en orden y ninguno rebot
 test('un cobro rechazado con el formulario ya cerrado avisa igual y se ve en el proyecto', async ({
   page,
   context,
+  isMobile,
 }) => {
   const { id, clienteId, titulo } = await proyecto('Vestidor que rebota', { pago: 70_000_000 });
 
@@ -223,6 +224,17 @@ test('un cobro rechazado con el formulario ya cerrado avisa igual y se ve en el 
   await expect(page.getByText('El servidor lo rechazó')).toBeVisible();
   await expect(page.getByText('Los números cambiaron desde que viste el reparto.')).toBeVisible();
   expect((await distribucionDe(sesion, id))?.estado).toBe('entregado');
+
+  if (isMobile) {
+    await page
+      .getByRole('navigation', { name: 'Principal' })
+      .getByRole('button', { name: 'Inicio' })
+      .click();
+    await page.getByRole('link', { name: 'Ajustes y tu cuenta' }).click();
+    await expect(
+      page.getByRole('region', { name: 'Lo que la base rechazó o ajustó' }),
+    ).toContainText(titulo);
+  }
 });
 
 test('un cobro con el acumulado del mes desactualizado vuelve ajustado y muestra la diferencia', async ({
