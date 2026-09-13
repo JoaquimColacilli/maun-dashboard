@@ -106,24 +106,26 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
         )}
       </div>
 
-      <dl className="grid grid-cols-2 border-t border-b border-ink border-b-hairline">
-        <div className="py-2.5 pr-3">
-          <dt className="text-meta text-text-2">Total facturado</dt>
-          <dd className="text-money-lg font-semibold tabular-nums">
-            {formatearPesos(resumen.facturado)}
-          </dd>
-        </div>
-        <div className="border-l border-hairline py-2.5 pl-3">
-          <dt className="text-meta text-text-2">Saldo pendiente</dt>
-          <dd
-            className={`text-money-lg font-semibold tabular-nums ${
-              resumen.saldo > 0 ? 'text-atencion' : 'text-hogar'
-            }`}
-          >
-            {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
-          </dd>
-        </div>
-      </dl>
+      <div className="@container">
+        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @xs:grid-cols-2">
+          <div className="py-2.5 @xs:pr-3">
+            <dt className="text-meta text-text-2">Total facturado</dt>
+            <dd className="text-money-lg font-semibold tabular-nums">
+              {formatearPesos(resumen.facturado)}
+            </dd>
+          </div>
+          <div className="border-t border-hairline py-2.5 @xs:border-t-0 @xs:border-l @xs:pl-3">
+            <dt className="text-meta text-text-2">Saldo pendiente</dt>
+            <dd
+              className={`text-money-lg font-semibold tabular-nums ${
+                resumen.saldo > 0 ? 'text-atencion' : 'text-hogar'
+              }`}
+            >
+              {resumen.saldo > 0 ? formatearPesos(resumen.saldo) : 'Sin saldo'}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       {proyectos.length === 0 ? (
         <p className="py-4 text-body leading-relaxed text-text-2">

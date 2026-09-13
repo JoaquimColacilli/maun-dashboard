@@ -92,15 +92,15 @@ export function DiezmoPage() {
             <span className="mt-1 text-label leading-relaxed text-text-2">{frase.detalle}</span>
           </section>
 
-          <section aria-label="Generado y pagado" className="flex flex-col gap-2.5">
-            <div className="grid grid-cols-2 gap-3 tabular-nums">
+          <section aria-label="Generado y pagado" className="@container flex flex-col gap-2.5">
+            <div className="grid grid-cols-1 gap-3 tabular-nums @xs:grid-cols-2">
               <div>
                 <span className="block text-meta text-text-2">Generado en total</span>
                 <span className="block text-money-lg font-semibold">
                   {formatearPesos(estado.generado)}
                 </span>
               </div>
-              <div className="text-right">
+              <div className="@xs:text-right">
                 <span className="block text-meta text-text-2">Pagado en total</span>
                 <span className="block text-money-lg font-semibold text-diezmo">
                   {formatearPesos(estado.pagado)}

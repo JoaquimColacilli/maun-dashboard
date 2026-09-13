@@ -103,7 +103,10 @@ export function AvanceDelContacto({
   }
 
   return (
-    <section aria-label="Qué falta" className="rounded-panel border border-hairline px-4 py-3.5">
+    <section
+      aria-label="Qué falta"
+      className="@container rounded-panel border border-hairline px-4 py-3.5"
+    >
       <h2 className="text-meta font-medium text-text-2">Qué falta</h2>
       <p className="mt-0.5 text-body-lg leading-snug font-semibold">{situacion.proximoPaso}</p>
       <p
@@ -153,7 +156,7 @@ export function AvanceDelContacto({
         <div
           role="radiogroup"
           aria-label="Etapa"
-          className="mt-1 grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 sm:grid-cols-4"
+          className="mt-1 grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @md:grid-cols-4"
         >
           {ESTADOS_DE_SEGUIMIENTO.map((estado) => (
             <button

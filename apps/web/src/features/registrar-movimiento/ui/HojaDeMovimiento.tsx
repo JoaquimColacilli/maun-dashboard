@@ -282,9 +282,9 @@ export function HojaDeMovimiento({
             </label>
           )}
 
-          <div className="flex flex-col gap-1.5">
+          <div className="@container flex flex-col gap-1.5">
             <span className="text-label text-text-2">Cuándo</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {[
                 { id: hoy, etiqueta: 'Hoy' },
                 { id: ayer, etiqueta: 'Ayer' },
@@ -312,7 +312,7 @@ export function HojaDeMovimiento({
                 onChange={(evento) => {
                   setFecha(evento.target.value);
                 }}
-                className="h-field min-w-0 flex-1 rounded-field border border-border bg-paper px-3 text-body text-ink"
+                className="h-field min-w-0 basis-full rounded-field border border-border bg-paper px-3 text-body text-ink @xs:basis-0 @xs:flex-1"
               />
             </div>
           </div>

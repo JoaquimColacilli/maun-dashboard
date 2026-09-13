@@ -204,34 +204,40 @@ export function ProyectoFichaPage() {
         </div>
       )}
 
-      <dl className="mt-4 grid grid-cols-3 border-t border-b border-ink border-b-hairline">
-        <div className="py-3 pr-3">
-          <dt className="text-meta text-text-2">Presupuesto</dt>
-          <dd className="text-money-lg font-semibold tabular-nums whitespace-nowrap">
-            {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
-          </dd>
-        </div>
-        <div className="border-l border-hairline px-3 py-3">
-          <dt className="text-meta text-text-2">Cobrado</dt>
-          <dd className="text-money-lg font-semibold text-hogar tabular-nums whitespace-nowrap">
-            {formatearPesos(resumen.cobrado)}
-          </dd>
-        </div>
-        <div className="border-l border-hairline py-3 pl-3">
-          <dt className="text-meta text-text-2">Saldo</dt>
-          <dd
-            className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${
-              resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
-            }`}
-          >
-            {resumen.saldo === null
-              ? '—'
-              : resumen.saldo > 0
-                ? formatearPesos(resumen.saldo)
-                : 'Sin saldo'}
-          </dd>
-        </div>
-      </dl>
+      <div className="@container mt-4">
+        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @lg:grid-cols-3">
+          <div className="flex items-baseline justify-between gap-3 py-2.5 @lg:block @lg:py-3 @lg:pr-3">
+            <dt className="text-meta text-text-2">Presupuesto</dt>
+            <dd className="text-money-lg font-semibold tabular-nums whitespace-nowrap">
+              {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 border-t border-hairline py-2.5 @lg:block @lg:border-t-0 @lg:border-l @lg:px-3 @lg:py-3">
+            <dt className="text-meta text-text-2">Cobrado</dt>
+            <dd className="text-money-lg font-semibold text-hogar tabular-nums whitespace-nowrap">
+              {formatearPesos(resumen.cobrado)}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3 border-t border-hairline py-2.5 @lg:block @lg:border-t-0 @lg:border-l @lg:py-3 @lg:pl-3">
+            <dt className="text-meta text-text-2">Saldo</dt>
+            <dd
+              className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${
+                resumen.saldo === null
+                  ? 'text-text-3'
+                  : resumen.saldo > 0
+                    ? 'text-ink'
+                    : 'text-hogar'
+              }`}
+            >
+              {resumen.saldo === null
+                ? '—'
+                : resumen.saldo > 0
+                  ? formatearPesos(resumen.saldo)
+                  : 'Sin saldo'}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       <div className="mt-4 max-w-[520px]">
         {puedeCobrar(proyecto.estado) && (

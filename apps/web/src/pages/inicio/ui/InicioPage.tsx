@@ -138,7 +138,7 @@ function Tarjeta({
     <button
       type="button"
       onClick={alElegir}
-      className={`flex min-h-[118px] flex-col justify-between gap-3 rounded-panel p-3.5 text-left ${
+      className={`@container flex min-h-[118px] flex-col justify-between gap-3 rounded-panel p-3.5 text-left ${
         enNegativo
           ? 'border border-negativo-borde bg-negativo-bg text-negativo-texto'
           : tesoro.fondo
@@ -159,7 +159,7 @@ function Tarjeta({
       </span>
       <span className="flex flex-col gap-0.5">
         {frase === undefined ? (
-          <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
+          <span className="text-body-lg font-semibold whitespace-nowrap tabular-nums @min-[8.5rem]:text-money-lg @min-[13rem]:text-money-lg-desktop">
             {formatearPesos(saldo)}
           </span>
         ) : frase.importe === null ? (
@@ -167,7 +167,7 @@ function Tarjeta({
         ) : (
           <>
             <span className="text-label leading-tight font-medium">{encabezado(frase)}</span>
-            <span className="text-money-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg-desktop">
+            <span className="text-body-lg font-semibold whitespace-nowrap tabular-nums @min-[8.5rem]:text-money-lg @min-[13rem]:text-money-lg-desktop">
               {frase.importe}
             </span>
           </>
@@ -353,7 +353,7 @@ export function InicioPage() {
 
             <section
               aria-label={nombreDelMes(mes)}
-              className="rounded-panel bg-surface px-4 py-3.5"
+              className="@container rounded-panel bg-surface px-4 py-3.5"
             >
               <div className="mb-2.5 flex items-baseline justify-between">
                 <span className="text-label font-semibold">{nombreDelMes(mes)}</span>
@@ -361,15 +361,18 @@ export function InicioPage() {
                   día {diaDelMes(hoy)} de {diasDelMes(mes)}
                 </span>
               </div>
-              <dl className="grid grid-cols-3 gap-3">
+              <dl className="grid grid-cols-1 gap-2 @min-[19rem]:grid-cols-3 @min-[19rem]:gap-3">
                 {estadisticas.map((estadistica) => {
                   const vs = comparacion(estadistica.valor, estadistica.previo, mes);
                   return (
-                    <div key={estadistica.etiqueta} className="min-w-0">
+                    <div
+                      key={estadistica.etiqueta}
+                      className="flex min-w-0 items-baseline justify-between gap-3 @min-[19rem]:block"
+                    >
                       <dt className="text-meta leading-tight text-text-2">
                         {estadistica.etiqueta}
                       </dt>
-                      <dd className="mt-0.5">
+                      <dd className="text-right @min-[19rem]:mt-0.5 @min-[19rem]:text-left">
                         <span className="block text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
                           {formatearPesos(estadistica.valor)}
                         </span>

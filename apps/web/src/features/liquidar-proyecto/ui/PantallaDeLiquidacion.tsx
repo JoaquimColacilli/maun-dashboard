@@ -57,21 +57,27 @@ function Trio({ resumen }: { resumen: ResumenDeProyecto }) {
   ];
 
   return (
-    <dl className="mt-4 grid grid-cols-3 border-t border-b border-ink border-b-hairline">
-      {celdas.map((celda, indice) => (
-        <div
-          key={celda.clave}
-          className={`py-3 ${indice === 0 ? 'pr-3' : 'border-l border-hairline px-3'}`}
-        >
-          <dt className="text-meta text-text-2">{celda.clave}</dt>
-          <dd
-            className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${celda.tono}`}
+    <div className="@container mt-4">
+      <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @lg:grid-cols-3">
+        {celdas.map((celda, indice) => (
+          <div
+            key={celda.clave}
+            className={`flex items-baseline justify-between gap-3 py-2.5 @lg:block @lg:py-3 ${
+              indice === 0
+                ? '@lg:pr-3'
+                : 'border-t border-hairline @lg:border-t-0 @lg:border-l @lg:px-3'
+            }`}
           >
-            {celda.valor}
-          </dd>
-        </div>
-      ))}
-    </dl>
+            <dt className="text-meta text-text-2">{celda.clave}</dt>
+            <dd
+              className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${celda.tono}`}
+            >
+              {celda.valor}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -157,7 +163,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       <Trio resumen={resumen} />
 
       {faltaCobrar && (
-        <section aria-label="Pago final" className="mt-5">
+        <section aria-label="Pago final" className="@container mt-5">
           <label className="flex min-h-tap items-center gap-2.5 text-body font-medium">
             <input
               type="checkbox"
@@ -175,7 +181,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
           </p>
 
           {conPagoFinal && (
-            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_140px_150px]">
+            <div className="mt-3 grid gap-3 @xl:grid-cols-[minmax(0,1fr)_9rem_11.5rem]">
               <Campo
                 etiqueta="Concepto"
                 value={concepto}

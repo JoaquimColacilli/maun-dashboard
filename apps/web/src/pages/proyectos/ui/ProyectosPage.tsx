@@ -66,7 +66,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
   const { proyecto } = resumen;
 
   return (
-    <article className="flex flex-col gap-2 border-t border-hairline py-3.5">
+    <article className="@container flex flex-col gap-2 border-t border-hairline py-3.5">
       <div className="flex items-center justify-between gap-2">
         {resumen.cliente === undefined ? (
           <span className="text-meta text-text-3">{resumen.nombreDelCliente}</span>
@@ -89,7 +89,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
         {proyecto.titulo}
       </Link>
 
-      <dl className="grid grid-cols-3 gap-2 tabular-nums">
+      <dl className="grid grid-cols-2 gap-2 tabular-nums @xs:grid-cols-3">
         <div>
           <dt className="text-meta text-text-3">Presupuesto</dt>
           <dd className="text-body font-medium">
@@ -354,7 +354,7 @@ export function ProyectosPage() {
 
   return (
     <Pagina>
-      <header className="mb-3.5 flex items-end justify-between gap-3">
+      <header className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
         {etapa === 'seguimiento' ? (
           <Button

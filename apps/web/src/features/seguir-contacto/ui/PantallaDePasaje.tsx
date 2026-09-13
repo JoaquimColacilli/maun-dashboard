@@ -135,7 +135,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
         </p>
       </header>
 
-      <form noValidate onSubmit={aprobar} className="mt-5 flex flex-col gap-5">
+      <form noValidate onSubmit={aprobar} className="@container mt-5 flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
             Presupuesto aprobado
@@ -189,7 +189,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
 
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-          <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm:grid-cols-4">
             {FORMAS_EN_ORDEN.map((opcion) => (
               <button
                 key={opcion}
@@ -211,10 +211,11 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           </div>
         </fieldset>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @sm:gap-x-3 @sm:gap-y-1.5">
           <Campo
             etiqueta="Fecha de inicio"
             type="date"
+            contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
             value={inicio}
             onChange={(evento) => {
               setInicio(evento.target.value);
@@ -226,8 +227,9 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           <Campo
             etiqueta="Entrega estimada"
             type="date"
+            contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
             value={entrega}
-            ayuda={entregaAuto ? '21 días hábiles' : undefined}
+            ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
             onChange={(evento) => {
               setEntrega(evento.target.value);
               setEntregaAuto(false);

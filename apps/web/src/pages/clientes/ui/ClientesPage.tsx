@@ -176,31 +176,37 @@ export function ClientesPage() {
 
           <DeDondeVienen resumenes={resumenes} />
 
-          <div className="mt-5 flex items-center justify-between gap-3 border-b border-ink pb-2">
-            <span className="text-meta text-text-2 tabular-nums">
-              {buscando
-                ? `${String(filas.length)} de ${String(resumenes.length)}`
-                : `${String(resumenes.length)} ${resumenes.length === 1 ? 'cliente' : 'clientes'}`}
-            </span>
-            <div role="radiogroup" aria-label="Ordenar por" className="flex gap-0.5">
-              {ORDENES.map((opcion) => (
-                <button
-                  key={opcion.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={orden === opcion.id}
-                  onClick={() => {
-                    setOrden(opcion.id);
-                  }}
-                  className={`min-h-tap rounded-field px-2.5 text-meta ${
-                    orden === opcion.id
-                      ? 'bg-surface font-semibold text-ink'
-                      : 'font-medium text-text-2'
-                  }`}
-                >
-                  {opcion.etiqueta}
-                </button>
-              ))}
+          <div className="@container mt-5">
+            <div className="flex flex-col items-stretch gap-1.5 border-b border-ink pb-2 @min-[21.5rem]:flex-row @min-[21.5rem]:items-center @min-[21.5rem]:justify-between @min-[21.5rem]:gap-3">
+              <span className="text-meta text-text-2 tabular-nums">
+                {buscando
+                  ? `${String(filas.length)} de ${String(resumenes.length)}`
+                  : `${String(resumenes.length)} ${resumenes.length === 1 ? 'cliente' : 'clientes'}`}
+              </span>
+              <div
+                role="radiogroup"
+                aria-label="Ordenar por"
+                className="grid grid-cols-3 gap-0.5 @min-[21.5rem]:flex"
+              >
+                {ORDENES.map((opcion) => (
+                  <button
+                    key={opcion.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={orden === opcion.id}
+                    onClick={() => {
+                      setOrden(opcion.id);
+                    }}
+                    className={`min-h-tap rounded-field px-2.5 text-meta ${
+                      orden === opcion.id
+                        ? 'bg-surface font-semibold text-ink'
+                        : 'font-medium text-text-2'
+                    }`}
+                  >
+                    {opcion.etiqueta}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
