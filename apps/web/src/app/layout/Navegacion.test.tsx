@@ -20,7 +20,12 @@ function pantallaDe(ancho: number) {
 function montar(ruta: string, nombre = '') {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
-      <Navegacion email="taller@maun.com.ar" nombre={nombre} sincronizacion="Todo sincronizado." />
+      <Navegacion
+        email="taller@maun.com.ar"
+        nombre={nombre}
+        foto=""
+        sincronizacion="Todo sincronizado."
+      />
     </MemoryRouter>,
   );
 }

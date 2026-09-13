@@ -30,7 +30,7 @@ function CapaDeHoja() {
 }
 
 export function Marco() {
-  const { email } = useSesionActiva();
+  const { email, foto } = useSesionActiva();
   const nombre = useNombreDeLaPersona();
   const estadoSync = useEstadoSync();
   const ancho = useAnchoDePantalla();
@@ -64,7 +64,12 @@ export function Marco() {
         Saltar al contenido
       </a>
 
-      <Navegacion email={email} nombre={nombre} sincronizacion={describirEstadoSync(estadoSync)} />
+      <Navegacion
+        email={email}
+        nombre={nombre}
+        foto={foto}
+        sincronizacion={describirEstadoSync(estadoSync)}
+      />
 
       <main
         id="contenido"

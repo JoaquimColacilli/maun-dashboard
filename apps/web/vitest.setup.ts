@@ -13,6 +13,14 @@ Object.assign(HTMLDialogElement.prototype, {
   },
 });
 
+if (!('setPointerCapture' in Element.prototype)) {
+  Object.assign(Element.prototype, {
+    setPointerCapture: () => undefined,
+    releasePointerCapture: () => undefined,
+    hasPointerCapture: () => false,
+  });
+}
+
 afterEach(() => {
   cleanup();
 });

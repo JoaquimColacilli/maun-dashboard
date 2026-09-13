@@ -14,6 +14,7 @@ function iguales(a: EstadoSesion, b: EstadoSesion): boolean {
       a.usuarioId === b.usuarioId &&
       a.email === b.email &&
       a.nombre === b.nombre &&
+      a.foto === b.foto &&
       a.porRecuperacion === b.porRecuperacion
     );
   }

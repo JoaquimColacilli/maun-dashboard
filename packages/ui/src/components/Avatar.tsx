@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const FONDOS = [
   'bg-avatar-1',
   'bg-avatar-2',
@@ -12,8 +14,11 @@ const TAMANOS = {
   grande: 'size-14 text-body-lg',
 } as const;
 
+type EstadoDeLaFoto = 'cargando' | 'lista' | 'fallo';
+
 export interface AvatarProps {
   nombre: string;
+  foto?: string;
   tamano?: keyof typeof TAMANOS;
   className?: string;
 }
@@ -33,18 +38,47 @@ export function colorDelNombre(nombre: string): number {
   return suma % FONDOS.length;
 }
 
-export function Avatar({ nombre, tamano = 'chico', className = '' }: AvatarProps) {
+export function Avatar({ nombre, foto = '', tamano = 'chico', className = '' }: AvatarProps) {
+  const [carga, setCarga] = useState<{ foto: string; estado: EstadoDeLaFoto }>({
+    foto,
+    estado: 'cargando',
+  });
+  if (carga.foto !== foto) setCarga({ foto, estado: 'cargando' });
+
+  const estado: EstadoDeLaFoto | 'sin-foto' =
+    foto === '' ? 'sin-foto' : carga.foto === foto ? carga.estado : 'cargando';
+  const lista = estado === 'lista';
+
   return (
     <span
       aria-hidden
+      data-foto={estado}
       className={[
-        'inline-flex flex-none items-center justify-center rounded-pill font-semibold text-sobre-avatar select-none',
+        'relative inline-flex flex-none items-center justify-center overflow-hidden rounded-pill font-semibold select-none',
+        lista ? 'text-transparent' : 'text-sobre-avatar',
         FONDOS[colorDelNombre(nombre)] ?? FONDOS[0],
         TAMANOS[tamano],
         className,
       ].join(' ')}
     >
       {inicialesDelNombre(nombre)}
+      {foto !== '' && estado !== 'fallo' && (
+        <img
+          src={foto}
+          alt=""
+          draggable={false}
+          decoding="async"
+          onLoad={() => {
+            setCarga({ foto, estado: 'lista' });
+          }}
+          onError={() => {
+            setCarga({ foto, estado: 'fallo' });
+          }}
+          className={`absolute inset-0 size-full object-cover transition-opacity duration-(--dur-fast) ${
+            lista ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      )}
     </span>
   );
 }

@@ -285,12 +285,14 @@ function Sidebar({
   irA,
   email,
   nombre,
+  foto,
   sincronizacion,
 }: {
   activo: IdDeSeccion | undefined;
   irA: (r: string) => void;
   email: string;
   nombre: string;
+  foto: string;
   sincronizacion: string;
 }) {
   const { abierto, setAbierto } = useMenuDeAcciones();
@@ -350,7 +352,7 @@ function Sidebar({
       })}
       <div className="flex-1" />
       <div className="flex items-start gap-2.5 border-t border-hairline px-2.5 pt-3">
-        <Avatar nombre={nombre === '' ? email : nombre} className="mt-0.5" />
+        <Avatar nombre={nombre === '' ? email : nombre} foto={foto} className="mt-0.5" />
         <div className="flex min-w-0 flex-col gap-0.5 text-meta text-text-3">
           {nombre !== '' && (
             <span className="truncate text-label font-medium text-ink">{nombre}</span>
@@ -368,10 +370,12 @@ function Sidebar({
 export function Navegacion({
   email,
   nombre,
+  foto,
   sincronizacion,
 }: {
   email: string;
   nombre: string;
+  foto: string;
   sincronizacion: string;
 }) {
   const ancho = useAnchoDePantalla();
@@ -391,6 +395,7 @@ export function Navegacion({
       irA={irA}
       email={email}
       nombre={nombre}
+      foto={foto}
       sincronizacion={sincronizacion}
     />
   );

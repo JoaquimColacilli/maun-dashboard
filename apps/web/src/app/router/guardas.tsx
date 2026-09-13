@@ -23,7 +23,12 @@ export function RutaConSesion() {
 
   return (
     <ProveedorDeSesion
-      sesion={{ usuarioId: sesion.usuarioId, email: sesion.email, nombre: sesion.nombre }}
+      sesion={{
+        usuarioId: sesion.usuarioId,
+        email: sesion.email,
+        nombre: sesion.nombre,
+        foto: sesion.foto,
+      }}
     >
       <Outlet />
     </ProveedorDeSesion>
