@@ -89,46 +89,11 @@ export function AjustesPage() {
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
       </header>
 
-      <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2">
-        {household && ajustes && (
-          <section aria-labelledby="titulo-reparto" className={SECCION}>
-            <h2 id="titulo-reparto" className="text-section font-semibold">
-              Reparto y metas
-            </h2>
-            <FormularioDeConfiguracion household={household} ajustes={ajustes} />
-          </section>
-        )}
-
-        <div className="flex min-w-0 flex-col gap-8">
-          <section aria-labelledby="titulo-cocos" className={SECCION}>
-            <h2 id="titulo-cocos" className="text-section font-semibold">
-              Corregir el saldo de Cocos
-            </h2>
-            <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
-          </section>
-
-          <section aria-labelledby="titulo-rechazos" className={SECCION}>
-            <h2 id="titulo-rechazos" className="text-section font-semibold">
-              Lo que la base rechazó o ajustó
-            </h2>
-            <p className="text-label leading-relaxed text-text-2">
-              Queda acá hasta que lo descartes, aunque cierres la app.
-            </p>
-            <Avisos />
-          </section>
-        </div>
-
-        <section aria-labelledby="titulo-dispositivo" className={SECCION}>
-          <h2 id="titulo-dispositivo" className="text-section font-semibold">
-            Este dispositivo
-          </h2>
-          <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
-          <p className="text-label text-text-3 tabular-nums">
-            {ultimaSincronizacion(replica.cursor)}
-          </p>
-        </section>
-
-        <div className="flex min-w-0 flex-col gap-8">
+      <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2 xl:grid-rows-[auto_1fr]">
+        <div
+          data-grupo="vos-y-este-dispositivo"
+          className="flex min-w-0 flex-col gap-8 xl:col-start-1 xl:row-start-1"
+        >
           <section aria-labelledby="titulo-perfil" className={SECCION}>
             <h2 id="titulo-perfil" className="text-section font-semibold">
               Tu perfil
@@ -143,13 +108,57 @@ export function AjustesPage() {
             <SelectorDeTema />
           </section>
 
-          <section aria-labelledby="titulo-cuenta" className={`${SECCION} items-start`}>
-            <h2 id="titulo-cuenta" className="text-section font-semibold">
-              Cuenta
+          <section aria-labelledby="titulo-dispositivo" className={SECCION}>
+            <h2 id="titulo-dispositivo" className="text-section font-semibold">
+              Este dispositivo
             </h2>
-            <BotonSalir />
+            <p className="text-body text-text-2">{describirEstadoSync(estadoSync)}</p>
+            <p className="text-label text-text-3 tabular-nums">
+              {ultimaSincronizacion(replica.cursor)}
+            </p>
+          </section>
+
+          <section aria-labelledby="titulo-rechazos" className={SECCION}>
+            <h2 id="titulo-rechazos" className="text-section font-semibold">
+              Lo que la base rechazó o ajustó
+            </h2>
+            <p className="text-label leading-relaxed text-text-2">
+              Queda acá hasta que lo descartes, aunque cierres la app.
+            </p>
+            <Avisos />
           </section>
         </div>
+
+        <div
+          data-grupo="el-taller"
+          className="flex min-w-0 flex-col gap-8 xl:col-start-2 xl:row-span-2 xl:row-start-1"
+        >
+          {household && ajustes && (
+            <section aria-labelledby="titulo-reparto" className={SECCION}>
+              <h2 id="titulo-reparto" className="text-section font-semibold">
+                Reparto y metas
+              </h2>
+              <FormularioDeConfiguracion household={household} ajustes={ajustes} />
+            </section>
+          )}
+
+          <section aria-labelledby="titulo-cocos" className={SECCION}>
+            <h2 id="titulo-cocos" className="text-section font-semibold">
+              Corregir el saldo de Cocos
+            </h2>
+            <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
+          </section>
+        </div>
+
+        <section
+          aria-labelledby="titulo-cuenta"
+          className={`${SECCION} items-start xl:col-start-1 xl:row-start-2`}
+        >
+          <h2 id="titulo-cuenta" className="text-section font-semibold">
+            Cuenta
+          </h2>
+          <BotonSalir />
+        </section>
       </div>
     </Pagina>
   );
