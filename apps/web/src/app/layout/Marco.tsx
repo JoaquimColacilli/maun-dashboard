@@ -7,6 +7,7 @@ import {
   esRutaDeHoja,
   useAnchoDePantalla,
   useEstadoSync,
+  useScrollPorPantalla,
   useUbicacionVisible,
 } from '@/shared/lib';
 import { ConSalida } from '@/shared/ui';
@@ -39,6 +40,7 @@ export function Marco() {
   const principal = useRef<HTMLElement>(null);
   const montado = useRef(false);
   const [anuncio, setAnuncio] = useState('');
+  useScrollPorPantalla(principal, visible);
 
   const seccion = seccionDeLaRuta(visible.pathname);
   const etiqueta = DESTINOS[seccion].etiqueta;
@@ -51,7 +53,7 @@ export function Marco() {
     const enfocado = document.activeElement;
     const yaEstaEnUnaHoja =
       enfocado instanceof HTMLElement && enfocado.closest('dialog[open], [role="dialog"]');
-    if (!yaEstaEnUnaHoja) principal.current?.focus();
+    if (!yaEstaEnUnaHoja) principal.current?.focus({ preventScroll: true });
     setAnuncio(etiqueta);
   }, [visible.pathname, etiqueta]);
 
