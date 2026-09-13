@@ -107,14 +107,14 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
       </div>
 
       <div className="@container">
-        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @xs:grid-cols-2">
-          <div className="py-2.5 @xs:pr-3">
+        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @min-[22.5rem]:grid-cols-2">
+          <div className="py-2.5 @min-[22.5rem]:pr-3">
             <dt className="text-meta text-text-2">Total facturado</dt>
             <dd className="text-money-lg font-semibold tabular-nums">
               {formatearPesos(resumen.facturado)}
             </dd>
           </div>
-          <div className="border-t border-hairline py-2.5 @xs:border-t-0 @xs:border-l @xs:pl-3">
+          <div className="border-t border-hairline py-2.5 @min-[22.5rem]:border-t-0 @min-[22.5rem]:border-l @min-[22.5rem]:pl-3">
             <dt className="text-meta text-text-2">Saldo pendiente</dt>
             <dd
               className={`text-money-lg font-semibold tabular-nums ${

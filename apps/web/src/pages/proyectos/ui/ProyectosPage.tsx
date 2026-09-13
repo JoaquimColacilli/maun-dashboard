@@ -51,14 +51,16 @@ function Metricas({ resumenes }: { resumenes: readonly ResumenDeProyecto[] }) {
   ];
 
   return (
-    <dl className="grid grid-cols-4 border-t border-b border-hairline">
-      {filas.map((fila) => (
-        <div key={fila.etiqueta} className="min-w-0 py-3 pr-3">
-          <dd className="text-money-lg leading-tight font-semibold tabular-nums">{fila.valor}</dd>
-          <dt className="mt-0.5 text-meta leading-snug text-text-2">{fila.etiqueta}</dt>
-        </div>
-      ))}
-    </dl>
+    <div className="@container">
+      <dl className="grid grid-cols-2 border-t border-b border-hairline @xs:grid-cols-4">
+        {filas.map((fila) => (
+          <div key={fila.etiqueta} className="min-w-0 py-3 pr-3">
+            <dd className="text-money-lg leading-tight font-semibold tabular-nums">{fila.valor}</dd>
+            <dt className="mt-0.5 text-meta leading-snug text-text-2">{fila.etiqueta}</dt>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -89,7 +91,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
         {proyecto.titulo}
       </Link>
 
-      <dl className="grid grid-cols-2 gap-2 tabular-nums @xs:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-2 tabular-nums @min-[23rem]:grid-cols-3">
         <div>
           <dt className="text-meta text-text-3">Presupuesto</dt>
           <dd className="text-body font-medium">
