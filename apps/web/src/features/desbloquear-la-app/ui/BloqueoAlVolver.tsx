@@ -1,10 +1,13 @@
 import { useLayoutEffect, useRef } from 'react';
 
+import { useAlgoEnCurso } from '@/shared/lib';
+
 import { PantallaDeBloqueo } from './PantallaDeBloqueo';
 
 export function BloqueoAlVolver() {
   const dialogo = useRef<HTMLDialogElement>(null);
   const saliendo = useRef(false);
+  useAlgoEnCurso(true);
 
   useLayoutEffect(() => {
     const elemento = dialogo.current;

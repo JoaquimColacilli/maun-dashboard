@@ -15,7 +15,7 @@ import {
   type SituacionDelContacto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeProyecto } from '@/shared/api';
-import { hoyLocal, metaDeAvisos } from '@/shared/lib';
+import { hoyLocal, metaDeAvisos, useAlgoEnCurso } from '@/shared/lib';
 import { Button, Icono, MoneyInput } from '@/shared/ui';
 
 export interface AvanceDelContactoProps {
@@ -40,6 +40,7 @@ export function AvanceDelContacto({
   const [presupuestando, setPresupuestando] = useState(false);
   const [presupuesto, setPresupuesto] = useState<number | null>(null);
   const campoDelPresupuesto = useRef<HTMLInputElement>(null);
+  useAlgoEnCurso(presupuestando);
 
   const paso = pasoSiguiente(etapa);
 

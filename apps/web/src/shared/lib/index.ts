@@ -55,6 +55,8 @@ export {
 export { esCelular, esMedidaDeCelular, useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible, useVentanaVisible, type VentanaVisible } from './teclado';
 export { useScrollPorPantalla } from './scroll';
+export { useAlgoEnCurso, useHayAlgoEnCurso } from './en-curso';
+export { useTirarParaActualizar, type FaseDelTiron, type Tiron } from './tirar-para-actualizar';
 export { formatearPesos } from './plata';
 export {
   PARAMETRO_DE_TESORO,
