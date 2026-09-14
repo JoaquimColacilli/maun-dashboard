@@ -232,6 +232,28 @@ pnpm --filter @maun/db db:migrar --archivo <json> --household <id> \
   traer una forma que el HTML no deja ver, por ejemplo filas cargadas con la importación de CSV. Para
   eso está el ensayo.
 
+## El archivo real (2026-09-14)
+
+Pasó lo que el punto anterior temía. El JSON verdadero no vino de la línea de la consola: trae
+`proyectos`, `movimientos` y `config`, con las listas ya parseadas, en vez de `maun3_p`, `maun3_m` y
+`maun3_c`. Adentro, cada proyecto, pago, insumo y movimiento tiene los mismos campos que el HTML.
+
+**El lector tomaba una clave ausente como una clave vacía**, que es un aviso y no un dato sucio. Con
+ese archivo el ensayo habría dado cero proyectos y cero movimientos sin cortar, y la apertura habría
+cargado los cuatro saldos enteros. La única pista era la diferencia contra el sistema viejo, que con
+cero movimientos también daba cero.
+
+Se corrigió así:
+
+- **El script acepta los dos formatos.** Las claves que leyó van en el informe, y la ubicación de cada
+  fila usa el nombre de la clave del archivo (`proyectos[3]`).
+- **Una clave que falta es un dato sucio.** Una clave presente en `null` sigue siendo «vacía», porque
+  eso es lo que devuelve `localStorage.getItem` cuando nunca se guardó.
+- **Mezclar claves de los dos formatos también es un dato sucio**: no hay forma de saber cuál manda.
+
+Se descartó copiar el archivo con las claves renombradas. La huella del informe dejaría de ser la del
+archivo que llegó, y el agujero de la clave ausente seguiría abierto para el próximo.
+
 ## Alternativas descartadas
 
 - **Importación de CSV en la app**, como la del sistema viejo. Es la puerta de atrás del punto 1, y

@@ -134,6 +134,46 @@ describe('lo que se lee del JSON del sistema viejo', () => {
     ]);
   });
 
+  it('el backup con proyectos, movimientos y config se lee igual que las tres claves de la consola', () => {
+    const json = JSON.parse(textoDePrueba()) as Record<'maun3_p' | 'maun3_m' | 'maun3_c', unknown>;
+    const consola = leerSistemaViejo(json);
+    const backup = leerSistemaViejo({
+      proyectos: json.maun3_p,
+      movimientos: json.maun3_m,
+      config: json.maun3_c,
+    });
+    const comoLaConsola = (valor: unknown) =>
+      JSON.stringify(valor)
+        .replaceAll('"proyectos[', '"maun3_p[')
+        .replaceAll('"movimientos[', '"maun3_m[');
+
+    expect(backup.sucios).toEqual([]);
+    expect(backup.claves).toEqual({
+      proyectos: 'proyectos',
+      movimientos: 'movimientos',
+      configuracion: 'config',
+    });
+    expect(backup.proyectos).toHaveLength(8);
+    expect(backup.proyectos[0]?.donde).toMatch(/^proyectos\[0\] /);
+    expect(comoLaConsola(backup.proyectos)).toBe(JSON.stringify(consola.proyectos));
+    expect(comoLaConsola(backup.movimientos)).toBe(JSON.stringify(consola.movimientos));
+    expect(comoLaConsola(backup.avisos)).toBe(JSON.stringify(consola.avisos));
+    expect(backup.configuracion).toEqual(consola.configuracion);
+  });
+
+  it('una clave que falta corta en vez de leerse como vacía, y los dos formatos no se mezclan', () => {
+    expect(leerSistemaViejo({ proyectos: [], movimientos: [] }).sucios).toEqual([
+      'Al archivo le falta config. Una clave que no está no es una clave vacía: sin ella no se sabe si faltan datos.',
+    ]);
+    expect(leerSistemaViejo({ proyectos: [], maun3_m: [], maun3_c: null }).sucios).toEqual([
+      'El archivo mezcla claves de los dos formatos (maun3_m, maun3_c, proyectos): no se sabe cuáles leer.',
+    ]);
+    expect(leerSistemaViejo({ datos: [] }).sucios).toEqual([
+      'El archivo no tiene ni maun3_p, maun3_m y maun3_c, ni proyectos, movimientos y config: no hay de dónde leer.',
+    ]);
+    expect(leerSistemaViejo({ maun3_p: null, maun3_m: null, maun3_c: null }).sucios).toEqual([]);
+  });
+
   it('los saldos del sistema viejo salen como los sumaba calcTesoros, con DIEZMO al revés', () => {
     const plan = armarPlan(sistemaDePrueba(), { corte: CORTE });
     expect(plan.saldosViejos).toEqual({

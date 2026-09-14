@@ -237,7 +237,7 @@ export function armarPlan(sistema: SistemaViejo, opciones: OpcionesDelPlan): Pla
       if (viejo.proyectoId !== null) {
         if (!idsViejos.has(viejo.proyectoId)) {
           avisos.push(
-            `${viejo.donde}: es de un proyecto (${viejo.proyectoId}) que ya no está en maun3_p. No entra, pero el sistema viejo lo contaba en sus saldos.`,
+            `${viejo.donde}: es de un proyecto (${viejo.proyectoId}) que ya no está en ${sistema.claves.proyectos}. No entra, pero el sistema viejo lo contaba en sus saldos.`,
           );
         }
         const reparto = repartoViejo.get(viejo.proyectoId) ?? { diezmo: 0, sueldo: 0, fijos: 0 };

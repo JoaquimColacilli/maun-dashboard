@@ -155,7 +155,7 @@ function seccionDeSaldos(
   return [
     '## Saldos',
     '',
-    '«De los proyectos» son los pagos, los gastos y el reparto de los cobros, que arma la vista `libro_mayor`. «A mano» son los movimientos de `maun3_m` que entran. La apertura es la diferencia contra lo que leíste.',
+    `«De los proyectos» son los pagos, los gastos y el reparto de los cobros, que arma la vista \`libro_mayor\`. «A mano» son los movimientos de \`${plan.sistema.claves.movimientos}\` que entran. La apertura es la diferencia contra lo que leíste.`,
     '',
     'DIEZMO va con el signo de la base: positivo es lo que falta pagar. El sistema viejo lo mostraba al revés (pagado − generado), así que el saldo que leíste entra con el signo cambiado.',
     '',
@@ -263,8 +263,10 @@ export function redactarInforme(
 ): string {
   const nombres = plan.clientes.reduce((suma, grupo) => suma + grupo.variantes.length, 0);
   const { household, conteos } = resultado;
+  const { claves } = plan.sistema;
   const lineas: string[] = [
     ...encabezado(datos, datos.modo),
+    `- Claves leídas del archivo: \`${claves.proyectos}\`, \`${claves.movimientos}\` y \`${claves.configuracion}\``,
     `- Escribe como: ${household.email}, titular de «${household.nombre}»`,
     '',
     `**${desenlace}**`,
@@ -326,7 +328,7 @@ export function redactarInforme(
     ...tabla(
       ['Fila', 'Id viejo', 'Cliente', 'Trabajo', 'Estado', 'Presupuesto', 'Pagos', 'Gastos'],
       plan.proyectos.map((proyecto) => [
-        `maun3_p[${String(proyecto.viejo.indice)}]`,
+        `${claves.proyectos}[${String(proyecto.viejo.indice)}]`,
         proyecto.viejo.id,
         proyecto.clienteNombre,
         proyecto.viejo.titulo,
@@ -387,7 +389,7 @@ export function redactarInforme(
     '## Configuración',
     '',
     ...tabla(
-      ['', 'Estaba en el household', 'Queda (de maun3_c)'],
+      ['', 'Estaba en el household', `Queda (de ${claves.configuracion})`],
       [
         ['Sueldo', pesos(household.ajustes.sueldo), pesos(plan.sistema.configuracion.sueldo)],
         ['Costos fijos', pesos(household.ajustes.fijos), pesos(plan.sistema.configuracion.fijos)],

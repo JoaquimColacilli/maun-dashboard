@@ -56,7 +56,7 @@ El alta mira también las membresías borradas. Si a la cuenta le revocaron el a
    );
    ```
 
-   Pegalo en un archivo **fuera del repo**. Las tres claves pueden quedar como texto: el script las parsea.
+   Pegalo en un archivo **fuera del repo**. Las tres claves pueden quedar como texto: el script las parsea. También lee el backup con `proyectos`, `movimientos` y `config`. Una clave que falta corta como dato sucio: no se lee como vacía (ADR 0017).
 
 2. Anotá los cuatro saldos que muestra Finanzas ese día, tal cual, DIEZMO con su signo.
 3. El ensayo, que no escribe nada: `pnpm --filter @maun/db db:migrar --archivo <json> --household <id> --hogar=<saldo> --maun=<saldo> --diezmo=<saldo> --cocos=<saldo>`. Los saldos van con `=` para que uno negativo no se lea como otra opción.
