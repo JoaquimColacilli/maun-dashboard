@@ -142,3 +142,8 @@ export {
 } from './ui/LiquidacionesSinConfirmar';
 export { marcaDeLiquidacion, type MarcaDeSincronizacion } from './model/marca';
 export { MarcaDeLiquidacion, type MarcaDeLiquidacionProps } from './ui/MarcaDeLiquidacion';
+export {
+  TarjetaDeProyecto,
+  TarjetasDeProyectos,
+  type TarjetaDeProyectoProps,
+} from './ui/TarjetaDeProyecto';

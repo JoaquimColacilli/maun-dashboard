@@ -21,6 +21,8 @@ import {
   RUTA_DE_CONTACTO_NUEVO,
   RUTA_DE_PROYECTO_NUEVO,
   rutaDelProyecto,
+  TarjetaDeProyecto,
+  TarjetasDeProyectos,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
@@ -68,55 +70,52 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
   const { proyecto } = resumen;
 
   return (
-    <article className="@container flex flex-col gap-2 border-t border-hairline py-3.5">
-      <div className="flex items-center justify-between gap-2">
-        {resumen.cliente === undefined ? (
+    <TarjetaDeProyecto
+      resumen={resumen}
+      cliente={
+        resumen.cliente === undefined ? (
           <span className="text-meta text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
           <EnlaceACliente
             id={resumen.cliente.id}
             nombre={resumen.cliente.nombre}
-            className="text-meta font-medium text-text-2"
+            className="-my-2 py-2 pr-3 text-meta font-medium text-text-2"
           />
-        )}
-        <EstadoBadge estado={proyecto.estado} />
+        )
+      }
+    >
+      <div className="@container">
+        <dl className="grid grid-cols-2 gap-2 tabular-nums @min-[23rem]:grid-cols-3">
+          <div>
+            <dt className="text-meta text-text-3">Presupuesto</dt>
+            <dd className="text-body font-medium">
+              {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-meta text-text-3">Cobrado</dt>
+            <dd className="text-body font-medium">{formatearPesos(resumen.cobrado)}</dd>
+          </div>
+          <div>
+            <dt className="text-meta text-text-3">Saldo</dt>
+            <dd
+              className={`text-body font-semibold ${
+                resumen.saldo === null
+                  ? 'text-text-3'
+                  : resumen.saldo > 0
+                    ? 'text-ink'
+                    : 'text-hogar'
+              }`}
+            >
+              {resumen.saldo === null
+                ? '—'
+                : resumen.saldo > 0
+                  ? formatearPesos(resumen.saldo)
+                  : 'Sin saldo'}
+            </dd>
+          </div>
+        </dl>
       </div>
-
-      <MarcaDeLiquidacion proyectoId={proyecto.id} />
-
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
-        className="text-body-lg leading-snug font-medium text-pretty"
-      >
-        {proyecto.titulo}
-      </Link>
-
-      <dl className="grid grid-cols-2 gap-2 tabular-nums @min-[23rem]:grid-cols-3">
-        <div>
-          <dt className="text-meta text-text-3">Presupuesto</dt>
-          <dd className="text-body font-medium">
-            {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-meta text-text-3">Cobrado</dt>
-          <dd className="text-body font-medium">{formatearPesos(resumen.cobrado)}</dd>
-        </div>
-        <div>
-          <dt className="text-meta text-text-3">Saldo</dt>
-          <dd
-            className={`text-body font-semibold ${
-              resumen.saldo === null ? 'text-text-3' : resumen.saldo > 0 ? 'text-ink' : 'text-hogar'
-            }`}
-          >
-            {resumen.saldo === null
-              ? '—'
-              : resumen.saldo > 0
-                ? formatearPesos(resumen.saldo)
-                : 'Sin saldo'}
-          </dd>
-        </div>
-      </dl>
 
       <div className="text-label">
         <EntregaRelativa
@@ -125,7 +124,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
           hoy={hoy}
         />
       </div>
-    </article>
+    </TarjetaDeProyecto>
   );
 }
 
@@ -485,11 +484,11 @@ export function ProyectosPage() {
           ) : enEscritorio ? (
             <Tabla filas={filas} hoy={hoy} orden={orden} sentido={sentido} alOrdenar={ordenarPor} />
           ) : (
-            <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
+            <TarjetasDeProyectos etiqueta="Proyectos">
               {filas.map((resumen) => (
                 <Tarjeta key={resumen.proyecto.id} resumen={resumen} hoy={hoy} />
               ))}
-            </div>
+            </TarjetasDeProyectos>
           )}
         </>
       )}

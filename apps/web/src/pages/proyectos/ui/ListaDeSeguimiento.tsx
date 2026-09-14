@@ -1,15 +1,15 @@
 import { ESTADOS_DE_SEGUIMIENTO, type EstadoProyecto } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import { AccionesDeContacto, EnlaceACliente } from '@/entities/cliente';
 import {
   buscarProyectos,
   contactosEnOrden,
   ESTADO,
-  EstadoBadge,
   RUTA_DE_CONTACTO_NUEVO,
-  rutaDelProyecto,
+  TarjetaDeProyecto,
+  TarjetasDeProyectos,
   type ContactoEnLista,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
@@ -41,32 +41,27 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
   }
 
   return (
-    <li
-      className={`relative flex flex-col gap-2 rounded-panel border px-3.5 pt-3.5 pb-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink ${
-        situacion.fria ? 'border-atencion' : 'border-hairline'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        {cliente === undefined ? (
+    <TarjetaDeProyecto
+      resumen={resumen}
+      atencion={situacion.fria}
+      cliente={
+        cliente === undefined ? (
           <span className="text-meta text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
           <EnlaceACliente
             id={cliente.id}
             nombre={cliente.nombre}
-            className="relative z-10 -my-2 py-2 pr-3 text-meta font-medium text-text-2"
+            className="-my-2 py-2 pr-3 text-meta font-medium text-text-2"
           />
-        )}
-        <EstadoBadge estado={proyecto.estado} />
-      </div>
-
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
-        data-tarjeta
-        className="text-body-lg leading-snug font-medium text-pretty after:absolute after:inset-0 after:rounded-panel after:content-[''] focus-visible:outline-none"
-      >
-        {proyecto.titulo}
-      </Link>
-
+        )
+      }
+      pie={
+        <AccionesDeContacto
+          nombre={cliente?.nombre ?? resumen.nombreDelCliente}
+          telefono={cliente?.telefono ?? ''}
+        />
+      }
+    >
       <div>
         <p className="text-label font-semibold">{situacion.proximoPaso}</p>
         <p
@@ -93,14 +88,7 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
       {proyecto.notas !== '' && (
         <p className="line-clamp-2 text-meta leading-snug text-text-2">{proyecto.notas}</p>
       )}
-
-      <div className="relative z-10 -mx-3.5 mt-1 -mb-3 rounded-b-panel border-t border-hairline-soft px-3.5 pt-2.5 pb-3">
-        <AccionesDeContacto
-          nombre={cliente?.nombre ?? resumen.nombreDelCliente}
-          telefono={cliente?.telefono ?? ''}
-        />
-      </div>
-    </li>
+    </TarjetaDeProyecto>
   );
 }
 
@@ -215,14 +203,11 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
           <p className="mb-2.5 text-meta text-text-2">
             Primero lo que hace más que espera; las visitas agendadas, al final.
           </p>
-          <ul
-            aria-label="Contactos"
-            className="grid list-none grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
-          >
+          <TarjetasDeProyectos etiqueta="Contactos">
             {visibles.map((contacto) => (
               <TarjetaDeContacto key={contacto.resumen.proyecto.id} contacto={contacto} hoy={hoy} />
             ))}
-          </ul>
+          </TarjetasDeProyectos>
         </>
       )}
     </>
