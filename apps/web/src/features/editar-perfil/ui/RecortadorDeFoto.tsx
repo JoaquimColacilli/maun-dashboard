@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
-import { Button } from '@/shared/ui';
+import { Button, FilaDeAcciones } from '@/shared/ui';
 
 import {
   desplazar,
@@ -293,12 +293,11 @@ export function RecortadorDeFoto({
         </p>
       )}
 
-      <div className="flex gap-2.5">
-        <Button variant="secundario" className="flex-1" onClick={alCancelar}>
+      <FilaDeAcciones>
+        <Button variant="secundario" onClick={alCancelar}>
           Cancelar
         </Button>
         <Button
-          className="flex-1"
           cargando={guardando}
           disabled={viewport <= 0}
           onClick={() => {
@@ -307,7 +306,7 @@ export function RecortadorDeFoto({
         >
           Guardar la foto
         </Button>
-      </div>
+      </FilaDeAcciones>
     </div>
   );
 }

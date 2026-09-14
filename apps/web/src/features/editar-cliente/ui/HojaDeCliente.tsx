@@ -23,7 +23,7 @@ import {
 } from '@/entities/cliente';
 import { mensajeDeSincronizacion, type DatosDeCliente } from '@/shared/api';
 import { metaDeAvisos, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Hoja } from '@/shared/ui';
+import { Button, Campo, FilaDeAcciones, Hoja } from '@/shared/ui';
 
 export interface HojaDeClienteProps {
   cliente?: Cliente;
@@ -255,13 +255,15 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
           )}
         </div>
 
-        <footer className="flex flex-none items-center gap-2.5 border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
-          <Button type="button" variant="secundario" onClick={alCerrar}>
-            Cancelar
-          </Button>
-          <Button type="submit" cargando={enVuelo} className="flex-1">
-            {cliente ? 'Guardar los cambios' : 'Guardar cliente'}
-          </Button>
+        <footer className="flex-none border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
+          <FilaDeAcciones>
+            <Button type="button" variant="secundario" onClick={alCerrar}>
+              Cancelar
+            </Button>
+            <Button type="submit" cargando={enVuelo}>
+              {cliente ? 'Guardar los cambios' : 'Guardar cliente'}
+            </Button>
+          </FilaDeAcciones>
         </footer>
       </form>
     </Hoja>

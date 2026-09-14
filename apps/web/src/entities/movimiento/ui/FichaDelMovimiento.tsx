@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { fechaLarga, formatearPesos, rutaDelProyecto, TESORO } from '@/shared/lib';
-import { Button, Hoja, Icono } from '@/shared/ui';
+import { Button, FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
 
 import { MOTIVO_DEL_BLOQUEO, type LineaDelTaller } from '../model/libro';
 
@@ -58,14 +58,14 @@ export function FichaDelMovimiento({ linea, hoy, alCerrar }: FichaDelMovimientoP
       </div>
 
       <footer className="flex flex-none flex-col gap-2.5 border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
-        <div className="flex gap-2.5">
-          <Button variant="secundario" disabled className="flex-1">
+        <FilaDeAcciones>
+          <Button variant="secundario" disabled>
             Editar
           </Button>
-          <Button variant="secundario" disabled className="flex-1">
+          <Button variant="secundario" disabled>
             Borrar
           </Button>
-        </div>
+        </FilaDeAcciones>
         {linea.proyectoId !== null && (
           <Link
             to={rutaDelProyecto(linea.proyectoId)}

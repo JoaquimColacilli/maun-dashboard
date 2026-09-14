@@ -23,7 +23,7 @@ import {
   useEstadoSync,
   uuidv7,
 } from '@/shared/lib';
-import { Button, Campo, Hoja, Icono, MoneyInput } from '@/shared/ui';
+import { Button, Campo, FilaDeAcciones, Hoja, Icono, MoneyInput } from '@/shared/ui';
 
 const UN_DIA_MS = 86_400_000;
 
@@ -332,7 +332,7 @@ export function HojaDeMovimiento({
                 Se va a borrar este movimiento de {formatearPesos(movimiento.monto_centavos)} y los
                 saldos se recalculan sin él.
               </p>
-              <div className="flex gap-2.5">
+              <FilaDeAcciones>
                 <Button variant="peligro" size="chico" onClick={confirmarBaja}>
                   Borrarlo
                 </Button>
@@ -345,7 +345,7 @@ export function HojaDeMovimiento({
                 >
                   Dejarlo
                 </Button>
-              </div>
+              </FilaDeAcciones>
             </div>
           )}
 
@@ -361,22 +361,24 @@ export function HojaDeMovimiento({
           )}
         </div>
 
-        <footer className="flex flex-none items-center gap-2.5 border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
-          {movimiento && !confirmandoBaja && (
-            <Button
-              type="button"
-              variant="secundario"
-              onClick={() => {
-                setConfirmandoBaja(true);
-              }}
-            >
-              <Icono nombre="trash-2" tamano={16} />
-              Borrar
+        <footer className="flex-none border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
+          <FilaDeAcciones>
+            {movimiento && !confirmandoBaja && (
+              <Button
+                type="button"
+                variant="secundario"
+                onClick={() => {
+                  setConfirmandoBaja(true);
+                }}
+              >
+                <Icono nombre="trash-2" tamano={16} />
+                Borrar
+              </Button>
+            )}
+            <Button type="submit" cargando={enVuelo}>
+              {movimiento ? 'Guardar los cambios' : 'Cargar el movimiento'}
             </Button>
-          )}
-          <Button type="submit" cargando={enVuelo} className="flex-1">
-            {movimiento ? 'Guardar los cambios' : 'Cargar el movimiento'}
-          </Button>
+          </FilaDeAcciones>
         </footer>
       </form>
     </Hoja>

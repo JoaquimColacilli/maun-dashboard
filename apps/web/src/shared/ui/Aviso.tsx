@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { FilaDeAcciones } from '@maun/ui';
+
 export function Aviso({
   titulo,
   mensaje,
@@ -20,9 +22,7 @@ export function Aviso({
           <p className="text-meta leading-relaxed text-text-3">{detalle}</p>
         )}
       </div>
-      {children !== undefined && (
-        <div className="mt-2 flex flex-wrap items-center gap-2.5">{children}</div>
-      )}
+      {children !== undefined && <FilaDeAcciones className="mt-2">{children}</FilaDeAcciones>}
     </main>
   );
 }

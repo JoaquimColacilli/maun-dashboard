@@ -11,7 +11,7 @@ import {
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { fechaLarga, formatearPesos, hoyLocal } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, FilaDeAcciones, Icono } from '@/shared/ui';
 
 const POR_DEFECTO: EstadoProyecto = 'presupuesto_enviado';
 
@@ -131,7 +131,7 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
         </>
       )}
 
-      <div className="mt-3.5 flex flex-wrap gap-2">
+      <FilaDeAcciones className="mt-3.5">
         <Button onClick={confirmar}>
           {esCobro ? 'Reabrir y deshacer el reparto' : 'Reactivar y deshacer el reparto'}
         </Button>
@@ -143,7 +143,7 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
         >
           Dejarlo como está
         </Button>
-      </div>
+      </FilaDeAcciones>
     </section>
   );
 }

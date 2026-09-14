@@ -60,6 +60,11 @@ Lo que ofrece hoy, verificado en el e2e en los dos anchos:
   «Volvió al taller». Si ocupara el mismo lugar, un doble toque desharía el paso. Con avanzar a la
   izquierda y volver a la derecha, el segundo toque cae en vacío. Se prefirió a deshabilitar los
   botones mientras viaja el pedido, que los pintaba de gris en cada toque.
+  **Actualizado el 2026-09-14 ([0033](0033-filas-de-botones.md)):** las acciones van en
+  `FilaDeAcciones`. Lo que avanza sigue primero y lo que retrocede después, pero cuando no entran en
+  un renglón bajan las dos a ancho completo, y un botón solo ocupa todo el ancho. «Volvió al taller»
+  aparece donde estaba «Ya lo entregué»: la protección por posición ya no existe (objeción en el
+  0033).
 - **La ficha del contacto también deriva de la máquina** sus etapas y «Ya lo aprobó»
   (`puedeCambiarEstado`). Con las transiciones de hoy muestra exactamente lo mismo que antes.
 - El aviso es propio: «Cambio de estado guardado.»

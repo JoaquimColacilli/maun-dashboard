@@ -23,7 +23,15 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { fechaLarga, formatearPesos, hoyLocal, metaDeAvisos, relativa } from '@/shared/lib';
-import { Button, ConSalida, Hoja, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
+import {
+  Button,
+  ConSalida,
+  FilaDeAcciones,
+  Hoja,
+  Icono,
+  Pagina,
+  type NombreDeIcono,
+} from '@/shared/ui';
 
 const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
   contacto: 'Contacto',
@@ -389,10 +397,9 @@ export function ClienteFichaPage() {
                   {mensajeDeSincronizacion(borrar.error)}
                 </p>
               )}
-              <div className="flex gap-2.5">
+              <FilaDeAcciones>
                 <Button
                   variant="secundario"
-                  className="flex-1"
                   onClick={() => {
                     setConfirmando(false);
                   }}
@@ -401,7 +408,6 @@ export function ClienteFichaPage() {
                 </Button>
                 <Button
                   variant="peligro"
-                  className="flex-1"
                   cargando={borrar.isPending}
                   onClick={() => {
                     borrar.mutate({
@@ -415,7 +421,7 @@ export function ClienteFichaPage() {
                 >
                   Borrar el cliente
                 </Button>
-              </div>
+              </FilaDeAcciones>
             </div>
           </Hoja>
         )}

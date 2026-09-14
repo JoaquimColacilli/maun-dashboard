@@ -1,6 +1,6 @@
 import { BotonSalir } from '@/features/cerrar-sesion';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { Aviso, Button, Cargando } from '@/shared/ui';
+import { Aviso, Button, Cargando, FilaDeAcciones } from '@/shared/ui';
 
 export function CargaQueTarda({ que, reintentar }: { que: string; reintentar: () => void }) {
   return (
@@ -11,10 +11,10 @@ export function CargaQueTarda({ que, reintentar }: { que: string; reintentar: ()
           Está tardando más de lo normal. Sigue intentando solo; si no avanza, reintentá o cerrá
           sesión.
         </p>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <FilaDeAcciones className="w-full max-w-[520px]">
           <Button onClick={reintentar}>Reintentar</Button>
-          <BotonSalir />
-        </div>
+          <BotonSalir size="normal" className="w-full" />
+        </FilaDeAcciones>
       </div>
     </div>
   );
@@ -39,7 +39,7 @@ export function ErrorDeCarga({
       detalle={detalle}
     >
       <Button onClick={reintentar}>Reintentar</Button>
-      <BotonSalir />
+      <BotonSalir size="normal" className="w-full" />
     </Aviso>
   );
 }

@@ -6,6 +6,8 @@ export { Campo } from './components/Campo.tsx';
 export type { CampoProps } from './components/Campo.tsx';
 export { CampoDeContrasena } from './components/CampoDeContrasena.tsx';
 export type { CampoDeContrasenaProps } from './components/CampoDeContrasena.tsx';
+export { FilaDeAcciones } from './components/FilaDeAcciones.tsx';
+export type { FilaDeAccionesProps } from './components/FilaDeAcciones.tsx';
 export { Icono } from './components/Icono.tsx';
 export type { IconoProps, NombreDeIcono } from './components/Icono.tsx';
 export { MoneyInput } from './components/MoneyInput.tsx';

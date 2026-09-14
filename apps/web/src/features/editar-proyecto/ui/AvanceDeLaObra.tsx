@@ -14,7 +14,7 @@ import {
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { metaDeAvisos } from '@/shared/lib';
-import { Button, PanelDePaso } from '@/shared/ui';
+import { Button, FilaDeAcciones, PanelDePaso } from '@/shared/ui';
 
 export interface AvanceDeLaObraProps {
   resumen: ResumenDeProyecto;
@@ -57,7 +57,7 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
         icono={situacion.icono}
         tono={situacion.tono}
       >
-        <div className="mt-3 flex flex-wrap items-start gap-2">
+        <FilaDeAcciones className="mt-3">
           {adelante.map((cambio) => (
             <Button
               key={cambio.hacia}
@@ -68,22 +68,18 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
               {cambio.etiqueta}
             </Button>
           ))}
-          {atras.length > 0 && (
-            <div className="ml-auto flex flex-wrap justify-end gap-2">
-              {atras.map((cambio) => (
-                <Button
-                  key={cambio.hacia}
-                  variant="secundario"
-                  onClick={() => {
-                    pasar(cambio);
-                  }}
-                >
-                  {cambio.etiqueta}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
+          {atras.map((cambio) => (
+            <Button
+              key={cambio.hacia}
+              variant="secundario"
+              onClick={() => {
+                pasar(cambio);
+              }}
+            >
+              {cambio.etiqueta}
+            </Button>
+          ))}
+        </FilaDeAcciones>
 
         {rechazo !== null && (
           <p role="alert" className="mt-2.5 text-label font-medium text-alerta">

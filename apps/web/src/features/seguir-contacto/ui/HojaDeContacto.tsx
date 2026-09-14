@@ -11,7 +11,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filasDe, mensajeDeSincronizacion } from '@/shared/api';
 import { formatearPesos, hoyLocal, metaDeAvisos, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Hoja, MoneyInput } from '@/shared/ui';
+import { Button, Campo, FilaDeAcciones, Hoja, MoneyInput } from '@/shared/ui';
 
 import {
   erroresDelContacto,
@@ -245,17 +245,15 @@ export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContacto
           )}
         </div>
 
-        <footer className="flex flex-none items-center gap-2.5 border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
-          <Button type="button" variant="secundario" onClick={alCerrar}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            cargando={guardar.isPending && !guardar.isPaused}
-            className="flex-1"
-          >
-            {proyecto ? 'Guardar los cambios' : 'Guardar contacto'}
-          </Button>
+        <footer className="flex-none border-t border-hairline bg-paper px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:pb-3">
+          <FilaDeAcciones>
+            <Button type="button" variant="secundario" onClick={alCerrar}>
+              Cancelar
+            </Button>
+            <Button type="submit" cargando={guardar.isPending && !guardar.isPaused}>
+              {proyecto ? 'Guardar los cambios' : 'Guardar contacto'}
+            </Button>
+          </FilaDeAcciones>
         </footer>
       </form>
     </Hoja>
