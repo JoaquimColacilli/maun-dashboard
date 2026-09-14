@@ -24,6 +24,8 @@ export interface DetalleDelDiaProps {
   acciones: AccionesDeLaAgenda;
   alAnotar: () => void;
   alCerrar?: () => void;
+  claseDelBotonDeCerrar?: string;
+  ayuda?: string;
   conEncabezado?: boolean;
   aviso?: AvisoDelDia | null;
   alDescartarElAviso?: () => void;
@@ -36,6 +38,8 @@ export function DetalleDelDia({
   acciones,
   alAnotar,
   alCerrar,
+  claseDelBotonDeCerrar = '',
+  ayuda,
   conEncabezado = true,
   aviso = null,
   alDescartarElAviso,
@@ -61,13 +65,14 @@ export function DetalleDelDia({
               )}
             </h2>
             <p className="mt-1 text-label text-text-2">{resumenDelDia(eventos)}</p>
+            {ayuda !== undefined && <p className="mt-0.5 text-meta text-text-3">{ayuda}</p>}
           </div>
           {alCerrar !== undefined && (
             <button
               type="button"
               aria-label="Cerrar el día"
               onClick={alCerrar}
-              className="flex size-10 flex-none items-center justify-center rounded-field hover:bg-surface"
+              className={`flex size-10 flex-none items-center justify-center rounded-field hover:bg-surface ${claseDelBotonDeCerrar}`}
             >
               <Icono nombre="x" tamano={20} />
             </button>

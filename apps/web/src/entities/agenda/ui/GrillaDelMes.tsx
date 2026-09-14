@@ -19,6 +19,7 @@ export interface GrillaDelMesProps {
   eventos: readonly EventoDeLaAgenda[];
   maximo: number;
   alElegirDia: (fecha: string) => void;
+  alVerElDia?: (fecha: string) => void;
   alAbrirEvento: (evento: EventoDeLaAgenda) => void;
 }
 
@@ -35,12 +36,16 @@ export function GrillaDelMes({
   eventos,
   maximo,
   alElegirDia,
+  alVerElDia = alElegirDia,
   alAbrirEvento,
 }: GrillaDelMesProps) {
   const semanas = semanasDelMes(mes);
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-panel border border-hairline">
+    <div
+      data-grilla-del-mes
+      className="flex flex-col overflow-hidden rounded-panel border border-hairline"
+    >
       <div aria-hidden className="grid grid-cols-7 border-b border-hairline bg-surface">
         {DIAS_DE_LA_SEMANA.map((dia) => (
           <div key={dia} className="px-2.5 py-2 text-meta font-semibold text-text-2">
@@ -135,7 +140,7 @@ export function GrillaDelMes({
                   type="button"
                   aria-label={`Ver las ${String(delDia.length)} cosas del ${diaEnPalabras(fecha)}`}
                   onClick={() => {
-                    alElegirDia(fecha);
+                    alVerElDia(fecha);
                   }}
                   className="flex h-[22px] items-center self-start rounded-[3px] px-1.5 text-meta font-semibold text-text-2 hover:bg-surface-2 hover:text-ink"
                 >

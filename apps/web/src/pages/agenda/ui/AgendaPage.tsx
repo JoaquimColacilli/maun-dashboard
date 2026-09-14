@@ -282,6 +282,7 @@ export function AgendaPage() {
   function irAHoy(): void {
     setMes(mesDeHoy);
     setElegido(hoy);
+    setDiaAbierto(null);
     setDesdeElPrincipio(false);
   }
 
@@ -405,147 +406,167 @@ export function AgendaPage() {
   }
 
   const visibles = eventos.filter((evento) => pasaElFiltro(evento, filtro));
+  const diaDelPanel = diaAbierto ?? hoy;
+  const eligiendo = diaAbierto !== null;
+
+  function elegirDia(fecha: string): void {
+    setDiaAbierto((actual) => (actual === fecha ? null : fecha));
+  }
 
   return (
     <Pagina>
-      <div className="flex items-start gap-6">
-        <div className="min-w-0 flex-1">
-          <header className="flex flex-wrap items-end justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-label text-text-2">hoy es {diaEnPalabras(hoy)}</p>
-              <div className="flex flex-wrap items-baseline gap-x-3">
-                <h1 className="font-display text-h1-lg leading-tight">Agenda</h1>
-                <h2
-                  aria-live="polite"
-                  className="font-display text-h1 leading-tight text-text-2 first-letter:uppercase"
-                >
-                  {mesEnPalabras(mes, hoy)}
-                </h2>
-                <span className="text-label text-text-3">{resumenDelMes(delMes)}</span>
+      <div className="@container/agenda">
+        <div className="relative grid grid-cols-1 items-start gap-x-6 @min-[58rem]/agenda:grid-cols-[minmax(0,1fr)_340px] @min-[68rem]/agenda:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="col-start-1 row-start-1 min-w-0">
+            <header className="flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-label text-text-2">hoy es {diaEnPalabras(hoy)}</p>
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <h1 className="font-display text-h1-lg leading-tight">Agenda</h1>
+                  <h2
+                    aria-live="polite"
+                    className="font-display text-h1 leading-tight text-text-2 first-letter:uppercase"
+                  >
+                    {mesEnPalabras(mes, hoy)}
+                  </h2>
+                  <span className="text-label text-text-3">{resumenDelMes(delMes)}</span>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  aria-label="Mes anterior"
+              <div className="flex items-center gap-2">
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    aria-label="Mes anterior"
+                    onClick={() => {
+                      irAlMes(mesPrevio(mes));
+                    }}
+                    className="flex size-10 items-center justify-center rounded-l-field border border-r-0 border-border bg-paper hover:bg-surface"
+                  >
+                    <Icono nombre="chevron-left" tamano={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={irAHoy}
+                    className={`h-10 border border-border bg-paper px-3.5 text-body hover:bg-surface ${
+                      mes === mesDeHoy ? 'font-semibold' : 'font-medium'
+                    }`}
+                  >
+                    Hoy
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Mes siguiente"
+                    onClick={() => {
+                      irAlMes(mesSiguiente(mes));
+                    }}
+                    className="flex size-10 items-center justify-center rounded-r-field border border-l-0 border-border bg-paper hover:bg-surface"
+                  >
+                    <Icono nombre="chevron-right" tamano={18} />
+                  </button>
+                </div>
+                <Button
                   onClick={() => {
-                    irAlMes(mesPrevio(mes));
+                    setAnotando(diaAbierto ?? dia);
                   }}
-                  className="flex size-10 items-center justify-center rounded-l-field border border-r-0 border-border bg-paper hover:bg-surface"
                 >
-                  <Icono nombre="chevron-left" tamano={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={irAHoy}
-                  className={`h-10 border border-border bg-paper px-3.5 text-body hover:bg-surface ${
-                    mes === mesDeHoy ? 'font-semibold' : 'font-medium'
-                  }`}
-                >
-                  Hoy
-                </button>
-                <button
-                  type="button"
-                  aria-label="Mes siguiente"
-                  onClick={() => {
-                    irAlMes(mesSiguiente(mes));
-                  }}
-                  className="flex size-10 items-center justify-center rounded-r-field border border-l-0 border-border bg-paper hover:bg-surface"
-                >
-                  <Icono nombre="chevron-right" tamano={18} />
-                </button>
+                  <Icono nombre="plus" tamano={18} grosor={2} />
+                  Anotar algo
+                </Button>
               </div>
-              <Button
-                onClick={() => {
-                  setAnotando(diaAbierto ?? dia);
-                }}
-              >
-                <Icono nombre="plus" tamano={18} grosor={2} />
-                Anotar algo
-              </Button>
-            </div>
-          </header>
+            </header>
 
-          <div
-            role="group"
-            aria-label="Qué mostrar"
-            className="flex flex-wrap items-center gap-2 pt-4 pb-3"
-          >
-            {FILTROS.map(({ id, etiqueta }) => {
-              const activo = filtro === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={activo}
-                  onClick={() => {
-                    setFiltro(id);
-                  }}
-                  className={`flex h-[34px] items-center gap-1.5 rounded-control border px-2.5 text-label font-medium ${
-                    activo ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
-                  }`}
-                >
-                  {id === 'marcado' && (
-                    <span
-                      aria-hidden
-                      className="size-2.5 rounded-pill ring-[1.5px] ring-ag-marca"
-                    />
-                  )}
-                  {id !== 'todo' && id !== 'marcado' && (
-                    <MarcaDeCategoria
-                      categoria={id}
-                      className={activo ? 'brightness-[3] grayscale' : ''}
-                    />
-                  )}
-                  {etiqueta}
-                </button>
-              );
-            })}
-            <span className="flex-1" />
-            <span className="flex items-center gap-1.5 text-meta text-text-3">
-              <span aria-hidden className="size-3 rounded-pill ring-[1.5px] ring-ag-marca" />
-              marcado a mano
-            </span>
+            <div
+              role="group"
+              aria-label="Qué mostrar"
+              className="flex flex-wrap items-center gap-2 pt-4 pb-3"
+            >
+              {FILTROS.map(({ id, etiqueta }) => {
+                const activo = filtro === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={activo}
+                    onClick={() => {
+                      setFiltro(id);
+                    }}
+                    className={`flex h-[34px] items-center gap-1.5 rounded-control border px-2.5 text-label font-medium ${
+                      activo ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
+                    }`}
+                  >
+                    {id === 'marcado' && (
+                      <span
+                        aria-hidden
+                        className="size-2.5 rounded-pill ring-[1.5px] ring-ag-marca"
+                      />
+                    )}
+                    {id !== 'todo' && id !== 'marcado' && (
+                      <MarcaDeCategoria
+                        categoria={id}
+                        className={activo ? 'brightness-[3] grayscale' : ''}
+                      />
+                    )}
+                    {etiqueta}
+                  </button>
+                );
+              })}
+              <span className="flex-1" />
+              <span className="flex items-center gap-1.5 text-meta text-text-3">
+                <span aria-hidden className="size-3 rounded-pill ring-[1.5px] ring-ag-marca" />
+                marcado a mano
+              </span>
+            </div>
+
+            {delMes.length === 0 && (
+              <p className="mb-3 max-w-[640px] text-label leading-relaxed text-text-2">
+                {MES_VACIO}
+              </p>
+            )}
           </div>
 
-          {delMes.length === 0 && (
-            <p className="mb-3 max-w-[640px] text-label leading-relaxed text-text-2">{MES_VACIO}</p>
-          )}
+          <div className="col-start-1 row-start-2 min-w-0">
+            <GrillaDelMes
+              mes={mes}
+              hoy={hoy}
+              elegido={diaAbierto}
+              eventos={visibles}
+              maximo={ancho === 'escritorio' ? 3 : 2}
+              alElegirDia={elegirDia}
+              alVerElDia={setDiaAbierto}
+              alAbrirEvento={(evento) => {
+                if (evento.clase === 'derivada') acciones.alAbrirTrabajo(evento);
+                else setDiaAbierto(evento.fecha);
+              }}
+            />
+          </div>
 
-          <GrillaDelMes
-            mes={mes}
-            hoy={hoy}
-            elegido={diaAbierto}
-            eventos={visibles}
-            maximo={ancho === 'escritorio' ? 3 : 2}
-            alElegirDia={setDiaAbierto}
-            alAbrirEvento={(evento) => {
-              if (evento.clase === 'derivada') acciones.alAbrirTrabajo(evento);
-              else setDiaAbierto(evento.fecha);
-            }}
-          />
-        </div>
-
-        {diaAbierto !== null && (
           <aside
-            aria-label={`El ${diaEnPalabras(diaAbierto)}`}
-            className="sticky top-0 flex max-h-[calc(100dvh-4rem)] w-[340px] flex-none flex-col overflow-hidden rounded-panel border border-hairline bg-paper xl:w-[380px]"
+            aria-label={`El ${diaEnPalabras(diaDelPanel)}`}
+            onKeyDown={(evento) => {
+              if (evento.key !== 'Escape' || !eligiendo) return;
+              evento.stopPropagation();
+              setDiaAbierto(null);
+            }}
+            className={`absolute inset-y-0 right-0 z-10 col-start-1 row-start-2 w-[min(340px,100%)] flex-col overflow-hidden rounded-panel border border-hairline bg-paper shadow-float ${
+              eligiendo ? 'flex' : 'hidden'
+            } @min-[58rem]/agenda:sticky @min-[58rem]/agenda:top-0 @min-[58rem]/agenda:right-auto @min-[58rem]/agenda:bottom-auto @min-[58rem]/agenda:col-start-2 @min-[58rem]/agenda:row-span-2 @min-[58rem]/agenda:row-start-1 @min-[58rem]/agenda:flex @min-[58rem]/agenda:max-h-[calc(100dvh-4rem)] @min-[58rem]/agenda:w-auto @min-[58rem]/agenda:shadow-none`}
           >
             <DetalleDelDia
-              fecha={diaAbierto}
+              fecha={diaDelPanel}
               hoy={hoy}
-              eventos={eventosDelDia(visibles, diaAbierto)}
+              eventos={eventosDelDia(visibles, diaDelPanel)}
               acciones={acciones}
+              ayuda={eligiendo ? undefined : 'Elegí un día en el calendario para ver lo suyo.'}
               alAnotar={() => {
-                setAnotando(diaAbierto);
+                setAnotando(diaDelPanel);
               }}
               alCerrar={() => {
                 setDiaAbierto(null);
               }}
+              claseDelBotonDeCerrar="@min-[58rem]/agenda:hidden"
             />
           </aside>
-        )}
+        </div>
       </div>
       {hojaDeAnotar}
     </Pagina>
