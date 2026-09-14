@@ -39,7 +39,7 @@ function useLimpiezaDeSesion(queryClient: QueryClient): void {
   useEffect(
     () =>
       escucharSesion((claims, cambio) => {
-        if (cambio === 'cerrada') {
+        if (cambio === 'cerrada' || cambio === 'vencida') {
           void limpiarDatosLocales(queryClient);
           return;
         }

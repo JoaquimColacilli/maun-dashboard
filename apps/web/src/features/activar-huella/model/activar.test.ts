@@ -33,14 +33,17 @@ describe('activar la huella en este dispositivo', () => {
   it('registra la passkey en Supabase y deja la marca local', async () => {
     vi.mocked(registrarHuella).mockResolvedValue();
 
-    expect(await activarHuella('ana')).toBeUndefined();
+    expect(await activarHuella('ana')).toEqual({ tipo: 'activada' });
     expect(activarBloqueo).toHaveBeenCalledWith('ana', null);
   });
 
   it('sin señal no intenta registrar y lo dice', async () => {
     onlineManager.setOnline(false);
 
-    expect(await activarHuella('ana')).toBe(SIN_SENAL_PARA_ACTIVAR);
+    expect(await activarHuella('ana')).toEqual({
+      tipo: 'no-se-pudo',
+      mensaje: SIN_SENAL_PARA_ACTIVAR,
+    });
     expect(registrarHuella).not.toHaveBeenCalled();
     expect(activarBloqueo).not.toHaveBeenCalled();
   });
@@ -51,7 +54,7 @@ describe('activar la huella en este dispositivo', () => {
     );
     vi.mocked(pedirHuella).mockResolvedValue({ tipo: 'confirmada', credencial: 'Y3JlZA' });
 
-    expect(await activarHuella('ana')).toBeUndefined();
+    expect(await activarHuella('ana')).toEqual({ tipo: 'activada' });
     expect(activarBloqueo).toHaveBeenCalledWith('ana', 'Y3JlZA');
   });
 
@@ -60,7 +63,11 @@ describe('activar la huella en este dispositivo', () => {
       rechazo('ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY', 'NotAllowedError'),
     );
 
-    expect(await activarHuella('ana')).toContain('La huella se canceló');
+    const resultado = await activarHuella('ana');
+    expect(resultado).toMatchObject({ tipo: 'no-se-pudo' });
+    expect(resultado.tipo === 'no-se-pudo' ? resultado.mensaje : '').toContain(
+      'La huella se canceló',
+    );
     expect(activarBloqueo).not.toHaveBeenCalled();
   });
 
@@ -73,7 +80,28 @@ describe('activar la huella en este dispositivo', () => {
       }),
     );
 
-    expect(await activarHuella('ana')).toContain('La huella todavía no está habilitada');
+    const resultado = await activarHuella('ana');
+    expect(resultado.tipo === 'no-se-pudo' ? resultado.mensaje : '').toContain(
+      'La huella todavía no está habilitada',
+    );
+    expect(activarBloqueo).not.toHaveBeenCalled();
+  });
+
+  it('si se sale de la pantalla mientras registra, se cancela en silencio y no deja marca', async () => {
+    vi.mocked(registrarHuella).mockImplementation(
+      (senal) =>
+        new Promise((_resolver, rechazar) => {
+          senal?.addEventListener('abort', () => {
+            rechazar(new DOMException('abortado', 'AbortError'));
+          });
+        }),
+    );
+    const pantalla = new AbortController();
+
+    const activando = activarHuella('ana', pantalla.signal);
+    pantalla.abort();
+
+    expect(await activando).toEqual({ tipo: 'interrumpida' });
     expect(activarBloqueo).not.toHaveBeenCalled();
   });
 });

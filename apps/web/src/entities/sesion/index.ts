@@ -7,5 +7,11 @@ export {
 } from './api/perfil';
 export { useSesion } from './api/useSesion';
 export { useSesionActiva, type SesionActiva } from './model/contexto';
-export { SESION_ANONIMA, SESION_CARGANDO, sesionDe, type EstadoSesion } from './model/estado';
+export {
+  SESION_ANONIMA,
+  SESION_CARGANDO,
+  SESION_VENCIDA,
+  sesionDe,
+  type EstadoSesion,
+} from './model/estado';
 export { ProveedorDeSesion } from './ui/ProveedorDeSesion';

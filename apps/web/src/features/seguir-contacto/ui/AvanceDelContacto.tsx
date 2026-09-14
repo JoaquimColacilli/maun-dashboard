@@ -1,22 +1,21 @@
-import { ESTADOS_DE_SEGUIMIENTO } from '@maun/domain';
+import { ESTADOS_DE_SEGUIMIENTO, puedeCambiarEstado } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
-  datosActualesDelProyecto,
   ESTADO,
+  guardadoDeUnPaso,
   MUTACION_DE_PROYECTO,
   pasoSiguiente,
   rutaDeAprobacion,
-  ultimoContactoAlGuardar,
   type EtapaDeSeguimiento,
   type Proyecto,
   type SituacionDelContacto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeProyecto } from '@/shared/api';
 import { hoyLocal, metaDeAvisos, useAlgoEnCurso } from '@/shared/lib';
-import { Button, Icono, MoneyInput } from '@/shared/ui';
+import { Button, MoneyInput, PanelDePaso } from '@/shared/ui';
 
 export interface AvanceDelContactoProps {
   proyecto: Proyecto;
@@ -43,6 +42,9 @@ export function AvanceDelContacto({
   useAlgoEnCurso(presupuestando);
 
   const paso = pasoSiguiente(etapa);
+  const etapas = ESTADOS_DE_SEGUIMIENTO.filter(
+    (estado) => estado === etapa || puedeCambiarEstado(etapa, estado),
+  );
 
   useEffect(() => {
     if (presupuestando) campoDelPresupuesto.current?.focus();
@@ -50,23 +52,7 @@ export function AvanceDelContacto({
 
   function mover(cambios: CambiosDeProyecto, dia?: string): void {
     setRechazo(null);
-    const datos = { ...datosActualesDelProyecto(proyecto), ...cambios };
-    guardar.mutate(
-      {
-        pedido: {
-          id: proyecto.id,
-          version: proyecto.version,
-          datos: {
-            ...datos,
-            ultimo_contacto: ultimoContactoAlGuardar(proyecto, datos.estado, hoyLocal(), dia),
-          },
-          pagos: [],
-          gastos: [],
-        },
-        previos: { proyecto, pagos: [], gastos: [] },
-      },
-      { onError: setRechazo },
-    );
+    guardar.mutate(guardadoDeUnPaso(proyecto, cambios, hoyLocal(), dia), { onError: setRechazo });
   }
 
   function aprobar(): void {
@@ -104,21 +90,13 @@ export function AvanceDelContacto({
   }
 
   return (
-    <section
-      aria-label="Qué falta"
-      className="@container rounded-panel border border-hairline px-4 py-3.5"
+    <PanelDePaso
+      titulo="Qué falta"
+      paso={situacion.proximoPaso}
+      detalle={situacion.espera}
+      icono={situacion.agendada ? 'calendar' : 'clock'}
+      tono={situacion.fria ? 'atencion' : 'normal'}
     >
-      <h2 className="text-meta font-medium text-text-2">Qué falta</h2>
-      <p className="mt-0.5 text-body-lg leading-snug font-semibold">{situacion.proximoPaso}</p>
-      <p
-        className={`mt-1 flex items-center gap-1.5 text-label ${
-          situacion.fria ? 'font-semibold text-atencion' : 'text-text-2'
-        }`}
-      >
-        <Icono nombre={situacion.agendada ? 'calendar' : 'clock'} tamano={15} />
-        {situacion.espera}
-      </p>
-
       {presupuestando ? (
         <form noValidate onSubmit={marcarEnviado} className="mt-3 flex flex-col gap-2.5">
           <MoneyInput
@@ -144,7 +122,7 @@ export function AvanceDelContacto({
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button onClick={avanzar}>{paso.etiqueta}</Button>
-          {etapa !== 'presupuesto_enviado' && (
+          {etapa !== 'presupuesto_enviado' && puedeCambiarEstado(etapa, 'en_curso') && (
             <Button variant="secundario" onClick={aprobar}>
               Ya lo aprobó
             </Button>
@@ -159,7 +137,7 @@ export function AvanceDelContacto({
           aria-label="Etapa"
           className="mt-1 grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @md:grid-cols-4"
         >
-          {ESTADOS_DE_SEGUIMIENTO.map((estado) => (
+          {etapas.map((estado) => (
             <button
               key={estado}
               type="button"
@@ -185,6 +163,6 @@ export function AvanceDelContacto({
           {mensajeDeSincronizacion(rechazo)}
         </p>
       )}
-    </section>
+    </PanelDePaso>
   );
 }

@@ -19,6 +19,8 @@ import {
 import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/lib';
 
 import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
+import { datosActualesDelProyecto } from '../model/liquidacion';
+import { ultimoContactoAlGuardar } from '../model/seguimiento';
 
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
@@ -67,6 +69,28 @@ export function hijosDelProyecto(
   return {
     pagos: filasDe(replica, 'pagos').filter((pago) => pago.proyecto_id === proyectoId),
     gastos: filasDe(replica, 'gastos').filter((gasto) => gasto.proyecto_id === proyectoId),
+  };
+}
+
+export function guardadoDeUnPaso(
+  proyecto: FilaDe<'proyectos'>,
+  cambios: CambiosDeProyecto,
+  hoy: string,
+  dia?: string,
+): GuardadoDeProyecto {
+  const datos = { ...datosActualesDelProyecto(proyecto), ...cambios };
+  return {
+    pedido: {
+      id: proyecto.id,
+      version: proyecto.version,
+      datos: {
+        ...datos,
+        ultimo_contacto: ultimoContactoAlGuardar(proyecto, datos.estado, hoy, dia),
+      },
+      pagos: [],
+      gastos: [],
+    },
+    previos: { proyecto, pagos: [], gastos: [] },
   };
 }
 

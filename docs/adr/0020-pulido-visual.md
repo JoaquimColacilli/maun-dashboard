@@ -56,6 +56,11 @@ botón no abra el trabajo.
 - **Se apartó:** el contorno de foco sale de `has-[a[data-tarjeta]:focus-visible]`, no de
   `:focus-within`. Con `:focus-within` la tarjeta entera se marcaba también al enfocar el cliente o
   Llamar, y el contorno decía que el foco estaba en otro lado.
+- **Actualizado el 2026-09-14:** la tarjeta pasó a ser `TarjetaDeProyecto` y la usan también Activos
+  e Historial en el celular, que eran filas con solo un borde arriba y el título como único enlace.
+  El dueño vio que esas filas flotaban. No se les agregó un borde: se compartió el componente, porque
+  dos listas de proyectos que se ven distinto son dos componentes, y la próxima diferencia aparecía
+  sola. El cliente entra por un slot, porque `entities/proyecto` no puede importar `EnlaceACliente`.
 
 **5. La hoja se abre encima de la pantalla.** `shared/lib/hojas.ts` tiene las hojas por ruta y su
 fondo por defecto. El link manda `state={conFondo(location)}`; `Marco` renderiza las pantallas con esa

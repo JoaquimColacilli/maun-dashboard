@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   avisarEnPantalla,
+  avisoEnPantalla,
   avisosDeLaMeta,
   descartarDePantalla,
   metaDeAvisos,
@@ -48,6 +49,35 @@ describe('los avisos en pantalla', () => {
     const [aviso] = actuales();
     expect(actuales()).toHaveLength(1);
     expect(aviso?.texto).toBe('Se guardaron las 3 cosas.');
+  });
+
+  it('con la misma clave y otro tono el aviso cambia en su lugar, no se suma otro', () => {
+    avisarEnPantalla({ clave: 'cola', tono: 'en-cola', texto: 'Anotado sin señal.' });
+    avisarEnPantalla({ clave: 'otro', tono: 'hecho', texto: 'Otra cosa.' });
+    const primero = actuales()[0]?.id;
+    avisarEnPantalla({ clave: 'cola', tono: 'hecho', texto: 'Guardado.' });
+
+    const lista = actuales();
+    expect(lista.map(({ tono, texto, veces }) => ({ tono, texto, veces }))).toEqual([
+      { tono: 'hecho', texto: 'Guardado.', veces: 1 },
+      { tono: 'hecho', texto: 'Otra cosa.', veces: 1 },
+    ]);
+    expect(lista[0]?.id).toBe(primero);
+  });
+
+  it('un aviso puede tomar el lugar de otro de otra clave, y el reloj del anterior no lo borra', () => {
+    avisarEnPantalla({ clave: 'cola', tono: 'en-cola', texto: 'Anotado sin señal.' });
+    const id = avisarEnPantalla({
+      clave: 'error-1',
+      tono: 'error',
+      texto: 'No se guardó.',
+      reemplaza: 'cola',
+    });
+
+    expect(actuales().map((aviso) => aviso.texto)).toEqual(['No se guardó.']);
+    expect(avisoEnPantalla(id)?.tono).toBe('error');
+    vi.advanceTimersByTime(10_000);
+    expect(actuales().map((aviso) => aviso.texto)).toEqual(['No se guardó.']);
   });
 
   it('nunca muestra más de tres transitorios, y un error no se pierde por eso', () => {

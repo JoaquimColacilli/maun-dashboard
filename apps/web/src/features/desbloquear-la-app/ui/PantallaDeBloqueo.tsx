@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  type ReactNode,
+  type SyntheticEvent,
+} from 'react';
 
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { entrar, esFalloDeRed, mensajeDeAcceso, pedirRecuperacion } from '@/shared/api';
@@ -8,10 +16,16 @@ import {
   marcarDesbloqueada,
   pedirHuella,
   useEstadoSync,
+  type ResultadoDeLaHuella,
 } from '@/shared/lib';
 import { Button, CampoDeContrasena, ENLACE_DE_CAMPO, Icono, PantallaDeAcceso } from '@/shared/ui';
 
-type Fase = 'huella' | 'contrasena' | 'sin-huella';
+import {
+  FASE_INICIAL,
+  siguienteFase,
+  type MotivoDelFormulario,
+  type OrigenDelPedido,
+} from '../model/fase';
 
 const RUTA_DEL_ENLACE = '/acceso/nueva-contrasena';
 
@@ -20,6 +34,15 @@ const NOTA =
 
 const SIN_SENAL_PARA_LA_CONTRASENA =
   'Sin señal no se puede entrar con la contraseña: se verifica contra el servidor. Probá con la huella.';
+
+const BAJADA: Readonly<Record<MotivoDelFormulario, string>> = {
+  'eligio-la-contrasena': 'Entrá con tu contraseña, o probá otra vez con la huella.',
+  'no-se-confirmo': 'La huella no se confirmó. Probala otra vez o entrá con tu contraseña.',
+  'sin-respuesta':
+    'El pedido de la huella no respondió. Probala otra vez o entrá con tu contraseña.',
+  'no-disponible': 'No pudimos usar la huella en este teléfono.',
+  interrumpida: 'Probá otra vez con la huella o entrá con tu contraseña.',
+};
 
 function conElFoco(signal: AbortSignal): Promise<boolean> {
   if (document.hasFocus()) return Promise.resolve(true);
@@ -34,16 +57,17 @@ function conElFoco(signal: AbortSignal): Promise<boolean> {
   });
 }
 
-async function desenlaceDeLaHuella(usuarioId: string, signal: AbortSignal): Promise<Fase | null> {
-  if (!(await conElFoco(signal))) return null;
+async function desenlaceDeLaHuella(
+  usuarioId: string,
+  signal: AbortSignal,
+): Promise<ResultadoDeLaHuella> {
+  if (!(await conElFoco(signal))) return { tipo: 'interrumpida' };
   const resultado = await pedirHuella(bloqueoDe(usuarioId)?.credencial ?? null, signal);
-  if (signal.aborted) return null;
   if (resultado.tipo === 'confirmada') {
     anotarCredencial(usuarioId, resultado.credencial);
     marcarDesbloqueada();
-    return null;
   }
-  return resultado.tipo === 'no-disponible' ? 'sin-huella' : 'contrasena';
+  return resultado;
 }
 
 function saludo(nombre: string): string {
@@ -51,11 +75,28 @@ function saludo(nombre: string): string {
   return primero === '' ? 'Hola' : `Hola, ${primero}`;
 }
 
+function BotonDeLaHuella({ pidiendo, alTocar }: { pidiendo: boolean; alTocar: () => void }) {
+  return (
+    <Button
+      variant="secundario"
+      size="grande"
+      className="w-full"
+      cargando={pidiendo}
+      onClick={alTocar}
+    >
+      {!pidiendo && <Icono nombre="fingerprint" tamano={20} />}
+      {pidiendo ? 'Esperando la huella…' : 'Probar con la huella'}
+    </Button>
+  );
+}
+
 function FormularioDeContrasena({
   email,
+  pidiendo,
   alProbarHuella,
 }: {
   email: string;
+  pidiendo: boolean;
   alProbarHuella: () => void;
 }) {
   const [contrasena, setContrasena] = useState('');
@@ -143,63 +184,74 @@ function FormularioDeContrasena({
       <Button type="submit" size="grande" cargando={entrando} className="mt-1 w-full">
         {entrando ? 'Entrando…' : 'Entrar'}
       </Button>
-      <Button variant="secundario" size="grande" className="w-full" onClick={alProbarHuella}>
-        <Icono nombre="fingerprint" tamano={20} />
-        Probar con la huella
-      </Button>
+      <BotonDeLaHuella pidiendo={pidiendo} alTocar={alProbarHuella} />
     </form>
   );
 }
 
-export function PantallaDeBloqueo() {
+export function PantallaDeBloqueo({ otraCuenta }: { otraCuenta?: ReactNode }) {
   const { usuarioId, email, foto } = useSesionActiva();
   const nombre = useNombreDeLaPersona();
   const sinSenal = useEstadoSync().tipo === 'sin-conexion';
-  const [fase, setFase] = useState<Fase>('huella');
-  const pedido = useRef<AbortController | null>(null);
+  const [fase, despachar] = useReducer(siguienteFase, FASE_INICIAL);
+  const intentos = useRef(0);
+  const pedidos = useRef(new Set<AbortController>());
+
+  const cortarLosPedidos = useCallback(() => {
+    for (const pedido of pedidos.current) pedido.abort();
+    pedidos.current.clear();
+  }, []);
+
+  const pedir = useCallback(
+    (origen: OrigenDelPedido) => {
+      cortarLosPedidos();
+      const pedido = new AbortController();
+      pedidos.current.add(pedido);
+      intentos.current += 1;
+      const intento = intentos.current;
+      despachar({ tipo: 'pedir', origen, intento });
+      void desenlaceDeLaHuella(usuarioId, pedido.signal).then((resultado) => {
+        pedidos.current.delete(pedido);
+        despachar({ tipo: 'resultado', intento, resultado: resultado.tipo });
+      });
+    },
+    [usuarioId, cortarLosPedidos],
+  );
 
   useEffect(() => {
-    const control = new AbortController();
-    pedido.current = control;
-    void desenlaceDeLaHuella(usuarioId, control.signal).then((siguiente) => {
-      if (siguiente !== null) setFase(siguiente);
-    });
-    return () => {
-      control.abort();
-    };
-  }, [usuarioId]);
-
-  function probarHuella(): void {
-    pedido.current?.abort();
-    const control = new AbortController();
-    pedido.current = control;
-    setFase('huella');
-    void desenlaceDeLaHuella(usuarioId, control.signal).then((siguiente) => {
-      if (siguiente !== null) setFase(siguiente);
-    });
-  }
+    pedir('al-abrir');
+    return cortarLosPedidos;
+  }, [pedir, cortarLosPedidos]);
 
   function usarContrasena(): void {
-    pedido.current?.abort();
-    setFase('contrasena');
+    cortarLosPedidos();
+    despachar({ tipo: 'usar-la-contrasena' });
   }
 
   const persona = { nombre, email, foto };
+  const motivo = fase.tipo === 'formulario' || fase.tipo === 'pidiendo' ? fase.motivo : null;
 
-  if (fase === 'huella') {
+  if (motivo === null) {
     return (
       <PantallaDeAcceso
         titulo={saludo(nombre)}
         bajada="Tocá el sensor de huella para abrir el taller."
         persona={persona}
         nota={NOTA}
+        pie={otraCuenta}
       >
         <div className="flex flex-col gap-3">
           <p role="status" className="flex min-h-tap items-center gap-3 text-body text-text-2">
             <Icono nombre="fingerprint" tamano={26} className="flex-none text-ink" />
             Esperando la huella…
           </p>
-          <Button size="grande" className="w-full" onClick={probarHuella}>
+          <Button
+            size="grande"
+            className="w-full"
+            onClick={() => {
+              pedir('usuario');
+            }}
+          >
             <Icono nombre="fingerprint" tamano={20} />
             Usar la huella
           </Button>
@@ -211,16 +263,18 @@ export function PantallaDeBloqueo() {
     );
   }
 
+  const pidiendo = fase.tipo === 'pidiendo';
+  const probarHuella = () => {
+    pedir('usuario');
+  };
+
   return (
     <PantallaDeAcceso
       titulo={saludo(nombre)}
-      bajada={
-        fase === 'sin-huella'
-          ? 'No pudimos usar la huella en este teléfono.'
-          : 'La huella no se confirmó. Probala otra vez o entrá con tu contraseña.'
-      }
+      bajada={BAJADA[motivo]}
       persona={persona}
       nota={NOTA}
+      pie={otraCuenta}
     >
       {sinSenal ? (
         <div className="flex flex-col gap-3">
@@ -230,18 +284,15 @@ export function PantallaDeBloqueo() {
           >
             <p className="font-semibold">Sin señal solo podés entrar con la huella.</p>
             <p>
-              {fase === 'sin-huella'
+              {motivo === 'no-disponible'
                 ? 'La huella de este teléfono no respondió. Cuando vuelva la señal vas a poder entrar con tu contraseña.'
                 : 'Cuando vuelva la señal también vas a poder entrar con tu contraseña.'}
             </p>
           </div>
-          <Button size="grande" className="w-full" onClick={probarHuella}>
-            <Icono nombre="fingerprint" tamano={20} />
-            Probar con la huella
-          </Button>
+          <BotonDeLaHuella pidiendo={pidiendo} alTocar={probarHuella} />
         </div>
       ) : (
-        <FormularioDeContrasena email={email} alProbarHuella={probarHuella} />
+        <FormularioDeContrasena email={email} pidiendo={pidiendo} alProbarHuella={probarHuella} />
       )}
     </PantallaDeAcceso>
   );

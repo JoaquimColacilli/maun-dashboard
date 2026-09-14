@@ -106,7 +106,9 @@ test('la hoja de ordenar del celular cambia el orden de las cards', async ({ pag
   await hoja.getByRole('button', { name: 'Presupuesto' }).click();
   await expect(hoja).toBeHidden();
 
-  await expect(page.getByRole('article').first()).toContainText('Zapatero');
+  await expect(
+    page.getByRole('list', { name: 'Proyectos' }).getByRole('listitem').first(),
+  ).toContainText('Zapatero');
 
   await page
     .getByRole('button', { name: /Presupuesto/ })
@@ -116,7 +118,9 @@ test('la hoja de ordenar del celular cambia el orden de las cards', async ({ pag
     .getByRole('dialog', { name: 'Ordenar por' })
     .getByRole('button', { name: 'Cliente' })
     .click();
-  await expect(page.getByRole('article').first()).toContainText('Alacena');
+  await expect(
+    page.getByRole('list', { name: 'Proyectos' }).getByRole('listitem').first(),
+  ).toContainText('Alacena');
 });
 
 test('agregar tres pagos seguidos deja el foco en la fila nueva y el guardar alcanzable', async ({

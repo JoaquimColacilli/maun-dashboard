@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react';
 
+import { conUnaSolaCeremonia, TOPE_DE_UNA_CEREMONIA_MS } from './ceremonia';
+
 export const CLAVE_DEL_BLOQUEO = 'maun:bloqueo';
 export const CLAVE_DE_LAS_PREGUNTAS = 'maun:huella-preguntada';
 export const TOPE_DE_UNA_RECARGA_MS = 15_000;
 
 const EVENTO_DEL_BLOQUEO = 'maun:bloqueo-cambio';
-const ESPERA_DE_LA_HUELLA_MS = 60_000;
 const BYTES_DEL_DESAFIO = 32;
 const NO_DISPONIBLE = new Set([
   'NotSupportedError',
@@ -25,7 +26,11 @@ export interface BloqueoDelDispositivo {
 export type SellosDelBloqueo = Pick<BloqueoDelDispositivo, 'desbloqueadaEn' | 'salioEn'>;
 
 export type ResultadoDeLaHuella =
-  { tipo: 'confirmada'; credencial: string } | { tipo: 'cancelada' } | { tipo: 'no-disponible' };
+  | { tipo: 'confirmada'; credencial: string }
+  | { tipo: 'cancelada' }
+  | { tipo: 'no-disponible' }
+  | { tipo: 'sin-respuesta' }
+  | { tipo: 'interrumpida' };
 
 type Apertura = 'sin-decidir' | 'abierta' | 'cerrada';
 
@@ -271,42 +276,54 @@ export async function huellaDisponible(): Promise<boolean> {
   }
 }
 
+function nombreDelError(error: unknown): string {
+  return typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    typeof error.name === 'string'
+    ? error.name
+    : '';
+}
+
 export async function pedirHuella(
   credencial: string | null,
-  signal: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<ResultadoDeLaHuella> {
   if (!('PublicKeyCredential' in globalThis) || !('credentials' in navigator)) {
     return { tipo: 'no-disponible' };
   }
-  try {
-    const obtenida = await navigator.credentials.get({
-      publicKey: {
-        challenge: crypto.getRandomValues(new Uint8Array(BYTES_DEL_DESAFIO)),
-        userVerification: 'required',
-        timeout: ESPERA_DE_LA_HUELLA_MS,
-        ...(credencial === null
-          ? {}
-          : {
-              allowCredentials: [
-                { type: 'public-key', id: desdeBase64Url(credencial), transports: ['internal'] },
-              ],
-            }),
-      },
-      signal,
-    });
-    return obtenida instanceof PublicKeyCredential
-      ? { tipo: 'confirmada', credencial: obtenida.id }
-      : { tipo: 'cancelada' };
-  } catch (error) {
-    const nombre =
-      typeof error === 'object' &&
-      error !== null &&
-      'name' in error &&
-      typeof error.name === 'string'
-        ? error.name
-        : '';
-    return !signal.aborted && NO_DISPONIBLE.has(nombre)
-      ? { tipo: 'no-disponible' }
-      : { tipo: 'cancelada' };
+  const desenlace = await conUnaSolaCeremonia(
+    (senal) =>
+      navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(BYTES_DEL_DESAFIO)),
+          userVerification: 'required',
+          timeout: TOPE_DE_UNA_CEREMONIA_MS,
+          ...(credencial === null
+            ? {}
+            : {
+                allowCredentials: [
+                  { type: 'public-key', id: desdeBase64Url(credencial), transports: ['internal'] },
+                ],
+              }),
+        },
+        signal: senal,
+      }),
+    signal === undefined ? {} : { signal },
+  );
+
+  switch (desenlace.tipo) {
+    case 'terminada':
+      return desenlace.valor instanceof PublicKeyCredential
+        ? { tipo: 'confirmada', credencial: desenlace.valor.id }
+        : { tipo: 'cancelada' };
+    case 'cancelada-por-la-app':
+      return { tipo: 'interrumpida' };
+    case 'sin-respuesta':
+      return { tipo: 'sin-respuesta' };
+    case 'fallida':
+      return NO_DISPONIBLE.has(nombreDelError(desenlace.error))
+        ? { tipo: 'no-disponible' }
+        : { tipo: 'cancelada' };
   }
 }

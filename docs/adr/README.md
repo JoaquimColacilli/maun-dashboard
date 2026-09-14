@@ -32,3 +32,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md)              | El bloqueo cuenta el tiempo afuera, no las aperturas     | Aceptada, corregida  |
 | [0027](0027-tirar-para-actualizar-sincroniza.md)                | Tirar para actualizar: sincroniza, no recarga            | Aceptada             |
 | [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md)          | La huella se pide cada vez que se sale                   | Aceptada             |
+| [0029](0029-el-estado-se-cambia-desde-la-ficha.md)              | El estado se cambia desde la ficha, con acciones         | Aceptada             |
+| [0030](0030-un-guardado-un-aviso.md)                            | Un guardado, un aviso: esperar el turno no es sin señal  | Aceptada             |
+| [0031](0031-ninguna-pantalla-de-sesion-encierra.md)             | Ninguna pantalla de sesión encierra                      | Aceptada             |
+| [0032](0032-una-sola-ceremonia-de-webauthn-por-vez.md)          | Una sola ceremonia de WebAuthn por vez                   | Aceptada             |

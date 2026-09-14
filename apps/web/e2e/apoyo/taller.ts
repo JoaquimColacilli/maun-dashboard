@@ -115,6 +115,7 @@ export interface FilaDeProyecto {
   estado: string;
   version: number;
   presupuesto_centavos: number | null;
+  fecha_entrega: string | null;
 }
 
 export async function descongelarProyectos({
@@ -225,7 +226,7 @@ export async function leerProyecto(
 ): Promise<FilaDeProyecto | undefined> {
   const filas = (await pedir(
     entorno,
-    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
+    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos,fecha_entrega&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
     { accessToken },
   )) as FilaDeProyecto[];
   return filas[0];

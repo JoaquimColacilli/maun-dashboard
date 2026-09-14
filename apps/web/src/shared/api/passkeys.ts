@@ -1,3 +1,5 @@
+import { conUnaSolaCeremonia } from '@/shared/lib';
+
 import { clienteMaun } from './cliente';
 
 export async function registrarHuella(signal?: AbortSignal): Promise<void> {
@@ -15,30 +17,36 @@ function autocompletadoConHuellaPosible(): boolean {
   );
 }
 
+function cancelada(signal: AbortSignal): boolean {
+  return signal.aborted;
+}
+
 export async function esperarHuellaDelAutocompletado(signal: AbortSignal): Promise<boolean> {
   if (!autocompletadoConHuellaPosible()) return false;
   if (!(await PublicKeyCredential.isConditionalMediationAvailable())) return false;
+  if (cancelada(signal)) return false;
 
   const auth = clienteMaun().auth;
   const { data, error } = await auth.passkey.startAuthentication();
-  if (error) return false;
+  if (error || cancelada(signal)) return false;
 
   const { challenge, rpId, timeout, userVerification } = data.options;
-  let credencial: Credential | null;
-  try {
-    credencial = await navigator.credentials.get({
-      mediation: 'conditional',
-      publicKey: PublicKeyCredential.parseRequestOptionsFromJSON({
-        challenge,
-        rpId,
-        timeout,
-        userVerification,
+  const desenlace = await conUnaSolaCeremonia(
+    (senal) =>
+      navigator.credentials.get({
+        mediation: 'conditional',
+        publicKey: PublicKeyCredential.parseRequestOptionsFromJSON({
+          challenge,
+          rpId,
+          timeout,
+          userVerification,
+        }),
+        signal: senal,
       }),
-      signal,
-    });
-  } catch {
-    return false;
-  }
+    { signal, pasiva: true, tope: null },
+  );
+  if (desenlace.tipo !== 'terminada') return false;
+  const credencial = desenlace.valor;
   if (!(credencial instanceof PublicKeyCredential)) return false;
 
   const respuesta = credencial.toJSON();
