@@ -6,9 +6,9 @@ import { describirGrupos } from './clientes.ts';
 import { diaLocal, ESTADOS_VIEJOS, type SistemaViejo } from './entrada.ts';
 import type { ResultadoDeLaMigracion } from './escritura.ts';
 import {
-  ESTADO_NUEVO,
   TESOROS_EN_ORDEN,
   type Plan,
+  type ProyectoAImportar,
   type Saldos,
   type SaldosViejos,
 } from './plan.ts';
@@ -24,6 +24,7 @@ export interface EncabezadoDelInforme {
   corte: string;
   leidos: Saldos;
   separar: readonly string[];
+  insumosComoNotas: readonly string[];
 }
 
 export const DIFERENCIA_TOLERADA_CON_EL_VIEJO = 50;
@@ -106,6 +107,7 @@ function encabezado(datos: EncabezadoDelInforme, titulo: string): string[] {
     `- Fecha de corte: ${datos.corte}`,
     `- Saldos que leíste en el sistema viejo: ${leidos}`,
     `- Nombres separados a mano (--separar): ${datos.separar.length === 0 ? 'ninguno' : datos.separar.map((nombre) => JSON.stringify(nombre)).join(', ')}`,
+    `- Proyectos con los insumos pasados a notas (--insumos-como-notas): ${datos.insumosComoNotas.length === 0 ? 'ninguno' : datos.insumosComoNotas.join(', ')}`,
   ];
 }
 
@@ -255,6 +257,24 @@ function lado(tesoro: Tesoro | null): string {
   return tesoro === null ? 'afuera' : NOMBRE_DEL_TESORO[tesoro];
 }
 
+function entraComo(proyecto: ProyectoAImportar): string {
+  if (proyecto.liquidar) return 'cobrado: entra entregado y se cobra con cobrar_proyecto';
+  if (proyecto.presupuestoDeRelleno) return `${proyecto.estado}, sin el presupuesto de relleno`;
+  return proyecto.estado;
+}
+
+function presupuestoQueEntra(proyecto: ProyectoAImportar): string {
+  if (proyecto.presupuesto !== null) return pesos(proyecto.presupuesto);
+  if (proyecto.viejo.presupuesto === null) return 'sin presupuesto';
+  return `sin presupuesto (tenía ${pesos(proyecto.viejo.presupuesto)} de relleno)`;
+}
+
+function gastosQueEntran(proyecto: ProyectoAImportar): string {
+  const entran = `${String(proyecto.gastosAImportar.length)} · ${pesos(proyecto.gastos)}`;
+  if (proyecto.insumosANotas === 0) return entran;
+  return `${entran} (${String(proyecto.insumosANotas)} insumos pasados a notas)`;
+}
+
 export function redactarInforme(
   plan: Plan,
   resultado: ResultadoDeLaMigracion,
@@ -312,13 +332,13 @@ export function redactarInforme(
     '',
     ...tabla(
       ['En el sistema viejo', 'Entra como', 'Proyectos'],
-      ESTADOS_VIEJOS.map((estado) => [
-        estado,
-        estado === 'cobrado'
-          ? 'cobrado: entra entregado y se cobra con cobrar_proyecto'
-          : ESTADO_NUEVO[estado],
-        String(plan.proyectos.filter((proyecto) => proyecto.viejo.estado === estado).length),
-      ]),
+      ESTADOS_VIEJOS.flatMap((estado) =>
+        agrupar(
+          plan.proyectos.filter((proyecto) => proyecto.viejo.estado === estado),
+          entraComo,
+          () => 0,
+        ).map(([como, grupo]) => [estado, como, String(grupo.cantidad)]),
+      ),
     ),
     '',
     'Ninguno entra como perdido: el sistema viejo no tenía ese estado.',
@@ -333,9 +353,9 @@ export function redactarInforme(
         proyecto.clienteNombre,
         proyecto.viejo.titulo,
         `${proyecto.viejo.estado} → ${proyecto.liquidar ? 'cobrado' : proyecto.estado}`,
-        proyecto.viejo.presupuesto === null ? 'sin presupuesto' : pesos(proyecto.viejo.presupuesto),
+        presupuestoQueEntra(proyecto),
         `${String(proyecto.viejo.pagos.length)} · ${pesos(proyecto.cobrado)}`,
-        `${String(proyecto.viejo.gastos.length)} · ${pesos(proyecto.gastos)}`,
+        gastosQueEntran(proyecto),
       ]),
     ),
     '',

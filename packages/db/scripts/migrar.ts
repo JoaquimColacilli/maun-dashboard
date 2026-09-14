@@ -16,12 +16,13 @@ import {
   redactarInforme,
   type EncabezadoDelInforme,
 } from './migracion/informe.ts';
-import { armarPlan, saldosEnCero, TESOROS_EN_ORDEN } from './migracion/plan.ts';
+import { armarPlan, saldosEnCero, TESOROS_EN_ORDEN, type Plan } from './migracion/plan.ts';
 
 const USO = `Uso:
   pnpm --filter @maun/db db:migrar --archivo <json> --household <id> \\
     --hogar=<saldo> --maun=<saldo> --diezmo=<saldo> --cocos=<saldo> \\
-    [--corte AAAA-MM-DD] [--separar "<nombre exacto>"]... [--informes <carpeta>] [--escribir]
+    [--corte AAAA-MM-DD] [--separar "<nombre exacto>"]... [--insumos-como-notas <id viejo>]... \\
+    [--informes <carpeta>] [--escribir]
 
 Los cuatro saldos van como los muestra el sistema viejo el día del corte (1.234.567, o -124.000),
 con "=" para que un saldo negativo no se lea como otra opción. Sin --escribir es un ensayo.`;
@@ -42,6 +43,7 @@ const { values } = parseArgs({
     cocos: { type: 'string' },
     corte: { type: 'string' },
     separar: { type: 'string', multiple: true, default: [] },
+    'insumos-como-notas': { type: 'string', multiple: true, default: [] },
     informes: { type: 'string' },
     escribir: { type: 'boolean', default: false },
   },
@@ -87,6 +89,7 @@ try {
   salir(`${archivo} no es JSON válido.`);
 }
 
+const insumosComoNotas = values['insumos-como-notas'];
 const encabezado: EncabezadoDelInforme = {
   modo: values.escribir ? 'escritura' : 'ensayo',
   generado: new Date(),
@@ -96,6 +99,7 @@ const encabezado: EncabezadoDelInforme = {
   corte,
   leidos,
   separar: values.separar,
+  insumosComoNotas,
 };
 const carpeta = values.informes ?? path.dirname(path.resolve(archivo));
 
@@ -106,7 +110,12 @@ if (sistema.sucios.length > 0) {
   salir(`Informe guardado en ${guardarInforme(carpeta, encabezado, informe)}`);
 }
 
-const plan = armarPlan(sistema, { separar: values.separar, corte });
+let plan: Plan;
+try {
+  plan = armarPlan(sistema, { separar: values.separar, insumosComoNotas, corte });
+} catch (error) {
+  salir(error instanceof Error ? error.message : String(error));
+}
 
 let terminal: Interface | undefined;
 function preguntar(pregunta: string): Promise<string> {

@@ -224,6 +224,134 @@ describe('lo que se lee del JSON del sistema viejo', () => {
   });
 });
 
+const DEL_ARCHIVO_REAL = {
+  maun3_c: null,
+  maun3_m: [],
+  maun3_p: [
+    {
+      id: '1789053851635-relle',
+      cliente: 'Ruth Esposito',
+      trabajo: 'Vanitory chico',
+      estado: 'presupuestado',
+      presupuesto: 1,
+      pagos: [],
+      insumos: [],
+    },
+    {
+      id: '1789052549337-notas',
+      cliente: 'Alan Saul',
+      trabajo: 'Escritorio',
+      estado: 'presupuestado',
+      presupuesto: 1248000,
+      pagos: [],
+      insumos: [
+        { fecha: '2026-09-10', nombre: 'Solo el escritorio 1248000', monto: 0.1 },
+        { fecha: '2026-09-10', nombre: 'Los 2 escritorios 2.300.000 (seña 1.200.000)', monto: 0.1 },
+      ],
+    },
+    {
+      id: '1787358543264-curso',
+      cliente: 'Cintia Sanc',
+      trabajo: 'Varios proyectos',
+      estado: 'en_curso',
+      presupuesto: 1,
+      pagos: [],
+      insumos: [],
+    },
+  ],
+};
+
+describe('los presupuestos de relleno y los insumos que son notas', () => {
+  it('un presupuestado de $1 entra sin presupuesto y a presupuestar; uno aprobado de $1 no se toca', () => {
+    const plan = armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), { corte: CORTE });
+    const [relleno, escritorio, enCurso] = plan.proyectos;
+
+    expect(relleno).toMatchObject({
+      estado: 'a_presupuestar',
+      presupuesto: null,
+      presupuestoDeRelleno: true,
+      ultimoContacto: fechaDeAlta('1789053851635-relle'),
+    });
+    expect(escritorio).toMatchObject({
+      estado: 'presupuesto_enviado',
+      presupuesto: 124_800_000,
+      presupuestoDeRelleno: false,
+      insumosANotas: 0,
+      notas: '',
+      gastos: 20,
+    });
+    expect(enCurso).toMatchObject({ estado: 'en_curso', presupuesto: 100 });
+    expect(plan.avisos).toContainEqual(expect.stringContaining('«Vanitory chico»'));
+  });
+
+  it('--insumos-como-notas pasa el texto de los insumos a las notas y no los carga como gastos', () => {
+    const plan = armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), {
+      corte: CORTE,
+      insumosComoNotas: ['1789052549337-notas'],
+    });
+    expect(plan.proyectos[1]).toMatchObject({
+      gastosAImportar: [],
+      gastos: 0,
+      insumosANotas: 2,
+      notas: [
+        'Del sistema viejo, anotado como insumos:',
+        '- 2026-09-10: Solo el escritorio 1248000',
+        '- 2026-09-10: Los 2 escritorios 2.300.000 (seña 1.200.000)',
+      ].join('\n'),
+    });
+  });
+
+  it('--insumos-como-notas corta con un id que no existe o con un proyecto cobrado', () => {
+    expect(() =>
+      armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), { corte: CORTE, insumosComoNotas: ['otro'] }),
+    ).toThrow('--insumos-como-notas otro: no hay ningún proyecto con ese id en maun3_p.');
+    expect(() =>
+      armarPlan(sistemaDePrueba(), {
+        corte: CORTE,
+        insumosComoNotas: ['1752600000000-a1b2c'],
+      }),
+    ).toThrow(/está cobrado, y sacarle los insumos le cambiaría la distribución/);
+  });
+
+  it('en la base entran como el plan dice: a presupuestar sin presupuesto, y las notas sin gastos', async () => {
+    await enTransaccionConRollback(async (cliente) => {
+      const householdId = await householdDePrueba(cliente);
+      const plan = armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), {
+        corte: CORTE,
+        insumosComoNotas: ['1789052549337-notas'],
+      });
+      const resultado = await migrar(cliente, plan, {
+        householdId,
+        leidos: { hogar: 0, maun: 0, diezmo: 0, cocos: 0 },
+        corte: CORTE,
+        confirmarClientes: siempre(true),
+      });
+      expect(resultado.conteos).toMatchObject({ proyectos: 3, gastos: 0 });
+
+      const { rows } = await cliente.query<{
+        titulo: string;
+        estado: string;
+        presupuesto: string | null;
+        notas: string;
+      }>(
+        `select titulo, estado::text as estado, presupuesto_centavos::text as presupuesto, notas
+         from public.proyectos where household_id = $1 order by titulo`,
+        [householdId],
+      );
+      expect(rows).toEqual([
+        {
+          titulo: 'Escritorio',
+          estado: 'presupuesto_enviado',
+          presupuesto: '124800000',
+          notas: plan.proyectos[1]?.notas,
+        },
+        { titulo: 'Vanitory chico', estado: 'a_presupuestar', presupuesto: null, notas: '' },
+        { titulo: 'Varios proyectos', estado: 'en_curso', presupuesto: '100', notas: '' },
+      ]);
+    });
+  });
+});
+
 describe('los clientes', () => {
   it('se normalizan sin acentos, sin mayúsculas, con los espacios colapsados y sin puntuación al final, pero la ñ no es un acento', () => {
     expect(normalizarNombre('  MARCELA   Duarte. ')).toBe('marcela duarte');
@@ -348,6 +476,7 @@ describe('la migración contra un household de prueba, en rollback', () => {
         corte: CORTE,
         leidos: LEIDOS,
         separar: [],
+        insumosComoNotas: [],
       };
       const informe = redactarInforme(
         plan,

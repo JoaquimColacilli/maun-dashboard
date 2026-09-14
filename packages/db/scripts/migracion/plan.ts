@@ -7,6 +7,7 @@ import { agruparClientes, claveDelCliente, type GrupoDeClientes } from './client
 import {
   TIPOS_QUE_ENTRAN,
   type EstadoViejo,
+  type GastoViejo,
   type MovimientoViejo,
   type ProyectoViejo,
   type SistemaViejo,
@@ -20,6 +21,8 @@ export const TESOROS_EN_ORDEN = [
   'cocos',
 ] as const satisfies readonly Tesoro[];
 
+export const PRESUPUESTO_DE_RELLENO = 100;
+
 export type Saldos = Record<Tesoro, number>;
 
 export interface ClienteAImportar extends GrupoDeClientes {
@@ -32,10 +35,15 @@ export interface ProyectoAImportar {
   clienteId: string;
   clienteNombre: string;
   estado: EstadoProyecto;
+  presupuesto: Money | null;
+  presupuestoDeRelleno: boolean;
   liquidar: boolean;
   fechaDeCobro: string | null;
   origenDeLaFechaDeCobro: string;
   ultimoContacto: string | null;
+  gastosAImportar: GastoViejo[];
+  insumosANotas: number;
+  notas: string;
   cobrado: Money;
   gastos: Money;
 }
@@ -171,16 +179,46 @@ function fechaDeCobro(proyecto: ProyectoViejo, corte: string): { fecha: string; 
   return { fecha: corte, origen: 'el día del corte' };
 }
 
+function estadoQueEntra(viejo: ProyectoViejo, deRelleno: boolean): EstadoProyecto {
+  if (viejo.estado === 'cobrado') return 'entregado';
+  if (deRelleno) return 'a_presupuestar';
+  return ESTADO_NUEVO[viejo.estado];
+}
+
+export function notasDeLosInsumos(gastos: readonly GastoViejo[]): string {
+  if (gastos.length === 0) return '';
+  return [
+    'Del sistema viejo, anotado como insumos:',
+    ...gastos.map((gasto) => `- ${gasto.fecha}: ${gasto.descripcion}`),
+  ].join('\n');
+}
+
 export interface OpcionesDelPlan {
   separar?: readonly string[];
+  insumosComoNotas?: readonly string[];
   corte: string;
   nuevoId?: () => string;
 }
 
 export function armarPlan(sistema: SistemaViejo, opciones: OpcionesDelPlan): Plan {
   const separar = opciones.separar ?? [];
+  const insumosComoNotas = opciones.insumosComoNotas ?? [];
   const nuevoId = opciones.nuevoId ?? randomUUID;
   const avisos: string[] = [];
+
+  for (const id of insumosComoNotas) {
+    const proyecto = sistema.proyectos.find((viejo) => viejo.id === id);
+    if (proyecto === undefined) {
+      throw new Error(
+        `--insumos-como-notas ${id}: no hay ningún proyecto con ese id en ${sistema.claves.proyectos}.`,
+      );
+    }
+    if (proyecto.estado === 'cobrado') {
+      throw new Error(
+        `--insumos-como-notas ${id}: ${proyecto.donde} está cobrado, y sacarle los insumos le cambiaría la distribución.`,
+      );
+    }
+  }
 
   const clientes = agruparClientes(
     sistema.proyectos.map((proyecto) => proyecto.cliente),
@@ -201,6 +239,22 @@ export function armarPlan(sistema: SistemaViejo, opciones: OpcionesDelPlan): Pla
       );
     }
 
+    const deRelleno =
+      viejo.estado === 'presupuestado' && viejo.presupuesto === PRESUPUESTO_DE_RELLENO;
+    if (deRelleno) {
+      avisos.push(
+        `${viejo.donde}: el presupuesto de $1 es relleno, porque el sistema viejo no dejaba guardar sin presupuesto. Entra sin presupuesto y a presupuestar.`,
+      );
+    }
+
+    const aNotas = insumosComoNotas.includes(viejo.id);
+    const gastosAImportar = aNotas ? [] : viejo.gastos;
+    if (aNotas) {
+      avisos.push(
+        `${viejo.donde}: sus ${String(viejo.gastos.length)} insumos no entran como gastos; su texto va a las notas del proyecto (--insumos-como-notas).`,
+      );
+    }
+
     let ultimoContacto: string | null = null;
     if (viejo.estado === 'presupuestado') {
       ultimoContacto = viejo.alta ?? viejo.inicio;
@@ -216,13 +270,18 @@ export function armarPlan(sistema: SistemaViejo, opciones: OpcionesDelPlan): Pla
       id: nuevoId(),
       clienteId: cliente.id,
       clienteNombre: cliente.nombre,
-      estado: liquidar ? 'entregado' : ESTADO_NUEVO[viejo.estado],
+      estado: estadoQueEntra(viejo, deRelleno),
+      presupuesto: deRelleno ? null : viejo.presupuesto,
+      presupuestoDeRelleno: deRelleno,
       liquidar,
       fechaDeCobro: cobro?.fecha ?? null,
       origenDeLaFechaDeCobro: cobro?.origen ?? '',
       ultimoContacto,
+      gastosAImportar,
+      insumosANotas: aNotas ? viejo.gastos.length : 0,
+      notas: aNotas ? notasDeLosInsumos(viejo.gastos) : '',
       cobrado: suma(viejo.pagos.map((pago) => pago.monto)),
-      gastos: suma(viejo.gastos.map((gasto) => gasto.monto)),
+      gastos: suma(gastosAImportar.map((gasto) => gasto.monto)),
     };
   });
 

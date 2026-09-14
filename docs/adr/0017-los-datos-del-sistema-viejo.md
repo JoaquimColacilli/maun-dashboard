@@ -254,6 +254,20 @@ Se corrigió así:
 Se descartó copiar el archivo con las claves renombradas. La huella del informe dejaría de ser la del
 archivo que llegó, y el agujero de la clave ausente seguiría abierto para el próximo.
 
+Dos decisiones del dueño sobre el archivo real, tomadas después de leer la vista previa:
+
+- **Un presupuestado con presupuesto de $1 entra sin presupuesto y en `a_presupuestar`.** Es relleno:
+  el sistema viejo no dejaba guardar sin presupuesto (el `alert` del ADR 0019). Siete de los diez
+  presupuestados del archivo son así, y como `presupuesto_enviado` habrían dicho «presupuesto enviado»
+  por $1. Es una regla y no una opción porque nadie presupuesta un peso, y solo mira los presupuestados:
+  un proyecto aprobado con $1 sería un dato raro, no relleno.
+- **`--insumos-como-notas <id viejo>`, repetible**, pasa el texto de los insumos de ese proyecto a sus
+  notas, y no entran como gastos. En el archivo, un presupuestado tenía dos «insumos» de $0,10 que eran
+  el detalle del presupuesto. Es una opción y no una regla, como `--separar`. «Los insumos de un
+  presupuestado son notas» contradiría la decisión del ADR 0019 (la nafta de la visita es un gasto
+  real), y el importe no distingue una nota de un gasto chico. No se acepta sobre un cobrado: le
+  cambiaría la distribución.
+
 ## Alternativas descartadas
 
 - **Importación de CSV en la app**, como la del sistema viejo. Es la puerta de atrás del punto 1, y

@@ -408,7 +408,7 @@ export async function migrar(
     })),
   );
   const gastos: FilaDeGasto[] = plan.proyectos.flatMap((proyecto) =>
-    proyecto.viejo.gastos.map((gasto) => ({
+    proyecto.gastosAImportar.map((gasto) => ({
       id: randomUUID(),
       proyecto_id: proyecto.id,
       fecha: gasto.fecha,
@@ -454,23 +454,24 @@ export async function migrar(
   await insertar(
     cliente,
     `insert into public.proyectos (id, cliente_id, titulo, estado, presupuesto_centavos, forma_pago,
-       ultimo_contacto, fecha_inicio, entrega_estimada)
+       ultimo_contacto, fecha_inicio, entrega_estimada, notas)
      select p.id, p.cliente_id, p.titulo, p.estado::public.estado_proyecto, p.presupuesto_centavos,
             p.forma_pago::public.forma_pago, p.ultimo_contacto::date, p.fecha_inicio::date,
-            p.entrega_estimada::date
+            p.entrega_estimada::date, p.notas
      from jsonb_to_recordset($1::jsonb) as p (id uuid, cliente_id uuid, titulo text, estado text,
        presupuesto_centavos bigint, forma_pago text, ultimo_contacto text, fecha_inicio text,
-       entrega_estimada text)`,
+       entrega_estimada text, notas text)`,
     plan.proyectos.map((proyecto) => ({
       id: proyecto.id,
       cliente_id: proyecto.clienteId,
       titulo: proyecto.viejo.titulo,
       estado: proyecto.estado,
-      presupuesto_centavos: proyecto.viejo.presupuesto,
+      presupuesto_centavos: proyecto.presupuesto,
       forma_pago: proyecto.viejo.formaDePago,
       ultimo_contacto: proyecto.ultimoContacto,
       fecha_inicio: proyecto.viejo.inicio,
       entrega_estimada: proyecto.viejo.entrega,
+      notas: proyecto.notas,
     })),
   );
   await insertar(
