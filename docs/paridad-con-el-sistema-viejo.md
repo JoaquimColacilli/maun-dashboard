@@ -227,7 +227,7 @@ original no tiene calendario, ni fechas límite de presupuesto, ni notas sueltas
   importante y borrar, cada cosa con deshacer.
 - **La fecha límite del presupuesto** de un contacto, propuesta a tres días hábiles al pasar a «a
   presupuestar» y editable.
-- **«Hoy en la agenda» en Inicio** y **«Anotar algo»** en el botón redondo del celular.
+- **El ícono de la agenda y «Hoy en la agenda» en Inicio** y **«Anotar algo»** en el botón redondo del celular.
 - **El aviso de la mañana**, por dispositivo, con qué avisa, la anticipación, la hora y la zona horaria
   que elige la persona. Es un recordatorio de mejor esfuerzo, y la pantalla lo dice.
 

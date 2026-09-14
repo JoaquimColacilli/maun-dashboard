@@ -1,9 +1,11 @@
 # 0035. Un service worker propio, con el mismo precache
 
-- Estado: aceptada
+- Estado: aceptada, corregida
 - Fecha: 2026-09-14
 - Completa al [0005](0005-offline-first.md). Es el paso previo de los avisos
   ([0036](0036-avisos-por-dispositivo-fuera-de-la-replica.md)).
+- Corregido por el [0037](0037-tocar-un-aviso-vuelve-sin-pedir-la-huella.md) en qué hace tocar la
+  notificación.
 
 ## Contexto
 
@@ -33,8 +35,9 @@ Los handlers de push llegaron con la pantalla de avisos:
 - `push` arma la notificación con lo que manda la función (`titulo`, `cuerpo`, `url`, `etiqueta`). Si
   llega sin datos o con algo que no es JSON, igual muestra una: con `userVisibleOnly`, un push sin
   notificación lo penaliza el navegador.
-- `notificationclick` enfoca una ventana de la app y la lleva a la URL, o abre una. Solo acepta URLs del
-  mismo origen.
+- `notificationclick` busca una ventana abierta de la app. Si la hay, le avisa que vuelve por un aviso,
+  espera su respuesta y la enfoca, sin recargarla; si no, abre una. Solo acepta URLs del mismo origen.
+  El porqué, y la excepción al bloqueo que implica, están en el ADR 0037.
 
 ## Alternativas descartadas
 
@@ -45,12 +48,11 @@ Los handlers de push llegaron con la pantalla de avisos:
 
 ## Objeciones
 
-- **Tocar la notificación recarga el documento** (`navigate`), y abrir la app pide la huella. Es
-  coherente con el ADR 0028, pero si la app ya estaba adelante, un `postMessage` para navegar adentro la
-  evitaría. No se hizo.
+- **Tocar la notificación recargaba el documento** (`navigate`), y abrir la app pide la huella. Quedó
+  corregido en el ADR 0037: con la app abierta atrás, la enfoca sin recargar.
 - **Chromium headless no muestra notificaciones**: el permiso queda `denied` aunque Playwright lo
-  conceda. El e2e comprueba lo que el service worker le pasa a `showNotification`, no una notificación en
-  pantalla, y el click no tiene prueba automática.
+  conceda. El e2e comprueba lo que el service worker le pasa a `showNotification`, no una notificación
+  en pantalla, y el click no tiene prueba automática: se prueba el mensaje que manda.
 - **Nada de esto se probó en un teléfono.**
 
 ## Verificación

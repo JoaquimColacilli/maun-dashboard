@@ -31,12 +31,13 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0025](0025-lo-que-flota-abajo-una-holgura-medida.md)           | Lo que flota abajo: una holgura medida                       | Aceptada             |
 | [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md)              | El bloqueo cuenta el tiempo afuera, no las aperturas         | Aceptada, corregida  |
 | [0027](0027-tirar-para-actualizar-sincroniza.md)                | Tirar para actualizar: sincroniza, no recarga                | Aceptada             |
-| [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md)          | La huella se pide cada vez que se sale                       | Aceptada             |
+| [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md)          | La huella se pide cada vez que se sale                       | Aceptada, corregida  |
 | [0029](0029-el-estado-se-cambia-desde-la-ficha.md)              | El estado se cambia desde la ficha, con acciones             | Aceptada             |
 | [0030](0030-un-guardado-un-aviso.md)                            | Un guardado, un aviso: esperar el turno no es sin señal      | Aceptada             |
 | [0031](0031-ninguna-pantalla-de-sesion-encierra.md)             | Ninguna pantalla de sesión encierra                          | Aceptada             |
 | [0032](0032-una-sola-ceremonia-de-webauthn-por-vez.md)          | Una sola ceremonia de WebAuthn por vez                       | Aceptada             |
 | [0033](0033-filas-de-botones.md)                                | Filas de botones: entran todos o bajan todos                 | Aceptada             |
 | [0034](0034-la-agenda-calcula-lo-que-sale-de-los-trabajos.md)   | La agenda calcula lo que sale de los trabajos                | Aceptada             |
-| [0035](0035-un-service-worker-propio.md)                        | Un service worker propio, con el mismo precache              | Aceptada             |
+| [0035](0035-un-service-worker-propio.md)                        | Un service worker propio, con el mismo precache              | Aceptada, corregida  |
 | [0036](0036-avisos-por-dispositivo-fuera-de-la-replica.md)      | Avisos: una suscripción por dispositivo, fuera de la réplica | Aceptada             |
+| [0037](0037-tocar-un-aviso-vuelve-sin-pedir-la-huella.md)       | Tocar un aviso vuelve a la app sin pedir la huella           | Aceptada             |

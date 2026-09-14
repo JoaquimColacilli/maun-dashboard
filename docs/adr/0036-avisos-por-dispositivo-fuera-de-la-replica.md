@@ -83,6 +83,14 @@ el único paso que el repo exige.
   la de la casa.
 - **Calcular la hora en la función.** La base ya tiene las zonas y filtra antes de mandar filas.
 - **Una librería de push de JSR.** `web-push` de npm es la que tiene el cifrado probado.
+- **Una campana en el encabezado.** Una campana promete una bandeja de mensajes, y la app no tiene
+  ninguna: los avisos son push, y lo que existe es una pantalla de configuración que vive en Ajustes, a
+  un toque del avatar. Una campana que abre una pantalla de configuración es una promesa falsa: la
+  primera vez que se toque esperando ver qué avisó, aparecen interruptores. Si alguna vez hace falta ver
+  el historial de lo avisado, eso es una bandeja de verdad y va en su propio paso. El acceso rápido del
+  encabezado de Inicio, en el celular, es a la agenda (ADR 0034).
+- **«Avisos» como destino aparte en la barra lateral de la PC.** Ajustes ya está ahí y es donde vive la
+  configuración.
 
 ## Objeciones
 
