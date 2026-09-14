@@ -92,6 +92,7 @@ export {
 } from './avisos/bandeja';
 export {
   avisarEnPantalla,
+  avisoEnPantalla,
   avisosDeLaMeta,
   descartarDePantalla,
   metaDeAvisos,

@@ -173,6 +173,11 @@ export interface NuevoAviso {
   texto: string;
   detalle?: string;
   textoParaVarios?: (veces: number) => string;
+  reemplaza?: string;
+}
+
+export function avisoEnPantalla(id: number): AvisoEnPantalla | undefined {
+  return avisos.find((aviso) => aviso.id === id);
 }
 
 export function avisarEnPantalla({
@@ -181,21 +186,27 @@ export function avisarEnPantalla({
   texto,
   detalle,
   textoParaVarios,
-}: NuevoAviso): void {
-  const previo = avisos.find((aviso) => aviso.clave === clave && aviso.tono === tono);
-  const veces = previo === undefined ? 1 : previo.veces + 1;
+  reemplaza,
+}: NuevoAviso): number {
+  const previo =
+    avisos.find((aviso) => aviso.clave === clave) ??
+    (reemplaza === undefined ? undefined : avisos.find((aviso) => aviso.clave === reemplaza));
+  const veces = previo?.clave === clave && previo.tono === tono ? previo.veces + 1 : 1;
   const aviso: AvisoEnPantalla = {
-    id: proximoId,
+    id: previo?.id ?? proximoId,
     clave,
     tono,
     texto: veces > 1 && textoParaVarios !== undefined ? textoParaVarios(veces) : texto,
     detalle: detalle ?? null,
     veces,
   };
-  proximoId += 1;
 
-  if (previo !== undefined) cancelarReloj(previo.id);
-  const siguientes = [...avisos.filter((otro) => otro !== previo), aviso];
+  if (previo === undefined) proximoId += 1;
+  else cancelarReloj(previo.id);
+  const siguientes =
+    previo === undefined
+      ? [...avisos, aviso]
+      : avisos.map((otro) => (otro === previo ? aviso : otro));
   const transitorios = siguientes.filter((otro) => otro.tono !== 'error');
   const sobran = new Set(
     transitorios.slice(0, Math.max(0, transitorios.length - MAXIMO_DE_TRANSITORIOS)),
@@ -212,6 +223,7 @@ export function avisarEnPantalla({
       }, duracion),
     );
   }
+  return aviso.id;
 }
 
 export function vaciarAvisosEnPantalla(): void {
