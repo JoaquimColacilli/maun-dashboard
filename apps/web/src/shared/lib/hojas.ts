@@ -5,6 +5,7 @@ export const HOJAS_POR_RUTA = [
   { patron: '/finanzas/nuevo', fondo: '/finanzas' },
   { patron: '/finanzas/:id', fondo: '/finanzas' },
   { patron: '/seguimiento/nuevo', fondo: '/seguimiento' },
+  { patron: '/agenda/anotar', fondo: '/agenda' },
 ] as const;
 
 export type PatronDeHoja = (typeof HOJAS_POR_RUTA)[number]['patron'];

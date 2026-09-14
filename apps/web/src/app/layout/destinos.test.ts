@@ -48,4 +48,16 @@ describe('destinoResaltado', () => {
     expect(destinoResaltado('diezmo', NAV_TABLET)).toBe('diezmo');
     expect(destinoResaltado('ajustes', NAV_TABLET)).toBe('inicio');
   });
+
+  it('la Agenda es destino propio en tablet y escritorio, y en el celular se llega desde Inicio', () => {
+    expect(seccionDeLaRuta('/agenda')).toBe('agenda');
+    expect(seccionDeLaRuta('/agenda/anotar')).toBe('agenda');
+    expect(destinoResaltado('agenda', NAV_ESCRITORIO)).toBe('agenda');
+    expect(destinoResaltado('agenda', NAV_TABLET)).toBe('agenda');
+    expect(destinoResaltado('agenda', NAV_MOVIL)).toBe('inicio');
+  });
+
+  it('la barra del celular no cambió: cuatro destinos y ninguno es la Agenda', () => {
+    expect(NAV_MOVIL).toEqual(['inicio', 'proyectos', 'clientes', 'finanzas']);
+  });
 });

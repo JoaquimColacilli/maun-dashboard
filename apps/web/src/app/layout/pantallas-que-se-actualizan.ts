@@ -4,6 +4,7 @@ import { RUTA_DE_PROYECTO_NUEVO } from '@/shared/lib';
 
 const LEEN_DE_LA_REPLICA = [
   '/',
+  '/agenda',
   '/seguimiento',
   '/proyectos',
   '/proyectos/:id',

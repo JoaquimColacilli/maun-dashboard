@@ -1,7 +1,14 @@
 import type { NombreDeIcono } from '@/shared/ui';
 
 export type IdDeSeccion =
-  'inicio' | 'seguimiento' | 'proyectos' | 'clientes' | 'finanzas' | 'diezmo' | 'ajustes';
+  | 'inicio'
+  | 'agenda'
+  | 'seguimiento'
+  | 'proyectos'
+  | 'clientes'
+  | 'finanzas'
+  | 'diezmo'
+  | 'ajustes';
 
 export interface Destino {
   id: IdDeSeccion;
@@ -13,6 +20,13 @@ export interface Destino {
 
 export const DESTINOS: Readonly<Record<IdDeSeccion, Destino>> = {
   inicio: { id: 'inicio', etiqueta: 'Inicio', ruta: '/', icono: 'house' },
+  agenda: {
+    id: 'agenda',
+    etiqueta: 'Agenda',
+    ruta: '/agenda',
+    icono: 'calendar-days',
+    alternativa: 'inicio',
+  },
   seguimiento: {
     id: 'seguimiento',
     etiqueta: 'Seguimiento',
@@ -41,10 +55,18 @@ export const DESTINOS: Readonly<Record<IdDeSeccion, Destino>> = {
 
 export const NAV_MOVIL: readonly IdDeSeccion[] = ['inicio', 'proyectos', 'clientes', 'finanzas'];
 
-export const NAV_TABLET: readonly IdDeSeccion[] = [...NAV_MOVIL, 'diezmo'];
+export const NAV_TABLET: readonly IdDeSeccion[] = [
+  'inicio',
+  'agenda',
+  'proyectos',
+  'clientes',
+  'finanzas',
+  'diezmo',
+];
 
 export const NAV_ESCRITORIO: readonly IdDeSeccion[] = [
   'inicio',
+  'agenda',
   'seguimiento',
   'proyectos',
   'clientes',
@@ -60,6 +82,7 @@ export interface AccionRapida {
 }
 
 export const ACCIONES_RAPIDAS: readonly AccionRapida[] = [
+  { etiqueta: 'Anotar algo', icono: 'pencil-line', ruta: '/agenda/anotar' },
   { etiqueta: 'Movimiento', icono: 'arrow-left-right', ruta: '/finanzas/nuevo' },
   { etiqueta: 'Cobro de proyecto', icono: 'hand-coins', ruta: '/proyectos' },
   { etiqueta: 'Proyecto nuevo', icono: 'folder-plus', ruta: '/proyectos/nuevo' },

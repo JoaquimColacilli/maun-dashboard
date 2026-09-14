@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { RouteObject } from 'react-router';
 
+import { AgendaPage, AnotarPage } from '@/pages/agenda';
 import { AjustesPage } from '@/pages/ajustes';
 import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
@@ -19,6 +20,7 @@ import { HOJAS_POR_RUTA, type PatronDeHoja } from '@/shared/lib';
 
 export const RUTAS_DE_PANTALLA: RouteObject[] = [
   { index: true, element: <InicioPage /> },
+  { path: '/agenda', element: <AgendaPage /> },
   { path: '/seguimiento', element: <ProyectosPage /> },
   { path: '/proyectos', element: <ProyectosPage /> },
   { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
@@ -38,6 +40,7 @@ const HOJA: Readonly<Record<PatronDeHoja, ReactNode>> = {
   '/finanzas/nuevo': <MovimientoNuevoPage />,
   '/finanzas/:id': <MovimientoEdicionPage />,
   '/seguimiento/nuevo': <ContactoNuevoPage />,
+  '/agenda/anotar': <AnotarPage />,
 };
 
 export const RUTAS_DE_HOJA: RouteObject[] = HOJAS_POR_RUTA.map(({ patron }) => ({

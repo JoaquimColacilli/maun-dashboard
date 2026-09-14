@@ -146,6 +146,16 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
                     : formatearPesos(proyecto.presupuesto_centavos)
                 }
               />
+              {proyecto.estado !== 'presupuesto_enviado' && (
+                <Dato
+                  clave="Presupuesto antes del"
+                  valor={
+                    proyecto.vencimiento_presupuesto === null
+                      ? 'Sin fecha límite'
+                      : `${fechaLarga(proyecto.vencimiento_presupuesto, hoy)}, ${relativa(proyecto.vencimiento_presupuesto, hoy)}`
+                  }
+                />
+              )}
               <Dato
                 clave="Teléfono"
                 valor={

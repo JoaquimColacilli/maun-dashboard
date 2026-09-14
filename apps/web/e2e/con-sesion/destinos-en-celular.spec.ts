@@ -76,6 +76,13 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
     await expect(
       page.getByRole('region', { name: 'Lo que la base rechazó o ajustó' }),
     ).toBeVisible();
+
+    await aInicio(page);
+    await page
+      .getByRole('region', { name: 'Hoy en la agenda' })
+      .getByRole('link', { name: 'Ver la agenda' })
+      .click();
+    await expect(titulo(page, 'Agenda')).toBeVisible();
   });
 
   test('el avatar de Inicio se alcanza con el teclado y dice a dónde lleva', async ({ page }) => {
@@ -109,5 +116,14 @@ test.describe('en escritorio', () => {
 
     await expect(page.getByRole('link', { name: 'Ajustes y tu cuenta' })).toHaveCount(0);
     await expect(barra(page).getByRole('button', { name: 'Ajustes' })).toBeVisible();
+  });
+
+  test('la Agenda está en la barra lateral y no suma un bloque en Inicio', async ({ page }) => {
+    await page.goto('/');
+    await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+
+    await expect(page.getByRole('region', { name: 'Hoy en la agenda' })).toHaveCount(0);
+    await barra(page).getByRole('button', { name: 'Agenda' }).click();
+    await expect(titulo(page, 'Agenda')).toBeVisible();
   });
 });

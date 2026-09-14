@@ -16,6 +16,7 @@ import { Button, Campo, FilaDeAcciones, Hoja, MoneyInput } from '@/shared/ui';
 import {
   erroresDelContacto,
   hayQueGuardar,
+  muestraElVencimiento,
   pedidoDelContacto,
   senaEditable,
   valoresDelContacto,
@@ -216,6 +217,18 @@ export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContacto
               />
             )}
           </div>
+
+          {muestraElVencimiento(proyecto) && (
+            <Campo
+              etiqueta="Entregar el presupuesto antes del"
+              type="date"
+              value={valores.vencimiento}
+              onChange={(evento) => {
+                cambiar('vencimiento', evento.target.value);
+              }}
+              ayuda="Sale en la agenda hasta que marques que lo mandaste."
+            />
+          )}
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${idCampos}-notas`} className="text-label text-text-2">

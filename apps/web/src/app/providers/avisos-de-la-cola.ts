@@ -24,6 +24,8 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   contactoAvanzado: 'proyecto',
   contactoBorrado: 'baja-de-proyecto',
   perfil: 'guardado',
+  anotacion: 'guardado',
+  anotacionBorrada: 'guardado',
 };
 
 const CLAVE_DE_LO_ANOTADO = 'anotado-sin-senal';
@@ -54,7 +56,7 @@ export function avisarDesdeLaCola(queryClient: QueryClient): () => void {
 
   function anotarSinSenal(id: number, avisos: AvisosDeUnaMutacion): void {
     esperandoTurno.delete(id);
-    if (sinSenal.has(id)) return;
+    if (avisos.silencioso || sinSenal.has(id)) return;
     sinSenal.add(id);
     const previas = anotadoVigente()?.mutaciones ?? new Set<number>();
     const aviso = avisarEnPantalla({
@@ -68,6 +70,10 @@ export function avisarDesdeLaCola(queryClient: QueryClient): () => void {
 
   function alGuardarse(id: number, avisos: AvisosDeUnaMutacion): void {
     esperandoTurno.delete(id);
+    if (avisos.silencioso) {
+      sinSenal.delete(id);
+      return;
+    }
     if (!sinSenal.delete(id)) {
       avisarEnPantalla({ clave: avisos.hecho, tono: 'hecho', texto: avisos.hecho });
       return;

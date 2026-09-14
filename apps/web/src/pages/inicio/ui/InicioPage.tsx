@@ -49,6 +49,8 @@ import {
 } from '@/shared/lib';
 import { Avatar, Button, FilaDeAcciones, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
+import { HoyEnLaAgenda } from './HoyEnLaAgenda';
+
 const DIAS_DE_PROYECCION = 365;
 
 function encabezado(frase: FraseDelDiezmo): string {
@@ -337,6 +339,8 @@ export function InicioPage() {
           />
         ))}
       </section>
+
+      {ancho === 'movil' && <HoyEnLaAgenda replica={replica} hoy={hoy} />}
 
       <LiquidacionesSinConfirmar replica={replica} />
 

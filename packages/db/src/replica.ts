@@ -9,6 +9,7 @@ export const TABLAS_REPLICADAS = [
   'pagos',
   'gastos',
   'movimientos',
+  'anotaciones',
 ] as const;
 
 export type TablaReplicada = (typeof TABLAS_REPLICADAS)[number];
@@ -43,8 +44,15 @@ export class RespuestaInvalidaError extends Error {
 
 type TablasMutables = Record<string, Record<string, FilaSincronizable>>;
 
-function filasCrudas(replica: Replica, tabla: TablaReplicada): Record<string, FilaSincronizable> {
-  return replica.tablas[tabla];
+type TablasQuePuedenFaltar = Partial<
+  Record<TablaReplicada, Readonly<Record<string, FilaSincronizable>>>
+>;
+
+function filasCrudas(
+  replica: Replica,
+  tabla: TablaReplicada,
+): Readonly<Record<string, FilaSincronizable>> {
+  return (replica.tablas as TablasQuePuedenFaltar)[tabla] ?? {};
 }
 
 function esFilaSincronizable(valor: unknown): valor is FilaSincronizable {
@@ -153,12 +161,8 @@ export function quitarFilaLocal(replica: Replica, tabla: TablaReplicada, id: str
 }
 
 export function filasDe<T extends TablaReplicada>(replica: Replica, tabla: T): FilaDe<T>[] {
-  const filas = Object.values(replica.tablas[tabla]);
-  return filas.sort((a, b) => {
-    const izquierda = (a as FilaSincronizable).id;
-    const derecha = (b as FilaSincronizable).id;
-    return izquierda < derecha ? -1 : izquierda > derecha ? 1 : 0;
-  });
+  const filas = Object.values(filasCrudas(replica, tabla));
+  return filas.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) as unknown as FilaDe<T>[];
 }
 
 export function filaPorId<T extends TablaReplicada>(
@@ -166,11 +170,11 @@ export function filaPorId<T extends TablaReplicada>(
   tabla: T,
   id: string,
 ): FilaDe<T> | undefined {
-  return replica.tablas[tabla][id];
+  return filasCrudas(replica, tabla)[id] as FilaDe<T> | undefined;
 }
 
 export function cantidadDe(replica: Replica, tabla: TablaReplicada): number {
-  return Object.keys(replica.tablas[tabla]).length;
+  return Object.keys(filasCrudas(replica, tabla)).length;
 }
 
 export function tieneAcceso(replica: Replica): boolean {
@@ -197,6 +201,7 @@ export function faltaConfigurar(ajustes: FilaDe<'ajustes'> | undefined): boolean
 
 export function necesitaReconcile(replica: Replica | undefined, ahora: number): boolean {
   if (!replica || replica.reconciliadoEn === '') return true;
+  if (TABLAS_REPLICADAS.some((tabla) => !(tabla in replica.tablas))) return true;
   const marca = Date.parse(replica.reconciliadoEn);
   if (Number.isNaN(marca)) return true;
   return ahora - marca >= HORAS_ENTRE_RECONCILES * 60 * 60 * 1000;

@@ -1,9 +1,12 @@
 import {
   aplicarLote,
+  borrarAnotacion,
   borrarCliente,
   borrarMovimiento,
   borrarProyecto,
   guardarAjustes,
+  guardarAnotacionNueva,
+  guardarCambiosDeAnotacion,
   guardarCambiosDeCliente,
   guardarCambiosDeMovimiento,
   guardarCambiosDeProyecto,
@@ -17,7 +20,9 @@ import {
   revertirLiquidacion,
   traerBootstrap,
   traerDelta,
+  type AnotacionNueva,
   type CambiosDeAjustes,
+  type CambiosDeAnotacion,
   type CambiosDeCliente,
   type CambiosDeMovimiento,
   type CambiosDeProyecto,
@@ -124,6 +129,27 @@ export async function darDeBajaProyecto(
   borradoEn: string,
 ): Promise<FilaDe<'proyectos'>> {
   return borrarProyecto(clienteMaun(), id, borradoEn);
+}
+
+export async function crearAnotacion(
+  nueva: AnotacionNueva,
+  restaurada = false,
+): Promise<FilaDe<'anotaciones'>> {
+  return guardarAnotacionNueva(clienteMaun(), nueva, restaurada);
+}
+
+export async function editarAnotacion(
+  id: string,
+  cambios: CambiosDeAnotacion,
+): Promise<FilaDe<'anotaciones'>> {
+  return guardarCambiosDeAnotacion(clienteMaun(), id, cambios);
+}
+
+export async function darDeBajaAnotacion(
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'anotaciones'>> {
+  return borrarAnotacion(clienteMaun(), id, borradoEn);
 }
 
 export async function liquidarElProyecto(

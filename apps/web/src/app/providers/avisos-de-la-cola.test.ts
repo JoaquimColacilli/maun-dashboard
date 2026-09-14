@@ -288,6 +288,38 @@ describe('los avisos que salen de la cola', () => {
     expect(avisados[0]?.detalle).toContain('«Rosa Ibarra» tiene trabajos cargados.');
   });
 
+  it('una mutación silenciosa no dice anotado ni guardado, porque ya avisó quien la hizo', async () => {
+    onlineManager.setOnline(false);
+    const callada = new MutationObserver(queryClient, {
+      mutationFn: () => Promise.resolve(),
+      scope: COLA,
+      meta: metaDeAvisos('anotacion', { silencioso: true, sujeto: 'Pintar la cajonera' }),
+    });
+
+    const enCola = callada.mutate();
+    await vi.waitFor(() => {
+      expect(enEspera()).toBe(true);
+    });
+    expect(avisados).toEqual([]);
+
+    onlineManager.setOnline(true);
+    await enCola;
+    expect(avisados).toEqual([]);
+  });
+
+  it('pero si una mutación silenciosa rebota, el rechazo sí se avisa', async () => {
+    const callada = new MutationObserver(queryClient, {
+      mutationFn: () =>
+        Promise.reject(Object.assign(new Error('sin permiso'), { code: '42501', hint: '' })),
+      meta: metaDeAvisos('anotacionBorrada', { silencioso: true, sujeto: 'Pintar la cajonera' }),
+    });
+
+    await callada.mutate().catch(() => undefined);
+    expect(avisados.map((aviso) => [aviso.tono, aviso.texto])).toEqual([
+      ['error', 'No se borró la anotación.'],
+    ]);
+  });
+
   it('una mutación sin textos de aviso, como las notas o un cobro, no avisa nada', async () => {
     const observador = new MutationObserver(queryClient, { mutationFn: () => Promise.resolve() });
     await observador.mutate();

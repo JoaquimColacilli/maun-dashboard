@@ -194,6 +194,7 @@ export const COLUMNAS_DE_PROYECTO = [
   'fecha_entrega',
   'direccion_entrega',
   'notas',
+  'vencimiento_presupuesto',
 ] as const;
 
 export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];
@@ -318,6 +319,71 @@ export async function borrarProyecto(
 ): Promise<FilaDe<'proyectos'>> {
   const { data, error } = await cliente
     .from('proyectos')
+    .update({ deleted_at: borradoEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export const COLUMNAS_DE_ANOTACION = [
+  'fecha',
+  'hora',
+  'texto',
+  'categoria',
+  'proyecto_id',
+  'hecha',
+  'importante',
+] as const;
+
+export type ColumnaDeAnotacion = (typeof COLUMNAS_DE_ANOTACION)[number];
+
+export type DatosDeAnotacion = Pick<FilaDe<'anotaciones'>, ColumnaDeAnotacion>;
+
+export type AnotacionNueva = DatosDeAnotacion & { id: string };
+
+export type CambiosDeAnotacion = Partial<DatosDeAnotacion>;
+
+export async function guardarAnotacionNueva(
+  cliente: ClienteMaun,
+  nueva: AnotacionNueva,
+  restaurada = false,
+): Promise<FilaDe<'anotaciones'>> {
+  const fila: Database['public']['Tables']['anotaciones']['Insert'] = restaurada
+    ? { ...nueva, deleted_at: null }
+    : nueva;
+  const { data, error } = await cliente
+    .from('anotaciones')
+    .upsert(fila, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function guardarCambiosDeAnotacion(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeAnotacion,
+): Promise<FilaDe<'anotaciones'>> {
+  const { data, error } = await cliente
+    .from('anotaciones')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function borrarAnotacion(
+  cliente: ClienteMaun,
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'anotaciones'>> {
+  const { data, error } = await cliente
+    .from('anotaciones')
     .update({ deleted_at: borradoEn })
     .eq('id', id)
     .select()

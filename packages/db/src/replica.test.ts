@@ -237,6 +237,26 @@ describe('lecturas de la réplica', () => {
     expect(ajustesDe(replica)).toMatchObject({ sueldo_mensual_centavos: 180000000 });
   });
 
+  it('una réplica guardada sin una tabla nueva se lee como vacía en esa tabla y se completa con un delta', () => {
+    const vieja = conClientes('t1', [cruda('c1', 1)]);
+    const { anotaciones: _anotaciones, ...sinAnotaciones } = vieja.tablas;
+    const guardada = { ...vieja, tablas: sinAnotaciones } as unknown as Replica;
+
+    expect(filasDe(guardada, 'anotaciones')).toEqual([]);
+    expect(cantidadDe(guardada, 'anotaciones')).toBe(0);
+    expect(filaPorId(guardada, 'anotaciones', 'n1')).toBeUndefined();
+    expect(ids(guardada, 'clientes')).toEqual(['c1']);
+
+    const siguiente = aplicarLote(
+      guardada,
+      lote('t2', { anotaciones: [cruda('n1', 1, { texto: 'Comprar melamina' })] }),
+      'delta',
+      AHORA,
+    );
+    expect(ids(siguiente, 'anotaciones')).toEqual(['n1']);
+    expect(ids(siguiente, 'clientes')).toEqual(['c1']);
+  });
+
   it('filaPorId encuentra la fila y no inventa una que no está', () => {
     const replica = conClientes('t1', [cruda('c1', 1), cruda('c2', 1)]);
     expect(filaPorId(replica, 'clientes', 'c1')).toMatchObject({ id: 'c1' });
@@ -276,6 +296,15 @@ describe('necesitaReconcile', () => {
   it('a las 24 horas sí, antes no', () => {
     expect(necesitaReconcile(conClientes('t1', [], 'reconcile', HACE_23_HORAS), AHORA)).toBe(false);
     expect(necesitaReconcile(conClientes('t1', [], 'reconcile', HACE_24_HORAS), AHORA)).toBe(true);
+  });
+
+  it('una réplica guardada antes de que existiera una tabla pide el reconcile completo', () => {
+    const vieja = conClientes('t1', [cruda('c1', 1)], 'reconcile', AHORA);
+    const { anotaciones: _anotaciones, ...sinAnotaciones } = vieja.tablas;
+    const guardada = { ...vieja, tablas: sinAnotaciones } as unknown as Replica;
+
+    expect(necesitaReconcile(vieja, AHORA)).toBe(false);
+    expect(necesitaReconcile(guardada, AHORA)).toBe(true);
   });
 
   it('la marca del reconcile es el reloj del cliente, no el cursor del servidor', () => {

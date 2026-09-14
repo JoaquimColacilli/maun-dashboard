@@ -108,7 +108,13 @@ describe('la meta de una mutación', () => {
       enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',
       error: 'No se borró el cliente.',
       errorEnPantalla: true,
+      silencioso: false,
     });
+  });
+
+  it('una mutación silenciosa lo lleva en la meta, y también sobrevive al disco', () => {
+    const meta = structuredClone(metaDeAvisos('anotacion', { silencioso: true, sujeto: 'Pintar' }));
+    expect(avisosDeLaMeta(meta)).toMatchObject({ que: 'anotacion', silencioso: true });
   });
 
   it('una mutación sin avisos no avisa', () => {

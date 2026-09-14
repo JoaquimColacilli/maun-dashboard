@@ -15,7 +15,15 @@ import {
 const HOY = '2026-09-12';
 
 function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
-  return { clienteId: 'c', titulo: 'Placard', visita: '', sena: null, notas: '', ...extra };
+  return {
+    clienteId: 'c',
+    titulo: 'Placard',
+    visita: '',
+    sena: null,
+    notas: '',
+    vencimiento: '',
+    ...extra,
+  };
 }
 
 function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'> {
