@@ -1,5 +1,7 @@
 export const DIAS_HABILES_DE_ENTREGA = 21;
 
+export const DIAS_HABILES_PARA_PRESUPUESTAR = 3;
+
 const MS_POR_DIA = 86_400_000;
 const FORMATO = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -57,6 +59,24 @@ export function sumarDiasHabiles(
 
 export function entregaEstimada(inicio: string, feriados: Iterable<string> = []): string {
   return sumarDiasHabiles(inicio, DIAS_HABILES_DE_ENTREGA, feriados);
+}
+
+export function vencimientoDelPresupuesto(
+  relevamiento: string,
+  feriados: Iterable<string> = [],
+): string {
+  return sumarDiasHabiles(relevamiento, DIAS_HABILES_PARA_PRESUPUESTAR, feriados);
+}
+
+export function sumarDias(desde: string, cantidad: number): string {
+  if (!Number.isInteger(cantidad)) {
+    throw new RangeError(`La cantidad de días es un entero: ${String(cantidad)} no.`);
+  }
+  return fechaDesdeDia(diaDesdeEpoca(desde) + cantidad);
+}
+
+export function diasEntre(desde: string, hasta: string): number {
+  return diaDesdeEpoca(hasta) - diaDesdeEpoca(desde);
 }
 
 export function mesDe(fecha: string): string {

@@ -69,7 +69,43 @@ export {
   type Fase,
 } from './estados.ts';
 
-export { DIAS_HABILES_DE_ENTREGA, entregaEstimada, mesDe, sumarDiasHabiles } from './fechas.ts';
+export {
+  DIAS_HABILES_DE_ENTREGA,
+  DIAS_HABILES_PARA_PRESUPUESTAR,
+  diasEntre,
+  entregaEstimada,
+  mesDe,
+  sumarDias,
+  sumarDiasHabiles,
+  vencimientoDelPresupuesto,
+} from './fechas.ts';
+
+export {
+  ANTICIPACIONES,
+  AVISO_DE_LA_CATEGORIA,
+  AVISOS_DE_LA_AGENDA,
+  CATEGORIAS_DE_AGENDA,
+  CATEGORIAS_DERIVADAS,
+  CATEGORIAS_PROPIAS,
+  eventosDeLaAgenda,
+  eventosParaAvisar,
+  PREFERENCIAS_INICIALES,
+  type Anticipacion,
+  type AnotacionDeLaAgenda,
+  type AvisoDeLaAgenda,
+  type CategoriaDeAgenda,
+  type CategoriaDerivada,
+  type CategoriaPropia,
+  type ClienteDeLaAgenda,
+  type DatosDeLaAgenda,
+  type EventoDeLaAgenda,
+  type EventoDerivado,
+  type EventoPropio,
+  type PreferenciaDeAviso,
+  type PreferenciasDeAvisos,
+  type ProyectoDeLaAgenda,
+  type RangoDeLaAgenda,
+} from './agenda.ts';
 
 export {
   asientosDeLaLinea,

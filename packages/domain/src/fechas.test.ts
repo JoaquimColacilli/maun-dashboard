@@ -1,6 +1,54 @@
 import { describe, expect, it } from 'vitest';
 
-import { DIAS_HABILES_DE_ENTREGA, entregaEstimada, mesDe, sumarDiasHabiles } from './fechas.ts';
+import {
+  DIAS_HABILES_DE_ENTREGA,
+  DIAS_HABILES_PARA_PRESUPUESTAR,
+  diasEntre,
+  entregaEstimada,
+  mesDe,
+  sumarDias,
+  sumarDiasHabiles,
+  vencimientoDelPresupuesto,
+} from './fechas.ts';
+
+describe('vencimientoDelPresupuesto', () => {
+  it('son tres días hábiles desde el relevamiento', () => {
+    expect(DIAS_HABILES_PARA_PRESUPUESTAR).toBe(3);
+    expect(vencimientoDelPresupuesto('2026-09-07')).toBe('2026-09-10');
+  });
+
+  it('un relevamiento del jueves vence el martes, y salta los feriados que se le pasan', () => {
+    expect(vencimientoDelPresupuesto('2026-09-10')).toBe('2026-09-15');
+    expect(vencimientoDelPresupuesto('2026-10-08', ['2026-10-12'])).toBe('2026-10-14');
+  });
+});
+
+describe('sumarDias', () => {
+  it('suma y resta días corridos, cruzando meses, años y el 29 de febrero', () => {
+    expect(sumarDias('2026-09-30', 1)).toBe('2026-10-01');
+    expect(sumarDias('2026-12-31', 1)).toBe('2027-01-01');
+    expect(sumarDias('2028-03-01', -1)).toBe('2028-02-29');
+    expect(sumarDias('2026-09-14', 0)).toBe('2026-09-14');
+  });
+
+  it('rechaza una fecha que no existe o una cantidad con decimales', () => {
+    expect(() => sumarDias('2026-02-30', 1)).toThrow(RangeError);
+    expect(() => sumarDias('2026-09-14', 0.5)).toThrow(RangeError);
+  });
+});
+
+describe('diasEntre', () => {
+  it('cuenta los días corridos de una fecha a otra, con signo', () => {
+    expect(diasEntre('2026-09-14', '2026-09-16')).toBe(2);
+    expect(diasEntre('2026-09-16', '2026-09-14')).toBe(-2);
+    expect(diasEntre('2026-12-31', '2027-01-01')).toBe(1);
+    expect(diasEntre('2026-09-14', '2026-09-14')).toBe(0);
+  });
+
+  it('rechaza fechas mal escritas', () => {
+    expect(() => diasEntre('2026-9-14', '2026-09-16')).toThrow(RangeError);
+  });
+});
 
 describe('mesDe', () => {
   it('es el mes calendario de la fecha, como AAAA-MM', () => {
