@@ -276,6 +276,18 @@ function AccesoAAjustes() {
   );
 }
 
+function AccesoALaAgenda() {
+  return (
+    <Link
+      to="/agenda"
+      aria-label="Agenda"
+      className="flex size-tap flex-none items-center justify-center rounded-pill text-ink hover:bg-surface"
+    >
+      <Icono nombre="calendar-days" tamano={22} />
+    </Link>
+  );
+}
+
 export function InicioPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
@@ -324,7 +336,12 @@ export function InicioPage() {
           <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>
           <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
         </div>
-        {ancho === 'movil' && <AccesoAAjustes />}
+        {ancho === 'movil' && (
+          <div className="flex flex-none items-center gap-1">
+            <AccesoALaAgenda />
+            <AccesoAAjustes />
+          </div>
+        )}
       </header>
 
       <section aria-label="Tesoros" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
