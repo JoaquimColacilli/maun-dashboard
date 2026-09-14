@@ -457,3 +457,52 @@ export async function guardarProyectoPorRpc(
     }),
   });
 }
+
+export interface PreferenciasDeAvisosDePrueba {
+  zona: string;
+  hora: string;
+  avisos: Record<string, { activo: boolean; anticipacion: number }>;
+}
+
+export interface EstadoDeLosAvisosDePrueba {
+  suscripto: boolean;
+  dispositivos: number;
+  preferencias: PreferenciasDeAvisosDePrueba | null;
+}
+
+export async function estadoDeLosAvisosPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  endpoint: string | null,
+): Promise<EstadoDeLosAvisosDePrueba> {
+  return (await pedir(entorno, '/rest/v1/rpc/estado_de_mis_avisos', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify(endpoint === null ? {} : { p_endpoint: endpoint }),
+  })) as EstadoDeLosAvisosDePrueba;
+}
+
+export async function darDeBajaAvisosPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  endpoint: string,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/rpc/dar_de_baja_suscripcion', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify({ p_endpoint: endpoint }),
+  });
+}
+
+export async function guardarPreferenciasDeAvisosPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  preferencias: PreferenciasDeAvisosDePrueba,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/rpc/guardar_preferencias_de_avisos', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify({
+      p_zona: preferencias.zona,
+      p_hora: preferencias.hora,
+      p_avisos: preferencias.avisos,
+    }),
+  });
+}

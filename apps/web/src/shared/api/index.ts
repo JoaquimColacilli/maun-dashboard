@@ -1,3 +1,11 @@
+export {
+  activarAvisosEnElServidor,
+  apagarAvisosEnElServidor,
+  estadoDeMisAvisos,
+  guardarMisPreferenciasDeAvisos,
+  mandarAvisoDePrueba,
+  servidorDeAvisos,
+} from './avisos';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   codigoDeAcceso,
@@ -85,7 +93,12 @@ export {
   type CambiosDeMovimiento,
   type BajaDeFilaHija,
   type DatosDeAnotacion,
+  type EstadoDeLosAvisos,
   type FilasDeLaAgenda,
+  type PreferenciasDeLaPersona,
+  type ResultadoDeLaPrueba,
+  type ServidorDeAvisos,
+  type SuscripcionDelDispositivo,
   type CambiosDeProyecto,
   type ClienteNuevo,
   type DatosDeCliente,

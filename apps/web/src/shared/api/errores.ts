@@ -125,6 +125,7 @@ export function esFalloDeRed(error: unknown): boolean {
   if (error instanceof TypeError) return true;
 
   const { nombre, estado } = codigoDeAuth(error);
+  if (nombre === 'FunctionsFetchError') return true;
   if (nombre === 'AuthRetryableFetchError') return estado === 0 || estado >= 500;
   if (nombre === 'StorageUnknownError') {
     const original = (error as Record<string, unknown>).originalError;

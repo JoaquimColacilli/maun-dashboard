@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { RouteObject } from 'react-router';
 
 import { AgendaPage, AnotarPage } from '@/pages/agenda';
-import { AjustesPage } from '@/pages/ajustes';
+import { AjustesPage, AvisosPage } from '@/pages/ajustes';
 import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
 import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/pages/finanzas';
@@ -34,6 +34,7 @@ export const RUTAS_DE_PANTALLA: RouteObject[] = [
   { path: '/finanzas', element: <FinanzasPage /> },
   { path: '/diezmo', element: <DiezmoPage /> },
   { path: '/ajustes', element: <AjustesPage /> },
+  { path: '/ajustes/avisos', element: <AvisosPage /> },
 ];
 
 const HOJA: Readonly<Record<PatronDeHoja, ReactNode>> = {

@@ -47,6 +47,24 @@ export {
 export { datosDeLaAgenda, datosDeLaAgendaDeLaReplica, type FilasDeLaAgenda } from './agenda.ts';
 
 export {
+  consultarServidorDeAvisos,
+  darDeBajaSuscripcion,
+  FUNCION_DE_AVISOS,
+  guardarPreferenciasDeAvisos,
+  leerEstadoDeLosAvisos,
+  leerResultadoDeLaPrueba,
+  leerServidorDeAvisos,
+  probarLosAvisos,
+  registrarSuscripcion,
+  traerEstadoDeLosAvisos,
+  type EstadoDeLosAvisos,
+  type PreferenciasDeLaPersona,
+  type ResultadoDeLaPrueba,
+  type ServidorDeAvisos,
+  type SuscripcionDelDispositivo,
+} from './avisos.ts';
+
+export {
   datosDelLibro,
   liquidacionesDeLaReplica,
   objetivosDeLaReplica,

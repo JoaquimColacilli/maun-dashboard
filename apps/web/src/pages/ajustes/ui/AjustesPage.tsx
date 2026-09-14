@@ -16,7 +16,13 @@ import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
-import { describirEstadoSync, esCelular, useAvisos, useEstadoSync } from '@/shared/lib';
+import {
+  describirEstadoSync,
+  esCelular,
+  RUTA_DE_AVISOS,
+  useAvisos,
+  useEstadoSync,
+} from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 const MUESTRA_DEL_DESENLACE_MS = 6000;
@@ -179,6 +185,23 @@ export function AjustesPage() {
               {ultimaSincronizacion(replica.cursor)}
             </p>
             <SincronizarAhora />
+          </section>
+
+          <section aria-labelledby="titulo-avisos-de-la-agenda" className={SECCION}>
+            <h2 id="titulo-avisos-de-la-agenda" className="text-section font-semibold">
+              Avisos de la agenda
+            </h2>
+            <p className="text-body leading-relaxed text-text-2">
+              Un recordatorio a la mañana con las entregas, las visitas y los presupuestos que
+              vencen. Se activa en cada dispositivo.
+            </p>
+            <Link
+              to={RUTA_DE_AVISOS}
+              className="inline-flex min-h-tap items-center gap-1.5 self-start rounded-field text-body font-semibold underline underline-offset-3"
+            >
+              <Icono nombre="bell" tamano={18} />
+              Configurar los avisos
+            </Link>
           </section>
 
           {esCelular() && (
