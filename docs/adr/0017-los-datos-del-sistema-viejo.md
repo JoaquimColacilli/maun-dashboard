@@ -268,6 +268,31 @@ Dos decisiones del dueño sobre el archivo real, tomadas después de leer la vis
   real), y el importe no distingue una nota de un gasto chico. No se acepta sobre un cobrado: le
   cambiaría la distribución.
 
+**Lo que el dueño configuró antes de migrar.** Entró a la app antes de la migración, puso sus ajustes
+y el saldo real de Cocos ($10.000.000, plata invertida de verdad, que el sistema viejo nunca tuvo).
+Para que el script corriera hubo que devolver el household a cero: se borró físicamente el ajuste de
+Cocos y los ajustes volvieron a cero. Un borrado lógico no alcanzaba, porque el script cuenta también
+las filas borradas.
+
+Para que eso no se pierda entre la migración y alguien que se acuerde de volver a cargarlo, el script
+lo aplica **al final, en la misma transacción**:
+
+- **`--sueldo-despues`, `--fijos-despues`, `--meta-cocos-despues` y `--tasa-cocos-despues`**, los
+  cuatro juntos, dejan los ajustes de hoy después de los cobros. Los cobros se recalculan igual con
+  la configuración del sistema viejo, y cambiar los ajustes no reescribe una distribución congelada.
+- **`--cocos-despues=<saldo real>`** no escribe un importe: lee de `libro_mayor` el saldo de COCOS que
+  dejó la migración y agrega un `ajuste` por la diferencia. Es lo mismo que hace Ajustes
+  (`ajusteDeCocos`), con la misma categoría y el mismo concepto según el signo, fechado en el corte.
+- **Verifica** que los ajustes quedaron en lo pedido, que COCOS quedó exactamente en el saldo real y
+  que HOGAR, MAUN y DIEZMO no se movieron. Si algo no cierra, corta y no se escribe nada.
+
+El ajuste de Cocos no entra como apertura a propósito. La apertura deja los saldos en lo que mostraba
+el sistema viejo el día del corte, y ahí COCOS era $0. Los $10.000.000 son un saldo real que el dueño
+declaró después, y en la app se ven como lo que son: un ajuste de Cocos.
+
+Un dispositivo que ya tenía la fila borrada en su réplica no se entera por delta. Después de migrar,
+el dueño cierra sesión y vuelve a entrar en cada dispositivo donde abrió la app.
+
 ## Alternativas descartadas
 
 - **Importación de CSV en la app**, como la del sistema viejo. Es la puerta de atrás del punto 1, y

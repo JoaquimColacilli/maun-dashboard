@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { Tesoro } from '../../src/enums.ts';
 import { describirGrupos } from './clientes.ts';
 import { diaLocal, ESTADOS_VIEJOS, type SistemaViejo } from './entrada.ts';
-import type { ResultadoDeLaMigracion } from './escritura.ts';
+import type { AjustesDeHoy, LoDeDespues, ResultadoDeLaMigracion } from './escritura.ts';
 import {
   TESOROS_EN_ORDEN,
   type Plan,
@@ -25,6 +25,7 @@ export interface EncabezadoDelInforme {
   leidos: Saldos;
   separar: readonly string[];
   insumosComoNotas: readonly string[];
+  despues: LoDeDespues;
 }
 
 export const DIFERENCIA_TOLERADA_CON_EL_VIEJO = 50;
@@ -42,6 +43,10 @@ export function pesos(importe: number): string {
   const enteros = String(Math.floor(absoluto / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const resto = absoluto % 100;
   return `${signo}$${enteros}${resto === 0 ? '' : `,${String(resto).padStart(2, '0')}`}`;
+}
+
+function porcentaje(puntosBasicos: number): string {
+  return `${String(puntosBasicos / 100).replace('.', ',')}%`;
 }
 
 function tabla(encabezados: readonly string[], filas: readonly (readonly string[])[]): string[] {
@@ -93,6 +98,20 @@ export function diferenciasConElViejo(leidos: Saldos, viejos: SaldosViejos): str
   });
 }
 
+function describirAjustes(ajustes: AjustesDeHoy): string {
+  return `sueldo ${pesos(ajustes.sueldo)}, fijos ${pesos(ajustes.fijos)}, meta de Cocos ${pesos(ajustes.metaCocos)}, tasa ${porcentaje(ajustes.tasaBp)}`;
+}
+
+function describirLoDeDespues(despues: LoDeDespues): string {
+  const partes = [
+    ...(despues.ajustes === null
+      ? []
+      : [`los ajustes de hoy (${describirAjustes(despues.ajustes)})`]),
+    ...(despues.cocos === null ? [] : [`el saldo real de Cocos, ${pesos(despues.cocos)}`]),
+  ];
+  return partes.length === 0 ? 'nada' : partes.join('; ');
+}
+
 function encabezado(datos: EncabezadoDelInforme, titulo: string): string[] {
   const leidos = TESOROS_EN_ORDEN.map(
     (tesoro) => `${NOMBRE_DEL_TESORO[tesoro]} ${pesos(datos.leidos[tesoro])}`,
@@ -108,6 +127,7 @@ function encabezado(datos: EncabezadoDelInforme, titulo: string): string[] {
     `- Saldos que leíste en el sistema viejo: ${leidos}`,
     `- Nombres separados a mano (--separar): ${datos.separar.length === 0 ? 'ninguno' : datos.separar.map((nombre) => JSON.stringify(nombre)).join(', ')}`,
     `- Proyectos con los insumos pasados a notas (--insumos-como-notas): ${datos.insumosComoNotas.length === 0 ? 'ninguno' : datos.insumosComoNotas.join(', ')}`,
+    `- Al terminar, en la misma transacción (--*-despues): ${describirLoDeDespues(datos.despues)}`,
   ];
 }
 
@@ -218,6 +238,7 @@ function seccionDeCobrados(plan: Plan, resultado: ResultadoDeLaMigracion): strin
         'Sueldo',
         'Fijos',
         'Remanente',
+        'Objetivos (sueldo · fijos)',
         'El viejo registró (diezmo · sueldo · fijos)',
       ],
       resultado.liquidaciones.map(({ proyecto, liquidacion }) => {
@@ -232,6 +253,7 @@ function seccionDeCobrados(plan: Plan, resultado: ResultadoDeLaMigracion): strin
           pesos(liquidacion.sueldo),
           pesos(liquidacion.fijos),
           pesos(liquidacion.remanente),
+          `${pesos(liquidacion.objetivos.sueldo)} · ${pesos(liquidacion.objetivos.fijos)}`,
           viejo === undefined
             ? 'nada'
             : `${pesos(viejo.diezmo)} · ${pesos(viejo.sueldo)} · ${pesos(viejo.fijos)}`,
@@ -240,6 +262,43 @@ function seccionDeCobrados(plan: Plan, resultado: ResultadoDeLaMigracion): strin
     ),
     '',
   ];
+}
+
+function seccionDeDespues(resultado: ResultadoDeLaMigracion): string[] {
+  const { despues } = resultado;
+  if (despues === null) return [];
+  const lineas = [
+    '## Al terminar la migración',
+    '',
+    'Corre después de verificar los saldos de la migración, en la misma transacción: si no se confirma, esto tampoco se escribe.',
+    '',
+  ];
+  if (despues.ajustes !== null) {
+    lineas.push(`- Ajustes de hoy: ${describirAjustes(despues.ajustes)}.`);
+  }
+  if (despues.cocos !== null) {
+    const { calculado, real, ajuste } = despues.cocos;
+    lineas.push(
+      `- COCOS al terminar la migración, según \`libro_mayor\`: ${pesos(calculado)}.`,
+      `- Saldo real de Cocos: ${pesos(real)}.`,
+      ajuste === null
+        ? '- No hizo falta ajustar Cocos: ya daba el saldo real.'
+        : `- Ajuste de Cocos por la diferencia: ${pesos(ajuste.diferencia)} (${ajuste.diferencia > 0 ? 'afuera → COCOS' : 'COCOS → afuera'}), fecha ${ajuste.fecha}, categoría «Ajuste», «${ajuste.descripcion}».`,
+    );
+  }
+  lineas.push(
+    '',
+    ...tabla(
+      ['Tesoro', 'Al terminar la migración', 'Al terminar todo'],
+      TESOROS_EN_ORDEN.map((tesoro) => [
+        NOMBRE_DEL_TESORO[tesoro],
+        pesos(resultado.saldos.final[tesoro]),
+        pesos(despues.saldos[tesoro]),
+      ]),
+    ),
+    '',
+  );
+  return lineas;
 }
 
 function agrupar<T>(items: readonly T[], clave: (item: T) => string, monto: (item: T) => number) {
@@ -283,7 +342,8 @@ export function redactarInforme(
 ): string {
   const nombres = plan.clientes.reduce((suma, grupo) => suma + grupo.variantes.length, 0);
   const { household, conteos } = resultado;
-  const { claves } = plan.sistema;
+  const { claves, configuracion } = plan.sistema;
+  const alTerminar = resultado.despues?.ajustes ?? configuracion;
   const lineas: string[] = [
     ...encabezado(datos, datos.modo),
     `- Claves leídas del archivo: \`${claves.proyectos}\`, \`${claves.movimientos}\` y \`${claves.configuracion}\``,
@@ -304,6 +364,10 @@ export function redactarInforme(
         ['Movimientos a mano que entran', String(plan.movimientos.length)],
         ['Movimientos descartados', String(plan.descartados.length)],
         ['Asientos de apertura', String(resultado.aperturas.length)],
+        [
+          'Ajuste de Cocos al terminar',
+          (resultado.despues?.cocos?.ajuste ?? null) === null ? '0' : '1',
+        ],
       ],
     ),
     '',
@@ -359,18 +423,34 @@ export function redactarInforme(
       ]),
     ),
     '',
+    ...plan.proyectos
+      .filter((proyecto) => proyecto.notas !== '')
+      .flatMap((proyecto) => [
+        `Notas de «${proyecto.viejo.titulo}» (${proyecto.clienteNombre}):`,
+        '',
+        '```',
+        proyecto.notas,
+        '```',
+        '',
+      ]),
     ...seccionDeCobrados(plan, resultado),
     '## Movimientos a mano que entran',
     '',
-    ...tabla(
-      ['Tipo viejo', 'Entra como', 'Cantidad', 'Total'],
-      agrupar(
-        plan.movimientos,
-        (movimiento) =>
-          `${movimiento.viejo.tipo}\t${movimiento.tipo} (${lado(movimiento.origen)} → ${lado(movimiento.destino)})`,
-        (movimiento) => movimiento.monto,
-      ).map(([clave, grupo]) => [...clave.split('\t'), String(grupo.cantidad), pesos(grupo.total)]),
-    ),
+    ...(plan.movimientos.length === 0
+      ? ['Ninguno.']
+      : tabla(
+          ['Tipo viejo', 'Entra como', 'Cantidad', 'Total'],
+          agrupar(
+            plan.movimientos,
+            (movimiento) =>
+              `${movimiento.viejo.tipo}\t${movimiento.tipo} (${lado(movimiento.origen)} → ${lado(movimiento.destino)})`,
+            (movimiento) => movimiento.monto,
+          ).map(([clave, grupo]) => [
+            ...clave.split('\t'),
+            String(grupo.cantidad),
+            pesos(grupo.total),
+          ]),
+        )),
     '',
     '## Movimientos descartados',
     '',
@@ -406,22 +486,42 @@ export function redactarInforme(
           ]),
         )),
     '',
+    ...seccionDeDespues(resultado),
     '## Configuración',
     '',
+    'Los cobros se recalculan con la configuración del sistema viejo. Lo que queda al terminar son los ajustes de hoy si se pasaron con --*-despues, y si no, esa misma configuración. Cambiar los ajustes no reescribe una distribución congelada.',
+    '',
     ...tabla(
-      ['', 'Estaba en el household', `Queda (de ${claves.configuracion})`],
       [
-        ['Sueldo', pesos(household.ajustes.sueldo), pesos(plan.sistema.configuracion.sueldo)],
-        ['Costos fijos', pesos(household.ajustes.fijos), pesos(plan.sistema.configuracion.fijos)],
+        '',
+        'Estaba en el household',
+        `Con la que se recalcularon los cobros (de ${claves.configuracion})`,
+        'Queda al terminar',
+      ],
+      [
+        [
+          'Sueldo',
+          pesos(household.ajustes.sueldo),
+          pesos(configuracion.sueldo),
+          pesos(alTerminar.sueldo),
+        ],
+        [
+          'Costos fijos',
+          pesos(household.ajustes.fijos),
+          pesos(configuracion.fijos),
+          pesos(alTerminar.fijos),
+        ],
         [
           'Meta de Cocos',
           pesos(household.ajustes.metaCocos),
-          pesos(plan.sistema.configuracion.metaCocos),
+          pesos(configuracion.metaCocos),
+          pesos(alTerminar.metaCocos),
         ],
         [
           'Tasa de Cocos',
-          `${String(household.ajustes.tasaBp / 100)}%`,
-          `${String(plan.sistema.configuracion.tasaBp / 100)}%`,
+          porcentaje(household.ajustes.tasaBp),
+          porcentaje(configuracion.tasaBp),
+          porcentaje(alTerminar.tasaBp),
         ],
       ],
     ),

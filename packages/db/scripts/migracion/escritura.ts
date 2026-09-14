@@ -70,6 +70,30 @@ export interface Conteos {
   movimientos: number;
 }
 
+export interface AjustesDeHoy {
+  sueldo: number;
+  fijos: number;
+  metaCocos: number;
+  tasaBp: number;
+}
+
+export interface LoDeDespues {
+  ajustes: AjustesDeHoy | null;
+  cocos: number | null;
+}
+
+export interface AjusteDeCocosHecho {
+  calculado: number;
+  real: number;
+  ajuste: Apertura | null;
+}
+
+export interface DespuesDeMigrar {
+  ajustes: AjustesDeHoy | null;
+  cocos: AjusteDeCocosHecho | null;
+  saldos: Saldos;
+}
+
 export interface ResultadoDeLaMigracion {
   household: Household;
   liquidaciones: LiquidacionHecha[];
@@ -78,6 +102,7 @@ export interface ResultadoDeLaMigracion {
   saldos: SaldosPorOrigen;
   conteos: Conteos;
   verificaciones: string[];
+  despues: DespuesDeMigrar | null;
 }
 
 export interface OpcionesDeMigracion {
@@ -85,9 +110,11 @@ export interface OpcionesDeMigracion {
   leidos: Saldos;
   corte: string;
   confirmarClientes: (descripcion: string) => Promise<boolean>;
+  despues?: LoDeDespues;
 }
 
 export const CATEGORIA_DE_APERTURA = 'Apertura';
+export const CATEGORIA_DEL_AJUSTE_DE_COCOS = 'Ajuste';
 
 export function objetivoDeLosLeidos(leidos: Saldos): Saldos {
   return { hogar: leidos.hogar, maun: leidos.maun, diezmo: 0 - leidos.diezmo, cocos: leidos.cocos };
@@ -226,6 +253,26 @@ interface FilaDeMovimiento {
   monto_centavos: number;
   categoria: string;
   descripcion: string;
+}
+
+const SQL_DE_MOVIMIENTOS = `insert into public.movimientos (id, fecha, tipo, tesoro_origen, tesoro_destino,
+       monto_centavos, categoria, descripcion)
+     select m.id, m.fecha::date, m.tipo::public.tipo_movimiento, m.tesoro_origen::public.tesoro,
+            m.tesoro_destino::public.tesoro, m.monto_centavos, m.categoria, m.descripcion
+     from jsonb_to_recordset($1::jsonb) as m (id uuid, fecha text, tipo text, tesoro_origen text,
+       tesoro_destino text, monto_centavos bigint, categoria text, descripcion text)`;
+
+function filaDeAjuste(ajuste: Apertura, categoria: string): FilaDeMovimiento {
+  return {
+    id: ajuste.id,
+    fecha: ajuste.fecha,
+    tipo: 'ajuste',
+    tesoro_origen: ajuste.diferencia < 0 ? ajuste.tesoro : null,
+    tesoro_destino: ajuste.diferencia > 0 ? ajuste.tesoro : null,
+    monto_centavos: Math.abs(ajuste.diferencia),
+    categoria,
+    descripcion: ajuste.descripcion,
+  };
 }
 
 async function leerSaldos(
@@ -380,6 +427,105 @@ async function liquidar(
   return hechas;
 }
 
+async function aplicarLoDeDespues(
+  cliente: pg.Client,
+  household: Household,
+  opciones: OpcionesDeMigracion,
+  antes: Saldos,
+  verificaciones: string[],
+): Promise<DespuesDeMigrar | null> {
+  const pedido = opciones.despues;
+  if (pedido === undefined || (pedido.ajustes === null && pedido.cocos === null)) return null;
+
+  await actuarComo(cliente, household.usuarioId);
+
+  if (pedido.ajustes !== null) {
+    const { rowCount } = await cliente.query(
+      `update public.ajustes set sueldo_mensual_centavos = $2, costos_fijos_centavos = $3,
+         meta_cocos_centavos = $4, tasa_cocos_anual_bp = $5
+       where household_id = $1`,
+      [
+        household.id,
+        pedido.ajustes.sueldo,
+        pedido.ajustes.fijos,
+        pedido.ajustes.metaCocos,
+        pedido.ajustes.tasaBp,
+      ],
+    );
+    if (rowCount !== 1)
+      throw new Error('No se pudieron dejar los ajustes de hoy con la cuenta del titular.');
+  }
+
+  let cocos: AjusteDeCocosHecho | null = null;
+  if (pedido.cocos !== null) {
+    const { rows } = await cliente.query<{ saldo: string }>(
+      `select coalesce(sum(monto_centavos), 0)::text as saldo
+       from public.libro_mayor where household_id = $1 and tesoro = 'cocos'`,
+      [household.id],
+    );
+    const calculado = Number(rows[0]?.saldo);
+    if (!Number.isSafeInteger(calculado)) {
+      throw new Error(
+        `No se pudo leer el saldo de COCOS después de migrar: ${String(rows[0]?.saldo)}.`,
+      );
+    }
+    const diferencia = pedido.cocos - calculado;
+    const ajuste: Apertura | null =
+      diferencia === 0
+        ? null
+        : {
+            id: randomUUID(),
+            tesoro: 'cocos',
+            diferencia,
+            fecha: opciones.corte,
+            descripcion:
+              diferencia > 0
+                ? 'Ajuste de Cocos (intereses o depósito)'
+                : 'Ajuste de Cocos (retiro o corrección)',
+          };
+    if (ajuste !== null) {
+      await insertar(cliente, SQL_DE_MOVIMIENTOS, [
+        filaDeAjuste(ajuste, CATEGORIA_DEL_AJUSTE_DE_COCOS),
+      ]);
+    }
+    cocos = { calculado, real: pedido.cocos, ajuste };
+  }
+
+  await volverAlDuenio(cliente);
+
+  if (pedido.ajustes !== null) {
+    const { rows } = await cliente.query<AjustesDeHoy>(
+      `select sueldo_mensual_centavos::float8 as "sueldo", costos_fijos_centavos::float8 as "fijos",
+              meta_cocos_centavos::float8 as "metaCocos", tasa_cocos_anual_bp as "tasaBp"
+       from public.ajustes where household_id = $1`,
+      [household.id],
+    );
+    if (JSON.stringify(rows[0]) !== JSON.stringify(pedido.ajustes)) {
+      throw new Error(
+        `Los ajustes quedaron en ${JSON.stringify(rows[0])} y tenían que quedar en ${JSON.stringify(pedido.ajustes)}.`,
+      );
+    }
+    verificaciones.push(
+      'Después de migrar, los ajustes quedaron exactamente en los de hoy. Los cobros ya se habían congelado con la configuración del sistema viejo, y cambiar los ajustes no los reescribe.',
+    );
+  }
+
+  const esperado: Saldos = { ...antes, cocos: pedido.cocos ?? antes.cocos };
+  const { final } = await leerSaldos(cliente, household.id, []);
+  if (!iguales(final, esperado)) {
+    throw new Error(
+      `Después de lo de después los saldos son ${describirSaldos(final)} y tenían que ser ${describirSaldos(esperado)}.`,
+    );
+  }
+  if (cocos !== null) {
+    verificaciones.push(
+      'COCOS quedó exactamente en el saldo real pedido: el ajuste es la diferencia contra el saldo que la vista libro_mayor daba después de migrar, no un importe escrito. HOGAR, MAUN y DIEZMO no se movieron.',
+    );
+  }
+
+  return { ajustes: pedido.ajustes, cocos, saldos: final };
+}
+
 export async function migrar(
   cliente: pg.Client,
   plan: Plan,
@@ -490,13 +636,7 @@ export async function migrar(
        descripcion text, monto_centavos bigint)`,
     gastos,
   );
-  const sqlDeMovimientos = `insert into public.movimientos (id, fecha, tipo, tesoro_origen, tesoro_destino,
-       monto_centavos, categoria, descripcion)
-     select m.id, m.fecha::date, m.tipo::public.tipo_movimiento, m.tesoro_origen::public.tesoro,
-            m.tesoro_destino::public.tesoro, m.monto_centavos, m.categoria, m.descripcion
-     from jsonb_to_recordset($1::jsonb) as m (id uuid, fecha text, tipo text, tesoro_origen text,
-       tesoro_destino text, monto_centavos bigint, categoria text, descripcion text)`;
-  await insertar(cliente, sqlDeMovimientos, movimientos);
+  await insertar(cliente, SQL_DE_MOVIMIENTOS, movimientos);
 
   const liquidaciones = await liquidar(cliente, plan, household);
 
@@ -515,17 +655,10 @@ export async function migrar(
       },
     ];
   });
-  const filasDeApertura: FilaDeMovimiento[] = aperturas.map((apertura) => ({
-    id: apertura.id,
-    fecha: apertura.fecha,
-    tipo: 'ajuste',
-    tesoro_origen: apertura.diferencia < 0 ? apertura.tesoro : null,
-    tesoro_destino: apertura.diferencia > 0 ? apertura.tesoro : null,
-    monto_centavos: Math.abs(apertura.diferencia),
-    categoria: CATEGORIA_DE_APERTURA,
-    descripcion: apertura.descripcion,
-  }));
-  await insertar(cliente, sqlDeMovimientos, filasDeApertura);
+  const filasDeApertura: FilaDeMovimiento[] = aperturas.map((apertura) =>
+    filaDeAjuste(apertura, CATEGORIA_DE_APERTURA),
+  );
+  await insertar(cliente, SQL_DE_MOVIMIENTOS, filasDeApertura);
 
   await volverAlDuenio(cliente);
 
@@ -633,6 +766,14 @@ export async function migrar(
     'Los cuatro saldos finales son exactamente los que leíste en el sistema viejo (el de DIEZMO, con el signo de la base).',
   );
 
+  const despues = await aplicarLoDeDespues(
+    cliente,
+    household,
+    opciones,
+    saldos.final,
+    verificaciones,
+  );
+
   return {
     household,
     liquidaciones,
@@ -641,5 +782,6 @@ export async function migrar(
     saldos,
     conteos,
     verificaciones,
+    despues,
   };
 }

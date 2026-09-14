@@ -477,6 +477,7 @@ describe('la migración contra un household de prueba, en rollback', () => {
         leidos: LEIDOS,
         separar: [],
         insumosComoNotas: [],
+        despues: { ajustes: null, cocos: null },
       };
       const informe = redactarInforme(
         plan,
@@ -519,6 +520,79 @@ describe('la migración contra un household de prueba, en rollback', () => {
         [householdId],
       );
       expect(rows[0]).toEqual({ clientes: 0, sueldo: '0' });
+    });
+  });
+
+  it('al final deja los ajustes de hoy y ajusta Cocos por la diferencia contra el saldo que quedó, no por un importe', async () => {
+    await enTransaccionConRollback(async (cliente) => {
+      const householdId = await householdDePrueba(cliente);
+      const plan = armarPlan(sistemaDePrueba(), { corte: CORTE });
+      const ajustesDeHoy = {
+        sueldo: 180_000_000,
+        fijos: 0,
+        metaCocos: 10_000_000_000,
+        tasaBp: 2600,
+      };
+      const resultado = await migrar(cliente, plan, {
+        householdId,
+        leidos: LEIDOS,
+        corte: CORTE,
+        confirmarClientes: siempre(true),
+        despues: { ajustes: ajustesDeHoy, cocos: 50_000_000 },
+      });
+
+      const ajuste = resultado.despues?.cocos?.ajuste;
+      expect(resultado.despues?.cocos).toMatchObject({ calculado: 60_500_000, real: 50_000_000 });
+      expect(ajuste).toMatchObject({
+        tesoro: 'cocos',
+        diferencia: -10_500_000,
+        fecha: CORTE,
+        descripcion: 'Ajuste de Cocos (retiro o corrección)',
+      });
+      expect(resultado.despues?.saldos).toEqual({
+        ...LEIDOS,
+        diezmo: 19_635_000,
+        cocos: 50_000_000,
+      });
+      expect(resultado.saldos.final.cocos).toBe(60_500_000);
+
+      const { rows: ajustes } = await cliente.query<Record<string, unknown>>(
+        `select sueldo_mensual_centavos::text as sueldo, costos_fijos_centavos::text as fijos,
+                meta_cocos_centavos::text as meta, tasa_cocos_anual_bp as tasa
+         from public.ajustes where household_id = $1`,
+        [householdId],
+      );
+      expect(ajustes[0]).toEqual({
+        sueldo: '180000000',
+        fijos: '0',
+        meta: '10000000000',
+        tasa: 2600,
+      });
+
+      const { rows: movimiento } = await cliente.query<Record<string, unknown>>(
+        `select tipo::text as tipo, tesoro_origen::text as origen, tesoro_destino::text as destino,
+                monto_centavos::text as monto, categoria, descripcion, fecha::text as fecha
+         from public.movimientos where household_id = $1 and id = $2`,
+        [householdId, ajuste?.id],
+      );
+      expect(movimiento).toEqual([
+        {
+          tipo: 'ajuste',
+          origen: 'cocos',
+          destino: null,
+          monto: '10500000',
+          categoria: 'Ajuste',
+          descripcion: 'Ajuste de Cocos (retiro o corrección)',
+          fecha: CORTE,
+        },
+      ]);
+
+      const { rows: congelados } = await cliente.query<{ fijos: string }>(
+        `select dist_objetivo_fijos_centavos::text as fijos from public.proyectos
+         where household_id = $1 and estado = 'cobrado'`,
+        [householdId],
+      );
+      expect(congelados.map((fila) => fila.fijos)).toEqual(['25000000', '25000000', '25000000']);
     });
   });
 
