@@ -27,6 +27,15 @@ async function moduloVigilado(): Promise<Huella> {
   return huella;
 }
 
+async function adentro(): Promise<Huella> {
+  guardarMarca({ desbloqueadaEn: AHORA - 5 * MINUTO });
+  const huella = await moduloVigilado();
+  expect(huella.appBloqueada('ana')).toBe(true);
+  huella.marcarDesbloqueada();
+  expect(huella.appBloqueada('ana')).toBe(false);
+  return huella;
+}
+
 let visibilidad: DocumentVisibilityState = 'visible';
 
 function cambiarVisibilidad(estado: DocumentVisibilityState): void {
@@ -138,87 +147,64 @@ describe('la marca de bloqueo de este dispositivo', () => {
 });
 
 describe('cuándo se abre sin huella', () => {
-  it('sin ningún momento guardado, la pide', async () => {
+  it('abrir la app la pide siempre, aunque haya estado adentro hace un segundo', async () => {
     const { abreSinHuella } = await modulo();
-    expect(abreSinHuella({ desbloqueadaEn: null, salioEn: null }, AHORA, 'navigate')).toBe(false);
-    expect(abreSinHuella({ desbloqueadaEn: null, salioEn: null }, AHORA, 'reload')).toBe(false);
-  });
+    const recien = { desbloqueadaEn: AHORA - SEGUNDO, salioEn: AHORA - SEGUNDO };
 
-  it('dentro del minuto desde la última vez adentro no la pide, pasado el minuto sí', async () => {
-    const { abreSinHuella } = await modulo();
-    const hace = (ms: number) => AHORA - ms;
-
-    expect(
-      abreSinHuella({ desbloqueadaEn: hace(5 * SEGUNDO), salioEn: null }, AHORA, 'navigate'),
-    ).toBe(true);
-    expect(abreSinHuella({ desbloqueadaEn: hace(MINUTO), salioEn: null }, AHORA, 'navigate')).toBe(
+    expect(abreSinHuella(recien, AHORA, 'navigate', false)).toBe(false);
+    expect(abreSinHuella(recien, AHORA, undefined, false)).toBe(false);
+    expect(abreSinHuella({ desbloqueadaEn: null, salioEn: null }, AHORA, 'reload', false)).toBe(
       false,
     );
+  });
+
+  it('una recarga enseguida de estar adentro no la pide', async () => {
+    const { abreSinHuella } = await modulo();
+
     expect(
       abreSinHuella(
-        { desbloqueadaEn: hace(60 * MINUTO), salioEn: hace(30 * SEGUNDO) },
+        { desbloqueadaEn: AHORA - 60 * MINUTO, salioEn: AHORA - 2 * SEGUNDO },
         AHORA,
-        'navigate',
+        'reload',
+        false,
       ),
     ).toBe(true);
     expect(
+      abreSinHuella({ desbloqueadaEn: AHORA - 3 * SEGUNDO, salioEn: null }, AHORA, 'reload', false),
+    ).toBe(true);
+  });
+
+  it('una «recarga» lejos de la última vez adentro, o de una página descartada, la pide', async () => {
+    const { abreSinHuella, TOPE_DE_UNA_RECARGA_MS } = await modulo();
+    const recien = { desbloqueadaEn: AHORA - 60 * MINUTO, salioEn: AHORA - 2 * SEGUNDO };
+
+    expect(
       abreSinHuella(
-        { desbloqueadaEn: hace(60 * MINUTO), salioEn: hace(2 * MINUTO) },
+        { desbloqueadaEn: AHORA - 60 * MINUTO, salioEn: AHORA - TOPE_DE_UNA_RECARGA_MS },
         AHORA,
-        'navigate',
+        'reload',
+        false,
       ),
     ).toBe(false);
+    expect(abreSinHuella(recien, AHORA, 'reload', true)).toBe(false);
   });
 
   it('con el reloj atrasado respecto del momento guardado, la pide', async () => {
     const { abreSinHuella } = await modulo();
-    expect(abreSinHuella({ desbloqueadaEn: AHORA + MINUTO, salioEn: null }, AHORA, 'reload')).toBe(
-      false,
-    );
-  });
-
-  it('una recarga de una apertura que nunca salió a segundo plano no la pide, con un tope', async () => {
-    const { abreSinHuella, TOPE_DE_UNA_RECARGA_MS } = await modulo();
-    const sinSalir = { desbloqueadaEn: AHORA - 5 * MINUTO, salioEn: null };
-
-    expect(abreSinHuella(sinSalir, AHORA, 'reload')).toBe(true);
-    expect(abreSinHuella(sinSalir, AHORA, 'navigate')).toBe(false);
-    expect(abreSinHuella(sinSalir, AHORA, undefined)).toBe(false);
     expect(
-      abreSinHuella(
-        { desbloqueadaEn: AHORA - TOPE_DE_UNA_RECARGA_MS, salioEn: null },
-        AHORA,
-        'reload',
-      ),
-    ).toBe(false);
-  });
-
-  it('una "recarga" de algo que ya había salido a segundo plano no se salva: decide el minuto', async () => {
-    const { abreSinHuella } = await modulo();
-    expect(
-      abreSinHuella(
-        { desbloqueadaEn: AHORA - 5 * MINUTO, salioEn: AHORA - 2 * MINUTO },
-        AHORA,
-        'reload',
-      ),
+      abreSinHuella({ desbloqueadaEn: AHORA + MINUTO, salioEn: null }, AHORA, 'reload', false),
     ).toBe(false);
   });
 });
 
-describe('la apertura, contra el reloj', () => {
-  it('abrir a los segundos de haber estado adentro no bloquea', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 5 * SEGUNDO });
-    const huella = await modulo();
-    expect(huella.appBloqueada('ana')).toBe(false);
-  });
-
-  it('un arranque en frío pasado el minuto bloquea', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 60 * MINUTO, salioEn: AHORA - 2 * MINUTO });
+describe('la apertura', () => {
+  it('un arranque en frío bloquea aunque haya salido hace unos segundos', async () => {
+    guardarMarca({ desbloqueadaEn: AHORA - 10 * SEGUNDO, salioEn: AHORA - 5 * SEGUNDO });
     const huella = await modulo();
     expect(huella.appBloqueada('ana')).toBe(true);
   });
 
-  it('la marca sin momentos, la de antes de este cambio, bloquea', async () => {
+  it('la marca sin momentos bloquea', async () => {
     guardarMarca({});
     const huella = await modulo();
     expect(huella.appBloqueada('ana')).toBe(true);
@@ -239,9 +225,7 @@ describe('la apertura, contra el reloj', () => {
 
 describe('el segundo plano', () => {
   it('al ocultarse, estando adentro, anota el momento', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 5 * SEGUNDO });
-    const huella = await moduloVigilado();
-    expect(huella.appBloqueada('ana')).toBe(false);
+    await adentro();
 
     vi.setSystemTime(AHORA + 30 * SEGUNDO);
     cambiarVisibilidad('hidden');
@@ -263,32 +247,53 @@ describe('el segundo plano', () => {
     });
   });
 
-  it('volver antes del minuto no bloquea; volver después, sí, y avisa', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 5 * SEGUNDO });
-    const huella = await moduloVigilado();
-    expect(huella.appBloqueada('ana')).toBe(false);
+  it('volver de segundo plano bloquea enseguida, sin esperar nada, y avisa', async () => {
+    const huella = await adentro();
     const avisos = vi.fn();
     window.addEventListener('maun:bloqueo-cambio', avisos);
 
     cambiarVisibilidad('hidden');
-    vi.setSystemTime(AHORA + 40 * SEGUNDO);
+    vi.setSystemTime(AHORA + SEGUNDO);
     cambiarVisibilidad('visible');
-    expect(huella.appBloqueada('ana')).toBe(false);
-    expect(avisos).not.toHaveBeenCalled();
 
-    cambiarVisibilidad('hidden');
-    vi.setSystemTime(AHORA + 40 * SEGUNDO + MINUTO);
-    cambiarVisibilidad('visible');
     expect(huella.appBloqueada('ana')).toBe(true);
     expect(avisos).toHaveBeenCalledTimes(1);
-
     window.removeEventListener('maun:bloqueo-cambio', avisos);
   });
 
-  it('otro aviso de oculta sin haber vuelto a la vista no renueva el momento', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 5 * SEGUNDO });
-    const huella = await moduloVigilado();
+  it('un aviso de visible sin haberse ocultado antes no bloquea', async () => {
+    const huella = await adentro();
+
+    cambiarVisibilidad('visible');
+
     expect(huella.appBloqueada('ana')).toBe(false);
+  });
+
+  it('si se ocultó estando bloqueada y se desbloqueó mientras tanto, volver no la bloquea de nuevo', async () => {
+    guardarMarca({});
+    const huella = await moduloVigilado();
+    expect(huella.appBloqueada('ana')).toBe(true);
+
+    cambiarVisibilidad('hidden');
+    huella.marcarDesbloqueada();
+    cambiarVisibilidad('visible');
+
+    expect(huella.appBloqueada('ana')).toBe(false);
+  });
+
+  it('activar el bloqueo con la página oculta no bloquea al volver', async () => {
+    const huella = await moduloVigilado();
+    huella.anotarIngresoConContrasena();
+
+    cambiarVisibilidad('hidden');
+    huella.activarBloqueo('ana', null);
+    cambiarVisibilidad('visible');
+
+    expect(huella.appBloqueada('ana')).toBe(false);
+  });
+
+  it('otro aviso de oculta sin haber vuelto a la vista no renueva el momento', async () => {
+    await adentro();
 
     cambiarVisibilidad('hidden');
     vi.setSystemTime(AHORA + 10 * MINUTO);
@@ -298,9 +303,7 @@ describe('el segundo plano', () => {
   });
 
   it('cerrar la app que ya estaba en segundo plano no renueva el momento', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 5 * SEGUNDO });
-    const huella = await moduloVigilado();
-    expect(huella.appBloqueada('ana')).toBe(false);
+    await adentro();
 
     cambiarVisibilidad('hidden');
     vi.setSystemTime(AHORA + 60 * MINUTO);
@@ -310,9 +313,7 @@ describe('el segundo plano', () => {
   });
 
   it('descargarse estando a la vista, sin aviso de visibilidad, sí lo renueva', async () => {
-    guardarMarca({ desbloqueadaEn: AHORA - 5 * SEGUNDO });
-    const huella = await moduloVigilado();
-    expect(huella.appBloqueada('ana')).toBe(false);
+    await adentro();
 
     vi.setSystemTime(AHORA + 20 * MINUTO);
     window.dispatchEvent(new Event('pagehide'));

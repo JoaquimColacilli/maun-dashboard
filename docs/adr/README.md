@@ -29,5 +29,6 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0023](0023-sesion-bloqueo-con-huella-y-passkeys.md)            | Pantallas de sesión, bloqueo con huella y passkeys       | Aceptada, corregida  |
 | [0024](0024-ajustes-en-el-celular-desde-el-avatar-de-inicio.md) | Ajustes en el celular desde el avatar de Inicio          | Aceptada             |
 | [0025](0025-lo-que-flota-abajo-una-holgura-medida.md)           | Lo que flota abajo: una holgura medida                   | Aceptada             |
-| [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md)              | El bloqueo cuenta el tiempo afuera, no las aperturas     | Aceptada             |
+| [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md)              | El bloqueo cuenta el tiempo afuera, no las aperturas     | Aceptada, corregida  |
 | [0027](0027-tirar-para-actualizar-sincroniza.md)                | Tirar para actualizar: sincroniza, no recarga            | Aceptada             |
+| [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md)          | La huella se pide cada vez que se sale                   | Aceptada             |

@@ -5,6 +5,7 @@ import {
   activarBloqueoEnElDispositivo,
   alFrente,
   aSegundoPlano,
+  CLAVE_DEL_BLOQUEO,
   contarPedidosDeHuella,
   credencialesDelTelefono,
   huellaQueVerifica,
@@ -19,8 +20,7 @@ import {
 } from '../apoyo/huella';
 
 const CARGA_DEL_TALLER = { timeout: 30_000 };
-const MENOS_QUE_EL_UMBRAL = '00:20';
-const MAS_QUE_EL_UMBRAL = '01:05';
+const MAS_QUE_UNA_RECARGA = '00:30';
 
 function ajustes(page: Page) {
   return page.getByRole('heading', { level: 1, name: 'Ajustes' });
@@ -127,7 +127,6 @@ test.describe('el bloqueo con huella, en el celular', () => {
   test('recargar estando adentro no vuelve a pedir la huella, tampoco después de un rato largo', async ({
     page,
   }) => {
-    await page.clock.install();
     await visibilidadControlable(page);
     await bloquearYReabrir(page, true);
     await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
@@ -137,14 +136,25 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
     expect(await pedidosDeHuella(page)).toBe(0);
 
-    await page.clock.fastForward('10:00');
+    await page.evaluate((clave) => {
+      const marca = JSON.parse(localStorage.getItem(clave) ?? 'null') as Record<
+        string,
+        unknown
+      > | null;
+      if (!marca) throw new Error('No hay marca de bloqueo.');
+      const haceDiezMinutos = Date.now() - 10 * 60_000;
+      localStorage.setItem(
+        clave,
+        JSON.stringify({ ...marca, desbloqueadaEn: haceDiezMinutos, salioEn: null }),
+      );
+    }, CLAVE_DEL_BLOQUEO);
     await page.reload();
     await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
     await expect(pantallaDeBloqueo(page)).toHaveCount(0);
     expect(await pedidosDeHuella(page)).toBe(0);
   });
 
-  test('un arranque en frío pasado el minuto pide la huella; cerrar y abrir enseguida, no', async ({
+  test('cerrar la app y abrirla pide la huella, aunque sea enseguida', async ({
     page,
     context,
   }) => {
@@ -154,27 +164,17 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await aSegundoPlano(page);
     await page.close();
 
-    await context.clock.install({ time: Date.now() + 20_000 });
-    const enseguida = await context.newPage();
-    await contarPedidosDeHuella(enseguida);
-    await enseguida.goto('/ajustes');
-    await expect(ajustes(enseguida)).toBeVisible(CARGA_DEL_TALLER);
-    expect(await pedidosDeHuella(enseguida)).toBe(0);
-    await enseguida.close();
-
-    const despues = await context.newPage();
-    await contarPedidosDeHuella(despues);
-    await despues.clock.fastForward(MAS_QUE_EL_UMBRAL);
-    await despues.goto('/ajustes');
-    await expect(pantallaDeBloqueo(despues)).toBeVisible(CARGA_DEL_TALLER);
-    await expect(despues.getByRole('navigation', { name: 'Principal' })).toHaveCount(0);
-    expect(await pedidosDeHuella(despues)).toBe(1);
+    const deNuevo = await context.newPage();
+    await contarPedidosDeHuella(deNuevo);
+    await deNuevo.goto('/ajustes');
+    await expect(pantallaDeBloqueo(deNuevo)).toBeVisible(CARGA_DEL_TALLER);
+    await expect(deNuevo.getByRole('navigation', { name: 'Principal' })).toHaveCount(0);
+    expect(await pedidosDeHuella(deNuevo)).toBe(1);
   });
 
-  test('volver de segundo plano pasado el minuto pide la huella, y lo que se estaba cargando sigue ahí', async ({
+  test('volver de segundo plano pide la huella enseguida, y lo que se estaba cargando sigue ahí', async ({
     page,
   }) => {
-    await page.clock.install();
     await visibilidadControlable(page);
     const telefono = await bloquearYReabrir(page, true);
     await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
@@ -185,15 +185,8 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await expect(hoja).toBeVisible();
     await hoja.getByLabel('Qué fue').fill('Tornillos para la mesada');
 
-    await aSegundoPlano(page);
-    await page.clock.fastForward(MENOS_QUE_EL_UMBRAL);
-    await alFrente(page);
-    await expect(pantallaDeBloqueo(page)).toHaveCount(0);
-    expect(await pedidosDeHuella(page)).toBe(1);
-
     await huellaQueVerifica(telefono, false);
     await aSegundoPlano(page);
-    await page.clock.fastForward(MAS_QUE_EL_UMBRAL);
     await alFrente(page);
     await expect(pantallaDeBloqueo(page)).toBeVisible();
     await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible();
@@ -205,7 +198,7 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await expect(hoja.getByLabel('Qué fue')).toHaveValue('Tornillos para la mesada');
   });
 
-  test('desde Ajustes se registra la passkey, y la próxima apertura pasado el minuto pide la huella', async ({
+  test('desde Ajustes se registra la passkey, y después de salir de la app la próxima apertura pide la huella', async ({
     page,
   }) => {
     await page.clock.install();
@@ -225,7 +218,7 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await expect(ajustes(page)).toBeVisible();
 
     await aSegundoPlano(page);
-    await page.clock.fastForward(MAS_QUE_EL_UMBRAL);
+    await page.clock.fastForward(MAS_QUE_UNA_RECARGA);
     await page.reload();
     await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
     expect(await pedidosDeHuella(page)).toBe(1);

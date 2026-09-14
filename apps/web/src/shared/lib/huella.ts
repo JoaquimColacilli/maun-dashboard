@@ -2,8 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 export const CLAVE_DEL_BLOQUEO = 'maun:bloqueo';
 export const CLAVE_DE_LAS_PREGUNTAS = 'maun:huella-preguntada';
-export const UMBRAL_DEL_BLOQUEO_MS = 60_000;
-export const TOPE_DE_UNA_RECARGA_MS = 10 * 60_000;
+export const TOPE_DE_UNA_RECARGA_MS = 15_000;
 
 const EVENTO_DEL_BLOQUEO = 'maun:bloqueo-cambio';
 const ESPERA_DE_LA_HUELLA_MS = 60_000;
@@ -35,6 +34,7 @@ const INICIO_DE_LA_APERTURA = Date.now();
 let apertura: Apertura = 'sin-decidir';
 let entroConContrasena = false;
 let ocultaDesde: number | null = null;
+let salioAbierta = false;
 
 function almacen(): Storage | undefined {
   try {
@@ -84,31 +84,29 @@ function sellar(sellos: Partial<SellosDelBloqueo>): void {
   if (bloqueo !== null) guardarBloqueo({ ...bloqueo, ...sellos });
 }
 
-export function sigueAdentro(sellos: SellosDelBloqueo, ahora: number): boolean {
+export function abreSinHuella(
+  sellos: SellosDelBloqueo,
+  ahora: number,
+  tipoDeNavegacion: string | undefined,
+  descartada: boolean,
+): boolean {
+  if (tipoDeNavegacion !== 'reload' || descartada) return false;
   const ultimaVezAdentro = Math.max(
     sellos.desbloqueadaEn ?? Number.NEGATIVE_INFINITY,
     sellos.salioEn ?? Number.NEGATIVE_INFINITY,
   );
   const transcurrido = ahora - ultimaVezAdentro;
-  return transcurrido >= 0 && transcurrido < UMBRAL_DEL_BLOQUEO_MS;
-}
-
-export function abreSinHuella(
-  sellos: SellosDelBloqueo,
-  ahora: number,
-  tipoDeNavegacion: string | undefined,
-): boolean {
-  if (sigueAdentro(sellos, ahora)) return true;
-  if (tipoDeNavegacion !== 'reload' || sellos.desbloqueadaEn === null) return false;
-  if (sellos.salioEn !== null && sellos.salioEn >= sellos.desbloqueadaEn) return false;
-  const desdeElDesbloqueo = ahora - sellos.desbloqueadaEn;
-  return desdeElDesbloqueo >= 0 && desdeElDesbloqueo < TOPE_DE_UNA_RECARGA_MS;
+  return transcurrido >= 0 && transcurrido < TOPE_DE_UNA_RECARGA_MS;
 }
 
 function tipoDeNavegacion(): string | undefined {
   if (typeof PerformanceNavigationTiming === 'undefined') return undefined;
   const [entrada] = globalThis.performance.getEntriesByType('navigation');
   return entrada instanceof PerformanceNavigationTiming ? entrada.type : undefined;
+}
+
+function fueDescartada(): boolean {
+  return 'wasDiscarded' in document && document.wasDiscarded === true;
 }
 
 export function bloqueoDe(usuarioId: string): BloqueoDelDispositivo | null {
@@ -120,7 +118,7 @@ export function appBloqueada(usuarioId: string): boolean {
   const bloqueo = bloqueoDe(usuarioId);
   if (bloqueo === null) return false;
   if (apertura === 'sin-decidir') {
-    apertura = abreSinHuella(bloqueo, INICIO_DE_LA_APERTURA, tipoDeNavegacion())
+    apertura = abreSinHuella(bloqueo, INICIO_DE_LA_APERTURA, tipoDeNavegacion(), fueDescartada())
       ? 'abierta'
       : 'cerrada';
   }
@@ -129,6 +127,7 @@ export function appBloqueada(usuarioId: string): boolean {
 
 export function activarBloqueo(usuarioId: string, credencial: string | null): void {
   apertura = 'abierta';
+  salioAbierta = false;
   guardarBloqueo({ usuarioId, credencial, desbloqueadaEn: Date.now(), salioEn: null });
   avisar();
 }
@@ -148,6 +147,7 @@ export function olvidarBloqueo(): void {
 }
 
 export function marcarDesbloqueada(): void {
+  salioAbierta = false;
   sellar({ desbloqueadaEn: Date.now() });
   if (apertura === 'abierta') return;
   apertura = 'abierta';
@@ -167,14 +167,15 @@ function alOcultarse(): void {
   if (ocultaDesde !== null) return;
   ocultaDesde = Date.now();
   if (apertura !== 'abierta') return;
+  salioAbierta = true;
   sellar({ salioEn: ocultaDesde });
 }
 
 function alVolver(): void {
+  const saliaAbierta = salioAbierta;
   ocultaDesde = null;
-  if (apertura !== 'abierta') return;
-  const bloqueo = leerBloqueo();
-  if (bloqueo === null || sigueAdentro(bloqueo, Date.now())) return;
+  salioAbierta = false;
+  if (apertura !== 'abierta' || !saliaAbierta) return;
   apertura = 'cerrada';
   avisar();
 }

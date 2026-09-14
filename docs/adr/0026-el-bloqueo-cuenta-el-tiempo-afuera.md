@@ -3,6 +3,8 @@
 - Estado: aceptada
 - Fecha: 2026-09-13
 - Completa al [0023](0023-sesion-bloqueo-con-huella-y-passkeys.md) en cuándo se pide la huella.
+- Corregido por el [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md): ya no hay minuto de gracia,
+  la huella se pide cada vez que se sale.
 
 ## Contexto
 
