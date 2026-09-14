@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`) y el CUIT (`cuit.ts`). Las decisiones están en el ADR 0011.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`) y la agenda con lo que se avisa (`agenda.ts`). Las decisiones están en el ADR 0011, y las de la agenda en el 0034.
 
 ## Pureza (la aplican las herramientas)
 
@@ -59,6 +59,13 @@ destino); un asiento es un lado (ADR 0018).
 
 - `puedeLiquidar` (`puedeCobrar`, `puedeCerrarPerdido`) dice desde dónde se llega.
 - `puedeRevertir` (`puedeReabrir`, `puedeReactivar`) dice a dónde se vuelve.
+
+## La agenda (ADR 0034)
+
+- **`eventosDeLaAgenda(datos, rango)` calcula lo que sale de los trabajos; nada de eso se guarda.** Entrega si la obra está `en_curso` con `entregaEstimada`; visita si está en seguimiento con `fechaVisita`; presupuesto si está en seguimiento, todavía no en `presupuesto_enviado`, con `vencimientoPresupuesto`. Suma las anotaciones del rango y ordena por fecha, lo que tiene hora primero, la hora, el peso de la categoría y el texto.
+- **`eventosParaAvisar(datos, hoy, preferencias)` usa la misma función.** La anticipación es una ventana, de hoy a N días, no un día exacto. Salen lo inactivo y lo tildado.
+- `vencimientoDelPresupuesto` son `DIAS_HABILES_PARA_PRESUPUESTAR` (3) días hábiles. `sumarDias` y `diasEntre` cuentan en UTC sobre fechas `AAAA-MM-DD`: sin librería de fechas y sin `Temporal`.
+- **No tiene gemela en SQL: la base no calcula eventos.** La función de borde de los avisos importa este código fuente con Deno, que es otra razón para los imports relativos con `.ts`.
 
 ## Tests
 

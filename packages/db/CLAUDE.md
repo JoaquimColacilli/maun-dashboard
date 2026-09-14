@@ -1,6 +1,6 @@
 # @maun/db
 
-Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed, el alta de households y la migración de una sola vez desde el sistema viejo (`db:migrar`).
+Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, las llamadas de la agenda y los avisos, los tests de la función de borde `supabase/functions/avisos`, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed, el alta de households y la migración de una sola vez desde el sistema viejo (`db:migrar`).
 
 ## El cliente
 
@@ -21,6 +21,16 @@ Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la fa
 - `src/vistas.ts` traduce la réplica para el dominio. `totalesPorProyecto` vive ahí y no en una pantalla: son los dos números que la app le manda a `cobrar_proyecto`, y si divergen de la suma de la base el cobro rebota con `MN006`. El comparador los verifica por el camino real (ADR 0015).
 - `guardarProyecto` llama al RPC `guardar_proyecto`, que guarda el proyecto con sus pagos y sus gastos en una transacción. Es la única forma de escribir pagos y gastos: no hay mutaciones sueltas para ellos (ADR 0015).
 - `liquidarProyecto` y `revertirLiquidacion` son las cuatro operaciones que tocan la distribución congelada. **El pedido lleva el acumulado del mes que vio la app** (`sueldoPrevioCentavos` / `fijosPrevioCentavos`): si no es el de la base, la liquidación vuelve **ajustada** —congelada con el acumulado del servidor— en vez de rechazada con `MN006`. Se detecta comparando `dist_sueldo_previo_centavos` de la fila que vuelve contra lo que se mandó; la respuesta no trae marca (ADR 0016).
+
+## La agenda y los avisos (ADR 0034 y 0036)
+
+- `src/agenda.ts` convierte filas en los datos del dominio: `datosDeLaAgendaDeLaReplica` para la app, `datosDeLaAgenda` para la función de borde. Es la misma función a propósito: lo que muestra la agenda y lo que se avisa no pueden divergir.
+- `src/avisos.ts` son las llamadas de los avisos: las funciones de suscripción y preferencias, y la función de borde (`GET` y `/probar`). Valida lo que vuelve antes de creerle (`leerEstadoDeLosAvisos`).
+- **Las suscripciones y las preferencias viven en `private`, sin `household_id` y fuera de la réplica.** `00_estructura.sql` no las cubre; las cubren `17_suscripciones_de_avisos.sql`, `18_envio_de_avisos.sql` y `19_trabajo_de_los_avisos.sql`.
+- **La función de borde vive en `supabase/functions/avisos`** y corre en Deno. `deno.json` apunta `@maun/domain` al código fuente y `web-push` a `npm:web-push@3.6.7`; `deno.lock` se commitea. Queda fuera del `tsconfig` raíz. `tests/funciones.test.ts` corre `deno check` y `deno test` con el Deno del devDependency, así que entra en `pnpm verify`.
+- Deploy: `pnpm --filter @maun/db sb functions deploy avisos --use-api --no-verify-jwt`. `verify_jwt = false` porque el trabajo programado entra con su secreto y `/probar` valida el token del usuario por su cuenta.
+- **Secretos, nunca en el repo.** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` y `AVISOS_SECRETO` en los secretos de la función (`sb secrets set --env-file <archivo fuera del repo>`); `avisos_url` y `avisos_secreto` en Vault, que los lee `private.pedir_los_avisos()`. Rotar las VAPID deja sin avisos a todos los dispositivos hasta que cada uno vuelva a activarlos.
+- **El trabajo `avisos-de-la-manana`** (pg_cron, cada 15 minutos) llama a `private.pedir_los_avisos()`. A quién le toca lo decide `private.avisos_por_mandar(ahora)` con la zona de cada persona, desde su hora y durante tres horas, una vez por día local.
 
 ## El alta de una cuenta
 

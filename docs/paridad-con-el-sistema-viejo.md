@@ -11,6 +11,9 @@ Actualizado en el paso 12 (migración y cierre). Con Seguimiento quedó construi
 dueño pidió en sus audios. El paso 12 agrega el script que trae los datos del sistema viejo
 (sección 10) y cierra las decisiones que habían quedado abiertas.
 
+Actualizado otra vez con la agenda y los avisos (ADR 0034 a 0036). El original no tenía ni una cosa ni
+la otra: todo lo de esa entrega es agregado nuestro, no paridad (sección 7).
+
 ---
 
 ## 1. Los catorce tipos de movimiento
@@ -214,6 +217,20 @@ Del paso 14 (ADR 0023):
   contraseña.
 - **El botón para ver la contraseña**, siempre presente, y los rechazos del acceso en castellano.
 
+De la agenda y los avisos (ADR 0034 a 0036). **Todo esto es agregado nuestro, no paridad**: el HTML
+original no tiene calendario, ni fechas límite de presupuesto, ni notas sueltas, ni notificaciones.
+
+- **La agenda del taller**: las visitas, los presupuestos por vencer y las entregas estimadas, calculados
+  desde los trabajos, junto a lo que anota el dueño. Lista con la tira del mes en el celular y grilla en
+  la PC, también sin señal.
+- **Las anotaciones**: materiales o taller, con hora opcional, un trabajo opcional, tildar, marcar como
+  importante y borrar, cada cosa con deshacer.
+- **La fecha límite del presupuesto** de un contacto, propuesta a tres días hábiles al pasar a «a
+  presupuestar» y editable.
+- **«Hoy en la agenda» en Inicio** y **«Anotar algo»** en el botón redondo del celular.
+- **El aviso de la mañana**, por dispositivo, con qué avisa, la anticipación, la hora y la zona horaria
+  que elige la persona. Es un recordatorio de mejor esfuerzo, y la pantalla lo dice.
+
 ---
 
 ## 8. Seguimiento, contra lo que obligaba el original
@@ -233,10 +250,11 @@ Lo que el HTML hacía con un trabajo que todavía no estaba aprobado, y qué pas
 
 ## 9. Pantallas del diseño que no se construyen
 
-| Pantalla de `design-reference/` | Veredicto                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Despiece.dc.html`              | **Obsoleta como pantalla.** Es la especificación de un componente, no una página, y ya está portada como `DistribucionDespiece` en la ficha y en el cobro (pasos 8 y 9). Calcula sobre el presupuesto, que es el error 1 del ADR 0003. Lo único sin portar son las cotas de carpintería y la franja rayada de «no alcanza»: el «faltan $X» ya está en la leyenda. |
-| `Seguimiento.dc.html`           | **Portada sin el tablero.** En escritorio dibuja cuatro columnas por etapa; se construyó una lista ordenada por espera (ADR 0019). Se portaron las tarjetas, llamar y WhatsApp, la marca de «frío» a los siete días, el pasaje con la seña y el saldo, y el formulario liviano.                                                                                   |
+| Pantalla de `design-reference/`               | Veredicto                                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Despiece.dc.html`                            | **Obsoleta como pantalla.** Es la especificación de un componente, no una página, y ya está portada como `DistribucionDespiece` en la ficha y en el cobro (pasos 8 y 9). Calcula sobre el presupuesto, que es el error 1 del ADR 0003. Lo único sin portar son las cotas de carpintería y la franja rayada de «no alcanza»: el «faltan $X» ya está en la leyenda. |
+| `Seguimiento.dc.html`                         | **Portada sin el tablero.** En escritorio dibuja cuatro columnas por etapa; se construyó una lista ordenada por espera (ADR 0019). Se portaron las tarjetas, llamar y WhatsApp, la marca de «frío» a los siete días, el pasaje con la seña y el saldo, y el formulario liviano.                                                                                   |
+| `MAUN Agenda.dc.html`, «Dónde vive la agenda» | **No se construye en este paso.** Pone Agenda en lugar de Inicio en la barra del celular y muda los tesoros a Finanzas: contradice el ADR 0024 y no hay diseño de Finanzas con los tesoros. Con el dueño se decidió que Inicio se quede; la agenda está en la barra lateral y, en el celular, en «Hoy en la agenda» de Inicio (ADR 0034).                         |
 
 ---
 
