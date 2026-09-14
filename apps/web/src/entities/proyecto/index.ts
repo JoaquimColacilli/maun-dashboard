@@ -16,6 +16,7 @@ export {
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
+  guardadoDeUnPaso,
   hijosDelProyecto,
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_NOTAS,
@@ -88,6 +89,14 @@ export {
   type FilaDinamica,
   type FormularioDeProyecto,
 } from './model/formulario';
+export {
+  cambiosAlPasar,
+  cambiosDeEstado,
+  type CambioDeEstado,
+  type EstadoSinLiquidar,
+  type SentidoDelCambio,
+} from './model/cambios-de-estado';
+export { situacionDeLaObra, type SituacionDeLaObra } from './model/obra';
 export {
   contactosEnOrden,
   diaDeLaMarca,

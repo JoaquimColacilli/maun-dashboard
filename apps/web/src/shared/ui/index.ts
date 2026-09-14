@@ -10,6 +10,7 @@ export { EnConstruccion } from './EnConstruccion';
 export { ConSalida, Hoja, type ConSalidaProps, type HojaProps } from './Hoja';
 export { MailEnviado, type MailEnviadoProps } from './MailEnviado';
 export { PanelDeAvisos, type PanelDeAvisosProps } from './PanelDeAvisos';
+export { PanelDePaso, type PanelDePasoProps, type TonoDelPaso } from './PanelDePaso';
 export {
   ENLACE_DE_ACCESO,
   ENLACE_DE_CAMPO,

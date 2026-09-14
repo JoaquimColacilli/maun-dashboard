@@ -32,3 +32,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md)              | El bloqueo cuenta el tiempo afuera, no las aperturas     | Aceptada, corregida  |
 | [0027](0027-tirar-para-actualizar-sincroniza.md)                | Tirar para actualizar: sincroniza, no recarga            | Aceptada             |
 | [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md)          | La huella se pide cada vez que se sale                   | Aceptada             |
+| [0029](0029-el-estado-se-cambia-desde-la-ficha.md)              | El estado se cambia desde la ficha, con acciones         | Aceptada             |

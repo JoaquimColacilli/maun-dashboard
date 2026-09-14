@@ -21,7 +21,7 @@ import {
   useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
+import { AvanceDeLaObra, BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
@@ -238,6 +238,8 @@ export function ProyectoFichaPage() {
           </div>
         </dl>
       </div>
+
+      <AvanceDeLaObra resumen={resumen} hoy={hoy} />
 
       <div className="mt-4 max-w-[520px]">
         {puedeCobrar(proyecto.estado) && (

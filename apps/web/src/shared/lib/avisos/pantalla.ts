@@ -64,6 +64,11 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',
     error: 'No se borró el proyecto.',
   },
+  proyectoAvanzado: {
+    hecho: 'Cambio de estado guardado.',
+    enCola: 'Cambio de estado anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se guardó el cambio de estado.',
+  },
   contactoGuardado: {
     hecho: 'Contacto guardado.',
     enCola: 'Contacto anotado sin señal: se guarda solo cuando vuelva.',

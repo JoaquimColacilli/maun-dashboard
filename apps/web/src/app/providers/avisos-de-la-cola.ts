@@ -12,6 +12,7 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   clienteBorrado: 'baja-de-cliente',
   proyectoGuardado: 'proyecto',
   proyectoBorrado: 'baja-de-proyecto',
+  proyectoAvanzado: 'proyecto',
   contactoGuardado: 'proyecto',
   contactoAvanzado: 'proyecto',
   contactoBorrado: 'baja-de-proyecto',
