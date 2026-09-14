@@ -56,11 +56,11 @@ El alta mira también las membresías borradas. Si a la cuenta le revocaron el a
    );
    ```
 
-   Pegalo en un archivo **fuera del repo**. Las tres claves pueden quedar como texto: el script las parsea.
+   Pegalo en un archivo **fuera del repo**. Las tres claves pueden quedar como texto: el script las parsea. También lee el backup con `proyectos`, `movimientos` y `config`. Una clave que falta corta como dato sucio: no se lee como vacía (ADR 0017).
 
 2. Anotá los cuatro saldos que muestra Finanzas ese día, tal cual, DIEZMO con su signo.
 3. El ensayo, que no escribe nada: `pnpm --filter @maun/db db:migrar --archivo <json> --household <id> --hogar=<saldo> --maun=<saldo> --diezmo=<saldo> --cocos=<saldo>`. Los saldos van con `=` para que uno negativo no se lea como otra opción.
-4. Leé el informe, que queda al lado del JSON. Si un grupo de clientes está mal, `--separar "<nombre exacto>"`. Si hay datos sucios, se corrigen en el JSON: el script no los arregla solo.
+4. Leé el informe, que queda al lado del JSON. Si un grupo de clientes está mal, `--separar "<nombre exacto>"`. Si los insumos de un proyecto son anotaciones y no gastos, `--insumos-como-notas <id viejo>`: pasan a las notas del proyecto. Un presupuestado con presupuesto de $1 entra solo sin presupuesto y a presupuestar. Si el dueño ya tiene ajustes o un saldo real de Cocos que no estaban en el sistema viejo, `--sueldo-despues`, `--fijos-despues`, `--meta-cocos-despues`, `--tasa-cocos-despues` (los cuatro juntos) y `--cocos-despues=<saldo real>` los aplican al final de la misma transacción: Cocos se ajusta por la diferencia contra el saldo que quedó, no por un importe. Si hay datos sucios, se corrigen en el JSON: el script no los arregla solo.
 5. La misma línea con `--escribir`: pregunta por los clientes antes de tocar nada, muestra todo y pide `confirmo` antes del `commit`.
 
 Lo que no hay que romper:

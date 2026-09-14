@@ -56,7 +56,7 @@ export function claveDelCliente(original: string, separar: readonly string[]): s
 export function describirGrupos(grupos: readonly GrupoDeClientes[]): string {
   const juntados = grupos.filter((grupo) => grupo.variantes.length > 1);
   const lineas = [
-    `${String(grupos.length)} clientes, de ${String(grupos.reduce((suma, grupo) => suma + grupo.variantes.length, 0))} nombres distintos en maun3_p.`,
+    `${String(grupos.length)} clientes, de ${String(grupos.reduce((suma, grupo) => suma + grupo.variantes.length, 0))} nombres distintos en los proyectos del archivo.`,
     '',
     juntados.length === 0
       ? 'Ningún nombre se juntó con otro.'

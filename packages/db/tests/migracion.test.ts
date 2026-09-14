@@ -134,6 +134,46 @@ describe('lo que se lee del JSON del sistema viejo', () => {
     ]);
   });
 
+  it('el backup con proyectos, movimientos y config se lee igual que las tres claves de la consola', () => {
+    const json = JSON.parse(textoDePrueba()) as Record<'maun3_p' | 'maun3_m' | 'maun3_c', unknown>;
+    const consola = leerSistemaViejo(json);
+    const backup = leerSistemaViejo({
+      proyectos: json.maun3_p,
+      movimientos: json.maun3_m,
+      config: json.maun3_c,
+    });
+    const comoLaConsola = (valor: unknown) =>
+      JSON.stringify(valor)
+        .replaceAll('"proyectos[', '"maun3_p[')
+        .replaceAll('"movimientos[', '"maun3_m[');
+
+    expect(backup.sucios).toEqual([]);
+    expect(backup.claves).toEqual({
+      proyectos: 'proyectos',
+      movimientos: 'movimientos',
+      configuracion: 'config',
+    });
+    expect(backup.proyectos).toHaveLength(8);
+    expect(backup.proyectos[0]?.donde).toMatch(/^proyectos\[0\] /);
+    expect(comoLaConsola(backup.proyectos)).toBe(JSON.stringify(consola.proyectos));
+    expect(comoLaConsola(backup.movimientos)).toBe(JSON.stringify(consola.movimientos));
+    expect(comoLaConsola(backup.avisos)).toBe(JSON.stringify(consola.avisos));
+    expect(backup.configuracion).toEqual(consola.configuracion);
+  });
+
+  it('una clave que falta corta en vez de leerse como vacía, y los dos formatos no se mezclan', () => {
+    expect(leerSistemaViejo({ proyectos: [], movimientos: [] }).sucios).toEqual([
+      'Al archivo le falta config. Una clave que no está no es una clave vacía: sin ella no se sabe si faltan datos.',
+    ]);
+    expect(leerSistemaViejo({ proyectos: [], maun3_m: [], maun3_c: null }).sucios).toEqual([
+      'El archivo mezcla claves de los dos formatos (maun3_m, maun3_c, proyectos): no se sabe cuáles leer.',
+    ]);
+    expect(leerSistemaViejo({ datos: [] }).sucios).toEqual([
+      'El archivo no tiene ni maun3_p, maun3_m y maun3_c, ni proyectos, movimientos y config: no hay de dónde leer.',
+    ]);
+    expect(leerSistemaViejo({ maun3_p: null, maun3_m: null, maun3_c: null }).sucios).toEqual([]);
+  });
+
   it('los saldos del sistema viejo salen como los sumaba calcTesoros, con DIEZMO al revés', () => {
     const plan = armarPlan(sistemaDePrueba(), { corte: CORTE });
     expect(plan.saldosViejos).toEqual({
@@ -181,6 +221,134 @@ describe('lo que se lee del JSON del sistema viejo', () => {
     expect(parsearSaldoLeido('0')).toBe(0);
     expect(parsearSaldoLeido('1234.56')).toBeNull();
     expect(parsearSaldoLeido('mucho')).toBeNull();
+  });
+});
+
+const DEL_ARCHIVO_REAL = {
+  maun3_c: null,
+  maun3_m: [],
+  maun3_p: [
+    {
+      id: '1789053851635-relle',
+      cliente: 'Ruth Esposito',
+      trabajo: 'Vanitory chico',
+      estado: 'presupuestado',
+      presupuesto: 1,
+      pagos: [],
+      insumos: [],
+    },
+    {
+      id: '1789052549337-notas',
+      cliente: 'Alan Saul',
+      trabajo: 'Escritorio',
+      estado: 'presupuestado',
+      presupuesto: 1248000,
+      pagos: [],
+      insumos: [
+        { fecha: '2026-09-10', nombre: 'Solo el escritorio 1248000', monto: 0.1 },
+        { fecha: '2026-09-10', nombre: 'Los 2 escritorios 2.300.000 (seña 1.200.000)', monto: 0.1 },
+      ],
+    },
+    {
+      id: '1787358543264-curso',
+      cliente: 'Cintia Sanc',
+      trabajo: 'Varios proyectos',
+      estado: 'en_curso',
+      presupuesto: 1,
+      pagos: [],
+      insumos: [],
+    },
+  ],
+};
+
+describe('los presupuestos de relleno y los insumos que son notas', () => {
+  it('un presupuestado de $1 entra sin presupuesto y a presupuestar; uno aprobado de $1 no se toca', () => {
+    const plan = armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), { corte: CORTE });
+    const [relleno, escritorio, enCurso] = plan.proyectos;
+
+    expect(relleno).toMatchObject({
+      estado: 'a_presupuestar',
+      presupuesto: null,
+      presupuestoDeRelleno: true,
+      ultimoContacto: fechaDeAlta('1789053851635-relle'),
+    });
+    expect(escritorio).toMatchObject({
+      estado: 'presupuesto_enviado',
+      presupuesto: 124_800_000,
+      presupuestoDeRelleno: false,
+      insumosANotas: 0,
+      notas: '',
+      gastos: 20,
+    });
+    expect(enCurso).toMatchObject({ estado: 'en_curso', presupuesto: 100 });
+    expect(plan.avisos).toContainEqual(expect.stringContaining('«Vanitory chico»'));
+  });
+
+  it('--insumos-como-notas pasa el texto de los insumos a las notas y no los carga como gastos', () => {
+    const plan = armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), {
+      corte: CORTE,
+      insumosComoNotas: ['1789052549337-notas'],
+    });
+    expect(plan.proyectos[1]).toMatchObject({
+      gastosAImportar: [],
+      gastos: 0,
+      insumosANotas: 2,
+      notas: [
+        'Del sistema viejo, anotado como insumos:',
+        '- 2026-09-10: Solo el escritorio 1248000',
+        '- 2026-09-10: Los 2 escritorios 2.300.000 (seña 1.200.000)',
+      ].join('\n'),
+    });
+  });
+
+  it('--insumos-como-notas corta con un id que no existe o con un proyecto cobrado', () => {
+    expect(() =>
+      armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), { corte: CORTE, insumosComoNotas: ['otro'] }),
+    ).toThrow('--insumos-como-notas otro: no hay ningún proyecto con ese id en maun3_p.');
+    expect(() =>
+      armarPlan(sistemaDePrueba(), {
+        corte: CORTE,
+        insumosComoNotas: ['1752600000000-a1b2c'],
+      }),
+    ).toThrow(/está cobrado, y sacarle los insumos le cambiaría la distribución/);
+  });
+
+  it('en la base entran como el plan dice: a presupuestar sin presupuesto, y las notas sin gastos', async () => {
+    await enTransaccionConRollback(async (cliente) => {
+      const householdId = await householdDePrueba(cliente);
+      const plan = armarPlan(leerSistemaViejo(DEL_ARCHIVO_REAL), {
+        corte: CORTE,
+        insumosComoNotas: ['1789052549337-notas'],
+      });
+      const resultado = await migrar(cliente, plan, {
+        householdId,
+        leidos: { hogar: 0, maun: 0, diezmo: 0, cocos: 0 },
+        corte: CORTE,
+        confirmarClientes: siempre(true),
+      });
+      expect(resultado.conteos).toMatchObject({ proyectos: 3, gastos: 0 });
+
+      const { rows } = await cliente.query<{
+        titulo: string;
+        estado: string;
+        presupuesto: string | null;
+        notas: string;
+      }>(
+        `select titulo, estado::text as estado, presupuesto_centavos::text as presupuesto, notas
+         from public.proyectos where household_id = $1 order by titulo`,
+        [householdId],
+      );
+      expect(rows).toEqual([
+        {
+          titulo: 'Escritorio',
+          estado: 'presupuesto_enviado',
+          presupuesto: '124800000',
+          notas: plan.proyectos[1]?.notas,
+        },
+        { titulo: 'Vanitory chico', estado: 'a_presupuestar', presupuesto: null, notas: '' },
+        { titulo: 'Varios proyectos', estado: 'en_curso', presupuesto: '100', notas: '' },
+      ]);
+    });
   });
 });
 
@@ -308,6 +476,8 @@ describe('la migración contra un household de prueba, en rollback', () => {
         corte: CORTE,
         leidos: LEIDOS,
         separar: [],
+        insumosComoNotas: [],
+        despues: { ajustes: null, cocos: null },
       };
       const informe = redactarInforme(
         plan,
@@ -350,6 +520,79 @@ describe('la migración contra un household de prueba, en rollback', () => {
         [householdId],
       );
       expect(rows[0]).toEqual({ clientes: 0, sueldo: '0' });
+    });
+  });
+
+  it('al final deja los ajustes de hoy y ajusta Cocos por la diferencia contra el saldo que quedó, no por un importe', async () => {
+    await enTransaccionConRollback(async (cliente) => {
+      const householdId = await householdDePrueba(cliente);
+      const plan = armarPlan(sistemaDePrueba(), { corte: CORTE });
+      const ajustesDeHoy = {
+        sueldo: 180_000_000,
+        fijos: 0,
+        metaCocos: 10_000_000_000,
+        tasaBp: 2600,
+      };
+      const resultado = await migrar(cliente, plan, {
+        householdId,
+        leidos: LEIDOS,
+        corte: CORTE,
+        confirmarClientes: siempre(true),
+        despues: { ajustes: ajustesDeHoy, cocos: 50_000_000 },
+      });
+
+      const ajuste = resultado.despues?.cocos?.ajuste;
+      expect(resultado.despues?.cocos).toMatchObject({ calculado: 60_500_000, real: 50_000_000 });
+      expect(ajuste).toMatchObject({
+        tesoro: 'cocos',
+        diferencia: -10_500_000,
+        fecha: CORTE,
+        descripcion: 'Ajuste de Cocos (retiro o corrección)',
+      });
+      expect(resultado.despues?.saldos).toEqual({
+        ...LEIDOS,
+        diezmo: 19_635_000,
+        cocos: 50_000_000,
+      });
+      expect(resultado.saldos.final.cocos).toBe(60_500_000);
+
+      const { rows: ajustes } = await cliente.query<Record<string, unknown>>(
+        `select sueldo_mensual_centavos::text as sueldo, costos_fijos_centavos::text as fijos,
+                meta_cocos_centavos::text as meta, tasa_cocos_anual_bp as tasa
+         from public.ajustes where household_id = $1`,
+        [householdId],
+      );
+      expect(ajustes[0]).toEqual({
+        sueldo: '180000000',
+        fijos: '0',
+        meta: '10000000000',
+        tasa: 2600,
+      });
+
+      const { rows: movimiento } = await cliente.query<Record<string, unknown>>(
+        `select tipo::text as tipo, tesoro_origen::text as origen, tesoro_destino::text as destino,
+                monto_centavos::text as monto, categoria, descripcion, fecha::text as fecha
+         from public.movimientos where household_id = $1 and id = $2`,
+        [householdId, ajuste?.id],
+      );
+      expect(movimiento).toEqual([
+        {
+          tipo: 'ajuste',
+          origen: 'cocos',
+          destino: null,
+          monto: '10500000',
+          categoria: 'Ajuste',
+          descripcion: 'Ajuste de Cocos (retiro o corrección)',
+          fecha: CORTE,
+        },
+      ]);
+
+      const { rows: congelados } = await cliente.query<{ fijos: string }>(
+        `select dist_objetivo_fijos_centavos::text as fijos from public.proyectos
+         where household_id = $1 and estado = 'cobrado'`,
+        [householdId],
+      );
+      expect(congelados.map((fila) => fila.fijos)).toEqual(['25000000', '25000000', '25000000']);
     });
   });
 

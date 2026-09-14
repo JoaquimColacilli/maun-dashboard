@@ -7,7 +7,12 @@ import { parseArgs } from 'node:util';
 
 import { conectar } from './conexion.ts';
 import { diaLocal, esFecha, leerSistemaViejo, parsearSaldoLeido } from './migracion/entrada.ts';
-import { MigracionRechazada, migrar } from './migracion/escritura.ts';
+import {
+  MigracionRechazada,
+  migrar,
+  type AjustesDeHoy,
+  type LoDeDespues,
+} from './migracion/escritura.ts';
 import {
   diferenciasConElViejo,
   guardarInforme,
@@ -16,15 +21,22 @@ import {
   redactarInforme,
   type EncabezadoDelInforme,
 } from './migracion/informe.ts';
-import { armarPlan, saldosEnCero, TESOROS_EN_ORDEN } from './migracion/plan.ts';
+import { armarPlan, saldosEnCero, TESOROS_EN_ORDEN, type Plan } from './migracion/plan.ts';
 
 const USO = `Uso:
   pnpm --filter @maun/db db:migrar --archivo <json> --household <id> \\
     --hogar=<saldo> --maun=<saldo> --diezmo=<saldo> --cocos=<saldo> \\
-    [--corte AAAA-MM-DD] [--separar "<nombre exacto>"]... [--informes <carpeta>] [--escribir]
+    [--corte AAAA-MM-DD] [--separar "<nombre exacto>"]... [--insumos-como-notas <id viejo>]... \\
+    [--sueldo-despues=<importe> --fijos-despues=<importe> --meta-cocos-despues=<importe> \\
+     --tasa-cocos-despues=<porcentaje>] [--cocos-despues=<saldo real>] \\
+    [--informes <carpeta>] [--escribir]
 
 Los cuatro saldos van como los muestra el sistema viejo el día del corte (1.234.567, o -124.000),
-con "=" para que un saldo negativo no se lea como otra opción. Sin --escribir es un ensayo.`;
+con "=" para que un saldo negativo no se lea como otra opción. Sin --escribir es un ensayo.
+
+Las opciones --*-despues se aplican al final, en la misma transacción: los cuatro ajustes van
+juntos (la tasa en porcentaje: 26 es 26%), y --cocos-despues es el saldo real de Cocos, del que el
+script ajusta la diferencia contra el saldo que quedó.`;
 
 function salir(mensaje: string): never {
   console.error(mensaje);
@@ -42,6 +54,12 @@ const { values } = parseArgs({
     cocos: { type: 'string' },
     corte: { type: 'string' },
     separar: { type: 'string', multiple: true, default: [] },
+    'insumos-como-notas': { type: 'string', multiple: true, default: [] },
+    'sueldo-despues': { type: 'string' },
+    'fijos-despues': { type: 'string' },
+    'meta-cocos-despues': { type: 'string' },
+    'tasa-cocos-despues': { type: 'string' },
+    'cocos-despues': { type: 'string' },
     informes: { type: 'string' },
     escribir: { type: 'boolean', default: false },
   },
@@ -69,6 +87,49 @@ for (const tesoro of TESOROS_EN_ORDEN) {
   leidos[tesoro] = importe;
 }
 
+function importeSinSigno(nombre: string, escrito: string): number {
+  const importe = parsearSaldoLeido(escrito);
+  if (importe === null || importe < 0) {
+    salir(
+      `--${nombre}=${escrito} no se entiende: tiene que ser un importe sin signo, como 1.800.000.`,
+    );
+  }
+  return importe;
+}
+
+const sueldoDespues = values['sueldo-despues'];
+const fijosDespues = values['fijos-despues'];
+const metaDespues = values['meta-cocos-despues'];
+const tasaDespues = values['tasa-cocos-despues'];
+let ajustesDeHoy: AjustesDeHoy | null = null;
+if ([sueldoDespues, fijosDespues, metaDespues, tasaDespues].some((valor) => valor !== undefined)) {
+  if (
+    sueldoDespues === undefined ||
+    fijosDespues === undefined ||
+    metaDespues === undefined ||
+    tasaDespues === undefined
+  ) {
+    salir(
+      'Los ajustes de después van los cuatro juntos: --sueldo-despues, --fijos-despues, --meta-cocos-despues y --tasa-cocos-despues.',
+    );
+  }
+  const tasaBp = importeSinSigno('tasa-cocos-despues', tasaDespues);
+  if (tasaBp > 100_000) {
+    salir(`--tasa-cocos-despues=${tasaDespues} está fuera de lo que acepta la base (hasta 1000%).`);
+  }
+  ajustesDeHoy = {
+    sueldo: importeSinSigno('sueldo-despues', sueldoDespues),
+    fijos: importeSinSigno('fijos-despues', fijosDespues),
+    metaCocos: importeSinSigno('meta-cocos-despues', metaDespues),
+    tasaBp,
+  };
+}
+const cocosDespues = values['cocos-despues'];
+const despues: LoDeDespues = {
+  ajustes: ajustesDeHoy,
+  cocos: cocosDespues === undefined ? null : importeSinSigno('cocos-despues', cocosDespues),
+};
+
 const corte = values.corte ?? diaLocal(new Date());
 if (!esFecha(corte)) {
   salir(`--corte tiene que ser una fecha AAAA-MM-DD: ${values.corte ?? ''} no lo es.`);
@@ -87,6 +148,7 @@ try {
   salir(`${archivo} no es JSON válido.`);
 }
 
+const insumosComoNotas = values['insumos-como-notas'];
 const encabezado: EncabezadoDelInforme = {
   modo: values.escribir ? 'escritura' : 'ensayo',
   generado: new Date(),
@@ -96,6 +158,8 @@ const encabezado: EncabezadoDelInforme = {
   corte,
   leidos,
   separar: values.separar,
+  insumosComoNotas,
+  despues,
 };
 const carpeta = values.informes ?? path.dirname(path.resolve(archivo));
 
@@ -106,7 +170,12 @@ if (sistema.sucios.length > 0) {
   salir(`Informe guardado en ${guardarInforme(carpeta, encabezado, informe)}`);
 }
 
-const plan = armarPlan(sistema, { separar: values.separar, corte });
+let plan: Plan;
+try {
+  plan = armarPlan(sistema, { separar: values.separar, insumosComoNotas, corte });
+} catch (error) {
+  salir(error instanceof Error ? error.message : String(error));
+}
 
 let terminal: Interface | undefined;
 function preguntar(pregunta: string): Promise<string> {
@@ -124,6 +193,7 @@ try {
     householdId,
     leidos,
     corte,
+    despues,
     confirmarClientes: async (descripcion) => {
       if (encabezado.modo === 'ensayo') return true;
       console.log(`\n${descripcion}\n`);

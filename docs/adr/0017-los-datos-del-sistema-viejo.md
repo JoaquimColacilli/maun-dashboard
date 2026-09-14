@@ -232,6 +232,67 @@ pnpm --filter @maun/db db:migrar --archivo <json> --household <id> \
   traer una forma que el HTML no deja ver, por ejemplo filas cargadas con la importación de CSV. Para
   eso está el ensayo.
 
+## El archivo real (2026-09-14)
+
+Pasó lo que el punto anterior temía. El JSON verdadero no vino de la línea de la consola: trae
+`proyectos`, `movimientos` y `config`, con las listas ya parseadas, en vez de `maun3_p`, `maun3_m` y
+`maun3_c`. Adentro, cada proyecto, pago, insumo y movimiento tiene los mismos campos que el HTML.
+
+**El lector tomaba una clave ausente como una clave vacía**, que es un aviso y no un dato sucio. Con
+ese archivo el ensayo habría dado cero proyectos y cero movimientos sin cortar, y la apertura habría
+cargado los cuatro saldos enteros. La única pista era la diferencia contra el sistema viejo, que con
+cero movimientos también daba cero.
+
+Se corrigió así:
+
+- **El script acepta los dos formatos.** Las claves que leyó van en el informe, y la ubicación de cada
+  fila usa el nombre de la clave del archivo (`proyectos[3]`).
+- **Una clave que falta es un dato sucio.** Una clave presente en `null` sigue siendo «vacía», porque
+  eso es lo que devuelve `localStorage.getItem` cuando nunca se guardó.
+- **Mezclar claves de los dos formatos también es un dato sucio**: no hay forma de saber cuál manda.
+
+Se descartó copiar el archivo con las claves renombradas. La huella del informe dejaría de ser la del
+archivo que llegó, y el agujero de la clave ausente seguiría abierto para el próximo.
+
+Dos decisiones del dueño sobre el archivo real, tomadas después de leer la vista previa:
+
+- **Un presupuestado con presupuesto de $1 entra sin presupuesto y en `a_presupuestar`.** Es relleno:
+  el sistema viejo no dejaba guardar sin presupuesto (el `alert` del ADR 0019). Siete de los diez
+  presupuestados del archivo son así, y como `presupuesto_enviado` habrían dicho «presupuesto enviado»
+  por $1. Es una regla y no una opción porque nadie presupuesta un peso, y solo mira los presupuestados:
+  un proyecto aprobado con $1 sería un dato raro, no relleno.
+- **`--insumos-como-notas <id viejo>`, repetible**, pasa el texto de los insumos de ese proyecto a sus
+  notas, y no entran como gastos. En el archivo, un presupuestado tenía dos «insumos» de $0,10 que eran
+  el detalle del presupuesto. Es una opción y no una regla, como `--separar`. «Los insumos de un
+  presupuestado son notas» contradiría la decisión del ADR 0019 (la nafta de la visita es un gasto
+  real), y el importe no distingue una nota de un gasto chico. No se acepta sobre un cobrado: le
+  cambiaría la distribución.
+
+**Lo que el dueño configuró antes de migrar.** Entró a la app antes de la migración, puso sus ajustes
+y el saldo real de Cocos ($10.000.000, plata invertida de verdad, que el sistema viejo nunca tuvo).
+Para que el script corriera hubo que devolver el household a cero: se borró físicamente el ajuste de
+Cocos y los ajustes volvieron a cero. Un borrado lógico no alcanzaba, porque el script cuenta también
+las filas borradas.
+
+Para que eso no se pierda entre la migración y alguien que se acuerde de volver a cargarlo, el script
+lo aplica **al final, en la misma transacción**:
+
+- **`--sueldo-despues`, `--fijos-despues`, `--meta-cocos-despues` y `--tasa-cocos-despues`**, los
+  cuatro juntos, dejan los ajustes de hoy después de los cobros. Los cobros se recalculan igual con
+  la configuración del sistema viejo, y cambiar los ajustes no reescribe una distribución congelada.
+- **`--cocos-despues=<saldo real>`** no escribe un importe: lee de `libro_mayor` el saldo de COCOS que
+  dejó la migración y agrega un `ajuste` por la diferencia. Es lo mismo que hace Ajustes
+  (`ajusteDeCocos`), con la misma categoría y el mismo concepto según el signo, fechado en el corte.
+- **Verifica** que los ajustes quedaron en lo pedido, que COCOS quedó exactamente en el saldo real y
+  que HOGAR, MAUN y DIEZMO no se movieron. Si algo no cierra, corta y no se escribe nada.
+
+El ajuste de Cocos no entra como apertura a propósito. La apertura deja los saldos en lo que mostraba
+el sistema viejo el día del corte, y ahí COCOS era $0. Los $10.000.000 son un saldo real que el dueño
+declaró después, y en la app se ven como lo que son: un ajuste de Cocos.
+
+Un dispositivo que ya tenía la fila borrada en su réplica no se entera por delta. Después de migrar,
+el dueño cierra sesión y vuelve a entrar en cada dispositivo donde abrió la app.
+
 ## Alternativas descartadas
 
 - **Importación de CSV en la app**, como la del sistema viejo. Es la puerta de atrás del punto 1, y

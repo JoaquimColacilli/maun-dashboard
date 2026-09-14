@@ -31,6 +31,24 @@ export const CONFIGURACION_POR_DEFECTO = {
 
 export const TOLERANCIA_EN_CENTAVOS = 0.001;
 
+export interface ClavesDelArchivo {
+  proyectos: string;
+  movimientos: string;
+  configuracion: string;
+}
+
+export const CLAVES_DE_LA_CONSOLA: ClavesDelArchivo = {
+  proyectos: 'maun3_p',
+  movimientos: 'maun3_m',
+  configuracion: 'maun3_c',
+};
+
+export const CLAVES_DEL_BACKUP: ClavesDelArchivo = {
+  proyectos: 'proyectos',
+  movimientos: 'movimientos',
+  configuracion: 'config',
+};
+
 export interface PagoViejo {
   donde: string;
   fecha: string;
@@ -82,6 +100,7 @@ export interface ConfiguracionVieja {
 }
 
 export interface SistemaViejo {
+  claves: ClavesDelArchivo;
   proyectos: ProyectoViejo[];
   movimientos: MovimientoViejo[];
   configuracion: ConfiguracionVieja;
@@ -277,8 +296,13 @@ function leerGastos(valor: unknown, donde: string, lector: Lector): GastoViejo[]
   return gastos;
 }
 
-function leerProyecto(valor: unknown, indice: number, lector: Lector): ProyectoViejo | null {
-  const base = `maun3_p[${String(indice)}]`;
+function leerProyecto(
+  valor: unknown,
+  indice: number,
+  nombre: string,
+  lector: Lector,
+): ProyectoViejo | null {
+  const base = `${nombre}[${String(indice)}]`;
   if (!esObjeto(valor)) {
     lector.sucios.push(`${base}: no es un proyecto (${mostrar(valor)}).`);
     return null;
@@ -358,8 +382,13 @@ function motivoDeDescarte(tipo: string, proyectoId: string | null): string | nul
   return null;
 }
 
-function leerMovimiento(valor: unknown, indice: number, lector: Lector): MovimientoViejo | null {
-  const base = `maun3_m[${String(indice)}]`;
+function leerMovimiento(
+  valor: unknown,
+  indice: number,
+  nombre: string,
+  lector: Lector,
+): MovimientoViejo | null {
+  const base = `${nombre}[${String(indice)}]`;
   if (!esObjeto(valor)) {
     lector.sucios.push(`${base}: no es un movimiento (${mostrar(valor)}).`);
     return null;
@@ -436,39 +465,39 @@ function leerMovimiento(valor: unknown, indice: number, lector: Lector): Movimie
   return { donde, indice, id, tipo, fecha, concepto, categoria, monto, proyectoId, descarte: null };
 }
 
-function leerConfiguracion(valor: unknown, lector: Lector): ConfiguracionVieja {
+function leerConfiguracion(valor: unknown, nombre: string, lector: Lector): ConfiguracionVieja {
   const conDefectos: Objeto = { ...CONFIGURACION_POR_DEFECTO };
   if (vacio(valor)) {
     lector.avisos.push(
-      'maun3_c está vacío: se usan los valores con los que arrancaba el sistema viejo (sueldo $1.800.000, fijos $0, meta de Cocos $10.000.000, tasa 40%).',
+      `${nombre} está vacío: se usan los valores con los que arrancaba el sistema viejo (sueldo $1.800.000, fijos $0, meta de Cocos $10.000.000, tasa 40%).`,
     );
   } else if (esObjeto(valor)) {
     for (const campo of Object.keys(CONFIGURACION_POR_DEFECTO)) {
       if (vacio(valor[campo])) {
         lector.avisos.push(
-          `maun3_c no tiene ${campo}: se usa el valor por defecto del sistema viejo.`,
+          `${nombre} no tiene ${campo}: se usa el valor por defecto del sistema viejo.`,
         );
       } else {
         conDefectos[campo] = valor[campo];
       }
     }
   } else {
-    lector.sucios.push(`maun3_c no es la configuración (${mostrar(valor)}).`);
+    lector.sucios.push(`${nombre} no es la configuración (${mostrar(valor)}).`);
   }
 
   const importe = (campo: string): Money => {
-    const monto = aCentavos(conDefectos[campo], `maun3_c.${campo}`, lector.sucios);
+    const monto = aCentavos(conDefectos[campo], `${nombre}.${campo}`, lector.sucios);
     if (monto !== null && monto < 0) {
-      lector.sucios.push(`maun3_c.${campo}: no puede ser negativo.`);
+      lector.sucios.push(`${nombre}.${campo}: no puede ser negativo.`);
       return centavos(0);
     }
     return centavos(monto ?? 0);
   };
 
-  const tasaBp = aCentavos(conDefectos.tasa, 'maun3_c.tasa', lector.sucios) ?? 0;
+  const tasaBp = aCentavos(conDefectos.tasa, `${nombre}.tasa`, lector.sucios) ?? 0;
   if (tasaBp < 0 || tasaBp > 100_000) {
     lector.sucios.push(
-      `maun3_c.tasa: ${String(tasaBp / 100)}% está fuera de lo que acepta la base.`,
+      `${nombre}.tasa: ${String(tasaBp / 100)}% está fuera de lo que acepta la base.`,
     );
   }
 
@@ -491,28 +520,77 @@ function clave(json: Objeto, nombre: string, lector: Lector): unknown {
   }
 }
 
+function nombresDe(claves: ClavesDelArchivo): string[] {
+  return [claves.proyectos, claves.movimientos, claves.configuracion];
+}
+
+function clavesDelArchivo(json: Objeto, lector: Lector): ClavesDelArchivo | null {
+  const usados = [CLAVES_DE_LA_CONSOLA, CLAVES_DEL_BACKUP]
+    .map((claves) => ({
+      claves,
+      presentes: nombresDe(claves).filter((nombre) => nombre in json),
+    }))
+    .filter(({ presentes }) => presentes.length > 0);
+
+  const [formato, otro] = usados;
+  if (formato === undefined) {
+    lector.sucios.push(
+      'El archivo no tiene ni maun3_p, maun3_m y maun3_c, ni proyectos, movimientos y config: no hay de dónde leer.',
+    );
+    return null;
+  }
+  if (otro !== undefined) {
+    lector.sucios.push(
+      `El archivo mezcla claves de los dos formatos (${usados.flatMap(({ presentes }) => presentes).join(', ')}): no se sabe cuáles leer.`,
+    );
+    return null;
+  }
+  const faltan = nombresDe(formato.claves).filter((nombre) => !formato.presentes.includes(nombre));
+  if (faltan.length > 0) {
+    lector.sucios.push(
+      `Al archivo le falta ${faltan.join(', ')}. Una clave que no está no es una clave vacía: sin ella no se sabe si faltan datos.`,
+    );
+    return null;
+  }
+  return formato.claves;
+}
+
+function sinDatos(lector: Lector): SistemaViejo {
+  return {
+    claves: CLAVES_DE_LA_CONSOLA,
+    proyectos: [],
+    movimientos: [],
+    configuracion: leerConfiguracion(undefined, CLAVES_DE_LA_CONSOLA.configuracion, {
+      sucios: [],
+      avisos: [],
+    }),
+    ...lector,
+  };
+}
+
 export function leerSistemaViejo(entrada: unknown): SistemaViejo {
   const lector: Lector = { sucios: [], avisos: [] };
   if (!esObjeto(entrada)) {
-    lector.sucios.push('El archivo no es un objeto JSON con maun3_p, maun3_m y maun3_c.');
-    return {
-      proyectos: [],
-      movimientos: [],
-      configuracion: leerConfiguracion(undefined, { sucios: [], avisos: [] }),
-      ...lector,
-    };
+    lector.sucios.push(
+      'El archivo no es un objeto JSON con maun3_p, maun3_m y maun3_c, o con proyectos, movimientos y config.',
+    );
+    return sinDatos(lector);
   }
+  const claves = clavesDelArchivo(entrada, lector);
+  if (claves === null) return sinDatos(lector);
 
-  const crudosP = clave(entrada, 'maun3_p', lector);
-  const crudosM = clave(entrada, 'maun3_m', lector);
-  if (vacio(crudosP)) lector.avisos.push('maun3_p está vacío: no hay proyectos para migrar.');
-  if (vacio(crudosM)) lector.avisos.push('maun3_m está vacío: no hay movimientos para migrar.');
+  const crudosP = clave(entrada, claves.proyectos, lector);
+  const crudosM = clave(entrada, claves.movimientos, lector);
+  if (vacio(crudosP))
+    lector.avisos.push(`${claves.proyectos} está vacío: no hay proyectos para migrar.`);
+  if (vacio(crudosM))
+    lector.avisos.push(`${claves.movimientos} está vacío: no hay movimientos para migrar.`);
 
-  const proyectos = lista(crudosP, 'maun3_p', lector)
-    .map((valor, indice) => leerProyecto(valor, indice, lector))
+  const proyectos = lista(crudosP, claves.proyectos, lector)
+    .map((valor, indice) => leerProyecto(valor, indice, claves.proyectos, lector))
     .filter((proyecto) => proyecto !== null);
-  const movimientos = lista(crudosM, 'maun3_m', lector)
-    .map((valor, indice) => leerMovimiento(valor, indice, lector))
+  const movimientos = lista(crudosM, claves.movimientos, lector)
+    .map((valor, indice) => leerMovimiento(valor, indice, claves.movimientos, lector))
     .filter((movimiento) => movimiento !== null);
 
   const vistos = new Map<string, string>();
@@ -525,9 +603,14 @@ export function leerSistemaViejo(entrada: unknown): SistemaViejo {
   }
 
   return {
+    claves,
     proyectos,
     movimientos,
-    configuracion: leerConfiguracion(clave(entrada, 'maun3_c', lector), lector),
+    configuracion: leerConfiguracion(
+      clave(entrada, claves.configuracion, lector),
+      claves.configuracion,
+      lector,
+    ),
     ...lector,
   };
 }
