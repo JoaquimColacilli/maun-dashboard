@@ -659,6 +659,16 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha, la distribución que le mostró al usuario y el acumulado del mes que vio. Si ese acumulado no es el de la base, la liquidación se congela con el de la base y la app lo ve comparando dist_sueldo_previo_centavos contra lo que mandó.';
 
+CREATE OR REPLACE FUNCTION public.dar_de_baja_suscripcion(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.dar_de_baja_suscripcion(p_endpoint)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function dar_de_baja_suscripcion(text) is 'Apaga los avisos en este dispositivo.';
+
 CREATE OR REPLACE FUNCTION public.delta(p_desde timestamp with time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -709,6 +719,27 @@ end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function delta(timestamp with time zone) is 'Filas del household cambiadas desde el cursor, incluidas las borradas (deleted_at no null), más el cursor siguiente. Aplica un solape de cinco minutos.';
+
+CREATE OR REPLACE FUNCTION public.estado_de_mis_avisos(p_endpoint text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select private.estado_de_mis_avisos(p_endpoint)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function estado_de_mis_avisos(text) is 'Si este dispositivo recibe avisos y las preferencias de la persona. preferencias es null hasta que activa los avisos por primera vez.';
+
+CREATE OR REPLACE FUNCTION public.guardar_preferencias_de_avisos(p_zona text, p_hora time without time zone, p_avisos jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.guardar_preferencias_de_avisos(p_zona, p_hora, p_avisos)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function guardar_preferencias_de_avisos(text,time without time zone,jsonb) is 'Cambia la zona horaria, la hora y qué avisa.';
 
 CREATE OR REPLACE FUNCTION public.guardar_proyecto(p_proyecto jsonb, p_pagos jsonb, p_gastos jsonb)
  RETURNS jsonb
@@ -949,6 +980,33 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function guardar_proyecto(jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos y sus gastos en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de pagos y gastos vienen marcadas con borrado en su propio array. Un proyecto liquidado rechaza el cambio de sus hijos con MN001, por la guarda de pagos y gastos.';
 
+CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    jsonb_typeof(p_avisos) = 'object'
+    and (select array_agg(clave order by clave) from jsonb_object_keys(p_avisos) as clave)
+      = array['anotaciones', 'entregas', 'presupuestos', 'visitas']
+    and (
+      select bool_and(
+        case
+          when jsonb_typeof(valor) <> 'object' then false
+          else jsonb_typeof(valor -> 'activo') = 'boolean'
+            and coalesce(valor ->> 'anticipacion', '') in ('0', '1', '2', '3')
+            and valor - 'activo' - 'anticipacion' = '{}'::jsonb
+        end
+      )
+      from jsonb_each(p_avisos) as e (clave, valor)
+    ),
+    false
+  )
+$function$;
+-- execute: solo el dueño
+comment on function private.avisos_bien_formados(jsonb) is 'Qué avisa y con cuánta anticipación: las cuatro claves de AVISOS_DE_LA_AGENDA de @maun/domain, cada una con activo y una anticipación de 0 a 3 días.';
+
 CREATE OR REPLACE FUNCTION private.borrar_hijos_de_proyecto()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1075,6 +1133,22 @@ $function$;
 -- execute: solo el dueño
 comment on function private.crear_taller_del_usuario() is 'Trigger de auth.users: a la cuenta que confirma su mail le crea el taller, la membresía de titular y los ajustes en cero. Idempotente: si ya tuvo taller, no hace nada.';
 
+CREATE OR REPLACE FUNCTION private.dar_de_baja_suscripcion(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  delete from private.suscripciones_de_avisos
+  where endpoint = p_endpoint
+    and user_id = (select auth.uid());
+  return found;
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.dar_de_baja_suscripcion(text) is 'Borra este dispositivo si es del usuario de la sesión. Un endpoint de otra cuenta no se toca.';
+
 CREATE OR REPLACE FUNCTION private.es_reenvio(p_old jsonb, p_new jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -1084,6 +1158,75 @@ AS $function$
   select (p_old - array['created_at', 'updated_at', 'version']) = (p_new - array['created_at', 'updated_at', 'version'])
 $function$;
 -- execute: authenticated:EXECUTE
+
+CREATE OR REPLACE FUNCTION private.estado_de_los_avisos(p_usuario uuid, p_endpoint text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select jsonb_build_object(
+    'suscripto', exists (
+      select 1 from private.suscripciones_de_avisos s
+      where s.user_id = p_usuario and s.endpoint = p_endpoint
+    ),
+    'ultimo_envio', (
+      select s.ultimo_envio from private.suscripciones_de_avisos s
+      where s.user_id = p_usuario and s.endpoint = p_endpoint
+    ),
+    'dispositivos', (
+      select count(*) from private.suscripciones_de_avisos s where s.user_id = p_usuario
+    ),
+    'preferencias', (
+      select jsonb_build_object('zona', p.zona, 'hora', to_char(p.hora, 'HH24:MI'), 'avisos', p.avisos)
+      from private.preferencias_de_avisos p
+      where p.user_id = p_usuario
+    )
+  )
+$function$;
+-- execute: solo el dueño
+comment on function private.estado_de_los_avisos(uuid,text) is 'Si este dispositivo recibe avisos, cuándo salió el último, cuántos dispositivos tiene la persona y sus preferencias. Solo la llaman las funciones de avisos.';
+
+CREATE OR REPLACE FUNCTION private.estado_de_mis_avisos(p_endpoint text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select private.estado_de_los_avisos((select auth.uid()), p_endpoint)
+$function$;
+-- execute: authenticated:EXECUTE
+
+CREATE OR REPLACE FUNCTION private.guardar_preferencias_de_avisos(p_zona text, p_hora time without time zone, p_avisos jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_usuario uuid := (select auth.uid());
+begin
+  if v_usuario is null then
+    raise exception 'Hace falta una sesión para cambiar los avisos' using errcode = '42501';
+  end if;
+  perform private.validar_zona(p_zona);
+  if p_hora is null or not private.avisos_bien_formados(p_avisos) then
+    raise exception 'Las preferencias de avisos no tienen la forma esperada' using errcode = '22023';
+  end if;
+
+  insert into private.preferencias_de_avisos (user_id, zona, hora, avisos)
+  values (v_usuario, p_zona, p_hora, p_avisos)
+  on conflict (user_id) do update set
+    zona = excluded.zona,
+    hora = excluded.hora,
+    avisos = excluded.avisos,
+    actualizada_en = now();
+
+  return private.estado_de_los_avisos(v_usuario, null);
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.guardar_preferencias_de_avisos(text,time without time zone,jsonb) is 'Guarda la zona horaria, la hora y qué avisa, para el usuario de la sesión.';
 
 CREATE OR REPLACE FUNCTION private.household_actual()
  RETURNS uuid
@@ -1484,6 +1627,42 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
+
+CREATE OR REPLACE FUNCTION private.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text, p_zona text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_usuario uuid := (select auth.uid());
+begin
+  if v_usuario is null then
+    raise exception 'Hace falta una sesión para activar los avisos' using errcode = '42501';
+  end if;
+  perform private.validar_zona(p_zona);
+
+  -- El mismo endpoint es el mismo dispositivo. Si lo registra otra cuenta (cambió de usuario en el
+  -- mismo teléfono), pasa a ser suyo y arranca de cero: los avisos del anterior dejan de llegar.
+  insert into private.suscripciones_de_avisos as s (user_id, endpoint, p256dh, auth)
+  values (v_usuario, p_endpoint, p_p256dh, p_auth)
+  on conflict (endpoint) do update set
+    user_id = excluded.user_id,
+    p256dh = excluded.p256dh,
+    auth = excluded.auth,
+    actualizada_en = now(),
+    ultimo_envio = case when s.user_id = excluded.user_id then s.ultimo_envio end,
+    ultimo_dia_avisado = case when s.user_id = excluded.user_id then s.ultimo_dia_avisado end;
+
+  insert into private.preferencias_de_avisos (user_id, zona)
+  values (v_usuario, p_zona)
+  on conflict (user_id) do update set zona = excluded.zona, actualizada_en = now();
+
+  return private.estado_de_los_avisos(v_usuario, p_endpoint);
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.registrar_suscripcion(text,text,text,text) is 'Registra este dispositivo para el usuario de la sesión, reasignándolo si era de otra cuenta, y guarda la zona horaria que eligió la persona.';
 
 CREATE OR REPLACE FUNCTION private.reversion_valida(p_desde estado_proyecto, p_hacia estado_proyecto)
  RETURNS boolean
@@ -1899,6 +2078,20 @@ $function$;
 -- execute: solo el dueño
 comment on function private.validar_proyecto() is 'Guarda de proyectos: un liquidado (cobrado o perdido) no cambia de estado editándolo, y con pagos o gastos no se borra (MN001); un borrado no revive (MN002); un proyecto vivo no cuelga de un cliente borrado (MN005); el estado solo sigue transiciones válidas (MN007). Deja pasar el reenvío idéntico de la cola.';
 
+CREATE OR REPLACE FUNCTION private.validar_zona(p_zona text)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO ''
+AS $function$
+begin
+  if p_zona is null or not exists (select 1 from pg_catalog.pg_timezone_names where name = p_zona) then
+    raise exception 'La zona horaria no existe' using errcode = '22023';
+  end if;
+end;
+$function$;
+-- execute: solo el dueño
+
 CREATE OR REPLACE FUNCTION public.reabrir_proyecto(p_proyecto_id uuid, p_version integer)
  RETURNS proyectos
  LANGUAGE sql
@@ -1918,3 +2111,13 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function reactivar_perdido(uuid,integer,estado_proyecto) is 'RPC de reactivación de un perdido: descongela su liquidación y lo vuelve al estado de seguimiento elegido.';
+
+CREATE OR REPLACE FUNCTION public.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text, p_zona text)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.registrar_suscripcion(p_endpoint, p_p256dh, p_auth, p_zona)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function registrar_suscripcion(text,text,text,text) is 'Activa los avisos en este dispositivo. No pasa por la cola de salida: sin señal no se puede suscribir a un servicio de push de todas formas.';

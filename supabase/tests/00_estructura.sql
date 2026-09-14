@@ -20,7 +20,10 @@ select set_eq(
     select p.proname::text from pg_proc p
     where p.pronamespace = 'public'::regnamespace and p.prorettype <> 'event_trigger'::regtype
   $$,
-  array['bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto'],
+  array[
+    'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
+    'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos'
+  ],
   'public expone exactamente las funciones esperadas'
 );
 

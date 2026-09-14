@@ -741,7 +741,16 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      dar_de_baja_suscripcion: {
+        Args: { p_endpoint: string };
+        Returns: boolean;
+      };
       delta: { Args: { p_desde: string }; Returns: Json };
+      estado_de_mis_avisos: { Args: { p_endpoint?: string }; Returns: Json };
+      guardar_preferencias_de_avisos: {
+        Args: { p_avisos: Json; p_hora: string; p_zona: string };
+        Returns: Json;
+      };
       guardar_proyecto: {
         Args: { p_gastos: Json; p_pagos: Json; p_proyecto: Json };
         Returns: Json;
@@ -853,6 +862,15 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      registrar_suscripcion: {
+        Args: {
+          p_auth: string;
+          p_endpoint: string;
+          p_p256dh: string;
+          p_zona: string;
+        };
+        Returns: Json;
       };
     };
     Enums: {
