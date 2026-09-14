@@ -13,7 +13,7 @@ import {
 
 import { Icono } from '@maun/ui';
 
-import { useAltoVisible, useAnchoDePantalla } from '@/shared/lib';
+import { useAlgoEnCurso, useAltoVisible, useAnchoDePantalla } from '@/shared/lib';
 
 interface Salida {
   saliendo: boolean;
@@ -99,6 +99,7 @@ export function Hoja({
   const alTerminar = salida?.alTerminar;
   const enCelular = pantalla === 'movil';
   const abajo = desdeAbajo || enCelular;
+  useAlgoEnCurso(!saliendo);
 
   useLayoutEffect(() => {
     const elemento = dialogo.current;

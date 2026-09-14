@@ -100,10 +100,30 @@ describe('la cola de salida', () => {
     expect(segundoCliente.getMutationCache().getAll()).toHaveLength(2);
 
     onlineManager.setOnline(true);
-    reanudarCola(segundoCliente);
+    void reanudarCola(segundoCliente);
     await esperar(120);
 
     expect(terminadas).toEqual([1, 2]);
+  });
+
+  it('reanudarCola se cumple recién cuando la cola terminó de drenar, en orden', async () => {
+    onlineManager.setOnline(false);
+    const terminadas: number[] = [];
+    const cliente = clienteCon(async ({ orden }) => {
+      if (orden === 1) await esperar(30);
+      terminadas.push(orden);
+      return orden;
+    }, true);
+
+    encolar(cliente, 1);
+    encolar(cliente, 2);
+    await esperar(0);
+    onlineManager.setOnline(true);
+
+    await reanudarCola(cliente);
+
+    expect(terminadas).toEqual([1, 2]);
+    expect(cliente.isMutating()).toBe(0);
   });
 
   it('sin el scope de la cola se drenan en paralelo y terminan al revés: por eso lo lleva', async () => {
@@ -156,7 +176,7 @@ describe('la cola de salida', () => {
     await restaurar(segundoCliente);
     expect(segundoCliente.getMutationCache().getAll()).toHaveLength(1);
 
-    reanudarCola(segundoCliente);
+    void reanudarCola(segundoCliente);
     await esperar(50);
 
     expect(corridas).toEqual([7]);

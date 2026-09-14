@@ -15,6 +15,7 @@ import {
   esRutaDeHoja,
   useAnchoDePantalla,
   useEstadoSync,
+  useHayAlgoEnCurso,
   useScrollPorPantalla,
   useUbicacionVisible,
 } from '@/shared/lib';
@@ -24,7 +25,9 @@ import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
 import { Avisos } from './Avisos';
 import { IndicadorSync } from './IndicadorSync';
 import { Navegacion } from './Navegacion';
+import { TirarParaActualizar } from './TirarParaActualizar';
 import { DESTINOS, seccionDeLaRuta } from './destinos';
+import { seActualizaTirando } from './pantallas-que-se-actualizan';
 
 const RESPIRO = 12;
 
@@ -107,11 +110,13 @@ function CapaDeHoja() {
 }
 
 export function Marco() {
-  const { email, foto } = useSesionActiva();
+  const { usuarioId, email, foto } = useSesionActiva();
   const nombre = useNombreDeLaPersona();
   const estadoSync = useEstadoSync();
   const ancho = useAnchoDePantalla();
+  const location = useLocation();
   const visible = useUbicacionVisible();
+  const hayAlgoEnCurso = useHayAlgoEnCurso();
   const pantalla = useRoutes(RUTAS_DE_PANTALLA, visible);
   const principal = useRef<HTMLElement>(null);
   const montado = useRef(false);
@@ -122,6 +127,8 @@ export function Marco() {
 
   const seccion = seccionDeLaRuta(visible.pathname);
   const etiqueta = DESTINOS[seccion].etiqueta;
+  const conElGesto =
+    seActualizaTirando(visible.pathname) && !esRutaDeHoja(location.pathname) && !hayAlgoEnCurso;
 
   useEffect(() => {
     if (!montado.current) {
@@ -174,6 +181,13 @@ export function Marco() {
         style={{ paddingBottom: `${String(holgura.contenido)}px` }}
         className="min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable]"
       >
+        {ancho === 'movil' && (
+          <TirarParaActualizar
+            contenedor={principal}
+            usuarioId={usuarioId}
+            deshabilitado={!conElGesto}
+          />
+        )}
         {pantalla}
       </main>
 

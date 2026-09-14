@@ -93,7 +93,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         dehydrateOptions: OPCIONES_DE_DESHIDRATACION,
       }}
       onSuccess={() => {
-        reanudarCola(queryClient);
+        void reanudarCola(queryClient);
       }}
     >
       <EsperandoElCache>{children}</EsperandoElCache>

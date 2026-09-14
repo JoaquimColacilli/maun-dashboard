@@ -1,7 +1,14 @@
 import { useMutationState } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
-import { useReplicaDelTaller } from '@/entities/replica';
+import {
+  describirDesenlace,
+  useReplicaDelTaller,
+  useSincronizarAhora,
+  type DesenlaceDeLaSincronizacion,
+} from '@/entities/replica';
+import { useSesionActiva } from '@/entities/sesion';
 import { AjusteDeHuella } from '@/features/activar-huella';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
@@ -10,7 +17,9 @@ import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import { describirEstadoSync, esCelular, useAvisos, useEstadoSync } from '@/shared/lib';
-import { Pagina, PanelDeAvisos } from '@/shared/ui';
+import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
+
+const MUESTRA_DEL_DESENLACE_MS = 6000;
 
 const SECCION =
   'flex min-w-0 max-w-[560px] flex-col gap-3.5 border-t border-hairline pt-5 xl:max-w-none';
@@ -27,6 +36,58 @@ function ultimaSincronizacion(valor: string): string {
   if (Number.isNaN(marca)) return 'Todavía no se sincronizó con el servidor.';
   const cuando = FORMATO_DE_LA_SINCRONIZACION.format(new Date(marca));
   return `Última sincronización: ${cuando}${cuando.endsWith('.') ? '' : '.'}`;
+}
+
+function SincronizarAhora() {
+  const { usuarioId } = useSesionActiva();
+  const sincronizarAhora = useSincronizarAhora(usuarioId);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [desenlace, setDesenlace] = useState<DesenlaceDeLaSincronizacion | null>(null);
+
+  useEffect(() => {
+    if (desenlace === null) return;
+    const reloj = setTimeout(() => {
+      setDesenlace(null);
+    }, MUESTRA_DEL_DESENLACE_MS);
+    return () => {
+      clearTimeout(reloj);
+    };
+  }, [desenlace]);
+
+  const descripcion = desenlace === null ? null : describirDesenlace(desenlace);
+
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <Button
+        variant="secundario"
+        size="chico"
+        disabled={sincronizando}
+        onClick={() => {
+          setSincronizando(true);
+          setDesenlace(null);
+          void sincronizarAhora().then((resultado) => {
+            setDesenlace(resultado);
+            setSincronizando(false);
+          });
+        }}
+      >
+        <Icono
+          nombre="refresh-cw"
+          tamano={16}
+          className={sincronizando ? 'motion-safe:animate-maun-spin' : undefined}
+        />
+        {sincronizando ? 'Sincronizando…' : 'Sincronizar ahora'}
+      </Button>
+      <p aria-live="polite" className="flex items-start gap-1.5 text-label text-text-2">
+        {descripcion && (
+          <>
+            <Icono nombre={descripcion.icono} tamano={15} className="mt-px flex-none" />
+            {descripcion.texto}
+          </>
+        )}
+      </p>
+    </div>
+  );
 }
 
 function RechazosDeLaCola() {
@@ -117,6 +178,7 @@ export function AjustesPage() {
             <p className="text-label text-text-3 tabular-nums">
               {ultimaSincronizacion(replica.cursor)}
             </p>
+            <SincronizarAhora />
           </section>
 
           {esCelular() && (

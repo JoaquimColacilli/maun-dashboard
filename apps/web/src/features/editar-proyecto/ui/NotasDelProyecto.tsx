@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { MUTACION_DE_NOTAS, type Proyecto } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
+import { useAlgoEnCurso } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 const DEMORA_DE_LAS_NOTAS_MS = 900;
@@ -16,7 +17,9 @@ export interface NotasDelProyectoProps {
 export function NotasDelProyecto({ proyecto, titulo, placeholder }: NotasDelProyectoProps) {
   const guardarNotas = useMutation(MUTACION_DE_NOTAS);
   const [notas, setNotas] = useState<string | null>(null);
+  const [sinGuardar, setSinGuardar] = useState(false);
   const reloj = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useAlgoEnCurso(sinGuardar);
 
   useEffect(
     () => () => {
@@ -29,8 +32,10 @@ export function NotasDelProyecto({ proyecto, titulo, placeholder }: NotasDelProy
 
   function alEscribirNotas(texto: string): void {
     setNotas(texto);
+    setSinGuardar(true);
     clearTimeout(reloj.current);
     reloj.current = setTimeout(() => {
+      setSinGuardar(false);
       guardarNotas.mutate({
         id: proyecto.id,
         cambios: { notas: texto.trim() },
