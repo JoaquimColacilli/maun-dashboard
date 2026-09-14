@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { hijosDelProyecto, MUTACION_DE_BAJA_DE_PROYECTO, type Proyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { metaDeAvisos } from '@/shared/lib';
-import { Button, ConSalida, Hoja, Icono } from '@/shared/ui';
+import { Button, ConSalida, FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
 
 export interface BorradoDelProyectoProps {
   proyecto: Proyecto;
@@ -54,10 +54,9 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
                     : 'No tiene pagos ni gastos cargados, así que no se mueve plata.'
                   : `Se va a llevar sus ${String(pagos.length)} pagos y sus ${String(gastos.length)} gastos, y con eso salen del libro mayor.`}
               </p>
-              <div className="flex gap-2.5">
+              <FilaDeAcciones>
                 <Button
                   variant="secundario"
-                  className="flex-1"
                   onClick={() => {
                     setConfirmando(false);
                   }}
@@ -66,7 +65,6 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
                 </Button>
                 <Button
                   variant="peligro"
-                  className="flex-1"
                   onClick={() => {
                     borrar.mutate({
                       id: proyecto.id,
@@ -79,7 +77,7 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
                 >
                   {sustantivo === 'contacto' ? 'Borrar el contacto' : 'Borrar el proyecto'}
                 </Button>
-              </div>
+              </FilaDeAcciones>
             </div>
           </Hoja>
         )}

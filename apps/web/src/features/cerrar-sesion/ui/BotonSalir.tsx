@@ -3,9 +3,14 @@ import { useState } from 'react';
 
 import { mensajeDeAcceso, salir } from '@/shared/api';
 import { limpiarDatosLocales } from '@/shared/lib';
-import { Button } from '@/shared/ui';
+import { Button, type ButtonSize } from '@/shared/ui';
 
-export function BotonSalir() {
+export interface BotonSalirProps {
+  size?: ButtonSize;
+  className?: string;
+}
+
+export function BotonSalir({ size = 'chico', className }: BotonSalirProps) {
   const queryClient = useQueryClient();
   const pendientes = useIsMutating();
   const [confirmando, setConfirmando] = useState(false);
@@ -35,7 +40,8 @@ export function BotonSalir() {
         </p>
         <Button
           variant="secundario"
-          size="chico"
+          size={size}
+          className={className}
           onClick={() => {
             setConfirmando(true);
           }}
@@ -50,7 +56,8 @@ export function BotonSalir() {
     <div className="flex flex-col items-start gap-2">
       <Button
         variant="secundario"
-        size="chico"
+        size={size}
+        className={className}
         cargando={saliendo}
         onClick={() => {
           void cerrar();

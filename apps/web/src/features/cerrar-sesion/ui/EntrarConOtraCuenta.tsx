@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { mensajeDeAcceso, salir } from '@/shared/api';
 import { limpiarDatosLocales, useEstadoSync } from '@/shared/lib';
-import { Button } from '@/shared/ui';
+import { Button, FilaDeAcciones } from '@/shared/ui';
 
 function losCambios(cantidad: number): string {
   return cantidad === 1 ? 'el cambio' : `los ${String(cantidad)} cambios`;
@@ -63,7 +63,7 @@ export function EntrarConOtraCuenta() {
             }`}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <FilaDeAcciones>
           <Button
             variant="peligro"
             cargando={saliendo}
@@ -82,7 +82,7 @@ export function EntrarConOtraCuenta() {
           >
             No, volver
           </Button>
-        </div>
+        </FilaDeAcciones>
         {alerta}
       </div>
     );

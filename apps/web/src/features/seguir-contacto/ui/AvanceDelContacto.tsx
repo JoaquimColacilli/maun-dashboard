@@ -15,7 +15,7 @@ import {
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeProyecto } from '@/shared/api';
 import { hoyLocal, metaDeAvisos, useAlgoEnCurso } from '@/shared/lib';
-import { Button, MoneyInput, PanelDePaso } from '@/shared/ui';
+import { Button, FilaDeAcciones, MoneyInput, PanelDePaso } from '@/shared/ui';
 
 export interface AvanceDelContactoProps {
   proyecto: Proyecto;
@@ -107,7 +107,7 @@ export function AvanceDelContacto({
             onChange={setPresupuesto}
             ayuda="Si lo dejás vacío, lo cargás cuando lo apruebe."
           />
-          <div className="flex flex-wrap gap-2">
+          <FilaDeAcciones>
             <Button type="submit">Marcar como enviado</Button>
             <Button
               variant="secundario"
@@ -117,17 +117,17 @@ export function AvanceDelContacto({
             >
               Todavía no
             </Button>
-          </div>
+          </FilaDeAcciones>
         </form>
       ) : (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <FilaDeAcciones className="mt-3">
           <Button onClick={avanzar}>{paso.etiqueta}</Button>
           {etapa !== 'presupuesto_enviado' && puedeCambiarEstado(etapa, 'en_curso') && (
             <Button variant="secundario" onClick={aprobar}>
               Ya lo aprobó
             </Button>
           )}
-        </div>
+        </FilaDeAcciones>
       )}
 
       <div className="mt-4">

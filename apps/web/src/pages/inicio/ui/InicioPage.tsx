@@ -47,7 +47,7 @@ import {
   rutaDeFinanzasDelTesoro,
   useAnchoDePantalla,
 } from '@/shared/lib';
-import { Avatar, Button, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
+import { Avatar, Button, FilaDeAcciones, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
 
 const DIAS_DE_PROYECCION = 365;
 
@@ -352,12 +352,12 @@ export function InicioPage() {
             Cargá el sueldo que te asignás y tus costos fijos para que Inicio te cuente cuánto te
             falta cada mes. Después, el primer proyecto.
           </p>
-          <div className="mt-1.5 flex flex-wrap gap-2.5">
+          <FilaDeAcciones className="mt-1.5">
             <Button onClick={irA('/ajustes')}>Configurar sueldo y metas</Button>
             <Button variant="secundario" onClick={irA('/proyectos')}>
               Cargar el primer proyecto
             </Button>
-          </div>
+          </FilaDeAcciones>
         </section>
       ) : (
         <div className="grid gap-0 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] xl:gap-x-10">
