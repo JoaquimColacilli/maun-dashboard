@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { entrar, esFalloDeRed, mensajeDeAcceso, pedirRecuperacion } from '@/shared/api';
@@ -151,7 +151,7 @@ function FormularioDeContrasena({
   );
 }
 
-export function PantallaDeBloqueo() {
+export function PantallaDeBloqueo({ otraCuenta }: { otraCuenta?: ReactNode }) {
   const { usuarioId, email, foto } = useSesionActiva();
   const nombre = useNombreDeLaPersona();
   const sinSenal = useEstadoSync().tipo === 'sin-conexion';
@@ -193,6 +193,7 @@ export function PantallaDeBloqueo() {
         bajada="Tocá el sensor de huella para abrir el taller."
         persona={persona}
         nota={NOTA}
+        pie={otraCuenta}
       >
         <div className="flex flex-col gap-3">
           <p role="status" className="flex min-h-tap items-center gap-3 text-body text-text-2">
@@ -221,6 +222,7 @@ export function PantallaDeBloqueo() {
       }
       persona={persona}
       nota={NOTA}
+      pie={otraCuenta}
     >
       {sinSenal ? (
         <div className="flex flex-col gap-3">

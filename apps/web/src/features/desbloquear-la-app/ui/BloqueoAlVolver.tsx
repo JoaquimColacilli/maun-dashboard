@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { useAlgoEnCurso } from '@/shared/lib';
 
 import { PantallaDeBloqueo } from './PantallaDeBloqueo';
 
-export function BloqueoAlVolver() {
+export function BloqueoAlVolver({ otraCuenta }: { otraCuenta?: ReactNode }) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const saliendo = useRef(false);
   useAlgoEnCurso(true);
@@ -32,7 +32,7 @@ export function BloqueoAlVolver() {
       }}
       className="fixed inset-0 m-0 size-full max-h-none max-w-none bg-paper p-0 text-ink backdrop:bg-paper"
     >
-      <PantallaDeBloqueo />
+      <PantallaDeBloqueo otraCuenta={otraCuenta} />
     </dialog>
   );
 }

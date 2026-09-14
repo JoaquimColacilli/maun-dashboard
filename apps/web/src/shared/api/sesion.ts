@@ -66,6 +66,10 @@ function sesionGuardada(): Claims | undefined {
   }
 }
 
+export function claimsGuardados(): Claims | undefined {
+  return sesionGuardada();
+}
+
 export async function leerClaims(): Promise<Claims | undefined> {
   try {
     const { data, error } = await clienteMaun().auth.getClaims();

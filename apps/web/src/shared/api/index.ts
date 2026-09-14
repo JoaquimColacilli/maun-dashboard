@@ -15,6 +15,7 @@ export {
 } from './rechazos';
 export {
   cambiarContrasena,
+  claimsGuardados,
   crearCuenta,
   entrar,
   escucharSesion,

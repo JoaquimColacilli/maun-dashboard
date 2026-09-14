@@ -61,6 +61,7 @@ src/
 - **El gesto nativo de tirar hacia abajo sigue apagado**: `overscroll-behavior-y: none` en `html` y `body`. El service worker está en `prompt` y solo recarga después de tocar «Actualizar». El gesto propio sincroniza sin recargar (ADR 0027, abajo).
 - Passkeys: el opt-in experimental está en `crearClienteMaun`. El autocompletado del mail (`esperarHuellaDelAutocompletado`) es la ceremonia en dos pasos, porque `signInWithPasskey` no admite mediación condicional. Es silenciosa salvo cuando falla la verificación.
 - **`IndicadorSync` vive en `Marco`, no en `Shell`**: en las pantallas de sesión no hay nada que sincronizar, y tapaba el botón de la huella.
+- **Ninguna pantalla de sesión encierra** (ADR 0031). El bloqueo tiene «Entrar con otra cuenta» (`EntrarConOtraCuenta`, de `features/cerrar-sesion`, que pone `ConBloqueo`): con la cola vacía sale directo, con cambios dice antes cuántos se pierden. Validar la sesión tiene tope (`TOPE_PARA_VALIDAR_LA_SESION_MS`): pasado, abre con la sesión guardada. La primera carga del taller, a los 15 s, ofrece reintentar o cerrar sesión sin cortarla (`CargaQueTarda`). **Un estado de espera nuevo en una guarda lleva su salida**: lo que espera a la red puede no terminar nunca.
 
 ## Tirar para actualizar (ADR 0027)
 
@@ -269,5 +270,6 @@ src/
 - **Los toques se prueban con `Input.dispatchTouchEvent` de CDP** (`tirar-para-actualizar.spec.ts`), en el proyecto `celular`, que tiene `hasTouch`. **Después de navegar con la barra, esperá a que termine la view transition** (`document.activeViewTransition`): un toque que empieza durante la transición va a la raíz, y todo ese gesto sigue yendo ahí.
 - **Para simular que el evento `online` no llegó, el listener que lo calla se registra con `addInitScript`.** Se comprobó que uno de captura agregado después de que cargó la app no frena a `onlineManager`, que ya estaba escuchando en `window`.
 - **Con `page.clock.install()` una recarga no se ve como recarga.** Con el reloj instalado, recargar estando adentro pedía la huella; sin el reloj, no (lo más probable es que el reloj falso reemplace `performance` y la entrada de navegación no llegue). La recarga sin huella se prueba sin reloj, y el «rato largo adentro» se escribe en la marca.
+- **Después de `page.reload()` con `context.setOffline(true)`, `navigator.onLine` vuelve a dar `true`** (medido en el bloqueo): la app arranca creyendo que hay señal. Para que se entere, `window.dispatchEvent(new Event('offline'))`, que es lo que escucha `onlineManager`.
 - Chromium headless sin autenticador rechaza la mediación condicional con `NotSupportedError`. La app lo calla; un test que espera la ceremonia necesita el autenticador virtual.
 - **Un `vite preview` que quedó levantado en el 4173 se reusa** (`reuseExistingServer`), y el e2e corre contra un build viejo. Bajalo antes de correr.

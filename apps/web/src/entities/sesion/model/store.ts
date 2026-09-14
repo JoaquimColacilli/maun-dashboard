@@ -1,6 +1,8 @@
-import { escucharSesion, leerClaims, vinoPorRecuperacion } from '@/shared/api';
+import { claimsGuardados, escucharSesion, leerClaims, vinoPorRecuperacion } from '@/shared/api';
 
 import { SESION_ANONIMA, SESION_CARGANDO, sesionDe, type EstadoSesion } from './estado';
+
+export const TOPE_PARA_VALIDAR_LA_SESION_MS = 10_000;
 
 let estado: EstadoSesion = SESION_CARGANDO;
 let arrancado = false;
@@ -34,11 +36,17 @@ function arrancar(): void {
     guardar(sesionDe(claims, vinoPorRecuperacion()));
   });
 
+  const tope = setTimeout(() => {
+    if (estado.tipo === 'cargando') guardar(sesionDe(claimsGuardados(), vinoPorRecuperacion()));
+  }, TOPE_PARA_VALIDAR_LA_SESION_MS);
+
   leerClaims()
     .then((claims) => {
+      clearTimeout(tope);
       guardar(sesionDe(claims, vinoPorRecuperacion()));
     })
     .catch(() => {
+      clearTimeout(tope);
       guardar(SESION_ANONIMA);
     });
 }

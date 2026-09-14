@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { entornoDePrueba } from '../apoyo/entorno';
+import { indicadorDeSync, listoParaCortar } from '../apoyo/pantalla';
+import { contarClientes, iniciarSesionDePrueba, vaciarTaller } from '../apoyo/taller';
 import {
   activarBloqueoEnElDispositivo,
   alFrente,
@@ -108,6 +110,74 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await expect(page.getByLabel('Contraseña', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Probar con la huella' })).toBeVisible();
     await context.setOffline(false);
+  });
+
+  test('«Entrar con otra cuenta» con la cola vacía cierra la sesión y lleva al acceso', async ({
+    page,
+  }) => {
+    await page.route('**/auth/v1/logout**', (ruta) => ruta.fulfill({ status: 204 }));
+    await bloquearYReabrir(page, false);
+    await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible(CARGA_DEL_TALLER);
+
+    await page.getByRole('button', { name: 'Entrar con otra cuenta' }).click();
+
+    await expect(page).toHaveURL(/\/acceso$/, CARGA_DEL_TALLER);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Entrá al taller');
+    expect(await marcaDeBloqueo(page)).toBeNull();
+  });
+
+  test('«Entrar con otra cuenta» con cambios sin sincronizar dice cuántos se pierden antes de cerrar, también sin señal', async ({
+    page,
+    context,
+  }) => {
+    const sesion = await iniciarSesionDePrueba();
+    await vaciarTaller(sesion);
+    await page.route('**/auth/v1/logout**', (ruta) => ruta.fulfill({ status: 204 }));
+    const telefono = await telefonoConHuella(page, false);
+    await page.goto('/clientes');
+    await expect(page.getByRole('button', { name: 'Cargá tu primer cliente' })).toBeVisible(
+      CARGA_DEL_TALLER,
+    );
+    await registrarHuellaEnElTelefono(telefono, await usuarioDeLaSesion(page));
+    await listoParaCortar(page);
+
+    await context.setOffline(true);
+    await page.getByRole('button', { name: 'Cargá tu primer cliente' }).click();
+    await page.getByLabel('Nombre', { exact: true }).fill('Perdido al salir');
+    await page.getByRole('button', { name: 'Guardar cliente' }).click();
+    await expect(
+      page.getByText('Cliente anotado sin señal: se guarda solo cuando vuelva.'),
+    ).toBeVisible();
+    await expect(indicadorDeSync(page)).toContainText('1 cambio');
+
+    await activarBloqueoEnElDispositivo(page);
+    await page.reload();
+
+    await expect(pantallaDeBloqueo(page)).toBeVisible(CARGA_DEL_TALLER);
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('offline'));
+    });
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Sin señal solo podés entrar con la huella.' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Entrar con otra cuenta' }).click();
+
+    const aviso = page.getByRole('alert').filter({ hasText: 'sin sincronizar' });
+    await expect(aviso).toContainText('Hay 1 cambio de este teléfono sin sincronizar.');
+    console.log(`aviso antes de salir: ${(await aviso.innerText()).replaceAll('\n', ' / ')}`);
+    await expect(pantallaDeBloqueo(page)).toBeVisible();
+
+    await page.getByRole('button', { name: 'No, volver' }).click();
+    await expect(aviso).toHaveCount(0);
+    await expect(pantallaDeBloqueo(page)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Entrar con otra cuenta' }).click();
+    await page.getByRole('button', { name: 'Borrar el cambio y salir' }).click();
+
+    await expect(page).toHaveURL(/\/acceso$/, CARGA_DEL_TALLER);
+    expect(await marcaDeBloqueo(page)).toBeNull();
+    await context.setOffline(false);
+    expect(await contarClientes(sesion, 'Perdido al salir')).toBe(0);
   });
 
   test('con el teclado abierto, la contraseña y el botón de entrar quedan a la vista', async ({
