@@ -38,6 +38,7 @@ function proyecto(id: string, clienteId: string, extra: Partial<Proyecto> = {}):
     fecha_entrega: null,
     direccion_entrega: '',
     notas: '',
+    vencimiento_presupuesto: null,
     fecha_cobro: null,
     dist_cobrado_centavos: null,
     dist_gastos_centavos: null,

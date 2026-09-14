@@ -13,6 +13,9 @@ comment on schema public is 'standard public schema';
 
 -- Enums ------------------------------------------------------------------------------------------
 
+create type public.categoria_anotacion as enum ('materiales', 'taller');
+comment on type public.categoria_anotacion is 'Qué clase de cosa anotó el dueño: materiales (comprar, encargar, retirar) o taller (trabajo, mandados, cobros). Entrega, visita y presupuesto no están: son categorías de lo que se calcula, y eso no se guarda.';
+
 create type public.comprobante as enum ('factura_a', 'factura_b', 'factura_c', 'remito', 'sin_comprobante');
 comment on type public.comprobante is 'Comprobante a emitir al cliente.';
 
@@ -80,6 +83,52 @@ create policy ajustes_lectura on public.ajustes as permissive
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
 grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo) on public.ajustes to authenticated;
+
+create table public.anotaciones (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  fecha date not null,
+  hora time without time zone,
+  texto text not null,
+  categoria categoria_anotacion not null default 'taller'::categoria_anotacion,
+  proyecto_id uuid,
+  hecha boolean not null default false,
+  importante boolean not null default false,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint anotaciones_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint anotaciones_pkey PRIMARY KEY (id),
+  constraint anotaciones_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint anotaciones_texto_valido CHECK (btrim(texto) <> ''::text AND char_length(texto) <= 500)
+);
+comment on table public.anotaciones is 'Lo que el dueño anota a mano en la agenda. Las visitas, las entregas y los vencimientos de presupuesto no están acá: se calculan desde el proyecto (ADR 0034).';
+comment on column public.anotaciones.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.anotaciones.fecha is 'El día de la anotación. El día es la unidad de la agenda.';
+comment on column public.anotaciones.hora is 'Hora opcional: «15hs retirar el pulpo». Null es «en algún momento del día».';
+comment on column public.anotaciones.proyecto_id is 'Trabajo al que se refiere, si se refiere a uno. Borrar el proyecto (lógico) no borra la anotación.';
+comment on column public.anotaciones.hecha is 'La tildó como hecha. Sigue en la agenda, tachada.';
+comment on column public.anotaciones.importante is 'La marcó como importante: el círculo con que en el cuaderno de papel marca lo importante de la semana.';
+comment on column public.anotaciones.deleted_at is 'Borrado lógico, como en todo el household: delta() lo trae para que el cliente la saque de su copia.';
+CREATE INDEX anotaciones_household_actualizado ON public.anotaciones USING btree (household_id, updated_at);
+CREATE INDEX anotaciones_household_proyecto ON public.anotaciones USING btree (household_id, proyecto_id);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON anotaciones FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.anotaciones enable row level security;
+create policy anotaciones_alta on public.anotaciones as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy anotaciones_edicion on public.anotaciones as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy anotaciones_lectura on public.anotaciones as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.anotaciones to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.anotaciones to service_role;
+grant insert (id, fecha, hora, texto, categoria, proyecto_id, hecha, importante, deleted_at) on public.anotaciones to authenticated;
+grant update (id, fecha, hora, texto, categoria, proyecto_id, hecha, importante, deleted_at) on public.anotaciones to authenticated;
 
 create table public.clientes (
   id uuid not null default private.uuidv7(),
@@ -364,6 +413,7 @@ create table public.proyectos (
   dist_fijos_previo_centavos bigint,
   dist_liquidado_at timestamp with time zone,
   reapertura_sueldo_mensual boolean,
+  vencimiento_presupuesto date,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
@@ -408,6 +458,7 @@ comment on column public.proyectos.dist_sueldo_previo_centavos is 'Congelado al 
 comment on column public.proyectos.dist_fijos_previo_centavos is 'Congelado al liquidar: costos fijos que el mes ya llevaba liquidados por otros proyectos en ese instante.';
 comment on column public.proyectos.dist_liquidado_at is 'Congelado al liquidar: el instante de la liquidación. Ordena las liquidaciones de un mismo mes.';
 comment on column public.proyectos.reapertura_sueldo_mensual is 'Modo del sueldo del cobro que se reabrió. El próximo cobro lo conserva aunque los ajustes hayan cambiado.';
+comment on column public.proyectos.vencimiento_presupuesto is 'Fecha límite para entregar el presupuesto de un contacto. La app la propone a tres días hábiles del relevamiento cuando el contacto pasa a presupuestar, y se edita como la entrega estimada. La agenda la muestra mientras el contacto no mandó el presupuesto.';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -427,8 +478,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto) on public.proyectos to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -567,6 +618,9 @@ AS $function$
     ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.deleted_at is null
+    ),
+    'anotaciones', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.anotaciones t where t.deleted_at is null
     )
   )
 $function$;
@@ -646,6 +700,9 @@ begin
     ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.updated_at >= v_desde
+    ),
+    'anotaciones', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.anotaciones t where t.updated_at >= v_desde
     )
   );
 end;
@@ -664,6 +721,7 @@ declare
   v_fila public.proyectos;
   v_existia boolean;
   v_sin_cambios boolean;
+  v_vencimiento date;
 begin
   if p_proyecto is null or jsonb_typeof(p_proyecto) <> 'object' then
     raise exception 'El proyecto va en un objeto jsonb' using errcode = '22023';
@@ -691,7 +749,8 @@ begin
     entrega_estimada date,
     fecha_entrega date,
     direccion_entrega text,
-    notas text
+    notas text,
+    vencimiento_presupuesto text
   );
 
   if v_p.id is null or v_p.cliente_id is null or v_p.titulo is null or v_p.estado is null then
@@ -725,6 +784,11 @@ begin
   select * into v_actual from public.proyectos p where p.id = v_p.id for update;
   v_existia := found;
 
+  v_vencimiento := case
+    when p_proyecto ? 'vencimiento_presupuesto' then nullif(v_p.vencimiento_presupuesto, '')::date
+    else v_actual.vencimiento_presupuesto
+  end;
+
   if v_existia then
     if v_actual.deleted_at is not null then
       raise exception 'El proyecto está borrado' using errcode = 'MN002';
@@ -734,13 +798,14 @@ begin
       v_actual.cliente_id, v_actual.titulo, v_actual.descripcion, v_actual.estado,
       v_actual.presupuesto_centavos, v_actual.forma_pago, v_actual.comprobante,
       v_actual.fecha_visita, v_actual.ultimo_contacto, v_actual.fecha_inicio,
-      v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas
+      v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas,
+      v_actual.vencimiento_presupuesto
     ) is not distinct from (
       v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
       v_p.presupuesto_centavos, v_p.forma_pago, v_p.comprobante,
       v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio,
       v_p.entrega_estimada, v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''),
-      coalesce(v_p.notas, '')
+      coalesce(v_p.notas, ''), v_vencimiento
     );
 
     -- Un guardado hecho sin señal sobre una versión vieja no pisa en silencio lo que hay. La
@@ -782,7 +847,8 @@ begin
       entrega_estimada = v_p.entrega_estimada,
       fecha_entrega = v_p.fecha_entrega,
       direccion_entrega = coalesce(v_p.direccion_entrega, ''),
-      notas = coalesce(v_p.notas, '')
+      notas = coalesce(v_p.notas, ''),
+      vencimiento_presupuesto = v_vencimiento
     where id = v_p.id
     returning * into v_fila;
   else
@@ -790,12 +856,13 @@ begin
       insert into public.proyectos (
         id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
         fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega,
-        direccion_entrega, notas
+        direccion_entrega, notas, vencimiento_presupuesto
       ) values (
         v_p.id, v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
         v_p.presupuesto_centavos, v_p.forma_pago, v_p.comprobante,
         v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio, v_p.entrega_estimada,
-        v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, '')
+        v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
+        v_vencimiento
       )
       returning * into v_fila;
     exception

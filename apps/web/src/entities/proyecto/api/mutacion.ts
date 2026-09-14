@@ -115,6 +115,7 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         updated_at: ahora,
         deleted_at: null,
         version: 1,
+        vencimiento_presupuesto: null,
         fecha_cobro: null,
         dist_cobrado_centavos: null,
         dist_gastos_centavos: null,

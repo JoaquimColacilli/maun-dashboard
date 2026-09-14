@@ -1,7 +1,7 @@
 -- Dos talleres, cada uno con su usuario y un juego completo de datos. Un usuario ve y toca solo
 -- lo suyo, por cada camino: las tablas, la vista, las funciones de sync y las foreign keys.
 
-select plan(38);
+select plan(41);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('b', tests.crear_usuario('b@maun.test'));
@@ -21,6 +21,8 @@ insert into public.gastos (id, proyecto_id, fecha, monto_centavos)
   values ('aaaaaaaa-0000-7000-8000-000000000004', 'aaaaaaaa-0000-7000-8000-000000000002', '2026-09-01', 30000);
 insert into public.movimientos (id, fecha, tipo, tesoro_destino, monto_centavos)
   values ('aaaaaaaa-0000-7000-8000-000000000005', '2026-09-01', 'ingreso', 'hogar', 50000);
+insert into public.anotaciones (id, fecha, texto, categoria, proyecto_id)
+  values ('aaaaaaaa-0000-7000-8000-000000000006', '2026-09-10', 'Comprar melamina', 'materiales', 'aaaaaaaa-0000-7000-8000-000000000002');
 
 select tests.entrar_como(tests.id('b'));
 insert into public.clientes (id, nombre) values ('bbbbbbbb-0000-7000-8000-000000000001', 'Cliente de B');
@@ -32,6 +34,8 @@ insert into public.gastos (id, proyecto_id, fecha, monto_centavos)
   values ('bbbbbbbb-0000-7000-8000-000000000004', 'bbbbbbbb-0000-7000-8000-000000000002', '2026-09-01', 60000);
 insert into public.movimientos (id, fecha, tipo, tesoro_origen, monto_centavos)
   values ('bbbbbbbb-0000-7000-8000-000000000005', '2026-09-01', 'gasto', 'maun', 70000);
+insert into public.anotaciones (id, fecha, texto)
+  values ('bbbbbbbb-0000-7000-8000-000000000006', '2026-09-10', 'Retirar el pulpo');
 
 
 -- Lectura --------------------------------------------------------------------------------------
@@ -51,6 +55,7 @@ select results_eq('select id from public.proyectos', array['aaaaaaaa-0000-7000-8
 select results_eq('select id from public.pagos', array['aaaaaaaa-0000-7000-8000-000000000003'::uuid], 'A ve solo sus pagos');
 select results_eq('select id from public.gastos', array['aaaaaaaa-0000-7000-8000-000000000004'::uuid], 'A ve solo sus gastos');
 select results_eq('select id from public.movimientos', array['aaaaaaaa-0000-7000-8000-000000000005'::uuid], 'A ve solo sus movimientos');
+select results_eq('select id from public.anotaciones', array['aaaaaaaa-0000-7000-8000-000000000006'::uuid], 'A ve solo sus anotaciones');
 
 select is_empty(
   format('select 1 from public.libro_mayor where household_id <> %L', tests.id('household_a')),
@@ -60,7 +65,7 @@ select isnt_empty('select 1 from public.libro_mayor', 'el libro mayor de A tiene
 
 select is(
   (select jsonb_object_agg(t.clave, jsonb_array_length(t.valor)) from jsonb_each(public.bootstrap() - 'cursor') as t (clave, valor)),
-  '{"households": 1, "household_members": 1, "ajustes": 1, "clientes": 1, "proyectos": 1, "pagos": 1, "gastos": 1, "movimientos": 1}'::jsonb,
+  '{"households": 1, "household_members": 1, "ajustes": 1, "clientes": 1, "proyectos": 1, "pagos": 1, "gastos": 1, "movimientos": 1, "anotaciones": 1}'::jsonb,
   'bootstrap() de A trae su household completo'
 );
 
@@ -102,6 +107,9 @@ select is(count(*), 0::bigint, 'A no borra un movimiento de B') from u;
 with u as (update public.ajustes set sueldo_mensual_centavos = 1 where household_id = tests.id('household_b') returning 1)
 select is(count(*), 0::bigint, 'A no edita los ajustes de B') from u;
 
+with u as (update public.anotaciones set hecha = true where id = 'bbbbbbbb-0000-7000-8000-000000000006' returning 1)
+select is(count(*), 0::bigint, 'A no tilda una anotación de B') from u;
+
 select throws_ok(
   format('insert into public.clientes (household_id, nombre) values (%L, %L)', tests.id('household_b'), 'Intruso'),
   '42501',
@@ -135,6 +143,13 @@ select throws_ok(
   '23503',
   null,
   'A no imputa un movimiento a un proyecto de B'
+);
+
+select throws_ok(
+  $$ insert into public.anotaciones (fecha, texto, proyecto_id) values ('2026-09-10', 'Cruzada', 'bbbbbbbb-0000-7000-8000-000000000002') $$,
+  '23503',
+  null,
+  'A no cuelga una anotación de un proyecto de B'
 );
 
 select throws_ok(
@@ -212,7 +227,7 @@ select tests.entrar_como(tests.id('sin_taller'));
 
 select is(
   (select jsonb_object_agg(t.clave, jsonb_array_length(t.valor)) from jsonb_each(public.bootstrap() - 'cursor') as t (clave, valor)),
-  '{"households": 0, "household_members": 0, "ajustes": 0, "clientes": 0, "proyectos": 0, "pagos": 0, "gastos": 0, "movimientos": 0}'::jsonb,
+  '{"households": 0, "household_members": 0, "ajustes": 0, "clientes": 0, "proyectos": 0, "pagos": 0, "gastos": 0, "movimientos": 0, "anotaciones": 0}'::jsonb,
   'un usuario sin household no ve nada'
 );
 

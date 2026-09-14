@@ -64,6 +64,69 @@ export type Database = {
           },
         ];
       };
+      anotaciones: {
+        Row: {
+          categoria: Database['public']['Enums']['categoria_anotacion'];
+          created_at: string;
+          deleted_at: string | null;
+          fecha: string;
+          hecha: boolean;
+          hora: string | null;
+          household_id: string;
+          id: string;
+          importante: boolean;
+          proyecto_id: string | null;
+          texto: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          categoria?: Database['public']['Enums']['categoria_anotacion'];
+          created_at?: string;
+          deleted_at?: string | null;
+          fecha: string;
+          hecha?: boolean;
+          hora?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          proyecto_id?: string | null;
+          texto: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          categoria?: Database['public']['Enums']['categoria_anotacion'];
+          created_at?: string;
+          deleted_at?: string | null;
+          fecha?: string;
+          hecha?: boolean;
+          hora?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          proyecto_id?: string | null;
+          texto?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'anotaciones_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'anotaciones_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       clientes: {
         Row: {
           condicion_fiscal: Database['public']['Enums']['condicion_fiscal'];
@@ -418,6 +481,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         Insert: {
@@ -460,6 +524,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
+          vencimiento_presupuesto?: string | null;
           version?: number;
         };
         Update: {
@@ -502,6 +567,7 @@ export type Database = {
           titulo?: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
+          vencimiento_presupuesto?: string | null;
           version?: number;
         };
         Relationships: [
@@ -599,6 +665,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -664,6 +731,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -720,6 +788,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -775,6 +844,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -786,6 +856,7 @@ export type Database = {
       };
     };
     Enums: {
+      categoria_anotacion: 'materiales' | 'taller';
       comprobante: 'factura_a' | 'factura_b' | 'factura_c' | 'remito' | 'sin_comprobante';
       condicion_fiscal: 'consumidor_final' | 'monotributo' | 'responsable_inscripto' | 'exento';
       estado_proyecto:
@@ -924,6 +995,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      categoria_anotacion: ['materiales', 'taller'],
       comprobante: ['factura_a', 'factura_b', 'factura_c', 'remito', 'sin_comprobante'],
       condicion_fiscal: ['consumidor_final', 'monotributo', 'responsable_inscripto', 'exento'],
       estado_proyecto: [
