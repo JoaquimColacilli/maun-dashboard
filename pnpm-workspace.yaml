@@ -24,6 +24,7 @@ catalog:
   '@types/react-dom': 19.3.0
   '@vitejs/plugin-react': 6.1.1
   '@vitest/coverage-v8': 5.0.0
+  deno: 2.9.6
   downshift: 9.4.0
   eslint: 10.10.0
   eslint-config-prettier: 10.1.8
@@ -60,4 +61,5 @@ catalog:
 minimumReleaseAge: 1440
 
 allowBuilds:
+  deno: true
   unrs-resolver: false

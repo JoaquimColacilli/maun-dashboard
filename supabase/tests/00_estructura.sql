@@ -22,7 +22,8 @@ select set_eq(
   $$,
   array[
     'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
-    'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos'
+    'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos',
+    'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida'
   ],
   'public expone exactamente las funciones esperadas'
 );

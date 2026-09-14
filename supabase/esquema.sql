@@ -6,7 +6,7 @@
 
 -- Schemas ----------------------------------------------------------------------------------------
 
--- schema private: authenticated:USAGE
+-- schema private: authenticated:USAGE, service_role:USAGE
 comment on schema private is 'Helpers de RLS, triggers y funciones internas. La Data API no expone este schema: nada de acá se llama por RPC.';
 -- schema public: anon:USAGE, authenticated:USAGE, public:USAGE, service_role:USAGE
 comment on schema public is 'standard public schema';
@@ -587,6 +587,16 @@ comment on policy fotos_de_perfil_ver_la_propia on storage.objects is 'No es par
 
 -- Funciones --------------------------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION public.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
+ RETURNS boolean
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.anotar_aviso(p_suscripcion, p_dia, p_mandado)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function anotar_aviso(uuid,date,boolean) is 'Solo para la función de borde de los avisos (service_role).';
+
 CREATE OR REPLACE FUNCTION public.bootstrap()
  RETURNS jsonb
  LANGUAGE sql
@@ -626,6 +636,16 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function bootstrap() is 'Todo el household del usuario en un JSON, sin filas borradas, más el cursor para el primer delta. Es también el reconcile completo: el cliente reemplaza su copia entera con esto.';
+
+CREATE OR REPLACE FUNCTION public.borrar_suscripcion_vencida(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.borrar_suscripcion_vencida(p_endpoint)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function borrar_suscripcion_vencida(text) is 'Solo para la función de borde de los avisos (service_role).';
 
 CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
  RETURNS proyectos
@@ -980,6 +1000,23 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function guardar_proyecto(jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos y sus gastos en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de pagos y gastos vienen marcadas con borrado en su propio array. Un proyecto liquidado rechaza el cambio de sus hijos con MN001, por la guarda de pagos y gastos.';
 
+CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  update private.suscripciones_de_avisos
+  set ultimo_dia_avisado = greatest(coalesce(ultimo_dia_avisado, p_dia), p_dia),
+      ultimo_envio = case when p_mandado then now() else ultimo_envio end
+  where id = p_suscripcion;
+  return found;
+end;
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.anotar_aviso(uuid,date,boolean) is 'Anota que el día ya se miró para ese dispositivo, y si además salió un aviso, cuándo. Un día sin nada que avisar también se anota: si no, se volvería a mirar en cada vuelta del trabajo.';
+
 CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -1029,6 +1066,20 @@ begin
 end;
 $function$;
 -- execute: solo el dueño
+
+CREATE OR REPLACE FUNCTION private.borrar_suscripcion_vencida(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  delete from private.suscripciones_de_avisos where endpoint = p_endpoint;
+  return found;
+end;
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.borrar_suscripcion_vencida(text) is 'El servicio de push contestó 404 o 410: esa suscripción ya no existe. Sin borrarla la tabla crece para siempre y cada envío hace trabajo muerto.';
 
 CREATE OR REPLACE FUNCTION private.cascada(p_cobrado_centavos bigint, p_gastos_centavos bigint, p_diezmo_bp integer, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, OUT neta_centavos bigint, OUT diezmo_centavos bigint, OUT sueldo_centavos bigint, OUT fijos_centavos bigint, OUT remanente_centavos bigint)
  RETURNS record
@@ -1774,6 +1825,26 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.revertir_liquidacion(uuid,integer,estado_proyecto,estado_proyecto) is 'Descongela la distribución de un proyecto liquidado: reabre un cobrado a entregado guardando la foto del cobro, o reactiva un perdido a un estado de seguimiento sin foto. Los demás proyectos del mes no se recalculan. Rechaza con MN006 si el proyecto cambió. Reconoce el reenvío idéntico.';
 
+CREATE OR REPLACE FUNCTION private.suscripciones_para_probar(p_usuario uuid, p_endpoint text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', s.id, 'endpoint', s.endpoint, 'p256dh', s.p256dh, 'auth', s.auth)
+      order by s.creada_en
+    ),
+    '[]'::jsonb
+  )
+  from private.suscripciones_de_avisos s
+  where s.user_id = p_usuario
+    and (p_endpoint is null or s.endpoint = p_endpoint)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.suscripciones_para_probar(uuid,text) is 'Los dispositivos de una persona, o uno solo si se pasa el endpoint, para mandarles el aviso de prueba. El usuario lo validó la función de borde con su token.';
+
 CREATE OR REPLACE FUNCTION private.topes_de_la_liquidacion(p_objetivo_sueldo_centavos bigint, p_objetivo_fijos_centavos bigint, p_sueldo_mensual boolean, p_sueldo_previo_centavos bigint, p_fijos_previo_centavos bigint, OUT tope_sueldo_centavos bigint, OUT tope_fijos_centavos bigint)
  RETURNS record
  LANGUAGE plpgsql
@@ -2121,3 +2192,14 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function registrar_suscripcion(text,text,text,text) is 'Activa los avisos en este dispositivo. No pasa por la cola de salida: sin señal no se puede suscribir a un servicio de push de todas formas.';
+
+CREATE OR REPLACE FUNCTION public.suscripciones_para_probar(p_usuario uuid, p_endpoint text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select private.suscripciones_para_probar(p_usuario, p_endpoint)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function suscripciones_para_probar(uuid,text) is 'Solo para la función de borde de los avisos (service_role).';

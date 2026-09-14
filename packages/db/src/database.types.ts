@@ -607,7 +607,15 @@ export type Database = {
       };
     };
     Functions: {
+      anotar_aviso: {
+        Args: { p_dia: string; p_mandado: boolean; p_suscripcion: string };
+        Returns: boolean;
+      };
       bootstrap: { Args: never; Returns: Json };
+      borrar_suscripcion_vencida: {
+        Args: { p_endpoint: string };
+        Returns: boolean;
+      };
       cerrar_perdido: {
         Args: {
           p_cobrado_centavos: number;
@@ -870,6 +878,10 @@ export type Database = {
           p_p256dh: string;
           p_zona: string;
         };
+        Returns: Json;
+      };
+      suscripciones_para_probar: {
+        Args: { p_endpoint?: string; p_usuario: string };
         Returns: Json;
       };
     };

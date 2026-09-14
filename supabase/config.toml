@@ -377,6 +377,14 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+[functions.avisos]
+# La función valida por su cuenta: el trabajo programado trae un secreto propio y «Probar» trae la
+# sesión del usuario, que se verifica contra Auth. La verificación del gateway no acepta las claves
+# publicables nuevas, y el estado de las claves VAPID lo tiene que poder leer cualquier pantalla.
+verify_jwt = false
+entrypoint = "./functions/avisos/index.ts"
+import_map = "./functions/avisos/deno.json"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
