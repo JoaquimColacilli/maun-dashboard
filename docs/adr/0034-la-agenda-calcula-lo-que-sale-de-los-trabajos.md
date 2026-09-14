@@ -4,7 +4,7 @@
 - Fecha: 2026-09-14
 - Completa al [0010](0010-sincronizacion-replica-completa.md) (una tabla nueva en la réplica) y al
   [0019](0019-seguimiento-el-contacto-es-la-misma-fila.md) (una fecha más del contacto). Se aparta del
-  diseño en dónde vive la agenda y en el panel del día: ver Objeciones.
+  diseño en dónde vive la agenda y en cómo se abre el día: ver Objeciones.
 
 ## Contexto
 
@@ -53,23 +53,57 @@ derivado no se edita ni se borra desde la agenda: dice de dónde sale y ofrece �
 «Deshacer» en el aviso. Esas mutaciones van `silencioso`, para que el aviso siga siendo uno solo (ADR
 0030).
 
-**En tablet y PC, la grilla del mes ocupa todo el ancho del área de contenido, siempre, y el panel del
-día va encima.**
+**En tablet y PC, la grilla del mes ocupa todo el ancho del área de contenido, siempre, y el día se abre
+en una capa chica anclada a su celda**, con una punta que apunta al día, como en Google Calendar. Se ve
+la relación entre lo que se tocó y lo que se abre, y tapa mucho menos que una franja fija.
 
-- El panel no le saca ancho a la grilla ni abierto ni cerrado: es una capa `absolute` anclada a la
-  derecha del área de la grilla, que la envuelve en un contenedor `relative`. Mide 340 px, y 380 desde
-  1280 px de ventana.
-- Arranca cerrado. Se abre al tocar un día, «+N más» o una anotación de la celda.
-- Tiene «Cerrar el día» en todos los anchos, y Escape lo cierra.
-- Al abrirse, el foco va al panel; al cerrarse, vuelve al botón del día.
-- No es modal: el resto del mes sigue a la vista, y tocar otro día cambia el panel sin cerrarlo.
+- **Es un `popover="auto"` nativo.** Va a la capa superior sin pelear con el z-index, se cierra con
+  Escape y tocando fuera, y tiene «Cerrar el día». No es modal y no atrapa el foco.
+- **Se ubica con posicionamiento anclado de CSS, sin JavaScript de medición** (`app/styles/index.css`).
+  La celda del día abierto es el ancla (`--dia-abierto`, por la marca `data-abierto`) y la grilla pone
+  los bordes (`--grilla-del-mes`).
+- **Por defecto abre a la derecha del día, alineada arriba.** Si no entra dentro de la grilla y de la
+  ventana, `position-try-fallbacks` la da vuelta hacia arriba, hacia la izquierda o las dos cosas. Si no
+  entra de ningún lado, se centra en el alto de la grilla, y como último recurso en el de la ventana.
+- **Mide dos columnas y un poco** (`max(20rem, dos séptimos de la grilla + 1rem)`). El viernes, el sábado
+  y el domingo tienen dos, una y ninguna columna a la derecha: nunca entra, así que abren siempre hacia
+  la izquierda. De lunes a jueves siempre entra a la derecha. No es un caso raro: son tres de las siete
+  columnas. En la última fila no hay lugar abajo y abre hacia arriba.
+- **El alto es el del contenido**, con tope en el alto de la ventana; si no alcanza, la lista scrollea
+  adentro.
+- **La punta son dos triángulos anclados a la vez a la celda y a la capa.** Cada uno ocupa el hueco entre
+  las dos, y el del lado que no corresponde queda con ancho cero. Así no hace falta saber de qué lado se
+  abrió.
+- **Tocar otro día la mueve a ese día sin cerrarla**, y vuelve a elegir el lado. Los botones de la grilla
+  que abren el día son invocadores del popover con `popovertargetaction="show"`: tocarlos no cuenta como
+  tocar fuera, y «mostrar» no hace nada si ya está abierta.
+- **El foco.** Al abrir va a la capa. Escape y «Cerrar el día» lo devuelven al botón del día. Tocar fuera
+  lo deja donde se tocó.
+- **Scrollear la agenda con la capa abierta la cierra.**
+- **Lo que se hace adentro avisa en la misma capa**, con su «Deshacer», como en la hoja del celular: la
+  capa superior tapa los avisos globales, y tocar uno la cerraría.
+- **«Anotar algo» la cierra antes de abrir la hoja.**
 
-**Colores y formas.** Los colores de tesoro quedan reservados. Las categorías usan tokens propios
-(`ag-*`, con su par del oscuro) y además una forma, para no depender del color: entrega cuadrado lleno,
-presupuesto punteado, visita rombo, materiales círculo, taller barra.
+**Qué se encontró del soporte** (datos de MDN, `browser-compat-data`, setiembre de 2026):
 
-**Sin librería de fechas.** Las fechas son `AAAA-MM-DD` y las cuentas (`sumarDias`, `diasEntre`, el día
-de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
+- `anchor-name`, `position-anchor` y `anchor()`: Chrome y Edge 125, Firefox 147 (enero de 2026) y Safari
+  26 (setiembre de 2025). `position-try-fallbacks` con `flip-block` y `flip-inline`: Chrome 128, Firefox
+  147 y Safari 26. MDN lo marca como Baseline 2026, recién disponible.
+- `@container anchored(fallback: …)`, la forma prevista de saber de qué lado quedó la capa para dar
+  vuelta la punta: solo Chrome 143 o posterior. Firefox y Safari no lo tienen.
+- Un prototipo con el mismo molde se midió en los tres motores de Playwright: Chromium 153, Firefox 155 y
+  WebKit 26.6. Los siete casos (lunes, miércoles, viernes, sábado, domingo, primera y última fila), a
+  1440 y a 1024 px, dieron el mismo lado, la misma dirección y la punta del mismo lado en los tres.
+  Tocar otro día, tocar fuera y Escape se comportaron igual.
+- Diferencias medidas:
+  - **Con la capa abierta, al scrollear**, Chromium, Firefox y WebKit la trasladan junto con el día sin
+    volver a elegir el lado, y se sale de la ventana.
+  - **Firefox, al abrir con la agenda scrolleada,** dejaba la punta corrida si no tenía su propio
+    `position-anchor`, y ubicaba mal la capa si sus límites del lado del ancla dependían de la ventana.
+    La versión elegida evita las dos cosas.
+  - **Escape** devuelve el foco al botón tocado en Chromium y Firefox, y al `body` en WebKit, que no
+    enfoca los botones al tocarlos. Por eso la app devuelve el foco sola.
+  - **`showModal`** cierra un popover abierto en los tres motores, pero WebKit no dispara `toggle`.
 
 ## Alternativas descartadas
 
@@ -81,12 +115,20 @@ de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
 - **El panel del día al costado de la grilla.** Se probó de dos formas y las dos le roban ancho: abierto
   al elegir un día, como en el diseño, encoge el calendario al aparecer; fijo mostrando hoy, a 1440 px la
   grilla medía 704 px de los 1108 disponibles.
-- **Un diálogo modal centrado.** Era lo más simple y el componente existe, pero deja inerte y tapa el
-  calendario entero: para mirar otro día hay que cerrarlo. La capa deja a la vista y tocable la mayor
-  parte del mes, y es el mismo mecanismo que ya andaba para el contenedor angosto, extendido a todos los
-  anchos en vez de tener dos comportamientos.
-- **Un popover anclado al día.** Sobre una grilla de mes tapa los días de alrededor, que es justo el
-  contexto que se quiere ver.
+- **Una capa fija sobre la derecha del área de la grilla**, que fue la versión anterior de este mismo PR.
+  Mantenía la grilla entera, pero aparecía siempre en el mismo lugar: una franja de 340 o 380 px de punta
+  a punta que tapaba el fin de semana y no tenía relación con el día tocado.
+- **Un diálogo modal centrado.** Deja inerte y tapa el calendario entero: para mirar otro día hay que
+  cerrarlo.
+- **Medir con JavaScript** (`getBoundingClientRect` y recalcular en cada cambio de tamaño y de scroll).
+  Anda en cualquier navegador con popover, pero el anclaje de CSS ya tiene soporte en los tres motores y
+  resuelve solo el volteo. Quedaba como plan B si el anclaje no alcanzaba.
+- **Dar vuelta la punta con `@container anchored()`.** Es lo previsto, pero solo existe en Chrome: en
+  Firefox y Safari la punta quedaría del lado equivocado.
+- **Dejar que la capa siga al día mientras se scrollea.** Con esta hoja de estilos, los tres motores la
+  trasladan sin volver a elegir el lado, y queda cortada. WebKit la recalculaba solo si los límites del
+  lado del ancla dependían de la ventana, y eso mismo ubicaba mal la capa en Firefox. Cerrarla es lo
+  único que garantiza en los tres que no se salga de la ventana.
 
 ## Objeciones
 
@@ -98,20 +140,29 @@ de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
   queda: uno da velocidad y el otro contexto. «Anotar algo» es la primera acción del botón redondo y
   Avisos vive en Ajustes. Desde otra pantalla del celular la agenda sigue a dos toques. Mudar Inicio
   queda para otro PR, con su diseño.
-- **Mientras el panel está abierto tapa las columnas de la derecha de la grilla**: en las capturas de
-  1440 y de 1024 px, parte del viernes, el sábado y el domingo. Para tocar un día que quedó debajo, se
-  cierra.
-- **El panel no atrapa el foco.** Con Tab se sale a la grilla, a propósito, para poder elegir otro día.
-  Escape lo cierra mientras el foco esté en la grilla o en el panel, no desde el encabezado.
+- **La capa tapa días vecinos**: abierta en un lunes tapa parte del martes y del miércoles. Para tocar
+  un día que quedó debajo, primero se cierra, con Escape o tocando fuera.
+- **Pide navegadores recientes**: Chrome o Edge 125, Firefox 147, Safari 26. En uno anterior, `@supports`
+  la deja centrada en la ventana y sin punta: se usa igual, pero pierde la relación con el día.
+- **Scrollear la cierra**, también cuando el scroll lo provoca el teclado al llevar el foco a un día que
+  no se veía. El día sigue enfocado y Enter la vuelve a abrir.
+- **Anotar desde la capa la cierra.** La hoja es modal y `showModal` cierra los popover en los tres
+  motores; como WebKit no avisa con `toggle`, la app la cierra antes de abrir la hoja. Lo anotado
+  aparece en la celda y en el aviso global.
+- **La capa no atrapa el foco.** Con Tab se sale a la grilla, a propósito, para poder elegir otro día.
+  Escape la cierra desde cualquier lado de la pantalla, porque lo maneja el navegador.
 - **La tira del mes scrollea de costado**, como en el diseño, y la regla del repo dice «nunca scroll
   horizontal» para los selectores. La tira no esconde opciones que haya que elegir: son los días del mes,
   con hoy a la vista. Es `role="group"` con botones `aria-pressed`, no `tablist`: no controla paneles.
 - **No hay estado de error en la agenda.** Sale de la réplica, que ya está resuelta cuando la pantalla
   monta (ADR 0013): de los cuatro estados del diseño quedan tres.
 - **La hora de una anotación es opcional.** Obligarla frenaba anotar «comprar tornillos».
-- **Dentro de la hoja del día del celular, el deshacer es un aviso local.** La hoja es un `<dialog>`
-  modal y deja inerte el aviso global, que no se podría tocar.
-- **Nada se probó en un teléfono.**
+- **Dentro de la hoja del día del celular y de la capa de la PC, el deshacer es un aviso local.** La hoja
+  es un `<dialog>` modal que deja inerte el aviso global, y la capa lo tapa.
+- **Nada se probó en un teléfono, ni en un Firefox o un Safari de verdad.** Los tres motores se midieron
+  con las versiones de Playwright: primero el prototipo, y después los tests de la capa y del teclado de
+  `agenda.spec.ts` contra la app, con una config de Playwright que no quedó en el repo. El e2e del repo
+  corre solo en Chromium.
 
 ## Verificación
 
@@ -124,20 +175,42 @@ de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
   capturas, y el recorrido con teclado. En la PC, además: los derivados en su día, mover la entrega desde
   el proyecto y ver que el evento se mueve, abrir el trabajo desde la grilla y un día con cinco cosas
   («+2 más»).
-- **El ancho de la grilla, medido con `boundingBox`** contra el ancho del encabezado de la pantalla, que
-  es el área de contenido:
+- **La capa del día**, medida con `boundingBox` en `agenda.spec.ts` (Chromium de Playwright), en los
+  siete casos y en dos ventanas. El test falla en cualquiera de estos casos:
+  - la capa se sale de la ventana o tapa la celda;
+  - abre del lado equivocado para su columna;
+  - la punta no toca la celda o no queda adentro de la capa y de la celda;
+  - la primera fila no abre hacia abajo o la última no abre hacia arriba;
+  - la grilla cambia de ancho.
 
-  | Ventana | Área de contenido | Grilla, panel cerrado | Grilla, panel abierto | Panel                    |
-  | ------- | ----------------- | --------------------- | --------------------- | ------------------------ |
-  | 1440 px | 1108 px           | 1108 px               | 1108 px               | 380 px, desde x = 1002,5 |
-  | 1024 px | 861 px            | 861 px                | 861 px                | 340 px, desde x = 633    |
+  Días de setiembre de 2026:
 
-  El test falla si la grilla no mide el área de contenido o si cambia en un solo píxel al abrir el panel.
-  En los dos anchos recorre el foco: al abrir va al panel; «Cerrar el día» y Escape lo devuelven al botón
-  del día, también cuando se abrió desde «+N más».
+  | Caso                                        | 1440 × 900, grilla 1108 px                                                     | 1024 × 768, grilla 861 px                                                    |
+  | ------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+  | Lunes 14                                    | derecha, abajo; 332,6 × 292,5 en x = 444,6                                     | derecha, abajo; 320 × 292,5 en x = 246,8                                     |
+  | Miércoles 9                                 | derecha, abajo; 332,6 × 250,8 en x = 760,9                                     | derecha, abajo; 320 × 250,8 en x = 492,6                                     |
+  | Viernes 11                                  | izquierda, abajo; en x = 563,5                                                 | izquierda, abajo; en x = 272,4                                               |
+  | Sábado 12                                   | izquierda, abajo; en x = 721,6                                                 | izquierda, abajo; en x = 395,3                                               |
+  | Domingo 13                                  | izquierda, abajo; en x = 879,8                                                 | izquierda, abajo; en x = 518,1                                               |
+  | Primera fila, martes 1                      | derecha, abajo; en x = 602,8                                                   | derecha, abajo; en x = 369,7                                                 |
+  | Última fila, miércoles 30, con cuatro cosas | derecha, arriba; 332,6 × 431,5, de y = 285 a 716,5 (la celda termina en 716,5) | derecha, arriba; 320 × 431,5, de y = 257 a 688,5 (la celda termina en 688,5) |
 
-- Las tres capturas del celular (lista, sin señal y mes vacío) salieron idénticas byte a byte, por
-  SHA-256, antes y después de cambiar el panel. Esa comparación se hizo a mano, fuera del test.
+  La grilla midió lo mismo que el área de contenido con la capa cerrada y abierta en los catorce casos:
+  1108 y 861 px. En cada uno la capa se cierra con Escape y el foco vuelve al botón del día.
+
+- **Tocar otro día.** Del lunes 14 al domingo 20 sin cerrar, la capa pasó de la derecha (x = 444,6) a la
+  izquierda (x = 879,8) sin ningún `toggle` de cierre. «Cerrar el día» devuelve el foco al domingo, y
+  tocar el título de la pantalla la cierra.
+- **Scroll.** Scrollear el `<main>` 120 px con la capa abierta, a 1024 × 560, la cierra.
+- **Teclado.** Enter en el día abre la capa y la enfoca. Tab llega a la casilla y a «Cerrar el día».
+  Escape y Enter en «Cerrar el día» devuelven el foco al día.
+- **Celular.** Las tres capturas (lista, sin señal y mes vacío) salieron idénticas byte a byte, por
+  SHA-256, antes y después del cambio. La comparación se hizo a mano, fuera del test.
+- **Firefox y WebKit.** Los mismos tests de la capa (los siete casos a 1440 y a 1024 px, tocar otro día
+  y el scroll) y el recorrido con teclado pasaron también en Firefox 155 y WebKit 26.6 de Playwright,
+  contra el build de la app, con los mismos lados y las mismas posiciones. A 1024 px el área de
+  contenido mide 876 px en esos dos motores y 861 en Chromium, por el ancho de la barra de scroll. En los
+  tres, la grilla midió el área completa.
 - `destinos-en-celular.spec.ts`: el encabezado de Inicio es «Inicio», el enlace «Agenda» y el de
   Ajustes, en ese orden para el lector de pantalla. Los dos se alcanzan con Tab y abren su pantalla con
   Enter. El ícono mide 44 × 44 px, está a la izquierda de la foto y a su misma altura, es `aria-hidden` y

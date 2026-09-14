@@ -21,6 +21,7 @@ export interface GrillaDelMesProps {
   alElegirDia: (fecha: string) => void;
   alVerElDia?: (fecha: string) => void;
   alAbrirEvento: (evento: EventoDeLaAgenda) => void;
+  idDeLaCapa?: string;
 }
 
 function textoCorto(evento: EventoDeLaAgenda): string {
@@ -38,8 +39,13 @@ export function GrillaDelMes({
   alElegirDia,
   alVerElDia = alElegirDia,
   alAbrirEvento,
+  idDeLaCapa,
 }: GrillaDelMesProps) {
   const semanas = semanasDelMes(mes);
+  const abreLaCapa =
+    idDeLaCapa === undefined
+      ? {}
+      : { popoverTarget: idDeLaCapa, popoverTargetAction: 'show' as const };
 
   return (
     <div
@@ -75,6 +81,7 @@ export function GrillaDelMes({
             <div
               key={fecha}
               data-fecha={fecha}
+              data-abierto={esElegido ? '' : undefined}
               className={`flex min-w-0 flex-col gap-1 overflow-hidden px-1.5 pt-1.5 pb-2 ${
                 fuera || esElegido ? 'bg-surface' : 'bg-paper'
               }`}
@@ -87,6 +94,7 @@ export function GrillaDelMes({
                     : `${String(delDia.length)} ${delDia.length === 1 ? 'cosa' : 'cosas'}`
                 }${marcado ? ', con algo marcado' : ''}`}
                 aria-pressed={esElegido}
+                {...abreLaCapa}
                 onClick={() => {
                   alElegirDia(fecha);
                 }}
@@ -110,6 +118,7 @@ export function GrillaDelMes({
                     key={evento.id}
                     type="button"
                     title={nombreDelEvento(evento)}
+                    {...(evento.clase === 'propia' ? abreLaCapa : {})}
                     onClick={() => {
                       alAbrirEvento(evento);
                     }}
@@ -139,6 +148,7 @@ export function GrillaDelMes({
                 <button
                   type="button"
                   aria-label={`Ver las ${String(delDia.length)} cosas del ${diaEnPalabras(fecha)}`}
+                  {...abreLaCapa}
                   onClick={() => {
                     alVerElDia(fecha);
                   }}

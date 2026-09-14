@@ -4,7 +4,7 @@ import {
   type CategoriaDeAgenda,
   type EventoDeLaAgenda,
 } from '@maun/domain';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import {
   CATEGORIA,
@@ -252,7 +252,9 @@ export function AgendaPage() {
   const [anotandoDesdeElDia, setAnotandoDesdeElDia] = useState(false);
   const [avisoDelDia, setAvisoDelDia] = useState<AvisoDelDia | null>(null);
   const areaDeLaGrilla = useRef<HTMLDivElement>(null);
-  const panelDelDia = useRef<HTMLElement>(null);
+  const capaDelDia = useRef<HTMLElement>(null);
+  const tocoFueraDeLaCapa = useRef(false);
+  const idDeLaCapa = useId();
 
   const avisarEnElDia = useCallback((aviso: NuevoAviso) => {
     setAvisoDelDia({ texto: aviso.texto, accion: aviso.accion ?? null });
@@ -270,7 +272,31 @@ export function AgendaPage() {
   }, [avisoDelDia]);
 
   useEffect(() => {
-    if (diaAbierto !== null) panelDelDia.current?.focus();
+    const capa = capaDelDia.current;
+    if (diaAbierto === null || capa === null) return;
+    if (!capa.matches(':popover-open')) capa.showPopover();
+    capa.focus();
+
+    const alTocar = (evento: PointerEvent) => {
+      tocoFueraDeLaCapa.current = !(evento.target instanceof Node && capa.contains(evento.target));
+    };
+    const alTeclear = () => {
+      tocoFueraDeLaCapa.current = false;
+    };
+    const desplazable = capa.closest('main');
+    const alAbrir = desplazable?.scrollTop ?? 0;
+    const alDesplazar = () => {
+      if (desplazable !== null && desplazable.scrollTop !== alAbrir) setDiaAbierto(null);
+    };
+
+    document.addEventListener('pointerdown', alTocar, true);
+    document.addEventListener('keydown', alTeclear, true);
+    desplazable?.addEventListener('scroll', alDesplazar, { passive: true });
+    return () => {
+      document.removeEventListener('pointerdown', alTocar, true);
+      document.removeEventListener('keydown', alTeclear, true);
+      desplazable?.removeEventListener('scroll', alDesplazar);
+    };
   }, [diaAbierto]);
 
   const datos = useMemo(() => datosDeLaAgendaDeLaReplica(replica), [replica]);
@@ -417,13 +443,23 @@ export function AgendaPage() {
     setDiaAbierto((actual) => (actual === fecha ? null : fecha));
   }
 
+  function devolverElFocoAlDia(fecha: string): void {
+    areaDeLaGrilla.current
+      ?.querySelector<HTMLButtonElement>(`[data-fecha="${fecha}"] > button`)
+      ?.focus();
+  }
+
   function cerrarElDia(): void {
     if (diaAbierto === null) return;
-    const delDia = areaDeLaGrilla.current?.querySelector<HTMLButtonElement>(
-      `[data-fecha="${diaAbierto}"] > button`,
-    );
     setDiaAbierto(null);
-    delDia?.focus();
+    setAvisoDelDia(null);
+    devolverElFocoAlDia(diaAbierto);
+  }
+
+  function anotarCerrandoElDia(fecha: string): void {
+    setAnotando(fecha);
+    setDiaAbierto(null);
+    setAvisoDelDia(null);
   }
 
   return (
@@ -448,6 +484,7 @@ export function AgendaPage() {
               type="button"
               aria-label="Mes anterior"
               onClick={() => {
+                setDiaAbierto(null);
                 irAlMes(mesPrevio(mes));
               }}
               className="flex size-10 items-center justify-center rounded-l-field border border-r-0 border-border bg-paper hover:bg-surface"
@@ -467,6 +504,7 @@ export function AgendaPage() {
               type="button"
               aria-label="Mes siguiente"
               onClick={() => {
+                setDiaAbierto(null);
                 irAlMes(mesSiguiente(mes));
               }}
               className="flex size-10 items-center justify-center rounded-r-field border border-l-0 border-border bg-paper hover:bg-surface"
@@ -476,7 +514,7 @@ export function AgendaPage() {
           </div>
           <Button
             onClick={() => {
-              setAnotando(diaAbierto ?? dia);
+              anotarCerrandoElDia(diaAbierto ?? dia);
             }}
           >
             <Icono nombre="plus" tamano={18} grosor={2} />
@@ -528,21 +566,14 @@ export function AgendaPage() {
         <p className="mb-3 max-w-[640px] text-label leading-relaxed text-text-2">{MES_VACIO}</p>
       )}
 
-      <div
-        ref={areaDeLaGrilla}
-        className="relative"
-        onKeyDown={(evento) => {
-          if (evento.key !== 'Escape' || diaAbierto === null) return;
-          evento.stopPropagation();
-          cerrarElDia();
-        }}
-      >
+      <div ref={areaDeLaGrilla}>
         <GrillaDelMes
           mes={mes}
           hoy={hoy}
           elegido={diaAbierto}
           eventos={visibles}
           maximo={ancho === 'escritorio' ? 3 : 2}
+          idDeLaCapa={idDeLaCapa}
           alElegirDia={elegirDia}
           alVerElDia={setDiaAbierto}
           alAbrirEvento={(evento) => {
@@ -553,21 +584,37 @@ export function AgendaPage() {
 
         {diaAbierto !== null && (
           <aside
-            ref={panelDelDia}
+            ref={capaDelDia}
+            id={idDeLaCapa}
+            popover="auto"
             tabIndex={-1}
             aria-label={`El ${diaEnPalabras(diaAbierto)}`}
-            className="absolute inset-y-0 right-0 z-10 flex w-[min(340px,100%)] flex-col overflow-hidden rounded-panel border border-hairline bg-paper shadow-float outline-none xl:w-[min(380px,100%)]"
+            onToggle={(evento) => {
+              if (evento.newState !== 'closed') return;
+              setDiaAbierto(null);
+              setAvisoDelDia(null);
+              if (!tocoFueraDeLaCapa.current) devolverElFocoAlDia(diaAbierto);
+            }}
+            className="capa-del-dia flex-col overflow-visible rounded-panel border border-hairline bg-paper p-0 text-ink shadow-float outline-none open:flex"
           >
-            <DetalleDelDia
-              fecha={diaAbierto}
-              hoy={hoy}
-              eventos={eventosDelDia(visibles, diaAbierto)}
-              acciones={acciones}
-              alAnotar={() => {
-                setAnotando(diaAbierto);
-              }}
-              alCerrar={cerrarElDia}
-            />
+            <span aria-hidden data-punta="hacia-la-izquierda" className="punta-del-dia" />
+            <span aria-hidden data-punta="hacia-la-derecha" className="punta-del-dia" />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-panel">
+              <DetalleDelDia
+                fecha={diaAbierto}
+                hoy={hoy}
+                eventos={eventosDelDia(visibles, diaAbierto)}
+                acciones={accionesDelDia}
+                aviso={avisoDelDia}
+                alDescartarElAviso={() => {
+                  setAvisoDelDia(null);
+                }}
+                alAnotar={() => {
+                  anotarCerrandoElDia(diaAbierto);
+                }}
+                alCerrar={cerrarElDia}
+              />
+            </div>
           </aside>
         )}
       </div>

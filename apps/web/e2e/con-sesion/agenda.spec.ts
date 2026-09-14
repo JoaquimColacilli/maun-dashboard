@@ -223,16 +223,15 @@ test('tildar, marcar y borrar una anotación, con su deshacer, y la base lo refl
   await abrirLaAgenda(page);
 
   const detalle = await abrirElDiaDeHoy(page, isMobile, '1 cosa');
-  const avisos = isMobile ? detalle : page;
   const casilla = detalle.getByRole('checkbox', { name: 'E2E Pintar la cajonera' });
 
   await casilla.click();
   await expect(casilla).toHaveAttribute('aria-checked', 'true');
   await expect(
-    avisos.getByRole('status').filter({ hasText: 'Listo: E2E Pintar la cajonera.' }),
+    detalle.getByRole('status').filter({ hasText: 'Listo: E2E Pintar la cajonera.' }),
   ).toBeVisible();
   await expect.poll(async () => (await leer())?.hecha).toBe(true);
-  await avisos.getByRole('button', { name: 'Deshacer' }).click();
+  await detalle.getByRole('button', { name: 'Deshacer' }).click();
   await expect(casilla).toHaveAttribute('aria-checked', 'false');
   await expect.poll(async () => (await leer())?.hecha).toBe(false);
 
@@ -247,10 +246,10 @@ test('tildar, marcar y borrar una anotación, con su deshacer, y la base lo refl
     detalle.getByRole('listitem').filter({ hasText: 'E2E Pintar la cajonera' }),
   ).toHaveCount(0);
   await expect(
-    avisos.getByRole('status').filter({ hasText: 'Borraste «E2E Pintar la cajonera».' }),
+    detalle.getByRole('status').filter({ hasText: 'Borraste «E2E Pintar la cajonera».' }),
   ).toBeVisible();
   await expect.poll(async () => (await anotacionesDelTaller(sesion)).length).toBe(0);
-  await avisos.getByRole('button', { name: 'Deshacer' }).click();
+  await detalle.getByRole('button', { name: 'Deshacer' }).click();
   await expect.poll(async () => (await anotacionesDelTaller(sesion)).length).toBe(1);
   await expect(
     detalle.getByRole('listitem').filter({ hasText: 'E2E Pintar la cajonera' }),
@@ -463,99 +462,256 @@ test.describe('en escritorio', () => {
   });
 });
 
-const DIA_DE_HOY = Number(HOY.slice(8));
-
-function otroDia(preferido: number, ...evitar: number[]): string {
-  let dia = preferido;
-  while (dia === DIA_DE_HOY || evitar.includes(dia)) dia += 1;
-  return delMes(dia);
+function columnaDe(fecha: string): number {
+  return (new Date(`${fecha}T12:00:00`).getDay() + 6) % 7;
 }
 
+function diaDelMedio(columna: number): string {
+  for (let dia = 8; dia <= 21; dia += 1) {
+    if (columnaDe(delMes(dia)) === columna) return delMes(dia);
+  }
+  throw new Error(`no hay un día de la columna ${String(columna)} entre el 8 y el 21`);
+}
+
+const ULTIMO_DEL_MES = delMes(
+  new Date(Number(MES.slice(0, 4)), Number(MES.slice(5, 7)), 0).getDate(),
+);
+
+const CASOS = [
+  { nombre: 'lunes', fecha: diaDelMedio(0), fila: 'del medio' },
+  { nombre: 'miercoles', fecha: diaDelMedio(2), fila: 'del medio' },
+  { nombre: 'viernes', fecha: diaDelMedio(4), fila: 'del medio' },
+  { nombre: 'sabado', fecha: diaDelMedio(5), fila: 'del medio' },
+  { nombre: 'domingo', fecha: diaDelMedio(6), fila: 'del medio' },
+  { nombre: 'primera-fila', fecha: delMes(1), fila: 'primera' },
+  { nombre: 'ultima-fila', fecha: ULTIMO_DEL_MES, fila: 'última' },
+] as const;
+
 function botonDelDia(page: Page, fecha: string): Locator {
-  return page.getByRole('button', { name: new RegExp(`^${diaEnPalabras(fecha)}:`) });
+  return page.getByRole('button', { name: new RegExp(`^${diaEnPalabras(fecha)}(, hoy)?:`) });
+}
+
+function capaDelDia(page: Page): Locator {
+  return page.locator('aside[popover]');
+}
+
+interface Caja {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function cajaDe(elemento: Locator): Promise<Caja> {
+  const caja = await elemento.boundingBox();
+  if (caja === null) throw new Error('el elemento no se ve');
+  return caja;
 }
 
 async function anchoDe(elemento: Locator): Promise<number> {
-  const caja = await elemento.boundingBox();
-  if (caja === null) throw new Error('el elemento no se ve');
-  return caja.width;
+  return (await cajaDe(elemento)).width;
 }
 
-async function laGrillaOcupaTodoElAncho(
+interface Punta extends Caja {
+  direccion: string | null;
+}
+
+async function puntaDe(capa: Locator): Promise<Punta> {
+  const puntas = await capa.locator('[data-punta]').evaluateAll((elementos) =>
+    elementos.map((elemento) => {
+      const caja = elemento.getBoundingClientRect();
+      return {
+        direccion: elemento.getAttribute('data-punta'),
+        x: caja.x,
+        y: caja.y,
+        width: caja.width,
+        height: caja.height,
+      };
+    }),
+  );
+  const conAncho = puntas.filter((punta) => punta.width > 0);
+  expect(conAncho).toHaveLength(1);
+  const [punta] = conAncho;
+  if (punta === undefined) throw new Error('la capa no tiene punta');
+  return punta;
+}
+
+function enPixeles(caja: Caja): string {
+  return `${caja.width.toFixed(1)}×${caja.height.toFixed(1)} en x=${caja.x.toFixed(1)}, y=${caja.y.toFixed(1)}`;
+}
+
+async function laCapaSeAnclaAlDia(
   page: Page,
-  nombre: string,
+  ancho: string,
   captura: (archivo: string) => string,
 ): Promise<void> {
-  const dia = otroDia(15);
-  for (const texto of ['E2E Uno', 'E2E Dos', 'E2E Tres', 'E2E Cuatro', 'E2E Cinco']) {
-    await crearAnotacionPorRest(sesion, { fecha: dia, texto });
+  for (const texto of ['E2E Uno', 'E2E Dos', 'E2E Tres', 'E2E Cuatro']) {
+    await crearAnotacionPorRest(sesion, { fecha: ULTIMO_DEL_MES, texto });
   }
+  await crearAnotacionPorRest(sesion, {
+    fecha: diaDelMedio(2),
+    texto: 'E2E Pasar por el corralón',
+  });
   await abrirLaAgenda(page);
 
   const grilla = page.locator('[data-grilla-del-mes]');
-  const areaDeContenido = page.getByRole('main').locator('header').first();
-  const panel = page.getByRole('complementary', { name: `El ${diaEnPalabras(dia)}` });
-  const delDia = botonDelDia(page, dia);
-
-  await expect(page.getByRole('complementary')).toHaveCount(0);
-  const disponible = await anchoDe(areaDeContenido);
-  const cerrado = await anchoDe(grilla);
-  await page.screenshot({ path: captura(`agenda-${nombre}-panel-cerrado.png`) });
-
-  await delDia.click();
-  await expect(panel.getByRole('listitem')).toHaveCount(5);
-  await expect(panel).toBeFocused();
-  const abierto = await anchoDe(grilla);
-  const cajaDeLaGrilla = await grilla.boundingBox();
-  const cajaDelPanel = await panel.boundingBox();
-  if (cajaDeLaGrilla === null || cajaDelPanel === null) throw new Error('la agenda no se ve');
-  await page.screenshot({ path: captura(`agenda-${nombre}-panel-abierto.png`) });
+  const vista = page.viewportSize();
+  if (vista === null) throw new Error('la página no tiene ventana');
+  await expect(capaDelDia(page)).toHaveCount(0);
+  const disponible = await anchoDe(page.getByRole('main').locator('header').first());
+  const cerrada = await anchoDe(grilla);
   console.log(
-    `${nombre}: área de contenido ${String(disponible)} px; grilla ${String(cerrado)} px con el panel cerrado y ${String(abierto)} px abierto; panel ${String(cajaDelPanel.width)} px desde x=${String(cajaDelPanel.x)}`,
+    `${ancho}: área de contenido ${String(disponible)} px; grilla ${String(cerrada)} px con la capa cerrada`,
   );
+  expect(cerrada).toBe(disponible);
 
-  expect(cerrado).toBe(disponible);
-  expect(abierto).toBe(cerrado);
-  expect(cajaDelPanel.x).toBeGreaterThan(cajaDeLaGrilla.x);
-  expect(cajaDelPanel.x + cajaDelPanel.width).toBeLessThanOrEqual(
-    cajaDeLaGrilla.x + cajaDeLaGrilla.width + 0.5,
-  );
-  expect(cajaDelPanel.y).toBeGreaterThanOrEqual(cajaDeLaGrilla.y - 0.5);
+  for (const caso of CASOS) {
+    const delDia = botonDelDia(page, caso.fecha);
+    await delDia.click();
+    const capa = page.getByRole('complementary', { name: `El ${diaEnPalabras(caso.fecha)}` });
+    await expect(capa).toBeFocused();
 
-  await panel.getByRole('button', { name: 'Cerrar el día' }).click();
-  await expect(page.getByRole('complementary')).toHaveCount(0);
-  await expect(delDia).toBeFocused();
-  expect(await anchoDe(grilla)).toBe(cerrado);
+    const cajaDeLaCapa = await cajaDe(capa);
+    const cajaDeLaCelda = await cajaDe(celda(page, caso.fecha));
+    const cajaDeLaGrilla = await cajaDe(grilla);
+    const punta = await puntaDe(capa);
+    const columna = columnaDe(caso.fecha);
+    await page.screenshot({ path: captura(`agenda-capa-${ancho}-${caso.nombre}.png`) });
+    console.log(
+      `${ancho} ${caso.nombre} (${caso.fecha}, columna ${String(columna + 1)}, fila ${caso.fila}): grilla ${String(cajaDeLaGrilla.width)} px; celda ${enPixeles(cajaDeLaCelda)}; capa ${enPixeles(cajaDeLaCapa)}; punta ${String(punta.direccion)} ${enPixeles(punta)}; ventana ${String(vista.width)}×${String(vista.height)}`,
+    );
 
-  await celda(page, dia)
-    .getByRole('button', { name: `Ver las 5 cosas del ${diaEnPalabras(dia)}` })
-    .click();
-  await expect(panel).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('complementary')).toHaveCount(0);
-  await expect(delDia).toBeFocused();
+    expect(cajaDeLaGrilla.width).toBe(cerrada);
+
+    expect(cajaDeLaCapa.x).toBeGreaterThanOrEqual(0);
+    expect(cajaDeLaCapa.y).toBeGreaterThanOrEqual(0);
+    expect(cajaDeLaCapa.x + cajaDeLaCapa.width).toBeLessThanOrEqual(vista.width);
+    expect(cajaDeLaCapa.y + cajaDeLaCapa.height).toBeLessThanOrEqual(vista.height);
+
+    expect(cajaDeLaCapa.width).toBeLessThan(400);
+    expect(cajaDeLaCapa.height).toBeLessThan(cajaDeLaGrilla.height);
+
+    if (columna <= 3) {
+      expect(cajaDeLaCapa.x).toBeGreaterThanOrEqual(cajaDeLaCelda.x + cajaDeLaCelda.width);
+      expect(punta.direccion).toBe('hacia-la-izquierda');
+      expect(Math.abs(punta.x - (cajaDeLaCelda.x + cajaDeLaCelda.width))).toBeLessThan(1);
+    } else {
+      expect(cajaDeLaCapa.x + cajaDeLaCapa.width).toBeLessThanOrEqual(cajaDeLaCelda.x);
+      expect(punta.direccion).toBe('hacia-la-derecha');
+      expect(Math.abs(punta.x + punta.width - cajaDeLaCelda.x)).toBeLessThan(1);
+    }
+    expect(punta.y).toBeGreaterThanOrEqual(Math.max(cajaDeLaCapa.y, cajaDeLaCelda.y));
+    expect(punta.y + punta.height).toBeLessThanOrEqual(
+      Math.min(cajaDeLaCapa.y + cajaDeLaCapa.height, cajaDeLaCelda.y + cajaDeLaCelda.height),
+    );
+
+    if (caso.fila === 'primera') {
+      expect(Math.abs(cajaDeLaCapa.y - cajaDeLaCelda.y)).toBeLessThan(1);
+    }
+    if (caso.fila === 'última') {
+      expect(cajaDeLaCapa.y).toBeLessThan(cajaDeLaCelda.y);
+      expect(
+        Math.abs(cajaDeLaCapa.y + cajaDeLaCapa.height - (cajaDeLaCelda.y + cajaDeLaCelda.height)),
+      ).toBeLessThan(1);
+    }
+
+    await page.keyboard.press('Escape');
+    await expect(capaDelDia(page)).toHaveCount(0);
+    await expect(delDia).toBeFocused();
+  }
 }
 
-test.describe('el panel del día, a 1440 px', () => {
+async function contarLosCierres(capa: Locator): Promise<void> {
+  await capa.evaluate((elemento) => {
+    elemento.dataset.cierres = '0';
+    elemento.addEventListener('toggle', (evento) => {
+      if ((evento as ToggleEvent).newState === 'closed') {
+        elemento.dataset.cierres = String(Number(elemento.dataset.cierres) + 1);
+      }
+    });
+  });
+}
+
+test.describe('la capa del día, a 1440 px', () => {
   test.skip(({ isMobile }) => isMobile, 'en el celular el día es una hoja');
 
-  test('la grilla ocupa todo el ancho con el panel abierto y cerrado, y el panel es una capa que se cierra y devuelve el foco', async ({
+  test('se ancla al día tocado, se abre hacia la izquierda en viernes, sábado y domingo y hacia arriba en la última fila, nunca se sale de la ventana y la grilla sigue midiendo todo el ancho', async ({
     page,
   }, testInfo) => {
-    await laGrillaOcupaTodoElAncho(page, 'escritorio-1440', (archivo) =>
-      testInfo.outputPath(archivo),
-    );
+    await laCapaSeAnclaAlDia(page, '1440', (archivo) => testInfo.outputPath(archivo));
     expect(await anchoDe(page.locator('[data-grilla-del-mes]'))).toBeGreaterThan(1000);
+  });
+
+  test('tocar otro día con la capa abierta la mueve y la da vuelta sin cerrarla, y se cierra con el botón y tocando fuera', async ({
+    page,
+  }, testInfo) => {
+    const lunes = diaDelMedio(0);
+    const domingo = delMes(Number(lunes.slice(8)) + 6);
+    await abrirLaAgenda(page);
+    const capa = capaDelDia(page);
+
+    await botonDelDia(page, lunes).click();
+    await expect(
+      page.getByRole('complementary', { name: `El ${diaEnPalabras(lunes)}` }),
+    ).toBeFocused();
+    await contarLosCierres(capa);
+    const enElLunes = await cajaDe(capa);
+    const celdaDelLunes = await cajaDe(celda(page, lunes));
+    expect(enElLunes.x).toBeGreaterThanOrEqual(celdaDelLunes.x + celdaDelLunes.width);
+    expect((await puntaDe(capa)).direccion).toBe('hacia-la-izquierda');
+    await page.screenshot({ path: testInfo.outputPath('agenda-capa-cambio-1-lunes.png') });
+
+    await botonDelDia(page, domingo).click();
+    await expect(
+      page.getByRole('complementary', { name: `El ${diaEnPalabras(domingo)}` }),
+    ).toBeFocused();
+    const enElDomingo = await cajaDe(capa);
+    const celdaDelDomingo = await cajaDe(celda(page, domingo));
+    await page.screenshot({ path: testInfo.outputPath('agenda-capa-cambio-2-domingo.png') });
+    console.log(
+      `cambio de día: en el lunes ${lunes} la capa ${enPixeles(enElLunes)}; en el domingo ${domingo} ${enPixeles(enElDomingo)}`,
+    );
+    expect(enElDomingo.x + enElDomingo.width).toBeLessThanOrEqual(celdaDelDomingo.x);
+    expect((await puntaDe(capa)).direccion).toBe('hacia-la-derecha');
+    await expect(capa).toHaveAttribute('data-cierres', '0');
+
+    await capa.getByRole('button', { name: 'Cerrar el día' }).click();
+    await expect(capa).toHaveCount(0);
+    await expect(botonDelDia(page, domingo)).toBeFocused();
+
+    await botonDelDia(page, lunes).click();
+    await expect(capa).toBeVisible();
+    await page.getByRole('heading', { level: 1, name: 'Agenda' }).click();
+    await expect(capa).toHaveCount(0);
   });
 });
 
-test.describe('el panel del día, a 1024 px', () => {
+test.describe('la capa del día, a 1024 px', () => {
   test.skip(({ isMobile }) => isMobile, 'en el celular el día es una hoja');
   test.use({ viewport: { width: 1024, height: 768 } });
 
-  test('la grilla ocupa todo el ancho con el panel abierto y cerrado, y el panel es una capa que se cierra y devuelve el foco', async ({
+  test('se ancla al día tocado, se abre hacia la izquierda en viernes, sábado y domingo y hacia arriba en la última fila, nunca se sale de la ventana y la grilla sigue midiendo todo el ancho', async ({
     page,
   }, testInfo) => {
-    await laGrillaOcupaTodoElAncho(page, 'tablet-1024', (archivo) => testInfo.outputPath(archivo));
+    await laCapaSeAnclaAlDia(page, '1024', (archivo) => testInfo.outputPath(archivo));
+  });
+
+  test('scrollear la agenda con la capa abierta la cierra', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 560 });
+    await abrirLaAgenda(page);
+    const lunes = diaDelMedio(0);
+
+    await botonDelDia(page, lunes).click();
+    const capa = capaDelDia(page);
+    await expect(capa).toBeFocused();
+    const principal = page.getByRole('main');
+    expect(
+      await principal.evaluate((elemento) => elemento.scrollHeight > elemento.clientHeight),
+    ).toBe(true);
+
+    await principal.evaluate((elemento) => {
+      elemento.scrollTop += 120;
+    });
+    await expect(capa).toHaveCount(0);
   });
 });
