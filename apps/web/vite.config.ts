@@ -54,6 +54,9 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'sw',
+        filename: 'sw.ts',
         registerType: 'prompt',
         injectRegister: false,
         includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png'],
@@ -79,10 +82,8 @@ export default defineConfig(({ mode }) => {
             },
           ],
         },
-        workbox: {
+        injectManifest: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-          navigateFallback: '/index.html',
-          cleanupOutdatedCaches: true,
         },
       }),
     ],

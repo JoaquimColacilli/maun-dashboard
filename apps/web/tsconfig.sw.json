@@ -1,0 +1,11 @@
+{
+  "extends": "@maun/config/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "WebWorker"],
+    "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.sw.tsbuildinfo"
+  },
+  "include": ["sw"]
+}
