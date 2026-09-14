@@ -35,3 +35,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0029](0029-el-estado-se-cambia-desde-la-ficha.md)              | El estado se cambia desde la ficha, con acciones         | Aceptada             |
 | [0030](0030-un-guardado-un-aviso.md)                            | Un guardado, un aviso: esperar el turno no es sin señal  | Aceptada             |
 | [0031](0031-ninguna-pantalla-de-sesion-encierra.md)             | Ninguna pantalla de sesión encierra                      | Aceptada             |
+| [0032](0032-una-sola-ceremonia-de-webauthn-por-vez.md)          | Una sola ceremonia de WebAuthn por vez                   | Aceptada             |

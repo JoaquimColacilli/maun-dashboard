@@ -94,7 +94,9 @@ export async function leerClaims(): Promise<Claims | undefined> {
   }
 }
 
-export type CambioDeSesion = 'cerrada' | 'recuperacion' | 'otro';
+export type CambioDeSesion = 'cerrada' | 'vencida' | 'recuperacion' | 'otro';
+
+let salidaPedida = false;
 
 export function escucharSesion(
   alCambiar: (claims: Claims | undefined, cambio: CambioDeSesion) => void,
@@ -102,7 +104,9 @@ export function escucharSesion(
   const { data } = clienteMaun().auth.onAuthStateChange((evento, sesion) => {
     const cambio: CambioDeSesion =
       evento === 'SIGNED_OUT'
-        ? 'cerrada'
+        ? salidaPedida
+          ? 'cerrada'
+          : 'vencida'
         : evento === 'PASSWORD_RECOVERY'
           ? 'recuperacion'
           : 'otro';
@@ -170,9 +174,14 @@ export async function subirFotoDeLaPersona(usuarioId: string, foto: Blob): Promi
 }
 
 export async function salir(): Promise<void> {
-  const { error } = await clienteMaun().auth.signOut();
-  if (!error) return;
-  if (!esFalloDeRed(error)) throw error;
-  const { error: errorLocal } = await clienteMaun().auth.signOut({ scope: 'local' });
-  if (errorLocal) throw errorLocal;
+  salidaPedida = true;
+  try {
+    const { error } = await clienteMaun().auth.signOut();
+    if (!error) return;
+    if (!esFalloDeRed(error)) throw error;
+    const { error: errorLocal } = await clienteMaun().auth.signOut({ scope: 'local' });
+    if (errorLocal) throw errorLocal;
+  } finally {
+    salidaPedida = false;
+  }
 }

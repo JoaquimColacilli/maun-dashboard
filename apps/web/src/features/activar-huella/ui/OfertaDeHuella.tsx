@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useSesionActiva } from '@/entities/sesion';
 import {
@@ -19,6 +19,7 @@ export function OfertaDeHuella() {
   const [abierta, setAbierta] = useState(false);
   const [activando, setActivando] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
+  const pedidos = useRef(new Set<AbortController>());
 
   useEffect(() => {
     if (
@@ -40,13 +41,29 @@ export function OfertaDeHuella() {
     };
   }, [usuarioId]);
 
+  useEffect(() => {
+    const vivos = pedidos.current;
+    return () => {
+      for (const pedido of vivos) pedido.abort();
+    };
+  }, []);
+
+  function cerrar(): void {
+    for (const pedido of pedidos.current) pedido.abort();
+    setAbierta(false);
+  }
+
   async function aceptar(): Promise<void> {
+    const pedido = new AbortController();
+    pedidos.current.add(pedido);
     setActivando(true);
     setError(undefined);
-    const fallo = await activarHuella(usuarioId);
+    const resultado = await activarHuella(usuarioId, pedido.signal);
+    pedidos.current.delete(pedido);
     setActivando(false);
-    if (fallo !== undefined) {
-      setError(fallo);
+    if (resultado.tipo === 'interrumpida') return;
+    if (resultado.tipo === 'no-se-pudo') {
+      setError(resultado.mensaje);
       return;
     }
     setAbierta(false);
@@ -64,9 +81,7 @@ export function OfertaDeHuella() {
           titulo="¿Querés entrar con la huella la próxima vez?"
           ancho="angosto"
           desdeAbajo
-          alCerrar={() => {
-            if (!activando) setAbierta(false);
-          }}
+          alCerrar={cerrar}
         >
           <div className="flex flex-col gap-4 px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:px-6 md:pb-5">
             <div className="flex items-start gap-3.5">
@@ -97,14 +112,7 @@ export function OfertaDeHuella() {
               >
                 {activando ? 'Registrando la huella…' : 'Sí, usar la huella'}
               </Button>
-              <Button
-                variant="terciario"
-                className="w-full"
-                disabled={activando}
-                onClick={() => {
-                  setAbierta(false);
-                }}
-              >
+              <Button variant="terciario" className="w-full" onClick={cerrar}>
                 Ahora no
               </Button>
             </div>

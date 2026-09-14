@@ -1,6 +1,12 @@
 import { claimsGuardados, escucharSesion, leerClaims, vinoPorRecuperacion } from '@/shared/api';
 
-import { SESION_ANONIMA, SESION_CARGANDO, sesionDe, type EstadoSesion } from './estado';
+import {
+  SESION_ANONIMA,
+  SESION_CARGANDO,
+  SESION_VENCIDA,
+  sesionDe,
+  type EstadoSesion,
+} from './estado';
 
 export const TOPE_PARA_VALIDAR_LA_SESION_MS = 10_000;
 
@@ -19,10 +25,12 @@ function iguales(a: EstadoSesion, b: EstadoSesion): boolean {
       a.porRecuperacion === b.porRecuperacion
     );
   }
+  if (a.tipo === 'anonimo' && b.tipo === 'anonimo') return a.vencida === b.vencida;
   return true;
 }
 
 function guardar(nuevo: EstadoSesion): void {
+  if (estado.tipo === 'anonimo' && estado.vencida && nuevo.tipo === 'anonimo') return;
   if (iguales(estado, nuevo)) return;
   estado = nuevo;
   for (const oyente of oyentes) oyente();
@@ -32,7 +40,12 @@ function arrancar(): void {
   if (arrancado) return;
   arrancado = true;
 
-  escucharSesion((claims) => {
+  escucharSesion((claims, cambio) => {
+    if (cambio === 'vencida') {
+      guardar(SESION_VENCIDA);
+      return;
+    }
+    if (claims === undefined && cambio === 'otro') return;
     guardar(sesionDe(claims, vinoPorRecuperacion()));
   });
 

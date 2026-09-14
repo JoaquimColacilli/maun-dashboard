@@ -385,6 +385,45 @@ describe('la ceremonia local de la huella', () => {
     });
   });
 
+  it('lo que cancela la propia app no es una huella cancelada: vuelve como interrumpida', async () => {
+    const huella = await modulo();
+    conCredenciales(
+      (opciones) =>
+        new Promise((_resolver, rechazar) => {
+          opciones.signal?.addEventListener('abort', () => {
+            rechazar(new DOMException('abortado', 'AbortError'));
+          });
+        }),
+    );
+    const afuera = new AbortController();
+
+    const pendiente = huella.pedirHuella(null, afuera.signal);
+    afuera.abort();
+
+    expect(await pendiente).toEqual({ tipo: 'interrumpida' });
+  });
+
+  it('un pedido nuevo encima de uno colgado lo cancela en silencio, y el nuevo confirma', async () => {
+    const huella = await modulo();
+    let llamadas = 0;
+    conCredenciales((opciones) => {
+      llamadas += 1;
+      if (llamadas === 2) return Promise.resolve(new CredencialDePrueba('bnVldmE'));
+      return new Promise((_resolver, rechazar) => {
+        opciones.signal?.addEventListener('abort', () => {
+          rechazar(new DOMException('abortado', 'AbortError'));
+        });
+      });
+    });
+
+    const colgado = huella.pedirHuella(null);
+    const nuevo = huella.pedirHuella(null);
+
+    expect(await colgado).toEqual({ tipo: 'interrumpida' });
+    expect(await nuevo).toEqual({ tipo: 'confirmada', credencial: 'bnVldmE' });
+    expect(llamadas).toBe(2);
+  });
+
   it('sin WebAuthn en el navegador no hay huella', async () => {
     const huella = await modulo();
     vi.unstubAllGlobals();

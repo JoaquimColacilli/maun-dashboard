@@ -2,6 +2,13 @@ export { borrarCacheLocal, crearPersisterIndexedDb } from './cache/persister';
 export { guardarCacheAhora, registrarGuardado } from './cache/guardado';
 export { claveDeReplica, claveDeTodaReplica, RAIZ_DE_REPLICA } from './claves';
 export { COLA_DE_SALIDA, esPersistible, reanudarCola } from './cache/cola';
+export {
+  conUnaSolaCeremonia,
+  ESPERA_DE_LA_CEREMONIA_ANTERIOR_MS,
+  TOPE_DE_UNA_CEREMONIA_MS,
+  type DesenlaceDeLaCeremonia,
+  type OpcionesDeLaCeremonia,
+} from './ceremonia';
 export { limpiarDatosLocales } from './cache/limpieza';
 export {
   diaDelMes,

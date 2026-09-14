@@ -9,7 +9,13 @@ export interface TelefonoVirtual {
   autenticador: string;
 }
 
-type VentanaConPedidos = Window & { pedidosDeHuella: number };
+type VentanaConPedidos = Window & { pedidosDeHuella: number; pedidosCondicionales: number };
+
+type VentanaDelBloqueo = Window & { disenosDelBloqueo: string[]; bajadasDelBloqueo: string[] };
+
+type VentanaConRutas = Window & { rutasVistas: string[] };
+
+const REFRESCO_DEL_TOKEN = /\/auth\/v1\/token\?grant_type=refresh_token/;
 
 type VentanaConVisibilidad = Window & {
   cambiarVisibilidad: (estado: DocumentVisibilityState) => void;
@@ -100,9 +106,11 @@ export async function contarPedidosDeHuella(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const ventana = window as unknown as VentanaConPedidos;
     ventana.pedidosDeHuella = 0;
+    ventana.pedidosCondicionales = 0;
     const original = navigator.credentials.get.bind(navigator.credentials);
     navigator.credentials.get = (opciones?: CredentialRequestOptions) => {
-      if (opciones?.mediation !== 'conditional') ventana.pedidosDeHuella += 1;
+      if (opciones?.mediation === 'conditional') ventana.pedidosCondicionales += 1;
+      else ventana.pedidosDeHuella += 1;
       return original(opciones);
     };
   });
@@ -110,6 +118,123 @@ export async function contarPedidosDeHuella(page: Page): Promise<void> {
 
 export async function pedidosDeHuella(page: Page): Promise<number> {
   return page.evaluate(() => (window as unknown as VentanaConPedidos).pedidosDeHuella);
+}
+
+export async function pedidosCondicionales(page: Page): Promise<number> {
+  return page.evaluate(() => (window as unknown as VentanaConPedidos).pedidosCondicionales);
+}
+
+export async function presenciaAutomatica(
+  telefono: TelefonoVirtual,
+  activa: boolean,
+): Promise<void> {
+  await telefono.cdp.send('WebAuthn.setAutomaticPresenceSimulation', {
+    authenticatorId: telefono.autenticador,
+    enabled: activa,
+  });
+}
+
+export async function registrarLaPantallaDeBloqueo(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const ventana = window as unknown as VentanaDelBloqueo;
+    ventana.disenosDelBloqueo = [];
+    ventana.bajadasDelBloqueo = [];
+    const anotar = (lista: string[], valor: string) => {
+      if (valor !== '' && lista.at(-1) !== valor) lista.push(valor);
+    };
+    new MutationObserver(() => {
+      const pantalla = document.querySelector('[data-pantalla-de-acceso]');
+      const titulo = pantalla?.querySelector('h1')?.textContent ?? '';
+      if (!pantalla || !titulo.startsWith('Hola')) return;
+      const esperando = [...pantalla.querySelectorAll('p[role="status"]')].some((parrafo) =>
+        parrafo.textContent.includes('Esperando la huella'),
+      );
+      anotar(ventana.disenosDelBloqueo, esperando ? 'huella' : 'formulario');
+      anotar(
+        ventana.bajadasDelBloqueo,
+        pantalla.querySelector('header p')?.textContent.trim() ?? '',
+      );
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+}
+
+export async function disenosDelBloqueo(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as VentanaDelBloqueo).disenosDelBloqueo);
+}
+
+export async function bajadasDelBloqueo(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as VentanaDelBloqueo).bajadasDelBloqueo);
+}
+
+export async function registrarRutas(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const ventana = window as unknown as VentanaConRutas;
+    ventana.rutasVistas = [location.pathname];
+    const anotar = () => {
+      ventana.rutasVistas.push(location.pathname);
+    };
+    const empujar = history.pushState.bind(history);
+    const reemplazar = history.replaceState.bind(history);
+    history.pushState = (...argumentos: Parameters<History['pushState']>) => {
+      empujar(...argumentos);
+      anotar();
+    };
+    history.replaceState = (...argumentos: Parameters<History['replaceState']>) => {
+      reemplazar(...argumentos);
+      anotar();
+    };
+  });
+}
+
+export async function rutasVistas(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as VentanaConRutas).rutasVistas);
+}
+
+export interface RefrescoDelToken {
+  devolverLaSesion: () => void;
+  rechazar: () => void;
+}
+
+export async function sesionVencidaConRefrescoControlado(page: Page): Promise<RefrescoDelToken> {
+  const guardada = await page.evaluate(() => localStorage.getItem('maun.sesion'));
+  if (guardada === null) throw new Error('No hay sesión guardada en el navegador.');
+  let modo: 'sin-red' | 'sesion' | 'rechazo' = 'sin-red';
+
+  await page.route(REFRESCO_DEL_TOKEN, (ruta) => {
+    if (modo === 'sin-red') return ruta.abort('failed');
+    if (modo === 'rechazo') {
+      return ruta.fulfill({
+        status: 400,
+        json: {
+          code: 400,
+          error_code: 'refresh_token_not_found',
+          msg: 'Invalid Refresh Token: Refresh Token Not Found',
+        },
+      });
+    }
+    const sesion = JSON.parse(guardada) as Record<string, unknown>;
+    return ruta.fulfill({
+      json: { ...sesion, expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600 },
+    });
+  });
+  await page.addInitScript(() => {
+    const crudo = localStorage.getItem('maun.sesion');
+    if (crudo === null) return;
+    const sesion = JSON.parse(crudo) as Record<string, unknown>;
+    localStorage.setItem(
+      'maun.sesion',
+      JSON.stringify({ ...sesion, expires_at: Math.floor(Date.now() / 1000) - 3600 }),
+    );
+  });
+
+  return {
+    devolverLaSesion: () => {
+      modo = 'sesion';
+    },
+    rechazar: () => {
+      modo = 'rechazo';
+    },
+  };
 }
 
 export async function usuarioDeLaSesion(page: Page): Promise<string> {

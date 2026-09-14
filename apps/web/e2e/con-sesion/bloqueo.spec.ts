@@ -7,13 +7,21 @@ import {
   activarBloqueoEnElDispositivo,
   alFrente,
   aSegundoPlano,
+  bajadasDelBloqueo,
   CLAVE_DEL_BLOQUEO,
   contarPedidosDeHuella,
   credencialesDelTelefono,
+  disenosDelBloqueo,
   huellaQueVerifica,
   marcaDeBloqueo,
+  pedidosCondicionales,
   pedidosDeHuella,
+  presenciaAutomatica,
   registrarHuellaEnElTelefono,
+  registrarLaPantallaDeBloqueo,
+  registrarRutas,
+  rutasVistas,
+  sesionVencidaConRefrescoControlado,
   simularRegistroEnSupabase,
   telefonoConHuella,
   usuarioDeLaSesion,
@@ -178,6 +186,155 @@ test.describe('el bloqueo con huella, en el celular', () => {
     expect(await marcaDeBloqueo(page)).toBeNull();
     await context.setOffline(false);
     expect(await contarClientes(sesion, 'Perdido al salir')).toBe(0);
+  });
+
+  test('una ceremonia colgada no hace titilar la pantalla: tocar la huella la reemplaza en silencio y se puede reintentar', async ({
+    page,
+  }) => {
+    await registrarLaPantallaDeBloqueo(page);
+    await contarPedidosDeHuella(page);
+    const telefono = await telefonoConHuella(page, true);
+    await page.goto('/ajustes');
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    await registrarHuellaEnElTelefono(telefono, await usuarioDeLaSesion(page));
+    await activarBloqueoEnElDispositivo(page);
+    await presenciaAutomatica(telefono, false);
+    await page.reload();
+
+    await expect(pantallaDeBloqueo(page)).toBeVisible(CARGA_DEL_TALLER);
+    await expect.poll(() => pedidosDeHuella(page)).toBe(1);
+
+    await page.getByRole('button', { name: 'Usar la huella' }).click();
+    await expect.poll(() => pedidosDeHuella(page)).toBe(2);
+    await page.waitForTimeout(1500);
+    console.log(
+      `colgada y reemplazada: diseños ${JSON.stringify(await disenosDelBloqueo(page))}, bajadas ${JSON.stringify(await bajadasDelBloqueo(page))}`,
+    );
+    expect(await disenosDelBloqueo(page)).toEqual(['huella']);
+    expect((await bajadasDelBloqueo(page)).join(' ')).not.toMatch(/no se confirmó/);
+
+    await presenciaAutomatica(telefono, true);
+    await page.getByRole('button', { name: 'Usar la huella' }).click();
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    expect((await bajadasDelBloqueo(page)).join(' ')).not.toMatch(/no se confirmó/);
+  });
+
+  test('si otra ceremonia ocupa el sensor, reintentar no titila entre la huella y la contraseña, y cuando se libera entra', async ({
+    page,
+  }) => {
+    await registrarLaPantallaDeBloqueo(page);
+    const telefono = await bloquearYReabrir(page, false);
+    await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible(CARGA_DEL_TALLER);
+
+    await presenciaAutomatica(telefono, false);
+    await page.evaluate(() => {
+      const control = new AbortController();
+      (window as unknown as { ocupada: AbortController }).ocupada = control;
+      void navigator.credentials
+        .get({
+          publicKey: {
+            challenge: crypto.getRandomValues(new Uint8Array(32)),
+            userVerification: 'required',
+            timeout: 120_000,
+          },
+          signal: control.signal,
+        })
+        .catch(() => undefined);
+    });
+
+    await huellaQueVerifica(telefono, true);
+    for (let toque = 0; toque < 3; toque += 1) {
+      await page.getByRole('button', { name: /Probar con la huella|Esperando la huella/ }).click();
+      await page.waitForTimeout(700);
+    }
+    console.log(
+      `sensor ocupado: diseños ${JSON.stringify(await disenosDelBloqueo(page))}, bajadas ${JSON.stringify(await bajadasDelBloqueo(page))}`,
+    );
+    expect(await disenosDelBloqueo(page)).toEqual(['huella', 'formulario']);
+    await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible();
+
+    await page.evaluate(() => {
+      (window as unknown as { ocupada: AbortController }).ocupada.abort();
+    });
+    await presenciaAutomatica(telefono, true);
+    await page.getByRole('button', { name: /Probar con la huella|Esperando la huella/ }).click();
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+  });
+
+  test('con la sesión vencida y mala señal el acceso no se monta antes del bloqueo: ninguna mediación condicional compite con la huella', async ({
+    page,
+  }) => {
+    await contarPedidosDeHuella(page);
+    await registrarRutas(page);
+    await page.addInitScript(() => {
+      PublicKeyCredential.isConditionalMediationAvailable = () => Promise.resolve(true);
+    });
+    await page.route('**/auth/v1/passkeys/authentication/options', (ruta) =>
+      ruta.fulfill({
+        json: {
+          challenge_id: 'desafio-e2e',
+          expires_at: Math.floor(Date.now() / 1000) + 300,
+          options: {
+            challenge: 'ZGVzYWZpby1kZS1wcnVlYmEtZTJlLTAxMjM0NTY3',
+            rpId: 'localhost',
+            allowCredentials: [],
+            userVerification: 'preferred',
+            timeout: 300000,
+          },
+        },
+      }),
+    );
+    const telefono = await telefonoConHuella(page, false);
+    await page.goto('/ajustes');
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    await registrarHuellaEnElTelefono(telefono, await usuarioDeLaSesion(page));
+    await activarBloqueoEnElDispositivo(page);
+    const refresco = await sesionVencidaConRefrescoControlado(page);
+
+    await page.reload();
+    await expect(pantallaDeBloqueo(page)).toBeVisible(CARGA_DEL_TALLER);
+    await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible(CARGA_DEL_TALLER);
+    console.log(
+      `sesión vencida al abrir: rutas ${JSON.stringify(await rutasVistas(page))}, condicionales ${String(await pedidosCondicionales(page))}, huellas ${String(await pedidosDeHuella(page))}`,
+    );
+    expect(await rutasVistas(page)).not.toContain('/acceso');
+    expect(await pedidosCondicionales(page)).toBe(0);
+    expect(await pedidosDeHuella(page)).toBe(1);
+
+    refresco.devolverLaSesion();
+    await huellaQueVerifica(telefono, true);
+    await page.getByRole('button', { name: 'Probar con la huella' }).click();
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    expect(await pedidosCondicionales(page)).toBe(0);
+  });
+
+  test('si al desbloquear la sesión ya no sirve, va al acceso con un mensaje y no vuelve a pedir la huella', async ({
+    page,
+  }) => {
+    const telefono = await telefonoConHuella(page, false);
+    await page.goto('/ajustes');
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    await registrarHuellaEnElTelefono(telefono, await usuarioDeLaSesion(page));
+    await activarBloqueoEnElDispositivo(page);
+    const refresco = await sesionVencidaConRefrescoControlado(page);
+
+    await page.reload();
+    await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible(CARGA_DEL_TALLER);
+    refresco.rechazar();
+    await huellaQueVerifica(telefono, true);
+    await page.getByRole('button', { name: 'Probar con la huella' }).click();
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    await page.getByRole('button', { name: 'Sincronizar ahora' }).click();
+
+    await expect(page).toHaveURL(/\/acceso$/, CARGA_DEL_TALLER);
+    const aviso = page.getByRole('alert').filter({ hasText: 'se cerró' });
+    await expect(aviso).toBeVisible();
+    console.log(`sesión que ya no sirve: ${await aviso.innerText()}`);
+    expect(await marcaDeBloqueo(page)).toBeNull();
+
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Entrá al taller');
+    await expect(pantallaDeBloqueo(page)).toHaveCount(0);
   });
 
   test('con el teclado abierto, la contraseña y el botón de entrar quedan a la vista', async ({

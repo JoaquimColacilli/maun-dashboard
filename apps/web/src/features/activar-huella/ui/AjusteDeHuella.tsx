@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useSesionActiva } from '@/entities/sesion';
 import { avisarEnPantalla, huellaDisponible, olvidarBloqueo, useBloqueoActivo } from '@/shared/lib';
@@ -12,6 +12,7 @@ export function AjusteDeHuella() {
   const [disponible, setDisponible] = useState<boolean | undefined>(undefined);
   const [activando, setActivando] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
+  const pedidos = useRef(new Set<AbortController>());
 
   useEffect(() => {
     let vigente = true;
@@ -23,13 +24,24 @@ export function AjusteDeHuella() {
     };
   }, []);
 
+  useEffect(() => {
+    const vivos = pedidos.current;
+    return () => {
+      for (const pedido of vivos) pedido.abort();
+    };
+  }, []);
+
   async function activar(): Promise<void> {
+    const pedido = new AbortController();
+    pedidos.current.add(pedido);
     setActivando(true);
     setError(undefined);
-    const fallo = await activarHuella(usuarioId);
+    const resultado = await activarHuella(usuarioId, pedido.signal);
+    pedidos.current.delete(pedido);
     setActivando(false);
-    if (fallo !== undefined) {
-      setError(fallo);
+    if (resultado.tipo === 'interrumpida') return;
+    if (resultado.tipo === 'no-se-pudo') {
+      setError(resultado.mensaje);
       return;
     }
     avisarEnPantalla({

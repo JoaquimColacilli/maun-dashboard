@@ -76,6 +76,65 @@ describe('el estado de la sesión al abrir la app', () => {
     expect(api.claimsGuardados).not.toHaveBeenCalled();
   });
 
+  it('un evento inicial sin sesión mientras se valida no manda al acceso: decide la validación', async () => {
+    let contestar: (claims: Claims | undefined) => void = () => undefined;
+    api.leerClaims.mockImplementation(
+      () =>
+        new Promise((resolver) => {
+          contestar = resolver;
+        }),
+    );
+    const store = await arrancar();
+
+    api.oyente?.(undefined, 'otro');
+    expect(store.leerEstadoSesion().tipo).toBe('cargando');
+
+    contestar(ANA);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.leerEstadoSesion()).toMatchObject({ tipo: 'activa', usuarioId: 'ana' });
+  });
+
+  it('un evento sin sesión que no es un cierre no saca a quien ya estaba adentro', async () => {
+    api.leerClaims.mockResolvedValue(ANA);
+    const store = await arrancar();
+    await vi.advanceTimersByTimeAsync(0);
+
+    api.oyente?.(undefined, 'otro');
+
+    expect(store.leerEstadoSesion()).toMatchObject({ tipo: 'activa', usuarioId: 'ana' });
+  });
+
+  it('una sesión que se cerró sola lleva al acceso diciendo por qué, y una validación tardía no borra el motivo', async () => {
+    let rechazar: (motivo: unknown) => void = () => undefined;
+    api.leerClaims.mockImplementation(
+      () =>
+        new Promise((_resolver, rechazo) => {
+          rechazar = rechazo;
+        }),
+    );
+    const store = await arrancar();
+
+    api.oyente?.(undefined, 'vencida');
+    expect(store.leerEstadoSesion()).toEqual({ tipo: 'anonimo', vencida: true });
+
+    rechazar(new Error('refresh_token_not_found'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.leerEstadoSesion()).toEqual({ tipo: 'anonimo', vencida: true });
+
+    api.oyente?.(ANA, 'otro');
+    expect(store.leerEstadoSesion()).toMatchObject({ tipo: 'activa', usuarioId: 'ana' });
+  });
+
+  it('cerrar sesión a pedido no es una sesión vencida', async () => {
+    api.leerClaims.mockResolvedValue(ANA);
+    const store = await arrancar();
+    await vi.advanceTimersByTimeAsync(0);
+
+    api.oyente?.(undefined, 'cerrada');
+
+    expect(store.leerEstadoSesion()).toEqual({ tipo: 'anonimo', vencida: false });
+  });
+
   it('si la validación contesta tarde que la sesión no sirve, sale al acceso igual', async () => {
     let rechazar: (motivo: unknown) => void = () => undefined;
     api.leerClaims.mockImplementation(
