@@ -63,6 +63,23 @@ function urlDeLaApp(datos: unknown): string {
     : new URL(CARGA_SIN_DATOS.url, self.location.origin).href;
 }
 
+const VUELTA_POR_UN_AVISO = 'MAUN_VUELTA_POR_UN_AVISO';
+const ESPERA_DE_LA_VENTANA_MS = 500;
+
+function avisarLaVuelta(ventana: WindowClient, url: string): Promise<void> {
+  return new Promise((resolver) => {
+    const canal = new MessageChannel();
+    const reloj = setTimeout(() => {
+      resolver();
+    }, ESPERA_DE_LA_VENTANA_MS);
+    canal.port1.onmessage = () => {
+      clearTimeout(reloj);
+      resolver();
+    };
+    ventana.postMessage({ type: VUELTA_POR_UN_AVISO, url }, [canal.port2]);
+  });
+}
+
 async function abrirLaApp(url: string): Promise<void> {
   const ventanas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   const ventana = ventanas.find((cliente) => new URL(cliente.url).origin === self.location.origin);
@@ -70,8 +87,8 @@ async function abrirLaApp(url: string): Promise<void> {
     await self.clients.openWindow(url);
     return;
   }
-  const enfocada = await ventana.focus();
-  await enfocada.navigate(url).catch(() => null);
+  await avisarLaVuelta(ventana, url);
+  await ventana.focus().catch(() => null);
 }
 
 self.addEventListener('message', (evento) => {

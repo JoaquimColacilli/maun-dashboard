@@ -61,6 +61,60 @@ async function bloquearYReabrir(page: Page, verifica: boolean): Promise<Telefono
   return telefono;
 }
 
+type AlcanceDelServiceWorker = typeof globalThis & {
+  clients: {
+    matchAll: (
+      opciones: object,
+    ) => Promise<
+      { url: string; postMessage: (mensaje: unknown, transferir: Transferable[]) => void }[]
+    >;
+  };
+};
+
+async function serviceWorkerDeLaApp(page: Page) {
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  const origen = new URL(page.url()).origin;
+  const trabajador = page
+    .context()
+    .serviceWorkers()
+    .find((sw) => sw.url().startsWith(origen));
+  if (trabajador === undefined) throw new Error('la app no tiene service worker');
+  return trabajador;
+}
+
+async function tocarUnAviso(ruta: string): Promise<number> {
+  const alcance = self as unknown as AlcanceDelServiceWorker;
+  const ventanas = await alcance.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const respuestas = await Promise.all(
+    ventanas.map(
+      (ventana) =>
+        new Promise<boolean>((resolver) => {
+          const canal = new MessageChannel();
+          const reloj = setTimeout(() => {
+            resolver(false);
+          }, 2000);
+          canal.port1.onmessage = () => {
+            clearTimeout(reloj);
+            resolver(true);
+          };
+          ventana.postMessage(
+            {
+              type: 'MAUN_VUELTA_POR_UN_AVISO',
+              url: new URL(ruta, alcance.location.origin).href,
+            },
+            [canal.port2],
+          );
+        }),
+    ),
+  );
+  return respuestas.filter(Boolean).length;
+}
+
+async function ventanasAbiertas(): Promise<number> {
+  const alcance = self as unknown as AlcanceDelServiceWorker;
+  return (await alcance.clients.matchAll({ type: 'window', includeUncontrolled: true })).length;
+}
+
 test.describe('el bloqueo con huella, en el celular', () => {
   test.skip(({ isMobile }) => !isMobile, 'el bloqueo es solo del celular');
 
@@ -423,6 +477,53 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await page.getByRole('button', { name: 'Probar con la huella' }).click();
     await expect(pantallaDeBloqueo(page)).toHaveCount(0);
     await expect(hoja.getByLabel('Qué fue')).toHaveValue('Tornillos para la mesada');
+  });
+
+  test('tocar un aviso con la app abierta atrás la trae a la agenda sin pedir la huella, y la vuelta siguiente la pide', async ({
+    page,
+    context,
+  }) => {
+    await visibilidadControlable(page);
+    const telefono = await bloquearYReabrir(page, true);
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    expect(await pedidosDeHuella(page)).toBe(1);
+    const trabajador = await serviceWorkerDeLaApp(page);
+    await huellaQueVerifica(telefono, false);
+
+    await aSegundoPlano(page);
+    expect(await trabajador.evaluate(tocarUnAviso, '/agenda')).toBe(1);
+    await alFrente(page);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Agenda' })).toBeVisible();
+    await expect(pantallaDeBloqueo(page)).toHaveCount(0);
+    expect(await pedidosDeHuella(page)).toBe(1);
+    await expect(page.getByRole('dialog', { name: 'La app está bloqueada' })).toHaveCount(0);
+
+    await aSegundoPlano(page);
+    await alFrente(page);
+    await expect(pantallaDeBloqueo(page)).toBeVisible();
+    expect(await pedidosDeHuella(page)).toBe(2);
+    expect(context.pages()).toHaveLength(1);
+  });
+
+  test('tocar un aviso con la app cerrada abre la agenda y pide la huella', async ({
+    page,
+    context,
+  }) => {
+    await visibilidadControlable(page);
+    await bloquearYReabrir(page, true);
+    await expect(ajustes(page)).toBeVisible(CARGA_DEL_TALLER);
+    const trabajador = await serviceWorkerDeLaApp(page);
+    await aSegundoPlano(page);
+    await page.close();
+    expect(await trabajador.evaluate(ventanasAbiertas)).toBe(0);
+
+    const abierta = await context.newPage();
+    await contarPedidosDeHuella(abierta);
+    await abierta.goto('/agenda');
+    await expect(pantallaDeBloqueo(abierta)).toBeVisible(CARGA_DEL_TALLER);
+    await expect(abierta.getByRole('navigation', { name: 'Principal' })).toHaveCount(0);
+    expect(await pedidosDeHuella(abierta)).toBe(1);
   });
 
   test('desde Ajustes se registra la passkey, y después de salir de la app la próxima apertura pide la huella', async ({

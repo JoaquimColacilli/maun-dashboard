@@ -6,7 +6,7 @@ import { ProveedorDeSesion, useSesion, useSesionActiva } from '@/entities/sesion
 import { EntrarConOtraCuenta } from '@/features/cerrar-sesion';
 import { BloqueoAlVolver, PantallaDeBloqueo } from '@/features/desbloquear-la-app';
 import { tieneAcceso } from '@/shared/api';
-import { esCelular, useAppBloqueada, vigilarElBloqueo } from '@/shared/lib';
+import { esCelular, useAppBloqueada, useVueltaPorUnAviso, vigilarElBloqueo } from '@/shared/lib';
 import { Cargando } from '@/shared/ui';
 
 import { CargaQueTarda, ErrorDeCarga } from '../layout/ErrorDeCarga';
@@ -39,6 +39,7 @@ function ConBloqueo({ usuarioId }: { usuarioId: string }) {
   const [yaSeAbrio, setYaSeAbrio] = useState(!bloqueada);
   if (!bloqueada && !yaSeAbrio) setYaSeAbrio(true);
   useEffect(() => vigilarElBloqueo(), []);
+  useVueltaPorUnAviso();
 
   return (
     <>
