@@ -354,24 +354,31 @@ test('la agenda se recorre con el teclado', async ({ page, isMobile }) => {
     return;
   }
 
-  const panel = page.getByRole('complementary', { name: `El ${diaEnPalabras(HOY)}` });
-  await expect(panel).toBeVisible();
-  await expect(panel.getByRole('button', { name: 'Cerrar el día' })).toHaveCount(0);
+  await expect(page.getByRole('complementary')).toHaveCount(0);
 
   const dia = page.getByRole('button', { name: `${diaEnPalabras(HOY)}, hoy: 1 cosa` });
   expect(await tabularHasta(page, dia)).toBe(true);
   await page.keyboard.press('Enter');
-  await expect(dia).toHaveAttribute('aria-pressed', 'true');
-  await expect(panel).toBeVisible();
+  const panel = page.getByRole('complementary', { name: `El ${diaEnPalabras(HOY)}` });
+  await expect(panel).toBeFocused();
 
   const casilla = panel.getByRole('checkbox', { name: 'E2E Con teclado' });
-  expect(await tabularHasta(page, casilla)).toBe(true);
+  expect(await tabularHasta(page, casilla, 20)).toBe(true);
   await page.keyboard.press('Space');
   await expect(casilla).toHaveAttribute('aria-checked', 'true');
 
   await page.keyboard.press('Escape');
-  await expect(dia).toHaveAttribute('aria-pressed', 'false');
-  await expect(panel).toBeVisible();
+  await expect(page.getByRole('complementary')).toHaveCount(0);
+  await expect(dia).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(panel).toBeFocused();
+  await page.keyboard.press('Tab');
+  const cerrar = panel.getByRole('button', { name: 'Cerrar el día' });
+  await expect(cerrar).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('complementary')).toHaveCount(0);
+  await expect(dia).toBeFocused();
 });
 
 test.describe('en escritorio', () => {
@@ -474,92 +481,81 @@ async function anchoDe(elemento: Locator): Promise<number> {
   return caja.width;
 }
 
-test.describe('el panel del día en la PC', () => {
-  test.skip(({ isMobile }) => isMobile, 'el panel acompaña a la grilla');
+async function laGrillaOcupaTodoElAncho(
+  page: Page,
+  nombre: string,
+  captura: (archivo: string) => string,
+): Promise<void> {
+  const dia = otroDia(15);
+  for (const texto of ['E2E Uno', 'E2E Dos', 'E2E Tres', 'E2E Cuatro', 'E2E Cinco']) {
+    await crearAnotacionPorRest(sesion, { fecha: dia, texto });
+  }
+  await abrirLaAgenda(page);
 
-  test('está siempre: sin día elegido muestra hoy, y la grilla mide lo mismo sin elegir, eligiendo y con un día lleno', async ({
+  const grilla = page.locator('[data-grilla-del-mes]');
+  const areaDeContenido = page.getByRole('main').locator('header').first();
+  const panel = page.getByRole('complementary', { name: `El ${diaEnPalabras(dia)}` });
+  const delDia = botonDelDia(page, dia);
+
+  await expect(page.getByRole('complementary')).toHaveCount(0);
+  const disponible = await anchoDe(areaDeContenido);
+  const cerrado = await anchoDe(grilla);
+  await page.screenshot({ path: captura(`agenda-${nombre}-panel-cerrado.png`) });
+
+  await delDia.click();
+  await expect(panel.getByRole('listitem')).toHaveCount(5);
+  await expect(panel).toBeFocused();
+  const abierto = await anchoDe(grilla);
+  const cajaDeLaGrilla = await grilla.boundingBox();
+  const cajaDelPanel = await panel.boundingBox();
+  if (cajaDeLaGrilla === null || cajaDelPanel === null) throw new Error('la agenda no se ve');
+  await page.screenshot({ path: captura(`agenda-${nombre}-panel-abierto.png`) });
+  console.log(
+    `${nombre}: área de contenido ${String(disponible)} px; grilla ${String(cerrado)} px con el panel cerrado y ${String(abierto)} px abierto; panel ${String(cajaDelPanel.width)} px desde x=${String(cajaDelPanel.x)}`,
+  );
+
+  expect(cerrado).toBe(disponible);
+  expect(abierto).toBe(cerrado);
+  expect(cajaDelPanel.x).toBeGreaterThan(cajaDeLaGrilla.x);
+  expect(cajaDelPanel.x + cajaDelPanel.width).toBeLessThanOrEqual(
+    cajaDeLaGrilla.x + cajaDeLaGrilla.width + 0.5,
+  );
+  expect(cajaDelPanel.y).toBeGreaterThanOrEqual(cajaDeLaGrilla.y - 0.5);
+
+  await panel.getByRole('button', { name: 'Cerrar el día' }).click();
+  await expect(page.getByRole('complementary')).toHaveCount(0);
+  await expect(delDia).toBeFocused();
+  expect(await anchoDe(grilla)).toBe(cerrado);
+
+  await celda(page, dia)
+    .getByRole('button', { name: `Ver las 5 cosas del ${diaEnPalabras(dia)}` })
+    .click();
+  await expect(panel).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('complementary')).toHaveCount(0);
+  await expect(delDia).toBeFocused();
+}
+
+test.describe('el panel del día, a 1440 px', () => {
+  test.skip(({ isMobile }) => isMobile, 'en el celular el día es una hoja');
+
+  test('la grilla ocupa todo el ancho con el panel abierto y cerrado, y el panel es una capa que se cierra y devuelve el foco', async ({
     page,
   }, testInfo) => {
-    const lleno = otroDia(15);
-    const libre = otroDia(20, Number(lleno.slice(8)));
-    for (const texto of ['E2E Uno', 'E2E Dos', 'E2E Tres', 'E2E Cuatro', 'E2E Cinco']) {
-      await crearAnotacionPorRest(sesion, { fecha: lleno, texto });
-    }
-    await abrirLaAgenda(page);
-
-    const grilla = page.locator('[data-grilla-del-mes]');
-    const panelDe = (fecha: string) =>
-      page.getByRole('complementary', { name: `El ${diaEnPalabras(fecha)}` });
-
-    const deHoy = panelDe(HOY);
-    await expect(deHoy).toBeVisible();
-    await expect(deHoy.getByText('Elegí un día en el calendario para ver lo suyo.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cerrar el día' })).toHaveCount(0);
-    const sinElegir = await anchoDe(grilla);
-    await page.screenshot({ path: testInfo.outputPath('agenda-escritorio-panel-sin-dia.png') });
-
-    await botonDelDia(page, libre).click();
-    await expect(panelDe(libre).getByText('Este día está libre')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cerrar el día' })).toHaveCount(0);
-    const eligiendo = await anchoDe(grilla);
-    await page.screenshot({ path: testInfo.outputPath('agenda-escritorio-panel-dia-elegido.png') });
-
-    await celda(page, lleno)
-      .getByRole('button', { name: `Ver las 5 cosas del ${diaEnPalabras(lleno)}` })
-      .click();
-    await expect(panelDe(lleno).getByRole('listitem')).toHaveCount(5);
-    const conElDiaLleno = await anchoDe(grilla);
-    await page.screenshot({ path: testInfo.outputPath('agenda-escritorio-panel-dia-lleno.png') });
-
-    const cajaDeLaGrilla = await grilla.boundingBox();
-    const cajaDelPanel = await panelDe(lleno).boundingBox();
-    if (cajaDeLaGrilla === null || cajaDelPanel === null) throw new Error('la agenda no se ve');
-    expect(cajaDelPanel.x).toBeGreaterThanOrEqual(cajaDeLaGrilla.x + cajaDeLaGrilla.width);
-    console.log(
-      `ancho de la grilla: sin elegir ${String(sinElegir)} px, eligiendo ${String(eligiendo)} px, con un día lleno ${String(conElDiaLleno)} px; panel ${String(cajaDelPanel.width)} px`,
+    await laGrillaOcupaTodoElAncho(page, 'escritorio-1440', (archivo) =>
+      testInfo.outputPath(archivo),
     );
-    expect([eligiendo, conElDiaLleno]).toEqual([sinElegir, sinElegir]);
-
-    await botonDelDia(page, lleno).click();
-    await expect(deHoy).toBeVisible();
-    expect(await anchoDe(grilla)).toBe(sinElegir);
+    expect(await anchoDe(page.locator('[data-grilla-del-mes]'))).toBeGreaterThan(1000);
   });
 });
 
-test.describe('el panel del día en una ventana angosta', () => {
+test.describe('el panel del día, a 1024 px', () => {
   test.skip(({ isMobile }) => isMobile, 'en el celular el día es una hoja');
   test.use({ viewport: { width: 1024, height: 768 } });
 
-  test('pasa a ser una capa encima de la grilla, que no se aplasta', async ({ page }, testInfo) => {
-    const dia = otroDia(15);
-    await crearAnotacionPorRest(sesion, { fecha: dia, texto: 'E2E En la capa' });
-    await abrirLaAgenda(page);
-
-    const grilla = page.locator('[data-grilla-del-mes]');
-    await expect(page.getByRole('complementary')).toHaveCount(0);
-    const antes = await grilla.boundingBox();
-    const columna = await page.getByRole('main').getByRole('heading', { level: 1 }).boundingBox();
-    if (antes === null || columna === null) throw new Error('la agenda no se ve');
-
-    await botonDelDia(page, dia).click();
-    const capa = page.getByRole('complementary', { name: `El ${diaEnPalabras(dia)}` });
-    await expect(capa.getByRole('listitem')).toHaveCount(1);
-    const despues = await grilla.boundingBox();
-    const cajaDeLaCapa = await capa.boundingBox();
-    if (despues === null || cajaDeLaCapa === null) throw new Error('la agenda no se ve');
-    await page.screenshot({ path: testInfo.outputPath('agenda-angosta-capa.png') });
-    console.log(
-      `ventana angosta: grilla ${String(antes.width)} px antes y ${String(despues.width)} px con la capa; capa ${String(cajaDeLaCapa.width)} px desde x=${String(cajaDeLaCapa.x)}`,
-    );
-
-    expect(despues.width).toBe(antes.width);
-    expect(despues.width).toBeGreaterThan(800);
-    expect(cajaDeLaCapa.x).toBeGreaterThan(despues.x);
-    expect(cajaDeLaCapa.x + cajaDeLaCapa.width).toBeLessThanOrEqual(despues.x + despues.width + 1);
-    expect(cajaDeLaCapa.y).toBeGreaterThanOrEqual(despues.y - 1);
-
-    await capa.getByRole('button', { name: 'Cerrar el día' }).click();
-    await expect(page.getByRole('complementary')).toHaveCount(0);
-    expect(await anchoDe(grilla)).toBe(antes.width);
+  test('la grilla ocupa todo el ancho con el panel abierto y cerrado, y el panel es una capa que se cierra y devuelve el foco', async ({
+    page,
+  }, testInfo) => {
+    await laGrillaOcupaTodoElAncho(page, 'tablet-1024', (archivo) => testInfo.outputPath(archivo));
   });
 });

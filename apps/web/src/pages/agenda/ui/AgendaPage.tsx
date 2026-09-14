@@ -4,7 +4,7 @@ import {
   type CategoriaDeAgenda,
   type EventoDeLaAgenda,
 } from '@maun/domain';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   CATEGORIA,
@@ -251,6 +251,8 @@ export function AgendaPage() {
   const [anotando, setAnotando] = useState<string | null>(null);
   const [anotandoDesdeElDia, setAnotandoDesdeElDia] = useState(false);
   const [avisoDelDia, setAvisoDelDia] = useState<AvisoDelDia | null>(null);
+  const areaDeLaGrilla = useRef<HTMLDivElement>(null);
+  const panelDelDia = useRef<HTMLElement>(null);
 
   const avisarEnElDia = useCallback((aviso: NuevoAviso) => {
     setAvisoDelDia({ texto: aviso.texto, accion: aviso.accion ?? null });
@@ -266,6 +268,10 @@ export function AgendaPage() {
       clearTimeout(reloj);
     };
   }, [avisoDelDia]);
+
+  useEffect(() => {
+    if (diaAbierto !== null) panelDelDia.current?.focus();
+  }, [diaAbierto]);
 
   const datos = useMemo(() => datosDeLaAgendaDeLaReplica(replica), [replica]);
   const eventos = useMemo(() => eventosDeLaAgenda(datos, rangoDeLaGrilla(mes)), [datos, mes]);
@@ -406,167 +412,164 @@ export function AgendaPage() {
   }
 
   const visibles = eventos.filter((evento) => pasaElFiltro(evento, filtro));
-  const diaDelPanel = diaAbierto ?? hoy;
-  const eligiendo = diaAbierto !== null;
 
   function elegirDia(fecha: string): void {
     setDiaAbierto((actual) => (actual === fecha ? null : fecha));
   }
 
+  function cerrarElDia(): void {
+    if (diaAbierto === null) return;
+    const delDia = areaDeLaGrilla.current?.querySelector<HTMLButtonElement>(
+      `[data-fecha="${diaAbierto}"] > button`,
+    );
+    setDiaAbierto(null);
+    delDia?.focus();
+  }
+
   return (
     <Pagina>
-      <div className="@container/agenda">
-        <div className="relative grid grid-cols-1 items-start gap-x-6 @min-[58rem]/agenda:grid-cols-[minmax(0,1fr)_340px] @min-[68rem]/agenda:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="col-start-1 row-start-1 min-w-0">
-            <header className="flex flex-wrap items-end justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-label text-text-2">hoy es {diaEnPalabras(hoy)}</p>
-                <div className="flex flex-wrap items-baseline gap-x-3">
-                  <h1 className="font-display text-h1-lg leading-tight">Agenda</h1>
-                  <h2
-                    aria-live="polite"
-                    className="font-display text-h1 leading-tight text-text-2 first-letter:uppercase"
-                  >
-                    {mesEnPalabras(mes, hoy)}
-                  </h2>
-                  <span className="text-label text-text-3">{resumenDelMes(delMes)}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    aria-label="Mes anterior"
-                    onClick={() => {
-                      irAlMes(mesPrevio(mes));
-                    }}
-                    className="flex size-10 items-center justify-center rounded-l-field border border-r-0 border-border bg-paper hover:bg-surface"
-                  >
-                    <Icono nombre="chevron-left" tamano={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={irAHoy}
-                    className={`h-10 border border-border bg-paper px-3.5 text-body hover:bg-surface ${
-                      mes === mesDeHoy ? 'font-semibold' : 'font-medium'
-                    }`}
-                  >
-                    Hoy
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Mes siguiente"
-                    onClick={() => {
-                      irAlMes(mesSiguiente(mes));
-                    }}
-                    className="flex size-10 items-center justify-center rounded-r-field border border-l-0 border-border bg-paper hover:bg-surface"
-                  >
-                    <Icono nombre="chevron-right" tamano={18} />
-                  </button>
-                </div>
-                <Button
-                  onClick={() => {
-                    setAnotando(diaAbierto ?? dia);
-                  }}
-                >
-                  <Icono nombre="plus" tamano={18} grosor={2} />
-                  Anotar algo
-                </Button>
-              </div>
-            </header>
-
-            <div
-              role="group"
-              aria-label="Qué mostrar"
-              className="flex flex-wrap items-center gap-2 pt-4 pb-3"
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-label text-text-2">hoy es {diaEnPalabras(hoy)}</p>
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <h1 className="font-display text-h1-lg leading-tight">Agenda</h1>
+            <h2
+              aria-live="polite"
+              className="font-display text-h1 leading-tight text-text-2 first-letter:uppercase"
             >
-              {FILTROS.map(({ id, etiqueta }) => {
-                const activo = filtro === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={activo}
-                    onClick={() => {
-                      setFiltro(id);
-                    }}
-                    className={`flex h-[34px] items-center gap-1.5 rounded-control border px-2.5 text-label font-medium ${
-                      activo ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
-                    }`}
-                  >
-                    {id === 'marcado' && (
-                      <span
-                        aria-hidden
-                        className="size-2.5 rounded-pill ring-[1.5px] ring-ag-marca"
-                      />
-                    )}
-                    {id !== 'todo' && id !== 'marcado' && (
-                      <MarcaDeCategoria
-                        categoria={id}
-                        className={activo ? 'brightness-[3] grayscale' : ''}
-                      />
-                    )}
-                    {etiqueta}
-                  </button>
-                );
-              })}
-              <span className="flex-1" />
-              <span className="flex items-center gap-1.5 text-meta text-text-3">
-                <span aria-hidden className="size-3 rounded-pill ring-[1.5px] ring-ag-marca" />
-                marcado a mano
-              </span>
-            </div>
-
-            {delMes.length === 0 && (
-              <p className="mb-3 max-w-[640px] text-label leading-relaxed text-text-2">
-                {MES_VACIO}
-              </p>
-            )}
+              {mesEnPalabras(mes, hoy)}
+            </h2>
+            <span className="text-label text-text-3">{resumenDelMes(delMes)}</span>
           </div>
-
-          <div className="col-start-1 row-start-2 min-w-0">
-            <GrillaDelMes
-              mes={mes}
-              hoy={hoy}
-              elegido={diaAbierto}
-              eventos={visibles}
-              maximo={ancho === 'escritorio' ? 3 : 2}
-              alElegirDia={elegirDia}
-              alVerElDia={setDiaAbierto}
-              alAbrirEvento={(evento) => {
-                if (evento.clase === 'derivada') acciones.alAbrirTrabajo(evento);
-                else setDiaAbierto(evento.fecha);
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center">
+            <button
+              type="button"
+              aria-label="Mes anterior"
+              onClick={() => {
+                irAlMes(mesPrevio(mes));
               }}
-            />
+              className="flex size-10 items-center justify-center rounded-l-field border border-r-0 border-border bg-paper hover:bg-surface"
+            >
+              <Icono nombre="chevron-left" tamano={18} />
+            </button>
+            <button
+              type="button"
+              onClick={irAHoy}
+              className={`h-10 border border-border bg-paper px-3.5 text-body hover:bg-surface ${
+                mes === mesDeHoy ? 'font-semibold' : 'font-medium'
+              }`}
+            >
+              Hoy
+            </button>
+            <button
+              type="button"
+              aria-label="Mes siguiente"
+              onClick={() => {
+                irAlMes(mesSiguiente(mes));
+              }}
+              className="flex size-10 items-center justify-center rounded-r-field border border-l-0 border-border bg-paper hover:bg-surface"
+            >
+              <Icono nombre="chevron-right" tamano={18} />
+            </button>
           </div>
-
-          <aside
-            aria-label={`El ${diaEnPalabras(diaDelPanel)}`}
-            onKeyDown={(evento) => {
-              if (evento.key !== 'Escape' || !eligiendo) return;
-              evento.stopPropagation();
-              setDiaAbierto(null);
+          <Button
+            onClick={() => {
+              setAnotando(diaAbierto ?? dia);
             }}
-            className={`absolute inset-y-0 right-0 z-10 col-start-1 row-start-2 w-[min(340px,100%)] flex-col overflow-hidden rounded-panel border border-hairline bg-paper shadow-float ${
-              eligiendo ? 'flex' : 'hidden'
-            } @min-[58rem]/agenda:sticky @min-[58rem]/agenda:top-0 @min-[58rem]/agenda:right-auto @min-[58rem]/agenda:bottom-auto @min-[58rem]/agenda:col-start-2 @min-[58rem]/agenda:row-span-2 @min-[58rem]/agenda:row-start-1 @min-[58rem]/agenda:flex @min-[58rem]/agenda:max-h-[calc(100dvh-4rem)] @min-[58rem]/agenda:w-auto @min-[58rem]/agenda:shadow-none`}
+          >
+            <Icono nombre="plus" tamano={18} grosor={2} />
+            Anotar algo
+          </Button>
+        </div>
+      </header>
+
+      <div
+        role="group"
+        aria-label="Qué mostrar"
+        className="flex flex-wrap items-center gap-2 pt-4 pb-3"
+      >
+        {FILTROS.map(({ id, etiqueta }) => {
+          const activo = filtro === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={activo}
+              onClick={() => {
+                setFiltro(id);
+              }}
+              className={`flex h-[34px] items-center gap-1.5 rounded-control border px-2.5 text-label font-medium ${
+                activo ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
+              }`}
+            >
+              {id === 'marcado' && (
+                <span aria-hidden className="size-2.5 rounded-pill ring-[1.5px] ring-ag-marca" />
+              )}
+              {id !== 'todo' && id !== 'marcado' && (
+                <MarcaDeCategoria
+                  categoria={id}
+                  className={activo ? 'brightness-[3] grayscale' : ''}
+                />
+              )}
+              {etiqueta}
+            </button>
+          );
+        })}
+        <span className="flex-1" />
+        <span className="flex items-center gap-1.5 text-meta text-text-3">
+          <span aria-hidden className="size-3 rounded-pill ring-[1.5px] ring-ag-marca" />
+          marcado a mano
+        </span>
+      </div>
+
+      {delMes.length === 0 && (
+        <p className="mb-3 max-w-[640px] text-label leading-relaxed text-text-2">{MES_VACIO}</p>
+      )}
+
+      <div
+        ref={areaDeLaGrilla}
+        className="relative"
+        onKeyDown={(evento) => {
+          if (evento.key !== 'Escape' || diaAbierto === null) return;
+          evento.stopPropagation();
+          cerrarElDia();
+        }}
+      >
+        <GrillaDelMes
+          mes={mes}
+          hoy={hoy}
+          elegido={diaAbierto}
+          eventos={visibles}
+          maximo={ancho === 'escritorio' ? 3 : 2}
+          alElegirDia={elegirDia}
+          alVerElDia={setDiaAbierto}
+          alAbrirEvento={(evento) => {
+            if (evento.clase === 'derivada') acciones.alAbrirTrabajo(evento);
+            else setDiaAbierto(evento.fecha);
+          }}
+        />
+
+        {diaAbierto !== null && (
+          <aside
+            ref={panelDelDia}
+            tabIndex={-1}
+            aria-label={`El ${diaEnPalabras(diaAbierto)}`}
+            className="absolute inset-y-0 right-0 z-10 flex w-[min(340px,100%)] flex-col overflow-hidden rounded-panel border border-hairline bg-paper shadow-float outline-none xl:w-[min(380px,100%)]"
           >
             <DetalleDelDia
-              fecha={diaDelPanel}
+              fecha={diaAbierto}
               hoy={hoy}
-              eventos={eventosDelDia(visibles, diaDelPanel)}
+              eventos={eventosDelDia(visibles, diaAbierto)}
               acciones={acciones}
-              ayuda={eligiendo ? undefined : 'Elegí un día en el calendario para ver lo suyo.'}
               alAnotar={() => {
-                setAnotando(diaDelPanel);
+                setAnotando(diaAbierto);
               }}
-              alCerrar={() => {
-                setDiaAbierto(null);
-              }}
-              claseDelBotonDeCerrar="@min-[58rem]/agenda:hidden"
+              alCerrar={cerrarElDia}
             />
           </aside>
-        </div>
+        )}
       </div>
       {hojaDeAnotar}
     </Pagina>

@@ -46,25 +46,23 @@ presupuestar» si no tenía: tres días hábiles (`DIAS_HABILES_PARA_PRESUPUESTA
 hoy si la visita todavía no pasó. Se edita en la hoja del contacto. `guardar_proyecto` la escribe solo si
 la clave viene en el pedido: un bundle viejo servido por el service worker no la manda y no la borra.
 
-**Pantallas.** En el celular, lista cronológica con la tira del mes arriba. En tablet y PC, la grilla, con
-dos eventos por celda en tablet y tres en la PC, y «+N más». Un evento derivado no se edita ni se borra
-desde la agenda: dice de dónde sale y ofrece «Abrir el proyecto» o «Abrir el contacto». Una anotación se
-tilda, se marca como importante y se borra, cada cosa con «Deshacer» en el aviso. Esas mutaciones van
-`silencioso`, para que el aviso siga siendo uno solo (ADR 0030).
+**Pantallas.** En el celular, lista cronológica con la tira del mes arriba, y el día en una hoja. En
+tablet y PC, la grilla, con dos eventos por celda en tablet y tres en la PC, y «+N más». Un evento
+derivado no se edita ni se borra desde la agenda: dice de dónde sale y ofrece «Abrir el proyecto» o
+«Abrir el contacto». Una anotación se tilda, se marca como importante y se borra, cada cosa con
+«Deshacer» en el aviso. Esas mutaciones van `silencioso`, para que el aviso siga siendo uno solo (ADR
+0030).
 
-**El panel del día está siempre, y el calendario nunca cambia de ancho.** En tablet y PC el panel no
-aparece ni desaparece:
+**En tablet y PC, la grilla del mes ocupa todo el ancho del área de contenido, siempre, y el panel del
+día va encima.**
 
-- Sin día elegido muestra hoy, con una línea que invita a elegir otro. Es el estado vacío de un panel
-  expandido por defecto, y hoy es lo más útil que se puede poner ahí.
-- Elegir un día lo cambia; volver a tocar el día elegido, «Hoy» o Escape vuelven a hoy. No tiene botón
-  de cerrar, porque no hay nada que cerrar.
-- La grilla se dimensiona sin contar el panel. Son dos columnas fijas de una consulta de contenedor
-  (`@container/agenda`): la grilla y 340 px de panel desde 58rem, 380 desde 68rem. Elegir un día no toca
-  esas columnas.
-- **Por debajo de 58rem, el panel aprieta demasiado la grilla y pasa a ser una capa encima de ella.** Es
-  `absolute` dentro de la misma celda de la grilla CSS, que hace de bloque contenedor, así que queda
-  anclada al área del calendario sin empujarlo. Aparece al elegir un día y ahí sí se cierra.
+- El panel no le saca ancho a la grilla ni abierto ni cerrado: es una capa `absolute` anclada a la
+  derecha del área de la grilla, que la envuelve en un contenedor `relative`. Mide 340 px, y 380 desde
+  1280 px de ventana.
+- Arranca cerrado. Se abre al tocar un día, «+N más» o una anotación de la celda.
+- Tiene «Cerrar el día» en todos los anchos, y Escape lo cierra.
+- Al abrirse, el foco va al panel; al cerrarse, vuelve al botón del día.
+- No es modal: el resto del mes sigue a la vista, y tocar otro día cambia el panel sin cerrarlo.
 
 **Colores y formas.** Los colores de tesoro quedan reservados. Las categorías usan tokens propios
 (`ag-*`, con su par del oscuro) y además una forma, para no depender del color: entrega cuadrado lleno,
@@ -80,11 +78,15 @@ de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
 - **Subir `VERSION_CACHE` para que las réplicas guardadas traigan la tabla nueva.** Se lleva la cola de
   salida persistida. En su lugar, `filasDe` tolera una tabla que falta y `necesitaReconcile` pide
   `bootstrap()` si falta alguna.
-- **Un panel que se abre al elegir un día**, como estaba al principio y como en el diseño. Al aparecer
-  encoge el calendario, y al cerrarse lo vuelve a estirar.
+- **El panel del día al costado de la grilla.** Se probó de dos formas y las dos le roban ancho: abierto
+  al elegir un día, como en el diseño, encoge el calendario al aparecer; fijo mostrando hoy, a 1440 px la
+  grilla medía 704 px de los 1108 disponibles.
+- **Un diálogo modal centrado.** Era lo más simple y el componente existe, pero deja inerte y tapa el
+  calendario entero: para mirar otro día hay que cerrarlo. La capa deja a la vista y tocable la mayor
+  parte del mes, y es el mismo mecanismo que ya andaba para el contenedor angosto, extendido a todos los
+  anchos en vez de tener dos comportamientos.
 - **Un popover anclado al día.** Sobre una grilla de mes tapa los días de alrededor, que es justo el
   contexto que se quiere ver.
-- **Un modal.** Tapa el calendario entero.
 
 ## Objeciones
 
@@ -96,11 +98,11 @@ de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
   queda: uno da velocidad y el otro contexto. «Anotar algo» es la primera acción del botón redondo y
   Avisos vive en Ajustes. Desde otra pantalla del celular la agenda sigue a dos toques. Mudar Inicio
   queda para otro PR, con su diseño.
-- **El panel permanente le saca ancho a la grilla también cuando nadie eligió nada**: en la PC a 1440 la
-  grilla mide 704 px en vez de los 1108 del contenedor. Es el precio de que no se mueva.
-- **58rem y 68rem son cortes elegidos.** Con 340 px de panel, 58rem deja la grilla en unos 564 px como
-  mínimo, alrededor de 80 px por día. Con la capa, mientras hay un día elegido, la mitad derecha de la
-  grilla queda tapada.
+- **Mientras el panel está abierto tapa las columnas de la derecha de la grilla**: en las capturas de
+  1440 y de 1024 px, parte del viernes, el sábado y el domingo. Para tocar un día que quedó debajo, se
+  cierra.
+- **El panel no atrapa el foco.** Con Tab se sale a la grilla, a propósito, para poder elegir otro día.
+  Escape lo cierra mientras el foco esté en la grilla o en el panel, no desde el encabezado.
 - **La tira del mes scrollea de costado**, como en el diseño, y la regla del repo dice «nunca scroll
   horizontal» para los selectores. La tira no esconde opciones que haya que elegir: son los días del mes,
   con hoy a la vista. Es `role="group"` con botones `aria-pressed`, no `tablist`: no controla paneles.
@@ -122,16 +124,20 @@ de la semana) se hacen en UTC en el dominio. No se usa `Temporal`.
   capturas, y el recorrido con teclado. En la PC, además: los derivados en su día, mover la entrega desde
   el proyecto y ver que el evento se mueve, abrir el trabajo desde la grilla y un día con cinco cosas
   («+2 más»).
-- **El ancho de la grilla, medido con `boundingBox`** en `agenda.spec.ts`:
+- **El ancho de la grilla, medido con `boundingBox`** contra el ancho del encabezado de la pantalla, que
+  es el área de contenido:
 
-  | Ventana             | Sin día elegido | Día elegido         | Día lleno (5) | Panel                         |
-  | ------------------- | --------------- | ------------------- | ------------- | ----------------------------- |
-  | 1440 px, escritorio | 704 px          | 704 px              | 704 px        | 380 px, al lado               |
-  | 1024 px, tablet     | 861 px          | 861 px, con la capa | —             | 340 px, capa desde x = 633 px |
+  | Ventana | Área de contenido | Grilla, panel cerrado | Grilla, panel abierto | Panel                    |
+  | ------- | ----------------- | --------------------- | --------------------- | ------------------------ |
+  | 1440 px | 1108 px           | 1108 px               | 1108 px               | 380 px, desde x = 1002,5 |
+  | 1024 px | 861 px            | 861 px                | 861 px                | 340 px, desde x = 633    |
 
-  El test falla si el ancho cambia en un solo píxel, si aparece «Cerrar el día» en la PC o si la capa
-  se sale del área de la grilla.
+  El test falla si la grilla no mide el área de contenido o si cambia en un solo píxel al abrir el panel.
+  En los dos anchos recorre el foco: al abrir va al panel; «Cerrar el día» y Escape lo devuelven al botón
+  del día, también cuando se abrió desde «+N más».
 
+- Las tres capturas del celular (lista, sin señal y mes vacío) salieron idénticas byte a byte, por
+  SHA-256, antes y después de cambiar el panel. Esa comparación se hizo a mano, fuera del test.
 - `destinos-en-celular.spec.ts`: el encabezado de Inicio es «Inicio», el enlace «Agenda» y el de
   Ajustes, en ese orden para el lector de pantalla. Los dos se alcanzan con Tab y abren su pantalla con
   Enter. El ícono mide 44 × 44 px, está a la izquierda de la foto y a su misma altura, es `aria-hidden` y
