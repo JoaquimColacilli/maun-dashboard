@@ -6,11 +6,13 @@ export function esPersistible(estado: { status: string }): boolean {
   return estado.status === 'pending';
 }
 
-export function reanudarCola(queryClient: QueryClient): void {
-  for (const mutacion of queryClient.getMutationCache().getAll()) {
-    if (mutacion.state.status === 'pending' && !mutacion.state.isPaused) {
-      void mutacion.continue();
-    }
-  }
-  void queryClient.resumePausedMutations();
+const sinImportar = () => undefined;
+
+export async function reanudarCola(queryClient: QueryClient): Promise<void> {
+  const enVuelo = queryClient
+    .getMutationCache()
+    .getAll()
+    .filter((mutacion) => mutacion.state.status === 'pending' && !mutacion.state.isPaused)
+    .map((mutacion) => mutacion.continue().catch(sinImportar));
+  await Promise.all([...enVuelo, queryClient.resumePausedMutations()]);
 }
