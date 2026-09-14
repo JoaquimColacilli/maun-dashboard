@@ -597,6 +597,17 @@ $function$;
 -- execute: service_role:EXECUTE
 comment on function anotar_aviso(uuid,date,boolean) is 'Solo para la función de borde de los avisos (service_role).';
 
+CREATE OR REPLACE FUNCTION public.avisos_por_mandar(p_ahora timestamp with time zone DEFAULT now())
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select private.avisos_por_mandar(p_ahora)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function avisos_por_mandar(timestamp with time zone) is 'Solo para la función de borde de los avisos (service_role).';
+
 CREATE OR REPLACE FUNCTION public.bootstrap()
  RETURNS jsonb
  LANGUAGE sql
@@ -1043,6 +1054,86 @@ AS $function$
 $function$;
 -- execute: solo el dueño
 comment on function private.avisos_bien_formados(jsonb) is 'Qué avisa y con cuánta anticipación: las cuatro claves de AVISOS_DE_LA_AGENDA de @maun/domain, cada una con activo y una anticipación de 0 a 3 días.';
+
+CREATE OR REPLACE FUNCTION private.avisos_por_mandar(p_ahora timestamp with time zone)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  with locales as (
+    select
+      s.id,
+      s.user_id,
+      s.endpoint,
+      s.p256dh,
+      s.auth,
+      s.ultimo_dia_avisado,
+      p.avisos,
+      p.hora,
+      (p_ahora at time zone p.zona) as ahora_local
+    from private.suscripciones_de_avisos s
+    join private.preferencias_de_avisos p on p.user_id = s.user_id
+  ),
+  debidas as (
+    select
+      l.*,
+      l.ahora_local::date as dia,
+      (
+        select m.household_id
+        from public.household_members m
+        where m.user_id = l.user_id and m.deleted_at is null
+        order by m.created_at
+        limit 1
+      ) as household_id
+    from locales l
+    -- La hora local de cada persona, calculada acá con su zona: desde la hora que eligió y durante
+    -- tres horas, una vez por día local.
+    where l.ahora_local >= l.ahora_local::date + l.hora
+      and l.ahora_local < l.ahora_local::date + l.hora + interval '3 hours'
+      and (l.ultimo_dia_avisado is null or l.ultimo_dia_avisado < l.ahora_local::date)
+  )
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', d.id,
+        'endpoint', d.endpoint,
+        'p256dh', d.p256dh,
+        'auth', d.auth,
+        'dia', d.dia,
+        'preferencias', d.avisos,
+        'filas', jsonb_build_object(
+          'proyectos', (
+            select coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb)
+            from public.proyectos p
+            where p.household_id = d.household_id
+              and p.deleted_at is null
+              and p.estado in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso')
+          ),
+          'clientes', (
+            select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'nombre', c.nombre, 'zona', c.zona)), '[]'::jsonb)
+            from public.clientes c
+            where c.household_id = d.household_id and c.deleted_at is null
+          ),
+          'anotaciones', (
+            select coalesce(jsonb_agg(to_jsonb(a)), '[]'::jsonb)
+            from public.anotaciones a
+            where a.household_id = d.household_id
+              and a.deleted_at is null
+              and not a.hecha
+              and a.fecha between d.dia and d.dia + 3
+          )
+        )
+      )
+      order by d.id
+    ),
+    '[]'::jsonb
+  )
+  from debidas d
+  where d.household_id is not null
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.avisos_por_mandar(timestamp with time zone) is 'Los dispositivos a los que les toca el aviso de la mañana en este momento, según la zona horaria y la hora de cada persona, con los datos de su taller que necesita la agenda. Qué avisar lo decide eventosParaAvisar de @maun/domain en la función de borde, no esta consulta.';
 
 CREATE OR REPLACE FUNCTION private.borrar_hijos_de_proyecto()
  RETURNS trigger
@@ -1678,6 +1769,36 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
+
+CREATE OR REPLACE FUNCTION private.pedir_los_avisos()
+ RETURNS bigint
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_url text;
+  v_secreto text;
+begin
+  select decrypted_secret into v_url from vault.decrypted_secrets where name = 'avisos_url';
+  select decrypted_secret into v_secreto from vault.decrypted_secrets where name = 'avisos_secreto';
+  if v_url is null or v_secreto is null then
+    return null;
+  end if;
+
+  return net.http_post(
+    url := v_url,
+    body := '{}'::jsonb,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || v_secreto
+    ),
+    timeout_milliseconds := 30000
+  );
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.pedir_los_avisos() is 'Le pide a la función de borde que mande los avisos que tocan. La llama pg_cron. Sin avisos_url y avisos_secreto en Vault devuelve null y no pide nada.';
 
 CREATE OR REPLACE FUNCTION private.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text, p_zona text)
  RETURNS jsonb

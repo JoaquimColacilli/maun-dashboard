@@ -611,6 +611,7 @@ export type Database = {
         Args: { p_dia: string; p_mandado: boolean; p_suscripcion: string };
         Returns: boolean;
       };
+      avisos_por_mandar: { Args: { p_ahora?: string }; Returns: Json };
       bootstrap: { Args: never; Returns: Json };
       borrar_suscripcion_vencida: {
         Args: { p_endpoint: string };
