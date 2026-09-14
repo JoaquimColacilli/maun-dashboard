@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-field font-medium transition-colors duration-(--dur-fast) ease-out';
+  'inline-flex items-center justify-center gap-2 rounded-field py-1.5 text-center font-medium transition-colors duration-(--dur-fast) ease-out';
 
 const VARIANTES = {
   primario: 'bg-ink px-[18px] text-paper enabled:hover:bg-ink-hover',
@@ -11,9 +11,9 @@ const VARIANTES = {
 } as const;
 
 const TAMANOS = {
-  grande: 'h-field text-body-lg',
-  normal: 'h-button text-body',
-  chico: 'h-button-sm text-label',
+  grande: 'min-h-field text-body-lg',
+  normal: 'min-h-button text-body',
+  chico: 'min-h-button-sm text-label',
 } as const;
 
 const DESHABILITADO = 'cursor-not-allowed bg-hairline px-[18px] text-text-3';

@@ -12,6 +12,23 @@ describe('Button', () => {
     );
   });
 
+  it('el alto de cada tamaño es un mínimo: una etiqueta que no entra en un renglón lo agranda', () => {
+    render(
+      <>
+        <Button size="grande">Entrar</Button>
+        <Button>Reactivar y deshacer el reparto</Button>
+        <Button size="chico">Borrarlo</Button>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Entrar' })).toHaveClass('min-h-field');
+    expect(screen.getByRole('button', { name: 'Reactivar y deshacer el reparto' })).toHaveClass(
+      'min-h-button',
+      'text-center',
+    );
+    expect(screen.getByRole('button', { name: 'Borrarlo' })).toHaveClass('min-h-button-sm');
+    expect(screen.getByRole('button', { name: 'Borrarlo' })).not.toHaveClass('h-button-sm');
+  });
+
   it('mientras carga queda deshabilitado y marcado como ocupado', () => {
     render(<Button cargando>Guardando…</Button>);
     const boton = screen.getByRole('button', { name: 'Guardando…' });
