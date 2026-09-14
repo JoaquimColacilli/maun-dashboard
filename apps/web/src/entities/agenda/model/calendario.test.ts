@@ -2,10 +2,13 @@ import type { EventoDerivado, EventoPropio } from '@maun/domain';
 import { describe, expect, it } from 'vitest';
 
 import {
+  conLoHechoAlFinal,
+  cuentaDelDia,
   detalleDelEvento,
   diaDeLaSemana,
   diaEnPalabras,
   diasConEventos,
+  estaHecha,
   etiquetaDelDia,
   fechasDelMes,
   hayImportante,
@@ -102,15 +105,23 @@ describe('el calendario de lunes a domingo', () => {
 });
 
 describe('los resúmenes', () => {
-  it('el del mes cuenta compromisos y anotaciones, y el mes vacío lo dice', () => {
+  it('el del mes cuenta compromisos y anotaciones pendientes, dice aparte lo hecho, y el mes vacío lo dice', () => {
     expect(resumenDelMes([])).toBe('sin nada agendado');
     expect(resumenDelMes([derivado(), propio()])).toBe('1 compromiso · 1 anotación');
     expect(resumenDelMes([derivado(), derivado({ id: 'visita:p2' }), propio()])).toBe(
       '2 compromisos · 1 anotación',
     );
+    expect(
+      resumenDelMes([
+        derivado(),
+        propio(),
+        propio({ id: 'n2', hecha: true }),
+        propio({ id: 'n3', hecha: true }),
+      ]),
+    ).toBe('1 compromiso · 1 anotación · 2 hechas');
   });
 
-  it('el del día separa lo pendiente de lo que ya está listo', () => {
+  it('el del día cuenta lo pendiente y dice aparte lo hecho', () => {
     expect(resumenDelDia([])).toBe('Nada agendado');
     expect(
       resumenDelDia([
@@ -119,10 +130,45 @@ describe('los resúmenes', () => {
         propio({ id: 'n2' }),
         propio({ id: 'n3', hecha: true }),
       ]),
-    ).toBe('1 compromiso · 2 cosas anotadas · 1 lista');
+    ).toBe('1 compromiso · 2 cosas anotadas · 1 hecha');
     expect(resumenDelDia([propio({ hecha: true }), propio({ id: 'n2', hecha: true })])).toBe(
-      '2 listas',
+      '2 hechas',
     );
+  });
+
+  it('la cuenta del botón del día separa lo pendiente de lo hecho', () => {
+    expect(cuentaDelDia([])).toBe('nada agendado');
+    expect(cuentaDelDia([propio()])).toBe('1 cosa');
+    expect(cuentaDelDia([derivado(), propio(), propio({ id: 'n2', hecha: true })])).toBe(
+      '2 cosas y 1 hecha',
+    );
+    expect(cuentaDelDia([propio({ hecha: true }), propio({ id: 'n2', hecha: true })])).toBe(
+      '2 hechas',
+    );
+  });
+});
+
+describe('lo hecho en el día', () => {
+  it('solo una anotación tildada está hecha: un compromiso nunca', () => {
+    expect(estaHecha(propio({ hecha: true }))).toBe(true);
+    expect(estaHecha(propio())).toBe(false);
+    expect(estaHecha(derivado())).toBe(false);
+  });
+
+  it('va abajo de lo pendiente, y cada grupo conserva su orden', () => {
+    const eventos = [
+      propio({ id: 'a', hecha: true }),
+      derivado(),
+      propio({ id: 'b' }),
+      propio({ id: 'c', hecha: true }),
+    ];
+
+    expect(conLoHechoAlFinal(eventos).map((evento) => evento.id)).toEqual([
+      'entrega:p1',
+      'b',
+      'a',
+      'c',
+    ]);
   });
 });
 

@@ -355,7 +355,8 @@ test('la agenda se recorre con el teclado', async ({ page, isMobile }) => {
 
   await expect(page.getByRole('complementary')).toHaveCount(0);
 
-  const dia = page.getByRole('button', { name: `${diaEnPalabras(HOY)}, hoy: 1 cosa` });
+  const dia = page.getByRole('button', { name: new RegExp(`^${diaEnPalabras(HOY)}, hoy: `) });
+  await expect(dia).toHaveAccessibleName(`${diaEnPalabras(HOY)}, hoy: 1 cosa`);
   expect(await tabularHasta(page, dia)).toBe(true);
   await page.keyboard.press('Enter');
   const panel = page.getByRole('complementary', { name: `El ${diaEnPalabras(HOY)}` });
@@ -365,6 +366,8 @@ test('la agenda se recorre con el teclado', async ({ page, isMobile }) => {
   expect(await tabularHasta(page, casilla, 20)).toBe(true);
   await page.keyboard.press('Space');
   await expect(casilla).toHaveAttribute('aria-checked', 'true');
+  await expect(casilla).toBeFocused();
+  await expect(dia).toHaveAccessibleName(`${diaEnPalabras(HOY)}, hoy: 1 hecha`);
 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('complementary')).toHaveCount(0);
@@ -378,6 +381,197 @@ test('la agenda se recorre con el teclado', async ({ page, isMobile }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByRole('complementary')).toHaveCount(0);
   await expect(dia).toBeFocused();
+});
+
+function diaVecino(): string {
+  const dia = Number(HOY.slice(8));
+  return delMes(dia === 1 ? 2 : dia - 1);
+}
+
+async function abrirElDia(page: Page, isMobile: boolean, fecha: string): Promise<Locator> {
+  if (isMobile) {
+    await page
+      .getByRole('group', { name: 'Días del mes' })
+      .getByRole('button', { name: new RegExp(`^${diaEnPalabras(fecha)}`) })
+      .click();
+    await page.getByRole('button', { name: `Ver el ${diaEnPalabras(fecha)}` }).click();
+    return page.getByRole('dialog', { name: diaEnPalabras(fecha) });
+  }
+  await page.getByRole('button', { name: new RegExp(`^${diaEnPalabras(fecha)}(, hoy)?:`) }).click();
+  return page.getByRole('complementary', { name: `El ${diaEnPalabras(fecha)}` });
+}
+
+function filaDe(detalle: Locator, texto: string): Locator {
+  return detalle.getByRole('listitem').filter({ hasText: texto });
+}
+
+async function decoracionDe(elemento: Locator): Promise<string> {
+  return elemento.evaluate((nodo) => getComputedStyle(nodo).textDecorationLine);
+}
+
+async function recorrerConTab(page: Page, pasos: number): Promise<string[]> {
+  const recorrido: string[] = [];
+  for (let paso = 0; paso < pasos; paso += 1) {
+    recorrido.push(
+      await page.evaluate(() => {
+        const activo = document.activeElement;
+        if (!(activo instanceof HTMLElement)) return '(nada)';
+        const rol = activo.getAttribute('role') ?? activo.tagName.toLowerCase();
+        const nombre = activo.getAttribute('aria-label') ?? activo.textContent.trim();
+        const marcada = activo.getAttribute('aria-checked');
+        const estado = marcada === null ? '' : marcada === 'true' ? ', marcada' : ', sin marcar';
+        return `${rol} «${nombre}»${estado}`;
+      }),
+    );
+    await page.keyboard.press('Tab');
+  }
+  return recorrido;
+}
+
+test('lo hecho se queda en el día, abajo de lo pendiente, tachado y más bajo, y desmarcarlo lo devuelve arriba', async ({
+  page,
+  isMobile,
+}, testInfo) => {
+  const lugar = isMobile ? 'celular' : 'escritorio';
+  const leer = async (texto: string) =>
+    (await anotacionesDelTaller(sesion)).find((fila) => fila.texto === texto)?.hecha;
+  await crearAnotacionPorRest(sesion, {
+    fecha: HOY,
+    texto: 'E2E Comprar bisagras',
+    categoria: 'materiales',
+  });
+  await crearAnotacionPorRest(sesion, {
+    fecha: HOY,
+    texto: 'E2E Lijar la puerta',
+    categoria: 'taller',
+  });
+  await crearAnotacionPorRest(sesion, {
+    fecha: HOY,
+    texto: 'E2E Pasar por el corralón',
+    categoria: 'materiales',
+    hecha: true,
+  });
+  await abrirLaAgenda(page);
+
+  if (isMobile) {
+    const delDia = page.getByRole('region', { name: diaEnPalabras(HOY) }).getByRole('listitem');
+    expect(await delDia.allTextContents()).toEqual([
+      expect.stringContaining('E2E Comprar bisagras'),
+      expect.stringContaining('E2E Lijar la puerta'),
+      expect.stringContaining('E2E Pasar por el corralón, hecha'),
+    ]);
+  } else {
+    await expect(
+      page.getByRole('button', { name: `${diaEnPalabras(HOY)}, hoy: 2 cosas y 1 hecha` }),
+    ).toBeVisible();
+    const chips = celda(page, HOY).locator('button[title]');
+    expect(await chips.allTextContents()).toEqual([
+      'E2E Comprar bisagras',
+      'E2E Lijar la puerta',
+      'E2E Pasar por el corralón, hecha',
+    ]);
+    const chipPendiente = await cajaDe(chips.nth(1));
+    const chipHecho = await cajaDe(chips.nth(2));
+    console.log(
+      `celda: chip pendiente ${String(chipPendiente.height)} px de alto, chip hecho ${String(chipHecho.height)} px`,
+    );
+    expect(chipHecho.height).toBeLessThan(chipPendiente.height);
+    expect(
+      await decoracionDe(celda(page, HOY).getByText('E2E Pasar por el corralón', { exact: true })),
+    ).toContain('line-through');
+  }
+
+  const detalle = await abrirElDia(page, isMobile, HOY);
+  const pendiente = detalle.getByRole('list', { name: `Lo pendiente del ${diaEnPalabras(HOY)}` });
+  const hecho = detalle.getByRole('list', { name: 'Hecho' });
+
+  await expect(detalle.getByText('2 cosas anotadas · 1 hecha', { exact: true })).toBeVisible();
+  await expect(pendiente.getByRole('listitem')).toHaveCount(2);
+  await expect(hecho.getByRole('listitem')).toHaveCount(1);
+  await expect(hecho.getByRole('checkbox', { name: 'E2E Pasar por el corralón' })).toBeChecked();
+  expect(await hecho.getByRole('listitem').textContent()).toContain(
+    'E2E Pasar por el corralón, hecha',
+  );
+
+  const filaPendiente = await cajaDe(filaDe(detalle, 'E2E Lijar la puerta'));
+  const filaHecha = await cajaDe(filaDe(detalle, 'E2E Pasar por el corralón'));
+  console.log(
+    `${lugar}: fila pendiente ${String(filaPendiente.height)} px de alto en y=${String(filaPendiente.y)}; fila hecha ${String(filaHecha.height)} px en y=${String(filaHecha.y)}`,
+  );
+  expect(filaHecha.y).toBeGreaterThan(filaPendiente.y);
+  expect(filaHecha.height).toBeLessThan(filaPendiente.height);
+  expect(
+    await decoracionDe(detalle.getByText('E2E Pasar por el corralón', { exact: true })),
+  ).toContain('line-through');
+  expect(await decoracionDe(detalle.getByText('E2E Lijar la puerta', { exact: true }))).toBe(
+    'none',
+  );
+
+  const arbol = await detalle.ariaSnapshot();
+  console.log(`${lugar}, árbol de accesibilidad del día:\n${arbol}`);
+  expect(arbol).toContain('checkbox "E2E Pasar por el corralón" [checked]');
+  expect(arbol).toContain('list "Hecho"');
+
+  await detalle.getByRole('checkbox', { name: 'E2E Comprar bisagras' }).focus();
+  const recorrido = await recorrerConTab(page, 8);
+  console.log(`${lugar}, recorrido con Tab:\n${recorrido.join('\n')}`);
+  expect(recorrido.indexOf('checkbox «E2E Lijar la puerta», sin marcar')).toBeLessThan(
+    recorrido.indexOf('checkbox «E2E Pasar por el corralón», marcada'),
+  );
+  expect(recorrido).toContain('checkbox «E2E Pasar por el corralón», marcada');
+  await page.screenshot({ path: testInfo.outputPath(`agenda-hechas-${lugar}-mezcla.png`) });
+
+  const lijar = detalle.getByRole('checkbox', { name: 'E2E Lijar la puerta' });
+  await lijar.focus();
+  await page.keyboard.press('Space');
+  await expect(hecho.getByRole('checkbox', { name: 'E2E Lijar la puerta' })).toBeChecked();
+  await expect(hecho.getByRole('checkbox', { name: 'E2E Lijar la puerta' })).toBeFocused();
+  await expect(hecho.getByRole('listitem')).toHaveCount(2);
+  await expect(detalle.getByText('1 cosa anotada · 2 hechas', { exact: true })).toBeVisible();
+  expect(await decoracionDe(detalle.getByText('E2E Lijar la puerta', { exact: true }))).toContain(
+    'line-through',
+  );
+  await expect.poll(async () => leer('E2E Lijar la puerta')).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-hechas-${lugar}-marcada.png`) });
+
+  await hecho.getByRole('checkbox', { name: 'E2E Pasar por el corralón' }).click();
+  const devuelta = pendiente.getByRole('checkbox', { name: 'E2E Pasar por el corralón' });
+  await expect(devuelta).not.toBeChecked();
+  await expect(devuelta).toBeFocused();
+  await expect(pendiente.getByRole('listitem')).toHaveCount(2);
+  await expect(detalle.getByText('2 cosas anotadas · 1 hecha', { exact: true })).toBeVisible();
+  expect(await decoracionDe(detalle.getByText('E2E Pasar por el corralón', { exact: true }))).toBe(
+    'none',
+  );
+  expect((await cajaDe(filaDe(detalle, 'E2E Pasar por el corralón'))).y).toBeLessThan(
+    (await cajaDe(filaDe(detalle, 'E2E Lijar la puerta'))).y,
+  );
+  await expect.poll(async () => leer('E2E Pasar por el corralón')).toBe(false);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-hechas-${lugar}-desmarcada.png`) });
+});
+
+test('un día con todo hecho no dice que está libre: dice que no queda nada pendiente', async ({
+  page,
+  isMobile,
+}, testInfo) => {
+  const lugar = isMobile ? 'celular' : 'escritorio';
+  const fecha = diaVecino();
+  await crearAnotacionPorRest(sesion, { fecha, texto: 'E2E Cortar los laterales', hecha: true });
+  await crearAnotacionPorRest(sesion, { fecha, texto: 'E2E Pegar el canto', hecha: true });
+  await abrirLaAgenda(page);
+
+  if (!isMobile) {
+    await expect(
+      page.getByRole('button', { name: `${diaEnPalabras(fecha)}: 2 hechas` }),
+    ).toBeVisible();
+  }
+  const detalle = await abrirElDia(page, isMobile, fecha);
+
+  await expect(detalle.getByText('2 hechas', { exact: true })).toBeVisible();
+  await expect(detalle.getByText('No queda nada pendiente para este día.')).toBeVisible();
+  await expect(detalle.getByText('Este día está libre')).toHaveCount(0);
+  await expect(detalle.getByRole('list', { name: 'Hecho' }).getByRole('listitem')).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-hechas-${lugar}-todo-hecho.png`) });
 });
 
 test.describe('en escritorio', () => {

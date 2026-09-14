@@ -2,7 +2,10 @@ import type { EventoDeLaAgenda } from '@maun/domain';
 
 import {
   DIAS_DE_LA_SEMANA,
+  conLoHechoAlFinal,
+  cuentaDelDia,
   diaEnPalabras,
+  estaHecha,
   eventosDelDia,
   hayImportante,
   nombreDelEvento,
@@ -66,7 +69,7 @@ export function GrillaDelMes({
         }}
       >
         {semanas.flat().map(({ fecha, fuera }) => {
-          const delDia = eventosDelDia(eventos, fecha);
+          const delDia = conLoHechoAlFinal(eventosDelDia(eventos, fecha));
           const esHoy = fecha === hoy;
           const esElegido = fecha === elegido;
           const sobran = Math.max(0, delDia.length - maximo);
@@ -88,11 +91,9 @@ export function GrillaDelMes({
             >
               <button
                 type="button"
-                aria-label={`${diaEnPalabras(fecha)}${esHoy ? ', hoy' : ''}: ${
-                  delDia.length === 0
-                    ? 'nada agendado'
-                    : `${String(delDia.length)} ${delDia.length === 1 ? 'cosa' : 'cosas'}`
-                }${marcado ? ', con algo marcado' : ''}`}
+                aria-label={`${diaEnPalabras(fecha)}${esHoy ? ', hoy' : ''}: ${cuentaDelDia(delDia)}${
+                  marcado ? ', con algo marcado' : ''
+                }`}
                 aria-pressed={esElegido}
                 {...abreLaCapa}
                 onClick={() => {
@@ -112,7 +113,7 @@ export function GrillaDelMes({
                 )}
               </button>
               {delDia.slice(0, maximo).map((evento) => {
-                const hecha = evento.clase === 'propia' && evento.hecha;
+                const hecha = estaHecha(evento);
                 return (
                   <button
                     key={evento.id}
@@ -122,7 +123,9 @@ export function GrillaDelMes({
                     onClick={() => {
                       alAbrirEvento(evento);
                     }}
-                    className="flex min-h-6 w-full min-w-0 items-center gap-1.5 rounded-[3px] bg-surface px-1.5 py-0.5 text-left hover:bg-surface-2"
+                    className={`flex w-full min-w-0 items-center gap-1.5 rounded-[3px] bg-surface px-1.5 text-left hover:bg-surface-2 ${
+                      hecha ? 'min-h-5 py-0' : 'min-h-6 py-0.5'
+                    }`}
                   >
                     <span
                       aria-hidden
@@ -141,6 +144,7 @@ export function GrillaDelMes({
                     >
                       {textoCorto(evento)}
                     </span>
+                    {hecha && <span className="sr-only">, hecha</span>}
                   </button>
                 );
               })}

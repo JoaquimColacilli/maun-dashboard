@@ -242,6 +242,7 @@ export async function crearAnotacionPorRest(
     hora?: string;
     proyecto_id?: string;
     importante?: boolean;
+    hecha?: boolean;
   },
 ): Promise<string> {
   const filas = (await pedir(entorno, '/rest/v1/anotaciones', {

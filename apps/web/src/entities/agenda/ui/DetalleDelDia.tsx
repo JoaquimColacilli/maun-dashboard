@@ -1,16 +1,19 @@
 import type { EventoDeLaAgenda } from '@maun/domain';
+import { useId } from 'react';
 
 import type { AccionDelAviso } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 import {
   etiquetaDelDia,
+  estaHecha,
   mesEnPalabras,
   numeroDelDia,
   resumenDelDia,
   diaEnPalabras,
 } from '../model/calendario';
 import { FilaDeEvento, type AccionesDeLaAgenda } from './FilaDeEvento';
+import { useAccionesConFoco } from './useAccionesConFoco';
 
 export interface AvisoDelDia {
   texto: string;
@@ -42,9 +45,13 @@ export function DetalleDelDia({
 }: DetalleDelDiaProps) {
   const accionDelAviso = aviso?.accion ?? null;
   const etiqueta = etiquetaDelDia(fecha, hoy);
+  const idDeLoHecho = useId();
+  const { raiz, acciones: accionesConFoco } = useAccionesConFoco<HTMLDivElement>(acciones);
+  const pendientes = eventos.filter((evento) => !estaHecha(evento));
+  const hechas = eventos.filter((evento) => estaHecha(evento));
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div ref={raiz} className="flex min-h-0 flex-1 flex-col">
       {conEncabezado && (
         <header className="flex flex-none items-start justify-between gap-3 border-b border-hairline px-5 pt-4.5 pb-3.5 md:px-5.5">
           <div className="min-w-0">
@@ -86,11 +93,43 @@ export function DetalleDelDia({
             </p>
           </div>
         ) : (
-          <ul aria-label={`Lo del ${diaEnPalabras(fecha)}`}>
-            {eventos.map((evento) => (
-              <FilaDeEvento key={evento.id} evento={evento} hoy={hoy} acciones={acciones} enElDia />
-            ))}
-          </ul>
+          <>
+            {pendientes.length === 0 ? (
+              <p className="pt-4 pb-3 text-body text-text-2">
+                No queda nada pendiente para este día.
+              </p>
+            ) : (
+              <ul aria-label={`Lo pendiente del ${diaEnPalabras(fecha)}`}>
+                {pendientes.map((evento) => (
+                  <FilaDeEvento
+                    key={evento.id}
+                    evento={evento}
+                    hoy={hoy}
+                    acciones={accionesConFoco}
+                    enElDia
+                  />
+                ))}
+              </ul>
+            )}
+            {hechas.length > 0 && (
+              <div className="pt-2">
+                <p id={idDeLoHecho} className="pb-1.5 text-meta font-semibold text-text-3">
+                  Hecho
+                </p>
+                <ul aria-labelledby={idDeLoHecho}>
+                  {hechas.map((evento) => (
+                    <FilaDeEvento
+                      key={evento.id}
+                      evento={evento}
+                      hoy={hoy}
+                      acciones={accionesConFoco}
+                      enElDia
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
 

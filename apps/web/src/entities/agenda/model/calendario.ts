@@ -91,6 +91,17 @@ export function eventosDelDia(
   return eventos.filter((evento) => evento.fecha === fecha);
 }
 
+export function estaHecha(evento: EventoDeLaAgenda): boolean {
+  return evento.clase === 'propia' && evento.hecha;
+}
+
+export function conLoHechoAlFinal(eventos: readonly EventoDeLaAgenda[]): EventoDeLaAgenda[] {
+  return [
+    ...eventos.filter((evento) => !estaHecha(evento)),
+    ...eventos.filter((evento) => estaHecha(evento)),
+  ];
+}
+
 function plural(cantidad: number, singular: string, varios: string): string {
   return `${String(cantidad)} ${cantidad === 1 ? singular : varios}`;
 }
@@ -98,23 +109,36 @@ function plural(cantidad: number, singular: string, varios: string): string {
 export function resumenDelMes(eventos: readonly EventoDeLaAgenda[]): string {
   if (eventos.length === 0) return 'sin nada agendado';
   const compromisos = eventos.filter((evento) => evento.clase === 'derivada').length;
-  return `${plural(compromisos, 'compromiso', 'compromisos')} · ${plural(
-    eventos.length - compromisos,
-    'anotación',
-    'anotaciones',
-  )}`;
+  const hechas = eventos.filter((evento) => estaHecha(evento)).length;
+  const partes = [
+    plural(compromisos, 'compromiso', 'compromisos'),
+    plural(eventos.length - compromisos - hechas, 'anotación', 'anotaciones'),
+  ];
+  if (hechas > 0) partes.push(plural(hechas, 'hecha', 'hechas'));
+  return partes.join(' · ');
 }
 
 export function resumenDelDia(eventos: readonly EventoDeLaAgenda[]): string {
   const compromisos = eventos.filter((evento) => evento.clase === 'derivada').length;
-  const hechas = eventos.filter((evento) => evento.clase === 'propia' && evento.hecha).length;
+  const hechas = eventos.filter((evento) => estaHecha(evento)).length;
   const pendientes = eventos.length - compromisos - hechas;
 
   const partes: string[] = [];
   if (compromisos > 0) partes.push(plural(compromisos, 'compromiso', 'compromisos'));
   if (pendientes > 0) partes.push(plural(pendientes, 'cosa anotada', 'cosas anotadas'));
-  if (hechas > 0) partes.push(plural(hechas, 'lista', 'listas'));
+  if (hechas > 0) partes.push(plural(hechas, 'hecha', 'hechas'));
   return partes.length === 0 ? 'Nada agendado' : partes.join(' · ');
+}
+
+export function cuentaDelDia(eventos: readonly EventoDeLaAgenda[]): string {
+  if (eventos.length === 0) return 'nada agendado';
+  const hechas = eventos.filter((evento) => estaHecha(evento)).length;
+  const pendientes = eventos.length - hechas;
+
+  const partes: string[] = [];
+  if (pendientes > 0) partes.push(plural(pendientes, 'cosa', 'cosas'));
+  if (hechas > 0) partes.push(plural(hechas, 'hecha', 'hechas'));
+  return partes.join(' y ');
 }
 
 export type TonoDeUrgencia = 'alerta' | 'atencion' | 'normal';

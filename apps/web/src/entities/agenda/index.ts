@@ -12,10 +12,13 @@ export {
 } from './api/mutacion';
 export {
   DIAS_DE_LA_SEMANA,
+  conLoHechoAlFinal,
+  cuentaDelDia,
   detalleDelEvento,
   diaDeLaSemana,
   diaEnPalabras,
   diasConEventos,
+  estaHecha,
   etiquetaDelDia,
   eventosDelDia,
   fechasDelMes,
@@ -57,3 +60,4 @@ export {
   type TamanoDeLaMarca,
 } from './ui/MarcaDeCategoria';
 export { TiraDelMes, type TiraDelMesProps } from './ui/TiraDelMes';
+export { useAccionesConFoco, type AccionesConFoco } from './ui/useAccionesConFoco';

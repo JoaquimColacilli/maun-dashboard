@@ -47,31 +47,35 @@ function Contenido({
           </span>
         )}
         <span
-          className={`text-body leading-snug text-pretty ${hecha ? 'text-text-3 line-through' : 'text-ink'}`}
+          className={`leading-snug text-pretty ${
+            hecha ? 'text-label text-text-3 line-through' : 'text-body text-ink'
+          }`}
         >
           {textoDelEvento(evento)}
         </span>
+        {hecha && <span className="sr-only">, hecha</span>}
       </span>
-      {(detalle !== '' || (urgencia !== null && urgencia.tono !== 'normal') || enElDia) && (
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-label text-text-2">
-          {detalle !== '' && (
-            <span className={enElDia ? '' : 'max-w-full truncate'}>{detalle}</span>
-          )}
-          {urgencia !== null && urgencia.tono !== 'normal' && (
-            <span
-              className={`font-semibold ${urgencia.tono === 'alerta' ? 'text-alerta' : 'text-atencion'}`}
-            >
-              {urgencia.texto}
-            </span>
-          )}
-          {evento.clase === 'propia' && enElDia && (
-            <span className="inline-flex items-center gap-1.5 text-text-3">
-              <MarcaDeCategoria categoria={evento.categoria} tamano="chica" />
-              {categoria.etiqueta}
-            </span>
-          )}
-        </span>
-      )}
+      {!hecha &&
+        (detalle !== '' || (urgencia !== null && urgencia.tono !== 'normal') || enElDia) && (
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-label text-text-2">
+            {detalle !== '' && (
+              <span className={enElDia ? '' : 'max-w-full truncate'}>{detalle}</span>
+            )}
+            {urgencia !== null && urgencia.tono !== 'normal' && (
+              <span
+                className={`font-semibold ${urgencia.tono === 'alerta' ? 'text-alerta' : 'text-atencion'}`}
+              >
+                {urgencia.texto}
+              </span>
+            )}
+            {evento.clase === 'propia' && enElDia && (
+              <span className="inline-flex items-center gap-1.5 text-text-3">
+                <MarcaDeCategoria categoria={evento.categoria} tamano="chica" />
+                {categoria.etiqueta}
+              </span>
+            )}
+          </span>
+        )}
     </>
   );
 }
@@ -130,7 +134,13 @@ export function FilaDeEvento({
   }
 
   return (
-    <li className={`flex items-start gap-3 ${borde} border-hairline-soft py-3`}>
+    <li
+      data-anotacion={evento.id}
+      data-hecha={String(evento.hecha)}
+      className={`flex gap-3 ${borde} border-hairline-soft ${
+        evento.hecha ? 'items-center py-2' : 'items-start py-3'
+      }`}
+    >
       <CasillaDeAnotacion
         evento={evento}
         alTildar={() => {

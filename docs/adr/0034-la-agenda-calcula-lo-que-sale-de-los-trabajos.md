@@ -53,6 +53,24 @@ derivado no se edita ni se borra desde la agenda: dice de dónde sale y ofrece �
 «Deshacer» en el aviso. Esas mutaciones van `silencioso`, para que el aviso siga siendo uno solo (ADR
 0030).
 
+**Lo hecho se queda en el día, abajo de lo pendiente.** Tildar una anotación no la saca: si
+desapareciera, no se sabría si se hizo o si se borró sola. Aplica en la capa de la PC, en la hoja y en
+la lista del celular, y en la celda de la grilla.
+
+- **Orden.** `conLoHechoAlFinal` la pone después de lo pendiente, y cada grupo conserva su orden.
+  Desmarcarla la devuelve arriba.
+- **Aspecto.** Va tachada, gris y más baja que una pendiente: una línea, sin el renglón de la categoría.
+  En la capa y en la hoja, lo hecho va en su propia lista, «Hecho».
+- **Cuentas.** El encabezado del día cuenta lo pendiente y dice aparte lo hecho («2 cosas anotadas · 1
+  hecha»). Lo mismo el resumen del mes y el nombre del botón del día en la grilla («2 cosas y 1 hecha»).
+- **Un día con todo hecho** no dice que está libre: dice que no queda nada pendiente.
+- **No depende del gris.** El texto está tachado, la casilla está marcada, y la fila y el chip de la
+  celda dicen «hecha» para el lector de pantalla.
+- **El foco.** Al tildar, la fila cambia de lista y React la vuelve a montar: `useAccionesConFoco`
+  devuelve el foco a su casilla.
+- **«Hoy en la agenda», en Inicio, sigue mostrando solo lo pendiente.** Responde qué queda por hacer
+  hoy, no qué se hizo; lo decidió el dueño.
+
 **En tablet y PC, la grilla del mes ocupa todo el ancho del área de contenido, siempre, y el día se abre
 en una capa chica anclada a su celda**, con una punta que apunta al día, como en Google Calendar. Se ve
 la relación entre lo que se tocó y lo que se abre, y tapa mucho menos que una franja fija.
@@ -211,6 +229,26 @@ la relación entre lo que se tocó y lo que se abre, y tapa mucho menos que una 
   contra el build de la app, con los mismos lados y las mismas posiciones. A 1024 px el área de
   contenido mide 876 px en esos dos motores y 861 en Chromium, por el ancho de la barra de scroll. En los
   tres, la grilla midió el área completa.
+- **Lo hecho.** `agenda.spec.ts`, en celular y escritorio, con dos pendientes y una hecha en el mismo
+  día:
+  - En la lista del celular y en la celda de la grilla, lo hecho va último y dice «, hecha». El botón del
+    día se llama «lun 14 de septiembre, hoy: 2 cosas y 1 hecha».
+  - En la capa y en la hoja dice «2 cosas anotadas · 1 hecha», con dos filas en la lista de lo
+    pendiente y una en «Hecho», con su casilla marcada.
+  - La fila hecha mide 45 px de alto y la pendiente 67,1 px, en los dos anchos. En la celda, el chip hecho
+    mide 20 px y el pendiente 24 px.
+  - El texto hecho tiene `text-decoration-line: line-through`, y el pendiente, `none`.
+  - Marcar con Space baja la fila a «Hecho», la tacha y deja el foco en su casilla. Desmarcar con un toque
+    la devuelve arriba, sin tachar y con el foco en su casilla. La base refleja los dos cambios.
+  - En el árbol de accesibilidad, la casilla hecha aparece como `checkbox "…" [checked]` dentro de la
+    lista «Hecho». El recorrido con Tab pasa primero por las pendientes, «sin marcar», y después por la
+    hecha, «marcada».
+  - Un día con todo hecho dice «2 hechas» y «No queda nada pendiente para este día», no «Este día está
+    libre».
+
+  No se probó con un lector de pantalla de verdad: se revisó el árbol de accesibilidad que expone
+  Chromium y el recorrido con Tab.
+
 - `destinos-en-celular.spec.ts`: el encabezado de Inicio es «Inicio», el enlace «Agenda» y el de
   Ajustes, en ese orden para el lector de pantalla. Los dos se alcanzan con Tab y abren su pantalla con
   Enter. El ícono mide 44 × 44 px, está a la izquierda de la foto y a su misma altura, es `aria-hidden` y

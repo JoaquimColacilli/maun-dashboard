@@ -8,6 +8,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import {
   CATEGORIA,
+  conLoHechoAlFinal,
   DetalleDelDia,
   DIAS_DE_LA_SEMANA,
   diaDeLaSemana,
@@ -26,6 +27,7 @@ import {
   rangoDeLaGrilla,
   resumenDelMes,
   TiraDelMes,
+  useAccionesConFoco,
   type AccionesDeLaAgenda,
   type AvisoDelDia,
 } from '@/entities/agenda';
@@ -116,6 +118,7 @@ function ListaDelMes({
     fechasDelMes(mes).filter((fecha) => fecha >= desde),
     dia,
   );
+  const { raiz, acciones: accionesConFoco } = useAccionesConFoco<HTMLDivElement>(acciones);
 
   if (eventos.length === 0) {
     return (
@@ -142,7 +145,7 @@ function ListaDelMes({
   }
 
   return (
-    <>
+    <div ref={raiz} className="contents">
       {!desdeElPrincipio && desde > primero && (
         <button
           type="button"
@@ -214,12 +217,12 @@ function ListaDelMes({
               </div>
             ) : (
               <ul>
-                {delDia.map((evento) => (
+                {conLoHechoAlFinal(delDia).map((evento) => (
                   <FilaDeEvento
                     key={evento.id}
                     evento={evento}
                     hoy={hoy}
-                    acciones={acciones}
+                    acciones={accionesConFoco}
                     alAbrirElDia={alAbrirElDia}
                   />
                 ))}
@@ -232,7 +235,7 @@ function ListaDelMes({
       <p className="py-5.5 text-center text-label text-text-3">
         Hasta acá {mesEnPalabras(mes, hoy)}. Con las flechas de arriba pasás al mes que viene.
       </p>
-    </>
+    </div>
   );
 }
 
@@ -253,7 +256,6 @@ export function AgendaPage() {
   const [avisoDelDia, setAvisoDelDia] = useState<AvisoDelDia | null>(null);
   const areaDeLaGrilla = useRef<HTMLDivElement>(null);
   const capaDelDia = useRef<HTMLElement>(null);
-  const tocoFueraDeLaCapa = useRef(false);
   const idDeLaCapa = useId();
 
   const avisarEnElDia = useCallback((aviso: NuevoAviso) => {
@@ -277,11 +279,13 @@ export function AgendaPage() {
     if (!capa.matches(':popover-open')) capa.showPopover();
     capa.focus();
 
-    const alTocar = (evento: PointerEvent) => {
-      tocoFueraDeLaCapa.current = !(evento.target instanceof Node && capa.contains(evento.target));
-    };
-    const alTeclear = () => {
-      tocoFueraDeLaCapa.current = false;
+    const alTeclear = (evento: KeyboardEvent) => {
+      if (evento.key !== 'Escape' || document.querySelector('dialog[open]') !== null) return;
+      setDiaAbierto(null);
+      setAvisoDelDia(null);
+      areaDeLaGrilla.current
+        ?.querySelector<HTMLButtonElement>(`[data-fecha="${diaAbierto}"] > button`)
+        ?.focus();
     };
     const desplazable = capa.closest('main');
     const alAbrir = desplazable?.scrollTop ?? 0;
@@ -289,11 +293,9 @@ export function AgendaPage() {
       if (desplazable !== null && desplazable.scrollTop !== alAbrir) setDiaAbierto(null);
     };
 
-    document.addEventListener('pointerdown', alTocar, true);
     document.addEventListener('keydown', alTeclear, true);
     desplazable?.addEventListener('scroll', alDesplazar, { passive: true });
     return () => {
-      document.removeEventListener('pointerdown', alTocar, true);
       document.removeEventListener('keydown', alTeclear, true);
       desplazable?.removeEventListener('scroll', alDesplazar);
     };
@@ -593,7 +595,6 @@ export function AgendaPage() {
               if (evento.newState !== 'closed') return;
               setDiaAbierto(null);
               setAvisoDelDia(null);
-              if (!tocoFueraDeLaCapa.current) devolverElFocoAlDia(diaAbierto);
             }}
             className="capa-del-dia flex-col overflow-visible rounded-panel border border-hairline bg-paper p-0 text-ink shadow-float outline-none open:flex"
           >
