@@ -198,6 +198,37 @@ describe('la hoja', () => {
     expect(alCerrar).not.toHaveBeenCalled();
   });
 
+  it('un Escape sin un gesto en el medio llega como cancel que no se frena y después close: con la pregunta a la vista, vuelve a editar', () => {
+    const alCerrar = vi.fn();
+    render(<FormularioEnHoja alCerrar={alCerrar} />);
+    const hoja = screen.getByRole<HTMLDialogElement>('dialog', { name: 'Anotar algo' });
+    fireEvent.change(screen.getByLabelText('Qué hay que hacer'), { target: { value: 'Algo' } });
+
+    fireEvent(hoja, new Event('cancel', { cancelable: true }));
+    expect(screen.getByRole('alertdialog', { name: '¿Cerrar sin guardar?' })).toBeInTheDocument();
+
+    fireEvent(hoja, new Event('cancel', { cancelable: false }));
+    act(() => {
+      hoja.close();
+    });
+    expect(hoja).toHaveAttribute('open');
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Qué hay que hacer')).toHaveValue('Algo');
+    expect(alCerrar).not.toHaveBeenCalled();
+  });
+
+  it('un formulario intacto que recibe un cancel que no se frena se cierra una sola vez', () => {
+    const alCerrar = vi.fn();
+    render(<FormularioEnHoja alCerrar={alCerrar} />);
+    const hoja = screen.getByRole<HTMLDialogElement>('dialog', { name: 'Anotar algo' });
+
+    fireEvent(hoja, new Event('cancel', { cancelable: false }));
+    act(() => {
+      hoja.close();
+    });
+    expect(alCerrar).toHaveBeenCalledOnce();
+  });
+
   it('se puede volver a abrir mientras sale', () => {
     render(<Prueba />);
 

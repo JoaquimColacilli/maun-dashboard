@@ -174,6 +174,7 @@ export function Hoja({
       role={rol === 'alertdialog' ? 'alertdialog' : undefined}
       aria-labelledby={idTitulo}
       onCancel={(evento) => {
+        if (!evento.cancelable) return;
         evento.preventDefault();
         if (mostrarPregunta) seguirEditando();
         else pedirCierre();
