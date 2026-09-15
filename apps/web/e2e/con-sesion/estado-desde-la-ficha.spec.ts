@@ -116,9 +116,10 @@ test('en la ficha de un contacto cada etapa ofrece sus pasos, sacados de la mism
   page,
 }, testInfo) => {
   const esperado: Record<string, string[]> = {
-    contacto: ['Agendar la visita', 'Ya lo aprobó'],
+    contacto: ['Agendar la visita', 'Mandé un estimativo', 'Ya lo aprobó'],
+    presupuesto_estimativo: ['Agendar la visita', 'Ya lo aprobó'],
     relevamiento: ['Ya fui a relevar', 'Ya lo aprobó'],
-    a_presupuestar: ['Mandé el presupuesto', 'Ya lo aprobó'],
+    a_presupuestar: ['Mandé el estimativo', 'Mandé el presupuesto', 'Ya lo aprobó'],
     presupuesto_enviado: ['Lo aprobó: pasar a Proyectos'],
   };
   const ids = new Map<string, string>();
@@ -132,7 +133,13 @@ test('en la ficha de un contacto cada etapa ofrece sus pasos, sacados de la mism
     await expect(queFalta(page)).toBeVisible(CARGA);
     expect(await accionesOfrecidas(page)).toEqual(acciones);
     const etapas = (await queFalta(page).getByRole('radio').allInnerTexts()).map((t) => t.trim());
-    expect(etapas).toEqual(['Contacto', 'Relevamiento', 'A presupuestar', 'Presupuesto enviado']);
+    expect(etapas).toEqual([
+      'Contacto',
+      'Estimativo enviado',
+      'Relevamiento',
+      'A presupuestar',
+      'Presupuesto enviado',
+    ]);
     console.log(
       `[${testInfo.project.name}] ${estado} ofrece: ${acciones.join(' · ')} | etapa: ${etapas.join(' · ')}`,
     );

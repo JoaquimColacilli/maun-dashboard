@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { avisosEnPantalla, listoParaCortar } from '../apoyo/pantalla';
+import { listoParaCortar } from '../apoyo/pantalla';
 import {
   archivosDelTaller,
   contactoPorRpc,
@@ -229,8 +229,9 @@ test('sube una foto, un render y un PDF: las imágenes se achican antes de subir
 
   await seccion.getByRole('button', { name: 'Borrar «despiece.pdf»' }).click();
   await expect(seccion.getByRole('link', { name: 'despiece.pdf' })).toHaveCount(0);
-  await expect(avisosEnPantalla(page)).toContainText('Borraste «despiece.pdf».');
-  await avisosEnPantalla(page).getByRole('button', { name: 'Deshacer' }).click();
+  const avisoDelBorrado = page.getByRole('status').filter({ hasText: 'Borraste «despiece.pdf».' });
+  await expect(avisoDelBorrado).toBeVisible();
+  await avisoDelBorrado.getByRole('button', { name: 'Deshacer' }).click();
   await expect(seccion.getByRole('link', { name: 'despiece.pdf' })).toBeVisible();
   await expect
     .poll(

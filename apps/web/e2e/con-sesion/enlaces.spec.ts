@@ -151,10 +151,15 @@ test('en el día de la agenda, el cliente de una visita lleva a su ficha y el tr
   const dia = await abrirElDiaDeHoy(page, isMobile, '2 cosas');
   await dia.getByRole('link', { name: 'Cliente de Biblioteca empotrada', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/clientes/${contacto.clienteId}$`));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Cliente de Biblioteca empotrada',
+    CARGA,
+  );
 
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1, name: 'Agenda' })).toBeVisible(CARGA);
   const otraVez = await abrirElDiaDeHoy(page, isMobile, '2 cosas');
   await otraVez.getByRole('link', { name: 'Biblioteca empotrada', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${contacto.id}$`));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Biblioteca empotrada', CARGA);
 });

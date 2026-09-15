@@ -578,7 +578,9 @@ test('el camino con estimativo, de punta a punta: consulta, estimativo, visita c
 
   const tareas = panel.getByRole('group', { name: /^Para el presupuesto/ });
   for (const tarea of ['Diseñar', 'Despiezar', 'Cotizar', 'Armar el PDF']) {
-    await tareas.getByRole('checkbox', { name: new RegExp(`^${tarea}`) }).check();
+    const casilla = tareas.getByRole('checkbox', { name: new RegExp(`^${tarea}`) });
+    await casilla.click();
+    await expect(casilla).toBeChecked();
   }
   await expect(panel).toContainText('Ya está armado: falta mandar el presupuesto');
   await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, true, true, true]);
@@ -642,21 +644,24 @@ test('las tareas de presupuestar se tildan y se destildan, y con las cuatro la a
   const tareas = panel.getByRole('group', { name: /^Para el presupuesto/ });
   const tarea = (nombre: string) =>
     tareas.getByRole('checkbox', { name: new RegExp(`^${nombre}`) });
+  const tildar = async (nombre: string, hecha: boolean) => {
+    await tarea(nombre).click();
+    await expect(tarea(nombre)).toBeChecked({ checked: hecha });
+  };
   await expect(tareas).toContainText('0 de 4');
 
-  await tarea('Diseñar').check();
-  await tarea('Despiezar').check();
+  await tildar('Diseñar', true);
+  await tildar('Despiezar', true);
   await expect(panel).toContainText('Falta presupuestar: 2 de 4 tareas hechas');
   await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, true, false, false]);
 
-  await tarea('Despiezar').uncheck();
-  await expect(tarea('Despiezar')).not.toBeChecked();
+  await tildar('Despiezar', false);
   await expect(panel).toContainText('Falta presupuestar: 1 de 4 tareas hechas');
   await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, false, false, false]);
 
-  await tarea('Despiezar').check();
-  await tarea('Cotizar').check();
-  await tarea('Armar el PDF').check();
+  await tildar('Despiezar', true);
+  await tildar('Cotizar', true);
+  await tildar('Armar el PDF', true);
   await expect(panel).toContainText('Ya está armado: falta mandar el presupuesto');
   await expect(panel.getByRole('button').first()).toHaveText('Mandé el presupuesto');
   await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, true, true, true]);
