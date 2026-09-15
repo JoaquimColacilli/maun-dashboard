@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { AccionesDeContacto } from '@/entities/cliente';
@@ -11,6 +11,7 @@ import {
   rutaDeEdicion,
   situacionDelContacto,
   ultimasActividades,
+  yaSeRelevo,
   type EtapaDeSeguimiento,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
@@ -20,14 +21,29 @@ import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
 import { fechaLarga, formatearPesos, hoyLocal, relativa, useAvisosDelProyecto } from '@/shared/lib';
 import { Button, ConSalida, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
-function Dato({ clave, valor, tono = '' }: { clave: string; valor: string; tono?: string }) {
+function Dato({
+  clave,
+  valor,
+  tono = '',
+  accion,
+}: {
+  clave: string;
+  valor: string;
+  tono?: string;
+  accion?: ReactNode;
+}) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-3 border-t border-hairline py-2.5 text-body">
+    <div className="grid grid-cols-[120px_1fr] items-center gap-3 border-t border-hairline py-2.5 text-body">
       <dt className="text-text-3">{clave}</dt>
-      <dd className={`leading-snug font-medium tabular-nums ${tono}`}>{valor}</dd>
+      <dd className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 ${tono}`}>
+        <span className="leading-snug font-medium tabular-nums">{valor}</span>
+        {accion}
+      </dd>
     </div>
   );
 }
+
+type HojaAbierta = 'contacto' | 'visita' | null;
 
 export interface FichaDeContactoProps {
   resumen: ResumenDeProyecto;
@@ -38,9 +54,9 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
   const avisos = useAvisosDelProyecto(resumen.proyecto.id);
-  const [editando, setEditando] = useState(false);
+  const [editando, setEditando] = useState<HojaAbierta>(null);
   const cerrarLaHoja = useCallback(() => {
-    setEditando(false);
+    setEditando(null);
   }, []);
 
   const hoy = hoyLocal();
@@ -48,8 +64,11 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const pagos = pagosDelProyecto(replica, proyecto.id);
   const gastos = gastosDelProyecto(replica, proyecto.id);
   const ultimaActividad = ultimasActividades(replica).get(proyecto.id) ?? proyecto.updated_at;
-  const situacion = situacionDelContacto(proyecto, ultimaActividad, hoy);
+  const situacion = situacionDelContacto(proyecto, ultimaActividad, hoy, resumen.cobrado);
   const nombre = cliente?.nombre ?? resumen.nombreDelCliente;
+  const relevado = yaSeRelevo(proyecto, hoy);
+  const esperaAlCliente =
+    proyecto.estado === 'presupuesto_enviado' || proyecto.estado === 'presupuesto_estimativo';
 
   return (
     <Pagina>
@@ -73,7 +92,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             variant="secundario"
             size="chico"
             onClick={() => {
-              setEditando(true);
+              setEditando('contacto');
             }}
           >
             <Icono nombre="pencil" tamano={16} />
@@ -118,19 +137,34 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             proyecto={proyecto}
             etapa={etapa}
             situacion={situacion}
+            cobrado={resumen.cobrado}
             alAgendar={() => {
-              setEditando(true);
+              setEditando('visita');
             }}
           />
 
           <section aria-label="Datos del contacto">
             <dl>
               <Dato
-                clave="Visita"
+                clave={relevado ? 'Relevamiento' : 'Visita'}
                 valor={
                   proyecto.fecha_visita === null
                     ? 'Sin fecha'
                     : `${fechaLarga(proyecto.fecha_visita, hoy)}, ${relativa(proyecto.fecha_visita, hoy)}`
+                }
+                accion={
+                  <Button
+                    variant="secundario"
+                    size="chico"
+                    aria-label={
+                      relevado ? 'Cambiar el día del relevamiento' : 'Cambiar el día de la visita'
+                    }
+                    onClick={() => {
+                      setEditando('visita');
+                    }}
+                  >
+                    Cambiar
+                  </Button>
                 }
               />
               <Dato
@@ -146,7 +180,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
                     : formatearPesos(proyecto.presupuesto_centavos)
                 }
               />
-              {proyecto.estado !== 'presupuesto_enviado' && (
+              {!esperaAlCliente && (
                 <Dato
                   clave="Presupuesto antes del"
                   valor={
@@ -212,7 +246,13 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
       </div>
 
       <ConSalida valor={editando}>
-        {() => <HojaDeContacto proyecto={proyecto} alCerrar={cerrarLaHoja} />}
+        {(abierta) => (
+          <HojaDeContacto
+            proyecto={proyecto}
+            enfocarLaVisita={abierta === 'visita'}
+            alCerrar={cerrarLaHoja}
+          />
+        )}
       </ConSalida>
     </Pagina>
   );

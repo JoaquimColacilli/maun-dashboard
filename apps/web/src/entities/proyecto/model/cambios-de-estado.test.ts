@@ -62,6 +62,10 @@ function proyecto(extra: Partial<Proyecto> = {}): Proyecto {
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    presupuesto_diseno: false,
+    presupuesto_despiece: false,
+    presupuesto_cotizacion: false,
+    presupuesto_pdf: false,
     ...extra,
   };
 }
@@ -111,6 +115,17 @@ describe('los cambios de estado que ofrece una ficha', () => {
     expect(cambiosDeEstado('entregado')).toEqual([
       { hacia: 'en_curso', etiqueta: 'Volvió al taller', sentido: 'atras', camino: 'guardar' },
     ]);
+  });
+
+  it('mandar un estimativo se dice como lo dice el taller', () => {
+    expect(
+      cambiosDeEstado('contacto').find((cambio) => cambio.hacia === 'presupuesto_estimativo'),
+    ).toEqual({
+      hacia: 'presupuesto_estimativo',
+      etiqueta: 'Mandé un estimativo',
+      sentido: 'adelante',
+      camino: 'guardar',
+    });
   });
 
   it('aprobar un contacto no es un cambio rápido: pasa por la pantalla del pasaje', () => {

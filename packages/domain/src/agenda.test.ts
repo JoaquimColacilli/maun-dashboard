@@ -187,11 +187,12 @@ describe('eventosDeLaAgenda', () => {
       'visita:a_presupuestar',
       'visita:contacto',
       'visita:presupuesto_enviado',
+      'visita:presupuesto_estimativo',
       'visita:relevamiento',
     ]);
   });
 
-  it('el vencimiento sale mientras el presupuesto no se mandó, y deja de salir al mandarlo', () => {
+  it('el vencimiento sale mientras el presupuesto no se mandó, y deja de salir al mandarlo o al mandar un estimativo', () => {
     const conVencimiento = ESTADOS.map((estado) =>
       proyecto({ id: estado, estado, vencimientoPresupuesto: '2026-09-10' }),
     );

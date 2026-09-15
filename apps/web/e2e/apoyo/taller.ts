@@ -291,6 +291,32 @@ export async function leerProyecto(
   return filas[0];
 }
 
+export interface ContactoLeido {
+  id: string;
+  estado: string;
+  fecha_visita: string | null;
+  vencimiento_presupuesto: string | null;
+  presupuesto_centavos: number | null;
+  presupuesto_diseno: boolean;
+  presupuesto_despiece: boolean;
+  presupuesto_cotizacion: boolean;
+  presupuesto_pdf: boolean;
+}
+
+export async function leerContacto(
+  { entorno, accessToken }: SesionDePrueba,
+  titulo: string,
+): Promise<ContactoLeido | undefined> {
+  const columnas =
+    'id,estado,fecha_visita,vencimiento_presupuesto,presupuesto_centavos,presupuesto_diseno,presupuesto_despiece,presupuesto_cotizacion,presupuesto_pdf';
+  const filas = (await pedir(
+    entorno,
+    `/rest/v1/proyectos?select=${columnas}&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
+    { accessToken },
+  )) as ContactoLeido[];
+  return filas[0];
+}
+
 export async function contarHijos(
   { entorno, accessToken }: SesionDePrueba,
   tabla: 'pagos' | 'gastos',

@@ -474,6 +474,10 @@ export type Database = {
           id: string;
           notas: string;
           presupuesto_centavos: number | null;
+          presupuesto_cotizacion: boolean;
+          presupuesto_despiece: boolean;
+          presupuesto_diseno: boolean;
+          presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -517,6 +521,10 @@ export type Database = {
           id?: string;
           notas?: string;
           presupuesto_centavos?: number | null;
+          presupuesto_cotizacion?: boolean;
+          presupuesto_despiece?: boolean;
+          presupuesto_diseno?: boolean;
+          presupuesto_pdf?: boolean;
           reapertura_fecha_cobro?: string | null;
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
@@ -560,6 +568,10 @@ export type Database = {
           id?: string;
           notas?: string;
           presupuesto_centavos?: number | null;
+          presupuesto_cotizacion?: boolean;
+          presupuesto_despiece?: boolean;
+          presupuesto_diseno?: boolean;
+          presupuesto_pdf?: boolean;
           reapertura_fecha_cobro?: string | null;
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
@@ -667,6 +679,10 @@ export type Database = {
           id: string;
           notas: string;
           presupuesto_centavos: number | null;
+          presupuesto_cotizacion: boolean;
+          presupuesto_despiece: boolean;
+          presupuesto_diseno: boolean;
+          presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -733,6 +749,10 @@ export type Database = {
           id: string;
           notas: string;
           presupuesto_centavos: number | null;
+          presupuesto_cotizacion: boolean;
+          presupuesto_despiece: boolean;
+          presupuesto_diseno: boolean;
+          presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -799,6 +819,10 @@ export type Database = {
           id: string;
           notas: string;
           presupuesto_centavos: number | null;
+          presupuesto_cotizacion: boolean;
+          presupuesto_despiece: boolean;
+          presupuesto_diseno: boolean;
+          presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -855,6 +879,10 @@ export type Database = {
           id: string;
           notas: string;
           presupuesto_centavos: number | null;
+          presupuesto_cotizacion: boolean;
+          presupuesto_despiece: boolean;
+          presupuesto_diseno: boolean;
+          presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -892,6 +920,7 @@ export type Database = {
       condicion_fiscal: 'consumidor_final' | 'monotributo' | 'responsable_inscripto' | 'exento';
       estado_proyecto:
         | 'contacto'
+        | 'presupuesto_estimativo'
         | 'relevamiento'
         | 'a_presupuestar'
         | 'presupuesto_enviado'
@@ -1031,6 +1060,7 @@ export const Constants = {
       condicion_fiscal: ['consumidor_final', 'monotributo', 'responsable_inscripto', 'exento'],
       estado_proyecto: [
         'contacto',
+        'presupuesto_estimativo',
         'relevamiento',
         'a_presupuestar',
         'presupuesto_enviado',

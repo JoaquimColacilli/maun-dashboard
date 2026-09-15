@@ -297,6 +297,32 @@ export async function guardarCambiosDeProyecto(
   return data;
 }
 
+export const COLUMNAS_DE_TAREAS = [
+  'presupuesto_diseno',
+  'presupuesto_despiece',
+  'presupuesto_cotizacion',
+  'presupuesto_pdf',
+] as const;
+
+export type ColumnaDeTarea = (typeof COLUMNAS_DE_TAREAS)[number];
+
+export type CambiosDeTareas = Partial<Pick<FilaDe<'proyectos'>, ColumnaDeTarea>>;
+
+export async function guardarTareasDelPresupuesto(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeTareas,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function borrarCliente(
   cliente: ClienteMaun,
   id: string,

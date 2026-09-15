@@ -6,6 +6,7 @@ import {
   crearCliente,
   distribucionDe,
   iniciarSesionDePrueba,
+  leerContacto,
   leerProyecto,
   pagosDe,
   vaciarTaller,
@@ -13,6 +14,7 @@ import {
 } from '../apoyo/taller';
 
 const UN_DIA_MS = 86_400_000;
+const CARGA = { timeout: 30_000 };
 
 let sesion: SesionDePrueba;
 
@@ -26,6 +28,30 @@ function fechaLocal(desplazamientoEnDias: number): string {
   const mes = String(dia.getMonth() + 1).padStart(2, '0');
   const numero = String(dia.getDate()).padStart(2, '0');
   return `${String(dia.getFullYear())}-${mes}-${numero}`;
+}
+
+function unaSemanaDeTrabajoDesde(fecha: string): string {
+  const [anio = 0, mes = 1, dia = 1] = fecha.split('-').map(Number);
+  const cursor = new Date(Date.UTC(anio, mes - 1, dia));
+  let habiles = 0;
+  while (habiles < 5) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    const semana = cursor.getUTCDay();
+    if (semana !== 0 && semana !== 6) habiles += 1;
+  }
+  return cursor.toISOString().slice(0, 10);
+}
+
+async function tareasEnLaBase(titulo: string): Promise<boolean[]> {
+  const fila = await leerContacto(sesion, titulo);
+  return fila === undefined
+    ? []
+    : [
+        fila.presupuesto_diseno,
+        fila.presupuesto_despiece,
+        fila.presupuesto_cotizacion,
+        fila.presupuesto_pdf,
+      ];
 }
 
 function tarjetas(page: Page) {
@@ -264,6 +290,7 @@ test('toda la tarjeta lleva al trabajo, el nombre del cliente a su ficha, y con 
     titulo: 'Rack de living',
     estado: 'a_presupuestar',
     telefono: '11 5555-2222',
+    sena: 5_000_000,
   });
 
   await abrir(page, '/seguimiento');
@@ -451,6 +478,189 @@ test('la lista vacía, con datos y sin resultados dicen cosas distintas', async 
   await expect(page.getByText('Ningún contacto está en esa etapa.')).toBeVisible();
   await page.getByRole('button', { name: 'Limpiar la búsqueda' }).click();
   await expect(tarjetas(page)).toHaveCount(1);
+});
+
+test('«Ya fui a relevar» pide el día, y corregirlo después corre el vencimiento mientras no se lo ponga a mano', async ({
+  page,
+}) => {
+  const { id, titulo } = await contactoPorRpc(sesion, {
+    titulo: 'Cocina en L',
+    estado: 'relevamiento',
+    visita: fechaLocal(2),
+    sena: 3_000_000,
+  });
+
+  await abrir(page, `/proyectos/${id}`);
+  const panel = page.getByRole('region', { name: 'Qué falta' });
+  await panel.getByRole('button', { name: 'Ya fui a relevar' }).click();
+  const dia = panel.getByLabel('Qué día fuiste', { exact: true });
+  await expect(dia).toBeFocused();
+  await expect(dia).toHaveValue(fechaLocal(0));
+  await expect(panel.getByLabel('Cuánto te pagó la visita')).toHaveCount(0);
+
+  await dia.fill(fechaLocal(-3));
+  await expect(panel.getByLabel('Entregar el presupuesto antes del')).toHaveValue(
+    unaSemanaDeTrabajoDesde(fechaLocal(-3)),
+  );
+  await panel.getByRole('button', { name: 'Anotar el relevamiento' }).click();
+  await expect(panel).toContainText('Falta presupuestar');
+
+  await expect
+    .poll(async () => (await leerContacto(sesion, titulo))?.estado, CARGA)
+    .toBe('a_presupuestar');
+  expect(await leerContacto(sesion, titulo)).toMatchObject({
+    fecha_visita: fechaLocal(-3),
+    vencimiento_presupuesto: unaSemanaDeTrabajoDesde(fechaLocal(-3)),
+  });
+
+  const datos = page.getByRole('region', { name: 'Datos del contacto' });
+  await expect(datos).toContainText('Relevamiento');
+  await page.getByRole('button', { name: 'Cambiar el día del relevamiento' }).click();
+  const hoja = page.getByRole('dialog', { name: 'Editar el contacto' });
+  const diaEnLaHoja = hoja.getByLabel('Día que fuiste a relevar');
+  await expect(diaEnLaHoja).toBeFocused();
+  await diaEnLaHoja.fill(fechaLocal(-1));
+  await expect(hoja.getByLabel('Entregar el presupuesto antes del')).toHaveValue(
+    unaSemanaDeTrabajoDesde(fechaLocal(-1)),
+  );
+  await hoja.getByRole('button', { name: 'Guardar los cambios' }).click();
+  await expect(hoja).toBeHidden();
+  await expect
+    .poll(async () => (await leerContacto(sesion, titulo))?.fecha_visita, CARGA)
+    .toBe(fechaLocal(-1));
+  expect((await leerContacto(sesion, titulo))?.vencimiento_presupuesto).toBe(
+    unaSemanaDeTrabajoDesde(fechaLocal(-1)),
+  );
+
+  await page.getByRole('button', { name: 'Cambiar el día del relevamiento' }).click();
+  await hoja.getByLabel('Entregar el presupuesto antes del').fill(fechaLocal(20));
+  await hoja.getByLabel('Día que fuiste a relevar').fill(fechaLocal(-2));
+  await expect(hoja.getByLabel('Entregar el presupuesto antes del')).toHaveValue(fechaLocal(20));
+  await hoja.getByRole('button', { name: 'Guardar los cambios' }).click();
+  await expect(hoja).toBeHidden();
+  await expect
+    .poll(async () => (await leerContacto(sesion, titulo))?.vencimiento_presupuesto, CARGA)
+    .toBe(fechaLocal(20));
+  expect((await leerContacto(sesion, titulo))?.fecha_visita).toBe(fechaLocal(-2));
+});
+
+test('el camino con estimativo, de punta a punta: consulta, estimativo, visita cobrada, tareas, presupuesto y aprobación', async ({
+  page,
+}) => {
+  const { id, titulo } = await contactoPorRpc(sesion, { titulo: 'Biblioteca por WhatsApp' });
+
+  await abrir(page, `/proyectos/${id}`);
+  const panel = page.getByRole('region', { name: 'Qué falta' });
+  await panel.getByRole('button', { name: 'Mandé un estimativo' }).click();
+  await expect(panel).toContainText('Si avanza, falta agendar la visita');
+  await expect(panel.getByRole('radio', { name: 'Estimativo enviado' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await esperarEstado(titulo, 'presupuesto_estimativo');
+
+  await panel.getByRole('button', { name: 'Agendar la visita' }).click();
+  const hoja = page.getByRole('dialog', { name: 'Editar el contacto' });
+  const visita = hoja.getByLabel('Visita', { exact: true });
+  await expect(visita).toBeFocused();
+  await visita.fill(fechaLocal(0));
+  await hoja.getByRole('button', { name: 'Guardar los cambios' }).click();
+  await expect(hoja).toBeHidden();
+  await expect(panel).toContainText('Ir a relevar hoy');
+  await esperarEstado(titulo, 'relevamiento');
+
+  await panel.getByRole('button', { name: 'Ya fui a relevar' }).click();
+  await panel.getByLabel('Cuánto te pagó la visita').fill('40.000');
+  await panel.getByRole('button', { name: 'Anotar el relevamiento' }).click();
+  await expect(panel).toContainText('Falta presupuestar');
+  await esperarEstado(titulo, 'a_presupuestar');
+  await expect.poll(async () => (await pagosDe(sesion, id)).length, CARGA).toBe(1);
+
+  const tareas = panel.getByRole('group', { name: /^Para el presupuesto/ });
+  for (const tarea of ['Diseñar', 'Despiezar', 'Cotizar', 'Armar el PDF']) {
+    await tareas.getByRole('checkbox', { name: new RegExp(`^${tarea}`) }).check();
+  }
+  await expect(panel).toContainText('Ya está armado: falta mandar el presupuesto');
+  await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, true, true, true]);
+
+  await panel.getByRole('button', { name: 'Mandé el presupuesto' }).click();
+  await panel.getByLabel('Cuánto presupuestaste').fill('950.000');
+  await panel.getByRole('button', { name: 'Marcar como enviado' }).click();
+  await expect(panel).toContainText('Falta llamar para saber');
+  await esperarEstado(titulo, 'presupuesto_enviado');
+
+  await panel.getByRole('button', { name: 'Lo aprobó: pasar a Proyectos' }).click();
+  await expect(page.getByLabel('Presupuesto aprobado')).toHaveValue('950.000');
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  await esperarEstado(titulo, 'en_curso');
+});
+
+test('sin estimativo: relevar sin cobrar sugiere el estimativo, y aun así se puede mandar el presupuesto completo', async ({
+  page,
+}) => {
+  const { id, titulo } = await contactoPorRpc(sesion, {
+    titulo: 'Rack sin seña',
+    estado: 'relevamiento',
+    visita: fechaLocal(-1),
+  });
+
+  await abrir(page, `/proyectos/${id}`);
+  const panel = page.getByRole('region', { name: 'Qué falta' });
+  await panel.getByRole('button', { name: 'Ya fui a relevar' }).click();
+  await expect(panel.getByLabel('Qué día fuiste', { exact: true })).toHaveValue(fechaLocal(-1));
+  await expect(panel.getByLabel('Cuánto te pagó la visita')).toBeVisible();
+  await panel.getByRole('button', { name: 'Anotar el relevamiento' }).click();
+
+  await expect(panel).toContainText('Falta el estimativo: la visita no está cobrada');
+  await expect(panel.getByRole('button', { name: 'Mandé el estimativo' })).toBeVisible();
+  await esperarEstado(titulo, 'a_presupuestar');
+
+  await page.getByRole('link', { name: 'Seguimiento', exact: true }).first().click();
+  await expect(tarjetas(page).first()).toContainText(
+    'Falta el estimativo: la visita no está cobrada',
+  );
+  await page.getByRole('link', { name: titulo, exact: true }).click();
+
+  await panel.getByRole('button', { name: 'Mandé el presupuesto' }).click();
+  await panel.getByRole('button', { name: 'Marcar como enviado' }).click();
+  await expect(panel).toContainText('Falta llamar para saber');
+  await esperarEstado(titulo, 'presupuesto_enviado');
+  expect(await pagosDe(sesion, id)).toHaveLength(0);
+});
+
+test('las tareas de presupuestar se tildan y se destildan, y con las cuatro la app sugiere mandarlo sin cambiar el estado', async ({
+  page,
+}) => {
+  const { id, titulo } = await contactoPorRpc(sesion, {
+    titulo: 'Vestidor con tareas',
+    estado: 'a_presupuestar',
+    sena: 5_000_000,
+  });
+
+  await abrir(page, `/proyectos/${id}`);
+  const panel = page.getByRole('region', { name: 'Qué falta' });
+  const tareas = panel.getByRole('group', { name: /^Para el presupuesto/ });
+  const tarea = (nombre: string) =>
+    tareas.getByRole('checkbox', { name: new RegExp(`^${nombre}`) });
+  await expect(tareas).toContainText('0 de 4');
+
+  await tarea('Diseñar').check();
+  await tarea('Despiezar').check();
+  await expect(panel).toContainText('Falta presupuestar: 2 de 4 tareas hechas');
+  await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, true, false, false]);
+
+  await tarea('Despiezar').uncheck();
+  await expect(tarea('Despiezar')).not.toBeChecked();
+  await expect(panel).toContainText('Falta presupuestar: 1 de 4 tareas hechas');
+  await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, false, false, false]);
+
+  await tarea('Despiezar').check();
+  await tarea('Cotizar').check();
+  await tarea('Armar el PDF').check();
+  await expect(panel).toContainText('Ya está armado: falta mandar el presupuesto');
+  await expect(panel.getByRole('button').first()).toHaveText('Mandé el presupuesto');
+  await expect.poll(() => tareasEnLaBase(titulo), CARGA).toEqual([true, true, true, true]);
+  expect((await leerContacto(sesion, titulo))?.estado).toBe('a_presupuestar');
 });
 
 test('seguimiento y la ficha del contacto se recorren con el teclado', async ({ page }) => {

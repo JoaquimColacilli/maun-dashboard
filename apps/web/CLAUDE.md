@@ -249,6 +249,9 @@ src/
   deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
   «arregles».
 - Proyecto nuevo solo ofrece estados de obra: un contacto entra por Seguimiento.
+- **El presupuesto estimativo es una etapa, y lo que sigue se sugiere, no se impone** (ADR 0038). `situacionDelContacto` recibe lo cobrado (`resumen.cobrado`) y mira las tareas: devuelve la `sugerencia`, y `pasosDelContacto` arma los botones, el sugerido primero. **No agregues una guarda, un `check` ni un botón deshabilitado que mire los pagos para dejar pasar de etapa**: el dueño pidió poder presupuestar sin haber cobrado la visita. Si alguien quiere volverlo obligatorio, se habla con el dueño antes.
+- **Las tareas de presupuestar son cuatro columnas booleanas, no estados** (`TAREAS_DEL_PRESUPUESTO`, `MUTACION_DE_TAREAS`). Cada tilde es un update de su columna sola y `guardar_proyecto` no las escribe. Una fila de la réplica guardada antes de que existieran puede no traerlas: leelas con `tareaHecha`, nunca con la columna directa.
+- **«Ya fui a relevar» pide el día** (`FormularioDelRelevamiento`, `model/relevamiento.ts`), propone el vencimiento y, sin pagos, anota la seña en el mismo guardado (`guardadoDeUnPaso` acepta pagos). Corregir el día después corre el vencimiento solo si era el propuesto (`valoresConOtraVisita`).
 
 ## Agenda (ADR 0034)
 
@@ -276,7 +279,7 @@ src/
   - `agenda.spec.ts` mide los siete casos (lunes, miércoles, viernes, sábado, domingo, primera y última fila) a 1440 y a 1024 px, con la grilla a todo el ancho.
 - **La hoja del día del celular es un `<dialog>` modal y la capa de la PC va en la capa superior: las dos tapan los avisos globales**, y tocar uno cerraría la capa. El deshacer adentro va por el aviso local de `DetalleDelDia` (`aviso`). Si movés una acción con deshacer a otra hoja o capa, pasa lo mismo.
 - **Una réplica guardada antes de la agenda no trae `anotaciones`.** `filasDe` tolera la tabla que falta y `necesitaReconcile` pide `bootstrap()`. No subas `VERSION_CACHE` para esto: se lleva la cola.
-- `vencimiento_presupuesto` se propone al pasar a «a presupuestar» (`vencimientoPropuesto`) y se edita en la hoja del contacto. `guardar_proyecto` lo escribe solo si viene la clave: los datos nuevos de un contacto llevan `vencimiento_presupuesto: null` explícito.
+- `vencimiento_presupuesto` se propone al pasar a «a presupuestar» (`vencimientoPropuesto`, cinco días hábiles desde el relevamiento, o desde ese día si viene de un estimativo) y se edita en la hoja del contacto. `guardar_proyecto` lo escribe solo si viene la clave: los datos nuevos de un contacto llevan `vencimiento_presupuesto: null` explícito.
 - **En el celular la agenda no está en la barra** (decisión con el dueño, objeción en el ADR): se llega por el ícono al lado de la foto en el encabezado de Inicio y por «Hoy en la agenda», y «Anotar algo» es la primera acción del botón redondo.
 
 ## Avisos (ADR 0036)

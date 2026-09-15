@@ -35,6 +35,7 @@ import {
 
 const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
   contacto: 'Contacto',
+  presupuesto_estimativo: 'Estimativo enviado',
   relevamiento: 'Relevamiento',
   a_presupuestar: 'A presupuestar',
   presupuesto_enviado: 'Presupuesto enviado',
@@ -46,6 +47,7 @@ const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
 
 const ESTADO_TONO: Record<Proyecto['estado'], string> = {
   contacto: 'border-border text-text-2',
+  presupuesto_estimativo: 'border-border text-text-2',
   relevamiento: 'border-border text-text-2',
   a_presupuestar: 'border-border text-text-2',
   presupuesto_enviado: 'border-border text-text-2',

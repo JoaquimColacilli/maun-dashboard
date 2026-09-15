@@ -86,6 +86,11 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Paso del contacto anotado sin señal: se guarda solo cuando vuelva.',
     error: 'No se guardó el paso del contacto.',
   },
+  tareaDelPresupuesto: {
+    hecho: 'Tarea del presupuesto guardada.',
+    enCola: 'Tarea del presupuesto anotada sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la tarea del presupuesto.',
+  },
   contactoBorrado: {
     hecho: 'Contacto borrado.',
     enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',

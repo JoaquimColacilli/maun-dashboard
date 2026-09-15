@@ -15,10 +15,12 @@ import { Button, Campo, FilaDeAcciones, Hoja, MoneyInput } from '@/shared/ui';
 
 import {
   erroresDelContacto,
+  etiquetaDeLaVisita,
   hayQueGuardar,
   muestraElVencimiento,
   pedidoDelContacto,
   senaEditable,
+  valoresConOtraVisita,
   valoresDelContacto,
   type ErroresDelContacto,
   type ValoresDelContacto,
@@ -27,6 +29,7 @@ import {
 export interface HojaDeContactoProps {
   proyecto?: Proyecto;
   visitaInicial?: string;
+  enfocarLaVisita?: boolean;
   alCerrar: () => void;
   alGuardar?: (id: string) => void;
 }
@@ -34,6 +37,7 @@ export interface HojaDeContactoProps {
 export function HojaDeContacto({
   proyecto,
   visitaInicial,
+  enfocarLaVisita = false,
   alCerrar,
   alGuardar,
 }: HojaDeContactoProps) {
@@ -55,6 +59,7 @@ export function HojaDeContacto({
   const [errores, setErrores] = useState<ErroresDelContacto>({});
   const [rechazo, setRechazo] = useState<unknown>(null);
   const yaTermino = useRef(false);
+  const enfocarAlAbrir = useRef(enfocarLaVisita);
 
   const guardar = useMutation({
     ...MUTACION_DE_PROYECTO,
@@ -66,7 +71,8 @@ export function HojaDeContacto({
   const telefonoVisible = telefono ?? cliente?.telefono ?? '';
 
   useEffect(() => {
-    cuerpo.current?.querySelector<HTMLInputElement>('input')?.focus();
+    const selector = enfocarAlAbrir.current ? 'input[name="visita"]' : 'input';
+    cuerpo.current?.querySelector<HTMLInputElement>(selector)?.focus();
   }, []);
 
   useEffect(() => {
@@ -188,11 +194,13 @@ export function HojaDeContacto({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
-              etiqueta="Visita"
+              etiqueta={etiquetaDeLaVisita(proyecto, hoy)}
+              name="visita"
               type="date"
               value={valores.visita}
               onChange={(evento) => {
-                cambiar('visita', evento.target.value);
+                const visita = evento.target.value;
+                setValores((previos) => valoresConOtraVisita(proyecto, previos, visita, hoy));
               }}
               ayuda={
                 esContactoSinEtapa
@@ -232,7 +240,11 @@ export function HojaDeContacto({
               onChange={(evento) => {
                 cambiar('vencimiento', evento.target.value);
               }}
-              ayuda="Sale en la agenda hasta que marques que lo mandaste."
+              ayuda={
+                proyecto?.estado === 'a_presupuestar'
+                  ? 'Sale en la agenda hasta que lo mandes. Si cambiás el día del relevamiento se corre sola, salvo que la hayas puesto a mano.'
+                  : 'Sale en la agenda hasta que marques que lo mandaste.'
+              }
             />
           )}
 

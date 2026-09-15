@@ -60,6 +60,10 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    presupuesto_diseno: false,
+    presupuesto_despiece: false,
+    presupuesto_cotizacion: false,
+    presupuesto_pdf: false,
     ...extra,
   };
 }

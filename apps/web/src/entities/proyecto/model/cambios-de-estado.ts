@@ -30,6 +30,8 @@ function etiquetaDelCambio(desde: EstadoProyecto, hacia: EstadoSinLiquidar): str
   switch (hacia) {
     case 'contacto':
       return 'Volver a contacto';
+    case 'presupuesto_estimativo':
+      return 'Mandé un estimativo';
     case 'relevamiento':
       return 'Pasar a relevamiento';
     case 'a_presupuestar':
