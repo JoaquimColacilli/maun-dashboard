@@ -10,7 +10,12 @@ import {
   type Pago,
   type Proyecto,
 } from '@/entities/proyecto';
-import type { DatosDeProyecto, PagoParaGuardar, ProyectoParaGuardar } from '@/shared/api';
+import {
+  visitaHecha,
+  type DatosDeProyecto,
+  type PagoParaGuardar,
+  type ProyectoParaGuardar,
+} from '@/shared/api';
 import { fechaDelEnlace, hayCambios } from '@/shared/lib';
 
 export const CONCEPTO_DE_LA_SENA = 'Seña de la visita';
@@ -19,6 +24,7 @@ export interface ValoresDelContacto {
   clienteId: string;
   titulo: string;
   visita: string;
+  visitaHecha: boolean;
   sena: number | null;
   notas: string;
   vencimiento: string;
@@ -44,6 +50,7 @@ export function valoresDelContacto(
     clienteId: proyecto?.cliente_id ?? '',
     titulo: proyecto?.titulo ?? '',
     visita: proyecto?.fecha_visita ?? visitaInicial,
+    visitaHecha: proyecto === undefined ? false : visitaHecha(proyecto),
     sena: sena === undefined ? null : sena.monto_centavos,
     notas: proyecto?.notas ?? '',
     vencimiento: proyecto?.vencimiento_presupuesto ?? '',
@@ -80,6 +87,16 @@ export function etiquetaDeLaVisita(proyecto: Proyecto | undefined, hoy: string):
     : 'Visita';
 }
 
+export function ofreceMarcarLaVisita(
+  proyecto: Proyecto | undefined,
+  valores: ValoresDelContacto,
+  hoy: string,
+): boolean {
+  if (proyecto === undefined || proyecto.estado === 'contacto') return false;
+  const fecha = fechaDelEnlace(valores.visita);
+  return fecha !== undefined && fecha <= hoy;
+}
+
 function vencimientoDeLaVisita(visita: string, hoy: string): string | null {
   const fecha = fechaDelEnlace(visita);
   return fecha === undefined || fecha > hoy ? null : vencimientoDelPresupuesto(fecha);
@@ -91,7 +108,12 @@ export function valoresConOtraVisita(
   visita: string,
   hoy: string,
 ): ValoresDelContacto {
-  const siguientes = { ...valores, visita };
+  const fecha = fechaDelEnlace(visita);
+  const siguientes = {
+    ...valores,
+    visita,
+    visitaHecha: valores.visitaHecha && fecha !== undefined && fecha <= hoy,
+  };
   if (proyecto === undefined || proyecto.estado !== 'a_presupuestar') return siguientes;
 
   const propuestoAntes = vencimientoDeLaVisita(valores.visita, hoy);
@@ -111,6 +133,19 @@ function vencimientoDelContacto(
   if (escrito !== '') return escrito;
   if (proyecto !== undefined && proyecto.vencimiento_presupuesto !== null) return null;
   return vencimientoPropuesto(proyecto, estado, valores.visita.trim(), hoy);
+}
+
+function visitaHechaAlGuardar(
+  proyecto: Proyecto | undefined,
+  estado: EstadoProyecto,
+  valores: ValoresDelContacto,
+  hoy: string,
+): boolean {
+  const fecha = fechaDelEnlace(valores.visita.trim());
+  if (fecha === undefined || fecha > hoy) return false;
+  const quedaAPresupuestarPorLaFecha =
+    estado === 'a_presupuestar' && proyecto?.estado !== 'a_presupuestar';
+  return quedaAPresupuestarPorLaFecha || valores.visitaHecha;
 }
 
 export function erroresDelContacto(
@@ -146,6 +181,7 @@ const DATOS_DE_UN_CONTACTO_NUEVO: DatosDeProyecto = {
   direccion_entrega: '',
   notas: '',
   vencimiento_presupuesto: null,
+  visita_hecha: false,
 };
 
 function pagosDeLaSena(
@@ -205,6 +241,7 @@ export function pedidoDelContacto({
       titulo: valores.titulo.trim(),
       estado,
       fecha_visita: visita === '' ? null : visita,
+      visita_hecha: visitaHechaAlGuardar(proyecto, estado, valores, hoy),
       ultimo_contacto: ultimoContactoAlGuardar(proyecto, estado, hoy, visita === '' ? hoy : visita),
       notas: valores.notas.trim(),
       vencimiento_presupuesto: vencimientoDelContacto(proyecto, estado, valores, hoy),

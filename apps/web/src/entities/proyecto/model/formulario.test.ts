@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { FilaDe } from '@/shared/api';
 
 import { datosActualesDelProyecto } from './liquidacion';
-import { cambiaLaFila, valoresDelFormulario, versionDelGuardado } from './formulario';
+import {
+  cambiaLaFila,
+  datosDelFormulario,
+  valoresDelFormulario,
+  versionDelGuardado,
+} from './formulario';
 
 describe('valoresDelFormulario', () => {
   it('un proyecto nuevo que llega desde la agenda trae la entrega estimada de ese día, y si no, arranca vacío', () => {
@@ -14,6 +19,31 @@ describe('valoresDelFormulario', () => {
     expect(valoresDelFormulario(undefined, [], [], { hoy: '2026-09-14' }).entrega_estimada).toBe(
       '',
     );
+  });
+});
+
+describe('la visita hecha en el formulario grande', () => {
+  const HOY = '2026-09-14';
+
+  it('se conserva al guardar, aunque el formulario no la muestre', () => {
+    const valores = valoresDelFormulario(proyecto({ visita_hecha: true }), [], [], { hoy: HOY });
+    expect(valores.visita_hecha).toBe(true);
+    expect(datosDelFormulario(valores, HOY).visita_hecha).toBe(true);
+    expect(valoresDelFormulario(undefined, [], [], { hoy: HOY }).visita_hecha).toBe(false);
+  });
+
+  it('se apaga si la visita se mueve a un día que todavía no llegó o se borra', () => {
+    const valores = valoresDelFormulario(proyecto({ visita_hecha: true }), [], [], { hoy: HOY });
+    expect(datosDelFormulario({ ...valores, fecha_visita: '2026-09-20' }, HOY).visita_hecha).toBe(
+      false,
+    );
+    expect(datosDelFormulario({ ...valores, fecha_visita: '' }, HOY).visita_hecha).toBe(false);
+  });
+
+  it('una fila guardada en el dispositivo antes de la columna arranca sin la visita hecha', () => {
+    const vieja = proyecto();
+    delete (vieja as Partial<FilaDe<'proyectos'>>).visita_hecha;
+    expect(valoresDelFormulario(vieja, [], [], { hoy: HOY }).visita_hecha).toBe(false);
   });
 });
 
@@ -64,6 +94,10 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
     presupuesto_pdf: false,
+    visita_hecha: false,
+    visita_importante: false,
+    entrega_importante: false,
+    presupuesto_importante: false,
     ...extra,
   };
 }

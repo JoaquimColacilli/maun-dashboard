@@ -6,8 +6,10 @@ import {
   CONCEPTO_DE_LA_SENA,
   erroresDelContacto,
   hayQueGuardar,
+  ofreceMarcarLaVisita,
   pedidoDelContacto,
   senaEditable,
+  valoresConOtraVisita,
   valoresDelContacto,
   type ValoresDelContacto,
 } from './contacto';
@@ -19,6 +21,7 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     clienteId: 'c',
     titulo: 'Placard',
     visita: '',
+    visitaHecha: false,
     sena: null,
     notas: '',
     vencimiento: '',
@@ -73,6 +76,10 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
     presupuesto_pdf: false,
+    visita_hecha: false,
+    visita_importante: false,
+    entrega_importante: false,
+    presupuesto_importante: false,
     ...extra,
   };
 }
@@ -270,6 +277,80 @@ describe('valoresDelContacto', () => {
       hoy: HOY,
     });
     expect(pedido.datos.fecha_visita).toBe('2026-09-15');
+  });
+});
+
+describe('la visita hecha en la hoja del contacto', () => {
+  function pedido(
+    proyectoActual: FilaDe<'proyectos'> | undefined,
+    extra: Partial<ValoresDelContacto>,
+  ) {
+    return pedidoDelContacto({
+      id: 'p',
+      proyecto: proyectoActual,
+      valores: valores(extra),
+      sena: undefined,
+      idDeSenaNueva: 'x',
+      hoy: HOY,
+    });
+  }
+
+  it('cargar un contacto con la visita ya pasada la deja hecha; con la visita de hoy o por venir queda agendada, y sin visita, no', () => {
+    expect(pedido(undefined, { visita: '2026-09-10' }).datos.visita_hecha).toBe(true);
+    expect(pedido(undefined, { visita: HOY }).datos).toMatchObject({
+      estado: 'relevamiento',
+      visita_hecha: false,
+    });
+    expect(pedido(undefined, { visita: '2026-09-20' }).datos.visita_hecha).toBe(false);
+    expect(pedido(undefined, {}).datos.visita_hecha).toBe(false);
+  });
+
+  it('ponerle una fecha pasada a un contacto sin etapa lo pasa a presupuestar con la visita hecha', () => {
+    expect(pedido(proyecto(), { visita: '2026-09-11' }).datos).toMatchObject({
+      estado: 'a_presupuestar',
+      visita_hecha: true,
+    });
+  });
+
+  it('abrir la hoja trae la visita hecha, guardar sin tocarla no manda nada, y destildarla la apaga', () => {
+    const fila = proyecto({
+      estado: 'relevamiento',
+      fecha_visita: '2026-09-10',
+      visita_hecha: true,
+    });
+    const abiertos = valoresDelContacto(fila, undefined);
+    expect(abiertos.visitaHecha).toBe(true);
+
+    const igual = pedido(fila, abiertos);
+    expect(igual.datos.visita_hecha).toBe(true);
+    expect(hayQueGuardar(fila, igual)).toBe(false);
+
+    const destildada = pedido(fila, { ...abiertos, visitaHecha: false });
+    expect(destildada.datos).toMatchObject({ estado: 'relevamiento', visita_hecha: false });
+    expect(hayQueGuardar(fila, destildada)).toBe(true);
+  });
+
+  it('mover la visita a un día que todavía no llegó, o borrarla, la apaga; corregirla a otro día pasado, no', () => {
+    const fila = proyecto({
+      estado: 'presupuesto_enviado',
+      fecha_visita: '2026-09-10',
+      visita_hecha: true,
+    });
+    const abiertos = valoresDelContacto(fila, undefined);
+
+    expect(valoresConOtraVisita(fila, abiertos, '2026-09-08', HOY).visitaHecha).toBe(true);
+    expect(valoresConOtraVisita(fila, abiertos, '2026-09-20', HOY).visitaHecha).toBe(false);
+    expect(valoresConOtraVisita(fila, abiertos, '', HOY).visitaHecha).toBe(false);
+    expect(pedido(fila, { ...abiertos, visita: '2026-09-20' }).datos.visita_hecha).toBe(false);
+  });
+
+  it('la casilla aparece en un contacto que ya avanzó y con la visita ya pasada', () => {
+    const avanzado = proyecto({ estado: 'a_presupuestar' });
+    expect(ofreceMarcarLaVisita(avanzado, valores({ visita: '2026-09-10' }), HOY)).toBe(true);
+    expect(ofreceMarcarLaVisita(avanzado, valores({ visita: '2026-09-20' }), HOY)).toBe(false);
+    expect(ofreceMarcarLaVisita(avanzado, valores({ visita: '' }), HOY)).toBe(false);
+    expect(ofreceMarcarLaVisita(proyecto(), valores({ visita: '2026-09-10' }), HOY)).toBe(false);
+    expect(ofreceMarcarLaVisita(undefined, valores({ visita: '2026-09-10' }), HOY)).toBe(false);
   });
 });
 

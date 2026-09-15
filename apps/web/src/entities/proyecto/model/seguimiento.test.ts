@@ -70,6 +70,10 @@ function proyecto(id: string, extra: Partial<Proyecto> = {}): Proyecto {
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
     presupuesto_pdf: false,
+    visita_hecha: false,
+    visita_importante: false,
+    entrega_importante: false,
+    presupuesto_importante: false,
     ...extra,
   };
 }
@@ -411,6 +415,21 @@ describe('yaSeRelevo', () => {
       yaSeRelevo(proyecto('p', { estado: 'presupuesto_enviado', fecha_visita: '2026-09-20' }), HOY),
     ).toBe(false);
     expect(yaSeRelevo(proyecto('p', { estado: 'a_presupuestar' }), HOY)).toBe(false);
+  });
+
+  it('con la visita anotada como hecha, volver a relevamiento o a contacto no la des-completa', () => {
+    for (const estado of ['relevamiento', 'contacto', 'en_curso'] as const) {
+      expect(
+        yaSeRelevo(proyecto('p', { estado, fecha_visita: '2026-09-10', visita_hecha: true }), HOY),
+        estado,
+      ).toBe(true);
+    }
+    expect(
+      yaSeRelevo(
+        proyecto('p', { estado: 'relevamiento', fecha_visita: '2026-09-20', visita_hecha: true }),
+        HOY,
+      ),
+    ).toBe(false);
   });
 });
 

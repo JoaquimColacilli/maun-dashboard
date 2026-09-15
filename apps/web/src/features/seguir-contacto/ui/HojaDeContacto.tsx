@@ -19,6 +19,7 @@ import {
   hayCambiosEnElContacto,
   hayQueGuardar,
   muestraElVencimiento,
+  ofreceMarcarLaVisita,
   pedidoDelContacto,
   senaEditable,
   valoresConOtraVisita,
@@ -238,6 +239,26 @@ export function HojaDeContacto({
                 />
               )}
             </div>
+
+            {ofreceMarcarLaVisita(proyecto, valores, hoy) && (
+              <label className="-mt-1 flex min-h-tap cursor-pointer items-start gap-3 py-1">
+                <input
+                  type="checkbox"
+                  checked={valores.visitaHecha}
+                  onChange={(evento) => {
+                    cambiar('visitaHecha', evento.target.checked);
+                  }}
+                  className="mt-0.5 size-5 flex-none accent-ink"
+                />
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-body font-medium text-ink">Ya fui a relevar</span>
+                  <span className="text-meta text-text-3">
+                    En la agenda la visita queda tachada. Si no fuiste, destildala y vuelve a quedar
+                    pendiente.
+                  </span>
+                </span>
+              </label>
+            )}
 
             {muestraElVencimiento(proyecto) && (
               <Campo
