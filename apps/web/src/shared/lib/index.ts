@@ -66,6 +66,7 @@ export { useScrollPorPantalla } from './scroll';
 export { useAlgoEnCurso, useHayAlgoEnCurso } from './en-curso';
 export { useTirarParaActualizar, type FaseDelTiron, type Tiron } from './tirar-para-actualizar';
 export { formatearPesos } from './plata';
+export { hayCambios } from './cambios';
 export {
   codificarLienzo,
   decodificarImagen,

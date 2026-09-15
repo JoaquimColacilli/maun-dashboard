@@ -43,3 +43,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0037](0037-tocar-un-aviso-vuelve-sin-pedir-la-huella.md)       | Tocar un aviso vuelve a la app sin pedir la huella           | Aceptada             |
 | [0038](0038-el-embudo-del-seguimiento.md)                       | El embudo: estimativo, tareas de presupuestar y el pago      | Aceptada             |
 | [0039](0039-archivos-de-los-trabajos.md)                        | Archivos de los trabajos: achicados, por el CDN y con tope   | Aceptada             |
+| [0040](0040-preguntar-antes-de-descartar.md)                    | Un formulario en hoja pregunta antes de descartar            | Aceptada             |

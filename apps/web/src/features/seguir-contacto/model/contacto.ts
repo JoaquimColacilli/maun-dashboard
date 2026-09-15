@@ -11,7 +11,7 @@ import {
   type Proyecto,
 } from '@/entities/proyecto';
 import type { DatosDeProyecto, PagoParaGuardar, ProyectoParaGuardar } from '@/shared/api';
-import { fechaDelEnlace } from '@/shared/lib';
+import { fechaDelEnlace, hayCambios } from '@/shared/lib';
 
 export const CONCEPTO_DE_LA_SENA = 'Seña de la visita';
 
@@ -48,6 +48,21 @@ export function valoresDelContacto(
     notas: proyecto?.notas ?? '',
     vencimiento: proyecto?.vencimiento_presupuesto ?? '',
   };
+}
+
+function recortados(valores: ValoresDelContacto): ValoresDelContacto {
+  return { ...valores, titulo: valores.titulo.trim(), notas: valores.notas.trim() };
+}
+
+export function hayCambiosEnElContacto(
+  iniciales: ValoresDelContacto,
+  actuales: ValoresDelContacto,
+  telefonoDelCliente: string,
+  telefonoEscrito: string | undefined,
+): boolean {
+  const cambioElTelefono =
+    telefonoEscrito !== undefined && telefonoEscrito.trim() !== telefonoDelCliente.trim();
+  return cambioElTelefono || hayCambios(recortados(iniciales), recortados(actuales));
 }
 
 export function muestraElVencimiento(proyecto: Proyecto | undefined): boolean {

@@ -1,7 +1,7 @@
 import { estaLiquidado, type CategoriaPropia } from '@maun/domain';
 
 import type { AnotacionNueva, FilaDe } from '@/shared/api';
-import { fechaDelEnlace } from '@/shared/lib';
+import { fechaDelEnlace, hayCambios } from '@/shared/lib';
 
 export const LARGO_MAXIMO_DEL_TEXTO = 500;
 
@@ -28,6 +28,17 @@ export function valoresIniciales(fecha: string): ValoresDeLaAnotacion {
     proyectoId: '',
     importante: false,
   };
+}
+
+function conElTextoRecortado(valores: ValoresDeLaAnotacion): ValoresDeLaAnotacion {
+  return { ...valores, texto: valores.texto.trim() };
+}
+
+export function hayCambiosEnLaAnotacion(
+  inicial: ValoresDeLaAnotacion,
+  actual: ValoresDeLaAnotacion,
+): boolean {
+  return hayCambios(conElTextoRecortado(inicial), conElTextoRecortado(actual));
 }
 
 export function esFecha(valor: string | null): valor is string {

@@ -246,6 +246,11 @@ src/
   CSS (`@starting-style` y `transition-behavior: allow-discrete`). Para que la salida se vea, quien la
   abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. jsdom no tiene
   `showModal`: el polyfill vive en `vitest.setup.ts`.
+- **Un formulario en `Hoja` le pasa `conCambios`, y su «Cancelar» llama a `pedirCierre`** (ADR 0040), que
+  la hoja le da cuando `children` es una función. Con cambios, tocar afuera, Escape, la cruz y «Cancelar»
+  preguntan «¿Cerrar sin guardar?»; sin cambios cierran de una. Los cambios se miden contra lo que había al
+  abrir, con los textos recortados (`hayCambios`), o con `isDirty` si es react-hook-form. No uses
+  `confirm()` ni un segundo modal encima.
 - **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). Es una diferencia
   deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
   «arregles».

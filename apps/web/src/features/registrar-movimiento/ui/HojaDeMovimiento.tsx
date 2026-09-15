@@ -17,6 +17,7 @@ import {
 import { mensajeDeSincronizacion, type CambiosDeMovimiento, type FilaDe } from '@/shared/api';
 import {
   formatearPesos,
+  hayCambios,
   hoyLocal,
   metaDeAvisos,
   TESORO,
@@ -88,14 +89,21 @@ export function HojaDeMovimiento({
   const hoy = hoyLocal();
   const ayer = ayerLocal(hoy);
 
-  const inicial = movimiento ? claseDeLaFila(movimiento) : (claseInicial ?? 'gasto_hogar');
-  const [clase, setClase] = useState<ClaseDeMovimiento>(inicial);
-  const [categoria, setCategoria] = useState(
-    () => movimiento?.categoria ?? CLASE[inicial].categorias[0] ?? '',
-  );
-  const [descripcion, setDescripcion] = useState(movimiento?.descripcion ?? '');
-  const [monto, setMonto] = useState<number | null>(movimiento?.monto_centavos ?? null);
-  const [fecha, setFecha] = useState(movimiento?.fecha ?? hoy);
+  const [iniciales] = useState(() => {
+    const clase = movimiento ? claseDeLaFila(movimiento) : (claseInicial ?? 'gasto_hogar');
+    return {
+      clase,
+      categoria: movimiento?.categoria ?? CLASE[clase].categorias[0] ?? '',
+      descripcion: movimiento?.descripcion ?? '',
+      monto: movimiento?.monto_centavos ?? null,
+      fecha: movimiento?.fecha ?? hoy,
+    };
+  });
+  const [clase, setClase] = useState<ClaseDeMovimiento>(iniciales.clase);
+  const [categoria, setCategoria] = useState(iniciales.categoria);
+  const [descripcion, setDescripcion] = useState(iniciales.descripcion);
+  const [monto, setMonto] = useState<number | null>(iniciales.monto);
+  const [fecha, setFecha] = useState(iniciales.fecha);
   const [error, setError] = useState<string | undefined>(undefined);
   const [confirmandoBaja, setConfirmandoBaja] = useState(false);
 
@@ -187,7 +195,14 @@ export function HojaDeMovimiento({
   }
 
   return (
-    <Hoja titulo={movimiento ? 'Editar el movimiento' : 'Cargar un movimiento'} alCerrar={alCerrar}>
+    <Hoja
+      titulo={movimiento ? 'Editar el movimiento' : 'Cargar un movimiento'}
+      alCerrar={alCerrar}
+      conCambios={hayCambios(
+        { ...iniciales, descripcion: iniciales.descripcion.trim() },
+        { clase, categoria, descripcion: descripcion.trim(), monto, fecha },
+      )}
+    >
       <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 md:px-6 md:py-5">
           <Segmentado grupo={datos.grupo} alElegir={elegirGrupo} />

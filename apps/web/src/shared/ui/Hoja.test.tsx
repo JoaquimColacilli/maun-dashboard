@@ -33,6 +33,42 @@ function Prueba({ alCerrar = () => undefined }: { alCerrar?: () => void }) {
   );
 }
 
+function FormularioEnHoja({ alCerrar = () => undefined }: { alCerrar?: () => void }) {
+  const [abierta, setAbierta] = useState(true);
+  const [texto, setTexto] = useState('');
+  return (
+    <ConSalida valor={abierta}>
+      {() => (
+        <Hoja
+          titulo="Anotar algo"
+          conCambios={texto !== ''}
+          alCerrar={() => {
+            alCerrar();
+            setAbierta(false);
+          }}
+        >
+          {(pedirCierre) => (
+            <>
+              <label>
+                Qué hay que hacer
+                <input
+                  value={texto}
+                  onChange={(evento) => {
+                    setTexto(evento.target.value);
+                  }}
+                />
+              </label>
+              <button type="button" onClick={pedirCierre}>
+                Cancelar
+              </button>
+            </>
+          )}
+        </Hoja>
+      )}
+    </ConSalida>
+  );
+}
+
 describe('la hoja', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -80,6 +116,86 @@ describe('la hoja', () => {
       vi.advanceTimersByTime(500);
     });
     expect(screen.queryByText('Contenido')).not.toBeInTheDocument();
+  });
+
+  it('un formulario intacto se cierra sin preguntar, con Escape, con el fondo, con la X y con Cancelar', () => {
+    for (const cerrar of [
+      (hoja: HTMLElement) => fireEvent(hoja, new Event('cancel', { cancelable: true })),
+      (hoja: HTMLElement) => {
+        fireEvent.pointerDown(hoja);
+        fireEvent.click(hoja);
+      },
+      () => fireEvent.click(screen.getByRole('button', { name: 'Cerrar' })),
+      () => fireEvent.click(screen.getByRole('button', { name: 'Cancelar' })),
+    ]) {
+      const alCerrar = vi.fn();
+      const { unmount } = render(<FormularioEnHoja alCerrar={alCerrar} />);
+      cerrar(screen.getByRole('dialog', { name: 'Anotar algo' }));
+      expect(alCerrar).toHaveBeenCalledOnce();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('con algo escrito, cualquier forma de cerrar pregunta antes, y seguir editando conserva lo escrito', () => {
+    for (const cerrar of [
+      (hoja: HTMLElement) => fireEvent(hoja, new Event('cancel', { cancelable: true })),
+      (hoja: HTMLElement) => {
+        fireEvent.pointerDown(hoja);
+        fireEvent.click(hoja);
+      },
+      () => fireEvent.click(screen.getByRole('button', { name: 'Cerrar' })),
+      () => fireEvent.click(screen.getByRole('button', { name: 'Cancelar' })),
+    ]) {
+      const alCerrar = vi.fn();
+      const { unmount } = render(<FormularioEnHoja alCerrar={alCerrar} />);
+      const hoja = screen.getByRole('dialog', { name: 'Anotar algo' });
+      fireEvent.change(screen.getByLabelText('Qué hay que hacer'), {
+        target: { value: 'Comprar tornillos' },
+      });
+
+      cerrar(hoja);
+      const pregunta = screen.getByRole('alertdialog', { name: '¿Cerrar sin guardar?' });
+      expect(alCerrar).not.toHaveBeenCalled();
+      expect(hoja).toHaveAttribute('open');
+      expect(screen.getByRole('button', { name: 'Seguir editando' })).toHaveFocus();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Seguir editando' }));
+      expect(pregunta).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Qué hay que hacer')).toHaveValue('Comprar tornillos');
+      unmount();
+    }
+  });
+
+  it('descartar cierra, y un segundo Escape con la pregunta a la vista vuelve a editar', () => {
+    const alCerrar = vi.fn();
+    render(<FormularioEnHoja alCerrar={alCerrar} />);
+    const hoja = screen.getByRole('dialog', { name: 'Anotar algo' });
+    fireEvent.change(screen.getByLabelText('Qué hay que hacer'), { target: { value: 'Algo' } });
+
+    fireEvent(hoja, new Event('cancel', { cancelable: true }));
+    fireEvent(hoja, new Event('cancel', { cancelable: true }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(alCerrar).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Descartar' }));
+    expect(alCerrar).toHaveBeenCalledOnce();
+    expect(hoja).not.toHaveAttribute('open');
+  });
+
+  it('si el navegador la cierra solo con algo escrito, la vuelve a abrir y pregunta', () => {
+    const alCerrar = vi.fn();
+    render(<FormularioEnHoja alCerrar={alCerrar} />);
+    const hoja = screen.getByRole<HTMLDialogElement>('dialog', { name: 'Anotar algo' });
+    fireEvent.change(screen.getByLabelText('Qué hay que hacer'), { target: { value: 'Algo' } });
+
+    act(() => {
+      hoja.close();
+    });
+    expect(hoja).toHaveAttribute('open');
+    expect(screen.getByRole('alertdialog', { name: '¿Cerrar sin guardar?' })).toBeInTheDocument();
+    expect(alCerrar).not.toHaveBeenCalled();
   });
 
   it('se puede volver a abrir mientras sale', () => {
