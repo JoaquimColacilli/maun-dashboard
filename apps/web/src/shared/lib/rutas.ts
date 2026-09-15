@@ -1,4 +1,4 @@
-import type { Tesoro } from '@maun/domain';
+import { sumarDias, type Tesoro } from '@maun/domain';
 
 import { TESOROS_EN_ORDEN } from './tesoros';
 
@@ -24,11 +24,36 @@ export function rutaDeAprobacion(id: string): string {
 
 export const RUTA_DE_PROYECTO_NUEVO = '/proyectos/nuevo';
 
+export const PARAMETRO_DE_ENTREGA = 'entrega';
+
+export function rutaDeProyectoNuevo(entrega?: string): string {
+  return entrega === undefined
+    ? RUTA_DE_PROYECTO_NUEVO
+    : `${RUTA_DE_PROYECTO_NUEVO}?${new URLSearchParams({ [PARAMETRO_DE_ENTREGA]: entrega }).toString()}`;
+}
+
 export const RUTA_DE_PROYECTOS = '/proyectos';
 
 export const RUTA_DE_SEGUIMIENTO = '/seguimiento';
 
 export const RUTA_DE_CONTACTO_NUEVO = '/seguimiento/nuevo';
+
+export const PARAMETRO_DE_VISITA = 'visita';
+
+export function rutaDeContactoNuevo(visita?: string): string {
+  return visita === undefined
+    ? RUTA_DE_CONTACTO_NUEVO
+    : `${RUTA_DE_CONTACTO_NUEVO}?${new URLSearchParams({ [PARAMETRO_DE_VISITA]: visita }).toString()}`;
+}
+
+export function fechaDelEnlace(valor: string | null): string | undefined {
+  if (valor === null || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return undefined;
+  try {
+    return sumarDias(valor, 0) === valor ? valor : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export const RUTA_DE_FINANZAS = '/finanzas';
 

@@ -7,6 +7,7 @@ import {
   crearCliente,
   guardarProyectoPorRpc,
   iniciarSesionDePrueba,
+  leerProyecto,
   vaciarTaller,
   type SesionDePrueba,
 } from '../apoyo/taller';
@@ -429,6 +430,123 @@ test('en el celular, cada día con cosas tiene su botón para anotar, que abre l
     .poll(async () => (await anotacionesDelTaller(sesion)).map((fila) => [fila.texto, fila.fecha]))
     .toContainEqual(['E2E Pasar a buscar los tornillos', fecha]);
   await page.screenshot({ path: testInfo.outputPath('agenda-celular-anotado-en-el-dia.png') });
+});
+
+async function abrirAnotar(page: Page, isMobile: boolean): Promise<Locator> {
+  if (isMobile) {
+    await page
+      .getByRole('navigation', { name: 'Principal' })
+      .getByRole('button', { name: 'Cargar algo nuevo' })
+      .click();
+    await page.getByRole('menuitem', { name: 'Anotar algo' }).click();
+  } else {
+    await page.getByRole('button', { name: 'Anotar algo', exact: true }).click();
+  }
+  const hoja = page.getByRole('dialog', { name: 'Anotar algo' });
+  await expect(hoja).toBeVisible();
+  return hoja;
+}
+
+function caminosDe(lugar: Locator): Locator {
+  return lugar.getByRole('list', { name: /Las visitas y las entregas no se anotan/ });
+}
+
+test('desde «Anotar algo», el camino al contacto lleva la visita del día elegido, y la visita aparece en la agenda', async ({
+  page,
+  isMobile,
+}, testInfo) => {
+  const lugar = isMobile ? 'celular' : 'escritorio';
+  const fecha = otroDiaDelMes();
+  await crearCliente(sesion, 'E2E Nora Paz');
+  await abrirLaAgenda(page);
+
+  const hoja = await abrirAnotar(page, isMobile);
+  await hoja.getByLabel('Otro día').fill(fecha);
+  await expect(hoja.getByRole('radio')).toHaveCount(2);
+  const caminos = caminosDe(hoja);
+  await expect(caminos.getByRole('link')).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-caminos-${lugar}-anotar.png`) });
+
+  await caminos.getByRole('link', { name: /Cargar un contacto de seguimiento/ }).click();
+  const alta = page.getByRole('dialog', { name: 'Cargar contacto' });
+  await expect(alta).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Anotar algo' })).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/seguimiento/nuevo\\?visita=${fecha}$`));
+  await expect(alta.getByLabel('Visita', { exact: true })).toHaveValue(fecha);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-caminos-${lugar}-contacto.png`) });
+
+  await alta.getByRole('combobox', { name: 'Cliente' }).fill('E2E Nora');
+  await alta
+    .getByRole('option', { name: /E2E Nora Paz/ })
+    .first()
+    .click();
+  await alta.getByLabel('Qué pide').fill('E2E Vestidor de la visita');
+  await alta.getByRole('button', { name: 'Guardar contacto' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('E2E Vestidor de la visita');
+  await expect
+    .poll(async () => (await leerProyecto(sesion, 'E2E Vestidor de la visita'))?.id)
+    .toBeDefined();
+
+  await abrirLaAgenda(page);
+  if (isMobile) {
+    await expect(page.getByRole('region', { name: diaEnPalabras(fecha) })).toContainText(
+      'E2E Vestidor de la visita',
+    );
+  } else {
+    await expect(
+      celda(page, fecha).getByRole('button', { name: /E2E Vestidor de la visita/ }),
+    ).toBeVisible();
+  }
+});
+
+test('un día libre ofrece los mismos caminos, y el proyecto sale con la entrega estimada de ese día', async ({
+  page,
+  isMobile,
+}, testInfo) => {
+  const lugar = isMobile ? 'celular' : 'escritorio';
+  const fecha = otroDiaDelMes();
+  await crearCliente(sesion, 'E2E Marcela Sosa');
+  await crearAnotacionPorRest(sesion, {
+    fecha: fecha === HOY ? diaVecino() : HOY,
+    texto: 'E2E Algo en otro día',
+  });
+  await abrirLaAgenda(page);
+
+  const detalle = await abrirElDia(page, isMobile, fecha);
+  await expect(detalle.getByText('Este día está libre')).toBeVisible();
+  const caminos = caminosDe(detalle);
+  await expect(caminos.getByRole('link')).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-caminos-${lugar}-dia-libre.png`) });
+
+  await caminos.getByRole('link', { name: /Cargar un proyecto/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/proyectos/nuevo\\?entrega=${fecha}$`));
+  await expect(page.getByLabel('Entrega estimada')).toHaveValue(fecha);
+  await expect(page.getByText('Calculada a 21 días hábiles del inicio.')).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath(`agenda-caminos-${lugar}-proyecto.png`) });
+
+  await page.getByRole('combobox', { name: 'Cliente' }).fill('E2E Marcela');
+  await page
+    .getByRole('option', { name: /E2E Marcela Sosa/ })
+    .first()
+    .click();
+  await page.getByLabel('Trabajo').fill('E2E Cocina para ese día');
+  await expect(page.getByLabel('Entrega estimada')).toHaveValue(fecha);
+  await page.getByRole('button', { name: 'Guardar proyecto' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('E2E Cocina para ese día');
+  await expect
+    .poll(async () => (await leerProyecto(sesion, 'E2E Cocina para ese día'))?.id)
+    .toBeDefined();
+
+  await abrirLaAgenda(page);
+  if (isMobile) {
+    await expect(page.getByRole('region', { name: diaEnPalabras(fecha) })).toContainText(
+      'E2E Cocina para ese día',
+    );
+  } else {
+    await expect(
+      celda(page, fecha).getByRole('button', { name: /E2E Cocina para ese día/ }),
+    ).toBeVisible();
+  }
 });
 
 function diaVecino(): string {

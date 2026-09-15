@@ -12,6 +12,7 @@ import {
   resumenDelDia,
   diaEnPalabras,
 } from '../model/calendario';
+import { CaminosALosTrabajos } from './CaminosALosTrabajos';
 import { FilaDeEvento, type AccionesDeLaAgenda } from './FilaDeEvento';
 import { useAccionesConFoco } from './useAccionesConFoco';
 
@@ -27,6 +28,7 @@ export interface DetalleDelDiaProps {
   acciones: AccionesDeLaAgenda;
   alAnotar: () => void;
   alCerrar?: () => void;
+  alIrAUnTrabajo?: () => void;
   conEncabezado?: boolean;
   aviso?: AvisoDelDia | null;
   alDescartarElAviso?: () => void;
@@ -39,6 +41,7 @@ export function DetalleDelDia({
   acciones,
   alAnotar,
   alCerrar,
+  alIrAUnTrabajo,
   conEncabezado = true,
   aviso = null,
   alDescartarElAviso,
@@ -85,12 +88,13 @@ export function DetalleDelDia({
       <div className="min-h-0 flex-1 overflow-y-auto px-5 md:px-5.5">
         {!conEncabezado && <p className="pt-3 text-label text-text-2">{resumenDelDia(eventos)}</p>}
         {eventos.length === 0 ? (
-          <div className="flex flex-col items-start gap-2.5 pt-5.5 pb-1.5">
+          <div className="flex flex-col gap-2.5 pt-5.5 pb-3">
             <p className="text-body-lg font-semibold">Este día está libre</p>
             <p className="max-w-[340px] text-body leading-relaxed text-text-2">
               No hay entregas ni visitas, y todavía no anotaste nada. Si tenés que comprar algo o
               dejar algo listo, anotalo.
             </p>
+            <CaminosALosTrabajos fecha={fecha} alIr={alIrAUnTrabajo} />
           </div>
         ) : (
           <>

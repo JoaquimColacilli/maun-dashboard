@@ -36,11 +36,12 @@ export function senaEditable(pagos: readonly Pago[]): Pago | undefined {
 export function valoresDelContacto(
   proyecto: Proyecto | undefined,
   sena: Pago | undefined,
+  visitaInicial = '',
 ): ValoresDelContacto {
   return {
     clienteId: proyecto?.cliente_id ?? '',
     titulo: proyecto?.titulo ?? '',
-    visita: proyecto?.fecha_visita ?? '',
+    visita: proyecto?.fecha_visita ?? visitaInicial,
     sena: sena === undefined ? null : sena.monto_centavos,
     notas: proyecto?.notas ?? '',
     vencimiento: proyecto?.vencimiento_presupuesto ?? '',

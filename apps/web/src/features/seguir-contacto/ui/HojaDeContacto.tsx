@@ -26,11 +26,17 @@ import {
 
 export interface HojaDeContactoProps {
   proyecto?: Proyecto;
+  visitaInicial?: string;
   alCerrar: () => void;
   alGuardar?: (id: string) => void;
 }
 
-export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContactoProps) {
+export function HojaDeContacto({
+  proyecto,
+  visitaInicial,
+  alCerrar,
+  alGuardar,
+}: HojaDeContactoProps) {
   const replica = useReplicaDelTaller();
   const idCampos = useId();
   const cuerpo = useRef<HTMLDivElement>(null);
@@ -43,7 +49,7 @@ export function HojaDeContacto({ proyecto, alCerrar, alGuardar }: HojaDeContacto
 
   const alAbrir = useRef({ id: proyecto?.id ?? uuidv7(), idDeSenaNueva: uuidv7() });
   const [valores, setValores] = useState<ValoresDelContacto>(() =>
-    valoresDelContacto(proyecto, sena),
+    valoresDelContacto(proyecto, sena, visitaInicial),
   );
   const [telefono, setTelefono] = useState<string | undefined>(undefined);
   const [errores, setErrores] = useState<ErroresDelContacto>({});

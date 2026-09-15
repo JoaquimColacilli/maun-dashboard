@@ -246,6 +246,29 @@ describe('pedidoDelContacto', () => {
   });
 });
 
+describe('valoresDelContacto', () => {
+  it('un contacto nuevo que llega desde la agenda trae la visita de ese día, y si no, arranca vacío', () => {
+    expect(valoresDelContacto(undefined, undefined, '2026-09-15').visita).toBe('2026-09-15');
+    expect(valoresDelContacto(undefined, undefined).visita).toBe('');
+  });
+
+  it('la visita que trae viaja en el pedido como fecha de la visita', () => {
+    const pedido = pedidoDelContacto({
+      id: 'p',
+      proyecto: undefined,
+      valores: {
+        ...valoresDelContacto(undefined, undefined, '2026-09-15'),
+        clienteId: 'c',
+        titulo: 'Vestidor',
+      },
+      sena: undefined,
+      idDeSenaNueva: 'x',
+      hoy: HOY,
+    });
+    expect(pedido.datos.fecha_visita).toBe('2026-09-15');
+  });
+});
+
 describe('senaEditable', () => {
   it('solo es editable desde acá cuando hay un pago, no ninguno ni varios', () => {
     expect(senaEditable([])).toBeUndefined();

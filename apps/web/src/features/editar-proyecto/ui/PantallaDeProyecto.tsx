@@ -56,9 +56,14 @@ function rutaAlTerminar(id: string, volverALiquidar: 'cierre' | 'cobro' | null):
 export interface PantallaDeProyectoProps {
   proyectoId?: string;
   clienteInicial?: string;
+  entregaInicial?: string;
 }
 
-export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDeProyectoProps) {
+export function PantallaDeProyecto({
+  proyectoId,
+  clienteInicial,
+  entregaInicial,
+}: PantallaDeProyectoProps) {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
   const ancho = useAnchoDePantalla();
@@ -107,6 +112,7 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
             ? undefined
             : comprobanteDeLaCondicion(clienteDeArranque.condicion_fiscal),
         direccion: clienteDeArranque?.direccion,
+        entrega: entregaInicial,
         hoy,
       },
     ),
@@ -124,7 +130,9 @@ export function PantallaDeProyecto({ proyectoId, clienteInicial }: PantallaDePro
   const filasDeGastos = useWatch({ control, name: 'gastos' });
 
   const cliente = clientes.find((fila) => fila.id === clienteId);
-  const [entregaAuto, setEntregaAuto] = useState(proyecto?.entrega_estimada == null);
+  const [entregaAuto, setEntregaAuto] = useState(
+    proyecto?.entrega_estimada == null && entregaInicial === undefined,
+  );
   const [comprobanteAuto, setComprobanteAuto] = useState(proyecto === undefined);
 
   useEffect(() => {

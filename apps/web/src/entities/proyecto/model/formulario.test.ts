@@ -3,7 +3,19 @@ import { describe, expect, it } from 'vitest';
 import type { FilaDe } from '@/shared/api';
 
 import { datosActualesDelProyecto } from './liquidacion';
-import { cambiaLaFila, versionDelGuardado } from './formulario';
+import { cambiaLaFila, valoresDelFormulario, versionDelGuardado } from './formulario';
+
+describe('valoresDelFormulario', () => {
+  it('un proyecto nuevo que llega desde la agenda trae la entrega estimada de ese día, y si no, arranca vacío', () => {
+    expect(
+      valoresDelFormulario(undefined, [], [], { hoy: '2026-09-14', entrega: '2026-10-01' })
+        .entrega_estimada,
+    ).toBe('2026-10-01');
+    expect(valoresDelFormulario(undefined, [], [], { hoy: '2026-09-14' }).entrega_estimada).toBe(
+      '',
+    );
+  });
+});
 
 function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'> {
   return {
