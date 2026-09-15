@@ -20,8 +20,14 @@ para la cruz. Vale para todo formulario que se abra en hoja.
 - **La pregunta va adentro del mismo `<dialog>`, abajo, y no en un segundo modal.** Un `showModal` encima de
   otro complica el foco y la salida animada, y en el celular la pregunta queda donde está el pulgar. Con la
   pregunta a la vista, tocar afuera no hace nada y Escape es seguir editando.
-- Si el navegador cierra el `<dialog>` sin pasar por `cancel` (Chrome lo hace, por ejemplo, con un segundo
-  Escape sin otro gesto en el medio), la hoja se vuelve a abrir y pregunta.
+- **Chrome no deja frenar un segundo Escape si no hubo otro gesto en el medio:** manda un `cancel` que no
+  se puede cancelar y enseguida cierra el `<dialog>`. La hoja ignora ese `cancel`, se vuelve a abrir en el
+  `close` y recién ahí decide: con la pregunta a la vista, sigue editando; sin ella, pregunta. Antes de
+  este cambio el `cancel` cerraba la pregunta y el `close` la volvía a abrir. Lo encontró el e2e; el test
+  unitario manda los dos eventos.
+- **Una hoja que se vuelve a abrir mientras todavía sale se monta de nuevo:** `ConSalida` le da una key a
+  cada apertura. Sin eso, la segunda apertura heredaba el estado de la primera, y «Editar el contacto»
+  reabierta en esos 400 ms no se cerraba al guardar.
 - **«Algo que perder» es distinto de lo que había al abrir**, campo por campo (`hayCambios`), con los textos
   recortados: escribir espacios no cuenta, y escribir y borrar vuelve a no tener cambios. Editar algo ya
   cargado y no tocar nada tampoco pregunta. El formulario con react-hook-form usa `isDirty`, que compara

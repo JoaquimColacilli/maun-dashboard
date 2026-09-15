@@ -254,7 +254,7 @@ src/
   defecto de `HOJAS_POR_RUTA`. No vuelvas a un `?volverA=`: el fondo viaja en el `state`.
 - **Toda hoja es `Hoja` de `@/shared/ui`**, un `<dialog>` nativo con `showModal`, y entra y sale con
   CSS (`@starting-style` y `transition-behavior: allow-discrete`). Para que la salida se vea, quien la
-  abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. jsdom no tiene
+  abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. Si se vuelve a abrir mientras sale, `ConSalida` la monta de nuevo: una apertura nunca hereda el estado de la anterior (ADR 0040). jsdom no tiene
   `showModal`: el polyfill vive en `vitest.setup.ts`.
 - **Un formulario en `Hoja` le pasa `conCambios`, y su «Cancelar» llama a `pedirCierre`** (ADR 0040), que
   la hoja le da cuando `children` es una función. Con cambios, tocar afuera, Escape, la cruz y «Cancelar»
