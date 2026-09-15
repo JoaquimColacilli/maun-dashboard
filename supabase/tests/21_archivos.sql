@@ -4,7 +4,7 @@
 -- SQL (Storage lo bloquea con protect_objects_delete); su política está en la lista de
 -- 15_fotos_de_perfil.sql.
 
-select plan(21);
+select plan(22);
 
 -- El bucket ------------------------------------------------------------------------------------------------
 
