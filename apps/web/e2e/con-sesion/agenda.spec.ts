@@ -383,6 +383,54 @@ test('la agenda se recorre con el teclado', async ({ page, isMobile }) => {
   await expect(dia).toBeFocused();
 });
 
+test('en el celular, cada día con cosas tiene su botón para anotar, que abre la hoja con ese día', async ({
+  page,
+  isMobile,
+}, testInfo) => {
+  test.skip(!isMobile, 'la lista por día es del celular');
+  const fecha = otroDiaDelMes();
+  await crearAnotacionPorRest(sesion, {
+    fecha,
+    texto: 'E2E Traer las manijas',
+    categoria: 'materiales',
+  });
+  await abrirLaAgenda(page);
+
+  const delDia = page.getByRole('region', { name: diaEnPalabras(fecha) });
+  const anotar = delDia.getByRole('button', {
+    name: `Anotar algo para el ${diaEnPalabras(fecha)}`,
+  });
+  await expect(anotar).toBeVisible();
+  await expect(anotar).toHaveText('Anotar');
+  if (fecha !== HOY) {
+    await expect(
+      page.getByRole('button', { name: `Anotar algo para el ${diaEnPalabras(HOY)}` }),
+    ).toHaveCount(1);
+  }
+  const caja = await cajaDe(anotar);
+  console.log(
+    `celular: «Anotar» del ${fecha} mide ${String(caja.width)}×${String(caja.height)} px en x=${String(caja.x)}, y=${String(caja.y)}`,
+  );
+  await page.screenshot({ path: testInfo.outputPath('agenda-celular-anotar-en-el-dia.png') });
+
+  await page.getByRole('main').focus();
+  expect(await tabularHasta(page, anotar)).toBe(true);
+  await page.keyboard.press('Enter');
+  const hoja = page.getByRole('dialog', { name: 'Anotar algo' });
+  await expect(hoja).toBeVisible();
+  await expect(hoja.getByLabel('Otro día')).toHaveValue(fecha);
+  await hoja.getByLabel('Qué hay que hacer').fill('E2E Pasar a buscar los tornillos');
+  await hoja.getByRole('radio', { name: /Materiales/ }).click();
+  await hoja.getByRole('button', { name: 'Anotarlo' }).click();
+
+  await expect(hoja).toBeHidden();
+  await expect(delDia.getByText('E2E Pasar a buscar los tornillos')).toBeVisible();
+  await expect
+    .poll(async () => (await anotacionesDelTaller(sesion)).map((fila) => [fila.texto, fila.fecha]))
+    .toContainEqual(['E2E Pasar a buscar los tornillos', fecha]);
+  await page.screenshot({ path: testInfo.outputPath('agenda-celular-anotado-en-el-dia.png') });
+});
+
 function diaVecino(): string {
   const dia = Number(HOY.slice(8));
   return delMes(dia === 1 ? 2 : dia - 1);

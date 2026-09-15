@@ -46,7 +46,10 @@ presupuestar» si no tenía: tres días hábiles (`DIAS_HABILES_PARA_PRESUPUESTA
 hoy si la visita todavía no pasó. Se edita en la hoja del contacto. `guardar_proyecto` la escribe solo si
 la clave viene en el pedido: un bundle viejo servido por el service worker no la manda y no la borra.
 
-**Pantallas.** En el celular, lista cronológica con la tira del mes arriba, y el día en una hoja. En
+**Pantallas.** En el celular, lista cronológica con la tira del mes arriba, y el día en una hoja. Cada
+día con cosas tiene «Anotar» en su encabezado, que abre la hoja de anotar con ese día. El día vacío lo
+tiene en el cuerpo. Antes, para anotar en un día con cosas había que abrir su hoja con el ícono de
+ampliar, y el dueño lo encontró molesto. En
 tablet y PC, la grilla, con dos eventos por celda en tablet y tres en la PC, y «+N más». Un evento
 derivado no se edita ni se borra desde la agenda: dice de dónde sale y ofrece «Abrir el proyecto» o
 «Abrir el contacto». Una anotación se tilda, se marca como importante y se borra, cada cosa con

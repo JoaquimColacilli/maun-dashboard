@@ -189,6 +189,19 @@ function ListaDelMes({
                 </span>
               )}
               <span className="flex-1" />
+              {delDia.length > 0 && (
+                <button
+                  type="button"
+                  aria-label={`Anotar algo para el ${diaEnPalabras(fecha)}`}
+                  onClick={() => {
+                    alAnotar(fecha);
+                  }}
+                  className="-my-1 flex h-9 items-center gap-1.5 rounded-field border border-dashed border-border px-3 text-label font-medium"
+                >
+                  <Icono nombre="plus" tamano={14} />
+                  Anotar
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={`Ver el ${diaEnPalabras(fecha)}`}
