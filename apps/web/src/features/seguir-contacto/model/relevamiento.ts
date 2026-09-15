@@ -68,10 +68,17 @@ export function pasoDelRelevamiento(
     cambios: {
       estado: 'a_presupuestar',
       fecha_visita: valores.dia,
+      visita_hecha: true,
       vencimiento_presupuesto: fechaDelEnlace(valores.vencimiento) ?? null,
     },
     pagos: pagoDeLaVisita(valores.pago, idDelPago, valores.dia),
   };
+}
+
+export function cambiosAlPasarAPresupuestar(proyecto: Proyecto, hoy: string): CambiosDeProyecto {
+  const visita = proyecto.fecha_visita;
+  if (visita === null || visita > hoy) return { estado: 'a_presupuestar' };
+  return { estado: 'a_presupuestar', visita_hecha: true };
 }
 
 export function pagoAntesDePresupuestar(

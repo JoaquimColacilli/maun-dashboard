@@ -116,6 +116,10 @@ export interface FilaDeProyecto {
   version: number;
   presupuesto_centavos: number | null;
   fecha_entrega: string | null;
+  visita_hecha: boolean;
+  visita_importante: boolean;
+  entrega_importante: boolean;
+  presupuesto_importante: boolean;
 }
 
 export async function descongelarProyectos({
@@ -353,7 +357,7 @@ export async function leerProyecto(
 ): Promise<FilaDeProyecto | undefined> {
   const filas = (await pedir(
     entorno,
-    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos,fecha_entrega&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
+    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos,fecha_entrega,visita_hecha,visita_importante,entrega_importante,presupuesto_importante&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
     { accessToken },
   )) as FilaDeProyecto[];
   return filas[0];
@@ -369,6 +373,8 @@ export interface ContactoLeido {
   presupuesto_despiece: boolean;
   presupuesto_cotizacion: boolean;
   presupuesto_pdf: boolean;
+  visita_hecha: boolean;
+  visita_importante: boolean;
 }
 
 export async function leerContacto(
@@ -376,7 +382,7 @@ export async function leerContacto(
   titulo: string,
 ): Promise<ContactoLeido | undefined> {
   const columnas =
-    'id,estado,fecha_visita,vencimiento_presupuesto,presupuesto_centavos,presupuesto_diseno,presupuesto_despiece,presupuesto_cotizacion,presupuesto_pdf';
+    'id,estado,fecha_visita,vencimiento_presupuesto,presupuesto_centavos,presupuesto_diseno,presupuesto_despiece,presupuesto_cotizacion,presupuesto_pdf,visita_hecha,visita_importante';
   const filas = (await pedir(
     entorno,
     `/rest/v1/proyectos?select=${columnas}&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,

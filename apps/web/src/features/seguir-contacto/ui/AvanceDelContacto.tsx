@@ -23,7 +23,7 @@ import {
 import { hoyLocal, metaDeAvisos, useAlgoEnCurso, uuidv7 } from '@/shared/lib';
 import { Button, FilaDeAcciones, PanelDePaso } from '@/shared/ui';
 
-import { pagoAntesDePresupuestar } from '../model/relevamiento';
+import { cambiosAlPasarAPresupuestar, pagoAntesDePresupuestar } from '../model/relevamiento';
 import {
   FormularioDelPago,
   FormularioDelPresupuesto,
@@ -109,7 +109,7 @@ export function AvanceDelContacto({
         mover({ estado: paso.hacia });
         return;
       case 'pasar-a-presupuestar':
-        if (cobrado > 0) mover({ estado: 'a_presupuestar' });
+        if (cobrado > 0) mover(cambiosAlPasarAPresupuestar(proyecto, hoyLocal()));
         else setFormulario('pasar-a-presupuestar');
         return;
       case 'relevar':
@@ -150,10 +150,11 @@ export function AvanceDelContacto({
       ) : formulario === 'pasar-a-presupuestar' ? (
         <FormularioDelPago
           alListo={(monto) => {
+            const hoy = hoyLocal();
             mover(
-              { estado: 'a_presupuestar' },
+              cambiosAlPasarAPresupuestar(proyecto, hoy),
               undefined,
-              pagoAntesDePresupuestar(monto, uuidv7(), hoyLocal()),
+              pagoAntesDePresupuestar(monto, uuidv7(), hoy),
             );
           }}
           alCancelar={cerrarElFormulario}

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { datosDeLaAgenda, datosDeLaAgendaDeLaReplica } from './agenda.ts';
+import {
+  COLUMNA_DE_LA_MARCA,
+  COLUMNAS_DE_MARCAS,
+  datosDeLaAgenda,
+  datosDeLaAgendaDeLaReplica,
+  marcadaComoImportante,
+  visitaHecha,
+} from './agenda.ts';
 import { aplicarFilaLocal, replicaVacia, type FilaDe } from './replica.ts';
 
 const METADATOS = {
@@ -18,9 +25,13 @@ const PROYECTO = {
   titulo: 'Mesada y alacena',
   estado: 'a_presupuestar',
   fecha_visita: '2026-09-07',
+  visita_hecha: true,
   entrega_estimada: null,
   vencimiento_presupuesto: '2026-09-10',
   direccion_entrega: 'Sarmiento 2310',
+  presupuesto_importante: false,
+  visita_importante: true,
+  entrega_importante: false,
 } as unknown as FilaDe<'proyectos'>;
 
 const CLIENTE = {
@@ -58,9 +69,11 @@ describe('datosDeLaAgenda', () => {
           titulo: 'Mesada y alacena',
           estado: 'a_presupuestar',
           fechaVisita: '2026-09-07',
+          visitaHecha: true,
           entregaEstimada: null,
           vencimientoPresupuesto: '2026-09-10',
           direccionEntrega: 'Sarmiento 2310',
+          importante: { presupuesto: false, visita: true, entrega: false },
         },
       ],
       clientes: [{ id: 'c1', nombre: 'Familia Villalba', zona: 'Morón' }],
@@ -89,5 +102,32 @@ describe('datosDeLaAgenda', () => {
     expect(datosDeLaAgendaDeLaReplica(replica)).toEqual(
       datosDeLaAgenda({ proyectos: [PROYECTO], clientes: [CLIENTE], anotaciones: [ANOTACION] }),
     );
+  });
+
+  it('una fila guardada en el dispositivo antes de las columnas nuevas no tiene la visita hecha ni marcas', () => {
+    const vieja = {
+      ...METADATOS,
+      id: 'p2',
+      cliente_id: 'c1',
+      titulo: 'Placard',
+      estado: 'entregado',
+      fecha_visita: '2026-08-01',
+      entrega_estimada: '2026-09-01',
+      vencimiento_presupuesto: null,
+      direccion_entrega: '',
+    } as unknown as FilaDe<'proyectos'>;
+
+    expect(visitaHecha(vieja)).toBe(false);
+    expect(marcadaComoImportante(vieja, 'entrega')).toBe(false);
+    expect(
+      datosDeLaAgenda({ proyectos: [vieja], clientes: [], anotaciones: [] }).proyectos[0],
+    ).toMatchObject({
+      visitaHecha: false,
+      importante: { presupuesto: false, visita: false, entrega: false },
+    });
+  });
+
+  it('cada evento derivado tiene su columna de marca, y son las tres de la base', () => {
+    expect(Object.values(COLUMNA_DE_LA_MARCA)).toEqual([...COLUMNAS_DE_MARCAS]);
   });
 });

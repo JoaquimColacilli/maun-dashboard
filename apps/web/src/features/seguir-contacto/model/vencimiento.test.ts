@@ -17,6 +17,7 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     clienteId: 'c',
     titulo: 'Vestidor',
     visita: '',
+    visitaHecha: false,
     sena: null,
     notas: '',
     vencimiento: '',
@@ -71,6 +72,10 @@ function contacto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
     presupuesto_pdf: false,
+    visita_hecha: false,
+    visita_importante: false,
+    entrega_importante: false,
+    presupuesto_importante: false,
     ...extra,
   };
 }

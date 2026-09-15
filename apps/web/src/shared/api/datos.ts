@@ -14,6 +14,7 @@ import {
   guardarCambiosDeMovimiento,
   guardarCambiosDeProyecto,
   guardarClienteNuevo,
+  guardarMarcasDeLaAgenda,
   guardarMovimiento,
   guardarNombreDelTaller,
   guardarProyecto,
@@ -28,6 +29,7 @@ import {
   type CambiosDeAjustes,
   type CambiosDeAnotacion,
   type CambiosDeCliente,
+  type CambiosDeMarcas,
   type CambiosDeMovimiento,
   type CambiosDeProyecto,
   type CambiosDeTareas,
@@ -130,6 +132,13 @@ export async function marcarTareasDelPresupuesto(
   cambios: CambiosDeTareas,
 ): Promise<FilaDe<'proyectos'>> {
   return guardarTareasDelPresupuesto(clienteMaun(), id, cambios);
+}
+
+export async function marcarEnLaAgenda(
+  id: string,
+  cambios: CambiosDeMarcas,
+): Promise<FilaDe<'proyectos'>> {
+  return guardarMarcasDeLaAgenda(clienteMaun(), id, cambios);
 }
 
 export async function darDeBajaCliente(id: string, borradoEn: string): Promise<FilaDe<'clientes'>> {

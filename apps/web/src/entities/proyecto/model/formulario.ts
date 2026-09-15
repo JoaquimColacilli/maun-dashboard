@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   COLUMNAS_DE_PROYECTO,
+  visitaHecha,
   type BajaDeFilaHija,
   type CambiosDeProyecto,
   type DatosDeProyecto,
@@ -54,6 +55,7 @@ export const esquemaDeProyecto = z.object({
   forma_pago: z.enum(FORMAS_EN_ORDEN).nullable(),
   comprobante: z.enum(COMPROBANTES_EN_ORDEN),
   fecha_visita: z.string(),
+  visita_hecha: z.boolean(),
   ultimo_contacto: z.string(),
   fecha_inicio: z.string(),
   entrega_estimada: z.string(),
@@ -102,6 +104,7 @@ export function valoresDelFormulario(
       forma_pago: 'transferencia',
       comprobante: inicial.comprobante ?? 'sin_comprobante',
       fecha_visita: '',
+      visita_hecha: false,
       ultimo_contacto: '',
       fecha_inicio: inicial.hoy,
       entrega_estimada: inicial.entrega ?? '',
@@ -123,6 +126,7 @@ export function valoresDelFormulario(
     forma_pago: proyecto.forma_pago,
     comprobante: proyecto.comprobante,
     fecha_visita: fecha(proyecto.fecha_visita),
+    visita_hecha: visitaHecha(proyecto),
     ultimo_contacto: fecha(proyecto.ultimo_contacto),
     fecha_inicio: fecha(proyecto.fecha_inicio),
     entrega_estimada: fecha(proyecto.entrega_estimada),
@@ -145,7 +149,11 @@ export function valoresDelFormulario(
   };
 }
 
-export function datosDelFormulario(valores: FormularioDeProyecto): DatosDeProyecto {
+export function datosDelFormulario(
+  valores: FormularioDeProyecto,
+  hoy: string = hoyLocal(),
+): DatosDeProyecto {
+  const fechaVisita = fechaOnNull(valores.fecha_visita);
   return {
     cliente_id: valores.cliente_id,
     titulo: valores.titulo.trim(),
@@ -154,7 +162,8 @@ export function datosDelFormulario(valores: FormularioDeProyecto): DatosDeProyec
     presupuesto_centavos: valores.presupuesto,
     forma_pago: valores.forma_pago,
     comprobante: valores.comprobante,
-    fecha_visita: fechaOnNull(valores.fecha_visita),
+    fecha_visita: fechaVisita,
+    visita_hecha: valores.visita_hecha && fechaVisita !== null && fechaVisita <= hoy,
     ultimo_contacto: fechaOnNull(valores.ultimo_contacto),
     fecha_inicio: fechaOnNull(valores.fecha_inicio),
     entrega_estimada: fechaOnNull(valores.entrega_estimada),

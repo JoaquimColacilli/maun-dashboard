@@ -169,6 +169,51 @@ Deno.test(
   },
 );
 
+Deno.test(
+  'lo hecho no se avisa: la visita de hoy que ya se relevó no sale, y la misma sin relevar sí',
+  async () => {
+    const visita = (id: string, hecha: boolean): AvisoPorMandar => ({
+      ...aviso(id, null),
+      filas: {
+        proyectos: [
+          {
+            id: `p-${id}`,
+            cliente_id: 'c1',
+            titulo: 'Relevamiento UTN',
+            estado: 'a_presupuestar',
+            fecha_visita: DIA,
+            visita_hecha: hecha,
+            entrega_estimada: null,
+            vencimiento_presupuesto: null,
+            direccion_entrega: '',
+          } as never,
+        ],
+        clientes: [{ id: 'c1', nombre: 'UTN', zona: 'Haedo' } as never],
+        anotaciones: [],
+      },
+    });
+    const base = baseFalsa();
+    const enviar = enviadorQueContesta({});
+
+    const resultado = await mandarLosAvisos(
+      [visita('relevada', true), visita('pendiente', false)],
+      base,
+      enviar,
+      VAPID,
+    );
+
+    assert.deepEqual(resultado, { mandados: 1, sinNadaQueAvisar: 1, podados: 0, fallidos: 0 });
+    assert.deepEqual(base.registro.anotados, [
+      ['relevada', DIA, false],
+      ['pendiente', DIA, true],
+    ]);
+    assert.equal(
+      JSON.parse(enviar.cargas[0] ?? '{}').cuerpo,
+      'Relevamiento: Relevamiento UTN (hoy)',
+    );
+  },
+);
+
 Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
   const eventos = [
     {
@@ -181,6 +226,8 @@ Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
       titulo: 'Placard',
       cliente: '',
       lugar: '',
+      hecha: false,
+      importante: false,
     },
     {
       clase: 'propia',
@@ -204,6 +251,8 @@ Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
       titulo: 'UTN',
       cliente: '',
       lugar: '',
+      hecha: false,
+      importante: false,
     },
     {
       clase: 'derivada',
@@ -215,6 +264,8 @@ Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
       titulo: 'Vestidor',
       cliente: '',
       lugar: '',
+      hecha: false,
+      importante: false,
     },
     {
       clase: 'propia',

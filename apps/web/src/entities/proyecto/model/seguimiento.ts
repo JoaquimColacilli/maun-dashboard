@@ -6,7 +6,7 @@ import {
   type EstadoProyecto,
 } from '@maun/domain';
 
-import { filasDe, type Replica } from '@/shared/api';
+import { filasDe, visitaHecha, type Replica } from '@/shared/api';
 import { diasHasta, fechaLarga, hoyLocal, relativa } from '@/shared/lib';
 
 import type { Proyecto } from './catalogos';
@@ -84,7 +84,8 @@ export function yaSeRelevo(proyecto: Proyecto, hoy: string): boolean {
   return (
     proyecto.fecha_visita !== null &&
     proyecto.fecha_visita <= hoy &&
-    (proyecto.estado === 'presupuesto_estimativo' ||
+    (visitaHecha(proyecto) ||
+      proyecto.estado === 'presupuesto_estimativo' ||
       proyecto.estado === 'a_presupuestar' ||
       proyecto.estado === 'presupuesto_enviado')
   );

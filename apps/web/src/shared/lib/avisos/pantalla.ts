@@ -91,6 +91,11 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Tarea del presupuesto anotada sin señal: se guarda sola cuando vuelva.',
     error: 'No se guardó la tarea del presupuesto.',
   },
+  marcaDeLaAgenda: {
+    hecho: 'Marca guardada.',
+    enCola: 'Marca anotada sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la marca de importante.',
+  },
   contactoBorrado: {
     hecho: 'Contacto borrado.',
     enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',

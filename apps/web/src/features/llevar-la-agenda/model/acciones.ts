@@ -1,4 +1,4 @@
-import type { EventoPropio } from '@maun/domain';
+import type { EventoDerivado, EventoPropio } from '@maun/domain';
 import type { MutationOptions, QueryClient } from '@tanstack/react-query';
 
 import {
@@ -8,7 +8,9 @@ import {
   MUTACION_DE_BAJA_DE_ANOTACION,
   type Anotacion,
 } from '@/entities/agenda';
+import { marcaDeImportante, MUTACION_DE_MARCAS, type Proyecto } from '@/entities/proyecto';
 import {
+  COLUMNA_DE_LA_MARCA,
   filaPorId,
   type AnotacionNueva,
   type CambiosDeAnotacion,
@@ -91,6 +93,14 @@ function editar(
   );
 }
 
+function avisarLaMarca(avisar: Avisador, id: string, importante: boolean): void {
+  avisar({
+    clave: `agenda-marca-${id}`,
+    tono: 'hecho',
+    texto: importante ? 'Marcado como importante.' : 'Le sacaste la marca.',
+  });
+}
+
 export function anotar(
   cliente: QueryClient,
   nueva: AnotacionNueva,
@@ -139,11 +149,31 @@ export function marcar(
 ): void {
   const importante = !evento.importante;
   editar(cliente, evento, { importante }, { importante: evento.importante });
-  avisar({
-    clave: `agenda-marca-${evento.id}`,
-    tono: 'hecho',
-    texto: importante ? 'Marcado como importante.' : 'Le sacaste la marca.',
-  });
+  avisarLaMarca(avisar, evento.id, importante);
+}
+
+export function marcarDelTrabajo(
+  cliente: QueryClient,
+  evento: EventoDerivado,
+  proyecto: Proyecto,
+  avisar: Avisador = avisarEnPantalla,
+): void {
+  const columna = COLUMNA_DE_LA_MARCA[evento.categoria];
+  const importante = !evento.importante;
+  mandarALaCola(
+    cliente,
+    {
+      ...MUTACION_DE_MARCAS,
+      meta: metaDeAvisos('marcaDeLaAgenda', { silencioso: true, sujeto: evento.titulo }),
+    },
+    {
+      id: proyecto.id,
+      cambios: marcaDeImportante(columna, importante),
+      previos: marcaDeImportante(columna, evento.importante),
+      version: proyecto.version,
+    },
+  );
+  avisarLaMarca(avisar, evento.id, importante);
 }
 
 export function borrar(

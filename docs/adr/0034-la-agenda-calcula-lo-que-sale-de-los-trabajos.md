@@ -96,6 +96,11 @@ la lista del celular, y en la celda de la grilla.
 - **«Hoy en la agenda», en Inicio, sigue mostrando solo lo pendiente.** Responde qué queda por hacer
   hoy, no qué se hizo; lo decidió el dueño.
 
+**Actualizado por el [0042](0042-lo-hecho-de-los-trabajos-y-las-marcas.md):** lo hecho ya no es solo de
+las anotaciones. La entrega entregada o cobrada y la visita con `visita_hecha` se quedan en su día igual
+que una anotación tildada, y la visita, la entrega y el vencimiento se marcan como importantes con el
+mismo círculo.
+
 **En tablet y PC, la grilla del mes ocupa todo el ancho del área de contenido, siempre, y el día se abre
 en una capa chica anclada a su celda**, con una punta que apunta al día, como en Google Calendar. Se ve
 la relación entre lo que se tocó y lo que se abre, y tapa mucho menos que una franja fija.

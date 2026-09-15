@@ -19,9 +19,11 @@ export interface ProyectoDeLaAgenda {
   titulo: string;
   estado: EstadoProyecto;
   fechaVisita: string | null;
+  visitaHecha: boolean;
   entregaEstimada: string | null;
   vencimientoPresupuesto: string | null;
   direccionEntrega: string;
+  importante: Readonly<Record<CategoriaDerivada, boolean>>;
 }
 
 export interface ClienteDeLaAgenda {
@@ -62,6 +64,8 @@ export interface EventoDerivado {
   titulo: string;
   cliente: string;
   lugar: string;
+  hecha: boolean;
+  importante: boolean;
 }
 
 export interface EventoPropio {
@@ -79,6 +83,8 @@ export interface EventoPropio {
 
 export type EventoDeLaAgenda = EventoDerivado | EventoPropio;
 
+const ESTADOS_CON_LA_ENTREGA_HECHA: readonly EstadoProyecto[] = ['entregado', 'cobrado'];
+
 const PESO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, number>> = {
   presupuesto: 0,
   visita: 1,
@@ -87,11 +93,16 @@ const PESO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, number>> = {
   taller: 4,
 };
 
+function entregaHecha(estado: EstadoProyecto): boolean {
+  return ESTADOS_CON_LA_ENTREGA_HECHA.includes(estado);
+}
+
 function derivadosDelProyecto(
   proyecto: ProyectoDeLaAgenda,
   cliente: ClienteDeLaAgenda | undefined,
 ): EventoDerivado[] {
   const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
+  const entregada = entregaHecha(proyecto.estado);
   const comun = {
     clase: 'derivada' as const,
     proyectoId: proyecto.id,
@@ -102,22 +113,26 @@ function derivadosDelProyecto(
   const zona = cliente?.zona ?? '';
   const eventos: EventoDerivado[] = [];
 
-  if (proyecto.estado === 'en_curso' && proyecto.entregaEstimada !== null) {
+  if ((proyecto.estado === 'en_curso' || entregada) && proyecto.entregaEstimada !== null) {
     eventos.push({
       ...comun,
       id: `entrega:${proyecto.id}`,
       categoria: 'entrega',
       fecha: proyecto.entregaEstimada,
       lugar: proyecto.direccionEntrega.trim() === '' ? zona : proyecto.direccionEntrega,
+      hecha: entregada,
+      importante: proyecto.importante.entrega,
     });
   }
-  if (enSeguimiento && proyecto.fechaVisita !== null) {
+  if ((enSeguimiento || proyecto.visitaHecha) && proyecto.fechaVisita !== null) {
     eventos.push({
       ...comun,
       id: `visita:${proyecto.id}`,
       categoria: 'visita',
       fecha: proyecto.fechaVisita,
       lugar: zona,
+      hecha: proyecto.visitaHecha,
+      importante: proyecto.importante.visita,
     });
   }
   if (
@@ -132,6 +147,8 @@ function derivadosDelProyecto(
       categoria: 'presupuesto',
       fecha: proyecto.vencimientoPresupuesto,
       lugar: zona,
+      hecha: false,
+      importante: proyecto.importante.presupuesto,
     });
   }
   return eventos;
@@ -253,7 +270,7 @@ export function eventosParaAvisar(
   return eventosDeLaAgenda(datos, { desde: hoy, hasta: sumarDias(hoy, mayor) }).filter((evento) => {
     const preferencia = preferencias[AVISO_DE_LA_CATEGORIA[evento.categoria]];
     if (!preferencia.activo) return false;
-    if (evento.clase === 'propia' && evento.hecha) return false;
+    if (evento.hecha) return false;
     return diasEntre(hoy, evento.fecha) <= preferencia.anticipacion;
   });
 }

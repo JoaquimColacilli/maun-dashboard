@@ -4,14 +4,19 @@ import { Link } from 'react-router';
 import { rutaDelCliente, rutaDelProyecto } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
-import { detalleDelEvento, textoDelEvento, urgenciaDelEvento } from '../model/calendario';
+import {
+  detalleDelEvento,
+  textoDeLoHecho,
+  textoDelEvento,
+  urgenciaDelEvento,
+} from '../model/calendario';
 import { CATEGORIA, DERIVADA } from '../model/categorias';
 import { CasillaDeAnotacion, MarcaConAnillo, MarcaDeCategoria } from './MarcaDeCategoria';
 
 export interface AccionesDeLaAgenda {
   alAbrirTrabajo: (evento: EventoDerivado) => void;
   alTildar: (evento: EventoPropio) => void;
-  alMarcar: (evento: EventoPropio) => void;
+  alMarcar: (evento: EventoDeLaAgenda) => void;
   alBorrar: (evento: EventoPropio) => void;
 }
 
@@ -62,7 +67,7 @@ function Contenido({
   const categoria = CATEGORIA[evento.categoria];
   const urgencia = urgenciaDelEvento(evento, hoy);
   const detalle = detalleDelEvento(evento);
-  const hecha = evento.clase === 'propia' && evento.hecha;
+  const { hecha } = evento;
 
   return (
     <>
@@ -71,7 +76,13 @@ function Contenido({
           <span className="text-label font-semibold text-text-2 tabular-nums">{evento.hora}</span>
         )}
         {evento.clase === 'derivada' && (
-          <span className={`text-body font-semibold ${categoria.texto}`}>
+          <span
+            className={
+              hecha
+                ? 'text-label font-semibold text-text-3 line-through'
+                : `text-body font-semibold ${categoria.texto}`
+            }
+          >
             {DERIVADA[evento.categoria].accion}
           </span>
         )}
@@ -82,7 +93,7 @@ function Contenido({
         >
           {textoDelEvento(evento)}
         </span>
-        {hecha && <span className="sr-only">, hecha</span>}
+        {hecha && <span className="sr-only">, {textoDeLoHecho(evento)}</span>}
       </span>
       {!hecha &&
         (detalle !== '' || (urgencia !== null && urgencia.tono !== 'normal') || enElDia) && (
@@ -114,6 +125,102 @@ function Contenido({
   );
 }
 
+function BotonDeLaMarca({
+  evento,
+  acciones,
+}: {
+  evento: EventoDeLaAgenda;
+  acciones: AccionesDeLaAgenda;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={evento.importante ? 'Sacarle la marca de importante' : 'Marcar como importante'}
+      aria-pressed={evento.importante}
+      onClick={() => {
+        acciones.alMarcar(evento);
+      }}
+      className={`flex size-9 items-center justify-center rounded-pill hover:bg-surface ${
+        evento.importante ? 'text-ag-marca' : 'text-text-3'
+      }`}
+    >
+      <Icono nombre="circle" tamano={16} grosor={2} />
+    </button>
+  );
+}
+
+function FilaDerivada({
+  evento,
+  hoy,
+  acciones,
+  enElDia,
+}: {
+  evento: EventoDerivado;
+  hoy: string;
+  acciones: AccionesDeLaAgenda;
+  enElDia: boolean;
+}) {
+  const derivada = DERIVADA[evento.categoria];
+  const abrir = () => {
+    acciones.alAbrirTrabajo(evento);
+  };
+
+  return (
+    <li
+      data-derivada={evento.id}
+      data-hecha={String(evento.hecha)}
+      className={`flex gap-3 ${enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+        evento.hecha ? 'items-center py-2' : 'items-start py-3'
+      }`}
+    >
+      <MarcaConAnillo categoria={evento.categoria} importante={evento.importante} />
+      {!enElDia ? (
+        <button
+          type="button"
+          onClick={abrir}
+          className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded-field text-left"
+        >
+          <Contenido evento={evento} hoy={hoy} enElDia={false} />
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <Contenido evento={evento} hoy={hoy} enElDia />
+          {!evento.hecha && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-field bg-surface px-2.5 py-2 text-meta leading-snug text-text-2">
+              <Icono nombre="link-2" tamano={14} />
+              <span className="min-w-[10rem] flex-1">
+                {derivada.origen}. Para moverla, cambiá la fecha ahí.
+              </span>
+              <Button variant="secundario" size="chico" onClick={abrir}>
+                {derivada.abrir}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {enElDia ? (
+        <span className="-my-1 flex flex-none gap-0.5">
+          <BotonDeLaMarca evento={evento} acciones={acciones} />
+          {evento.hecha && (
+            <button
+              type="button"
+              aria-label={`${derivada.abrir}: ${evento.titulo}`}
+              onClick={abrir}
+              className="flex size-9 items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-ink"
+            >
+              <Icono nombre="chevron-right" tamano={16} />
+            </button>
+          )}
+        </span>
+      ) : (
+        <span aria-hidden className="mt-0.5 flex-none text-text-3">
+          <Icono nombre="chevron-right" tamano={18} />
+        </span>
+      )}
+    </li>
+  );
+}
+
 export function FilaDeEvento({
   evento,
   hoy,
@@ -121,57 +228,15 @@ export function FilaDeEvento({
   enElDia = false,
   alAbrirElDia,
 }: FilaDeEventoProps) {
-  const borde = enElDia ? 'border-t' : 'border-b';
-
   if (evento.clase === 'derivada') {
-    const derivada = DERIVADA[evento.categoria];
-    return (
-      <li className={`flex items-start gap-3 ${borde} border-hairline-soft py-3`}>
-        <MarcaConAnillo categoria={evento.categoria} importante={false} />
-        {enElDia ? (
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <Contenido evento={evento} hoy={hoy} enElDia />
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-field bg-surface px-2.5 py-2 text-meta leading-snug text-text-2">
-              <Icono nombre="link-2" tamano={14} />
-              <span className="min-w-[10rem] flex-1">
-                {derivada.origen}. Para moverla, cambiá la fecha ahí.
-              </span>
-              <Button
-                variant="secundario"
-                size="chico"
-                onClick={() => {
-                  acciones.alAbrirTrabajo(evento);
-                }}
-              >
-                {derivada.abrir}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              acciones.alAbrirTrabajo(evento);
-            }}
-            className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded-field text-left"
-          >
-            <Contenido evento={evento} hoy={hoy} enElDia={false} />
-          </button>
-        )}
-        {!enElDia && (
-          <span aria-hidden className="mt-0.5 flex-none text-text-3">
-            <Icono nombre="chevron-right" tamano={18} />
-          </span>
-        )}
-      </li>
-    );
+    return <FilaDerivada evento={evento} hoy={hoy} acciones={acciones} enElDia={enElDia} />;
   }
 
   return (
     <li
       data-anotacion={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${borde} border-hairline-soft ${
+      className={`flex gap-3 ${enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >
@@ -198,21 +263,7 @@ export function FilaDeEvento({
       )}
       {enElDia && (
         <span className="-my-1 flex flex-none gap-0.5">
-          <button
-            type="button"
-            aria-label={
-              evento.importante ? 'Sacarle la marca de importante' : 'Marcar como importante'
-            }
-            aria-pressed={evento.importante}
-            onClick={() => {
-              acciones.alMarcar(evento);
-            }}
-            className={`flex size-9 items-center justify-center rounded-pill hover:bg-surface ${
-              evento.importante ? 'text-ag-marca' : 'text-text-3'
-            }`}
-          >
-            <Icono nombre="circle" tamano={16} grosor={2} />
-          </button>
+          <BotonDeLaMarca evento={evento} acciones={acciones} />
           <button
             type="button"
             aria-label={`Borrar «${evento.texto}»`}

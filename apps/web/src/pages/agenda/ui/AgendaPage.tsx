@@ -55,7 +55,7 @@ const MES_VACIO =
 
 function pasaElFiltro(evento: EventoDeLaAgenda, filtro: Filtro): boolean {
   if (filtro === 'todo') return true;
-  if (filtro === 'marcado') return evento.clase === 'propia' && evento.importante;
+  if (filtro === 'marcado') return evento.importante;
   return evento.categoria === filtro;
 }
 

@@ -4,6 +4,7 @@ import type { Proyecto } from '@/entities/proyecto';
 
 import { CONCEPTO_DE_LA_SENA } from './contacto';
 import {
+  cambiosAlPasarAPresupuestar,
   conOtroDia,
   conOtroVencimiento,
   errorDelDia,
@@ -56,12 +57,13 @@ describe('el formulario de «Ya fui a relevar»', () => {
     expect(errorDelDia(iniciales, HOY)).toBeUndefined();
   });
 
-  it('anotarlo pasa a presupuestar con el día y el vencimiento, y la seña si la escribió', () => {
+  it('anotarlo pasa a presupuestar con el día, la visita hecha y el vencimiento, y la seña si la escribió', () => {
     const iniciales = valoresDelRelevamiento(contacto('2026-09-10'), HOY);
     expect(pasoDelRelevamiento(iniciales, 'pago')).toEqual({
       cambios: {
         estado: 'a_presupuestar',
         fecha_visita: '2026-09-10',
+        visita_hecha: true,
         vencimiento_presupuesto: '2026-09-17',
       },
       pagos: [],
@@ -77,6 +79,18 @@ describe('el formulario de «Ya fui a relevar»', () => {
         monto_centavos: 3_000_000,
       },
     ]);
+  });
+
+  it('pasar a presupuestar desde el estimativo, con la visita ya pasada, la deja hecha; sin visita o con la visita por venir, no', () => {
+    expect(cambiosAlPasarAPresupuestar(contacto('2026-09-10'), HOY)).toEqual({
+      estado: 'a_presupuestar',
+      visita_hecha: true,
+    });
+    expect(cambiosAlPasarAPresupuestar(contacto(HOY), HOY)).toMatchObject({ visita_hecha: true });
+    expect(cambiosAlPasarAPresupuestar(contacto('2026-09-20'), HOY)).toEqual({
+      estado: 'a_presupuestar',
+    });
+    expect(cambiosAlPasarAPresupuestar(contacto(null), HOY)).toEqual({ estado: 'a_presupuestar' });
   });
 
   it('pasar a presupuestar desde el estimativo lleva el pago de hoy si lo escribió, y cero es no tener pago', () => {

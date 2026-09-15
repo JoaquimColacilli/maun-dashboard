@@ -66,6 +66,10 @@ function proyecto(extra: Partial<Proyecto> = {}): Proyecto {
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
     presupuesto_pdf: false,
+    visita_hecha: false,
+    visita_importante: false,
+    entrega_importante: false,
+    presupuesto_importante: false,
     ...extra,
   };
 }

@@ -20,6 +20,7 @@ import {
   resumenDelDia,
   resumenDelMes,
   semanasDelMes,
+  textoDeLoHecho,
   urgenciaDelEvento,
 } from './calendario';
 
@@ -36,6 +37,8 @@ function derivado(cambios: Partial<EventoDerivado> = {}): EventoDerivado {
     titulo: 'Mesada y alacena',
     cliente: 'Familia Villalba',
     lugar: 'Sarmiento 2310',
+    hecha: false,
+    importante: false,
     ...cambios,
   };
 }
@@ -121,6 +124,19 @@ describe('los resúmenes', () => {
     ).toBe('1 compromiso · 1 anotación · 2 hechas');
   });
 
+  it('el del mes cuenta un compromiso cumplido con lo hecho, no con lo pendiente', () => {
+    expect(
+      resumenDelMes([
+        derivado({ hecha: true }),
+        derivado({ id: 'visita:p2', categoria: 'visita' }),
+        propio({ hecha: true }),
+      ]),
+    ).toBe('1 compromiso · 0 anotaciones · 2 hechas');
+    expect(resumenDelMes([derivado({ hecha: true })])).toBe(
+      '0 compromisos · 0 anotaciones · 1 hecha',
+    );
+  });
+
   it('el del día cuenta lo pendiente y dice aparte lo hecho', () => {
     expect(resumenDelDia([])).toBe('Nada agendado');
     expect(
@@ -134,9 +150,10 @@ describe('los resúmenes', () => {
     expect(resumenDelDia([propio({ hecha: true }), propio({ id: 'n2', hecha: true })])).toBe(
       '2 hechas',
     );
+    expect(resumenDelDia([derivado({ hecha: true }), propio()])).toBe('1 cosa anotada · 1 hecha');
   });
 
-  it('la cuenta del botón del día separa lo pendiente de lo hecho', () => {
+  it('la cuenta del botón del día separa lo pendiente de lo hecho, venga de donde venga', () => {
     expect(cuentaDelDia([])).toBe('nada agendado');
     expect(cuentaDelDia([propio()])).toBe('1 cosa');
     expect(cuentaDelDia([derivado(), propio(), propio({ id: 'n2', hecha: true })])).toBe(
@@ -145,14 +162,16 @@ describe('los resúmenes', () => {
     expect(cuentaDelDia([propio({ hecha: true }), propio({ id: 'n2', hecha: true })])).toBe(
       '2 hechas',
     );
+    expect(cuentaDelDia([derivado({ hecha: true }), propio({ hecha: true })])).toBe('2 hechas');
   });
 });
 
 describe('lo hecho en el día', () => {
-  it('solo una anotación tildada está hecha: un compromiso nunca', () => {
+  it('está hecha la anotación tildada y el compromiso cumplido', () => {
     expect(estaHecha(propio({ hecha: true }))).toBe(true);
     expect(estaHecha(propio())).toBe(false);
     expect(estaHecha(derivado())).toBe(false);
+    expect(estaHecha(derivado({ hecha: true }))).toBe(true);
   });
 
   it('va abajo de lo pendiente, y cada grupo conserva su orden', () => {
@@ -160,6 +179,7 @@ describe('lo hecho en el día', () => {
       propio({ id: 'a', hecha: true }),
       derivado(),
       propio({ id: 'b' }),
+      derivado({ id: 'visita:p2', categoria: 'visita', hecha: true }),
       propio({ id: 'c', hecha: true }),
     ];
 
@@ -167,8 +187,16 @@ describe('lo hecho en el día', () => {
       'entrega:p1',
       'b',
       'a',
+      'visita:p2',
       'c',
     ]);
+  });
+
+  it('dice qué quiere decir hecho para cada cosa, para el lector de pantalla', () => {
+    expect(textoDeLoHecho(propio({ hecha: true }))).toBe('hecha');
+    expect(textoDeLoHecho(derivado({ hecha: true }))).toBe('entregada');
+    expect(textoDeLoHecho(derivado({ categoria: 'visita', hecha: true }))).toBe('ya fuiste');
+    expect(textoDeLoHecho(derivado({ categoria: 'presupuesto', hecha: true }))).toBe('enviado');
   });
 });
 
@@ -195,6 +223,11 @@ describe('la urgencia de un compromiso', () => {
 
   it('lo que anotó él no tiene urgencia: lo ordena él', () => {
     expect(urgenciaDelEvento(propio({ fecha: '2026-09-11' }), HOY)).toBeNull();
+  });
+
+  it('un compromiso cumplido no está atrasado ni es para hoy', () => {
+    expect(urgenciaDelEvento(derivado({ fecha: '2026-09-11', hecha: true }), HOY)).toBeNull();
+    expect(urgenciaDelEvento(derivado({ fecha: HOY, hecha: true }), HOY)).toBeNull();
   });
 });
 
@@ -224,8 +257,9 @@ describe('los días de la lista del celular', () => {
     expect(dias[0]?.eventos).toEqual([]);
   });
 
-  it('un día con algo marcado a mano lo sabe', () => {
+  it('un día con algo marcado a mano lo sabe, sea una anotación o algo que sale de un trabajo', () => {
     expect(hayImportante([propio(), derivado()])).toBe(false);
     expect(hayImportante([propio({ importante: true })])).toBe(true);
+    expect(hayImportante([propio(), derivado({ importante: true })])).toBe(true);
   });
 });
