@@ -216,6 +216,7 @@ test('sube una foto, un render y un PDF: las imágenes se achican antes de subir
   await expect
     .poll(() => imagen.evaluate((elemento: HTMLImageElement) => elemento.naturalWidth), CARGA)
     .toBe(2000);
+  expect((await imagen.boundingBox())?.height ?? 0).toBeGreaterThan(300);
   await visor.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByRole('dialog', { name: 'render-cocina.png' })).toBeVisible();
   await page.keyboard.press('Escape');

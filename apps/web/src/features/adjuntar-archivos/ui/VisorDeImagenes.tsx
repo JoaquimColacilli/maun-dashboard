@@ -40,7 +40,7 @@ export function VisorDeImagenes({ imagenes, inicial, alCerrar, alBorrar }: Visor
         onKeyDown={alTeclear}
         className="flex min-h-0 flex-1 flex-col gap-3 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-4 md:pb-4"
       >
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-field bg-surface">
+        <div className="flex min-h-0 flex-auto items-center justify-center overflow-hidden rounded-field bg-surface">
           <img
             key={imagen.id}
             src={url}
