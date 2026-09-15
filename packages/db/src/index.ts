@@ -44,7 +44,16 @@ export {
   type TablaReplicada,
 } from './replica.ts';
 
-export { datosDeLaAgenda, datosDeLaAgendaDeLaReplica, type FilasDeLaAgenda } from './agenda.ts';
+export {
+  COLUMNA_DE_LA_MARCA,
+  COLUMNAS_DE_MARCAS,
+  datosDeLaAgenda,
+  datosDeLaAgendaDeLaReplica,
+  marcadaComoImportante,
+  visitaHecha,
+  type ColumnaDeMarca,
+  type FilasDeLaAgenda,
+} from './agenda.ts';
 
 export {
   consultarServidorDeAvisos,
@@ -92,6 +101,7 @@ export {
   COLUMNAS_DE_PROYECTO,
   COLUMNAS_DE_TAREAS,
   guardarAjustes,
+  guardarMarcasDeLaAgenda,
   guardarAnotacionNueva,
   guardarCambiosDeAnotacion,
   guardarCambiosDeCliente,
@@ -113,6 +123,7 @@ export {
   type CambiosDeCliente,
   type CambiosDeMovimiento,
   type BajaDeFilaHija,
+  type CambiosDeMarcas,
   type CambiosDeProyecto,
   type CambiosDeTareas,
   type ClienteNuevo,

@@ -62,8 +62,9 @@ destino); un asiento es un lado (ADR 0018).
 
 ## La agenda (ADR 0034)
 
-- **`eventosDeLaAgenda(datos, rango)` calcula lo que sale de los trabajos; nada de eso se guarda.** Entrega si la obra está `en_curso` con `entregaEstimada`; visita si está en seguimiento con `fechaVisita`; presupuesto si está en seguimiento, ni en `presupuesto_enviado` ni en `presupuesto_estimativo` (los dos esperan al cliente), con `vencimientoPresupuesto`. Suma las anotaciones del rango y ordena por fecha, lo que tiene hora primero, la hora, el peso de la categoría y el texto.
-- **`eventosParaAvisar(datos, hoy, preferencias)` usa la misma función.** La anticipación es una ventana, de hoy a N días, no un día exacto. Salen lo inactivo y lo tildado.
+- **`eventosDeLaAgenda(datos, rango)` calcula lo que sale de los trabajos; nada de eso se guarda.** Entrega con `entregaEstimada`: pendiente si la obra está `en_curso`, hecha si está `entregado` o `cobrado`. Visita con `fechaVisita`: pendiente mientras el trabajo está en seguimiento, hecha con `visitaHecha`, en cualquier estado. Presupuesto si está en seguimiento, ni en `presupuesto_enviado` ni en `presupuesto_estimativo` (los dos esperan al cliente), con `vencimientoPresupuesto`. Suma las anotaciones del rango y ordena por fecha, lo que tiene hora primero, la hora, el peso de la categoría y el texto.
+- **Todo evento lleva `hecha` e `importante`, propio o derivado** (ADR 0042). **`hecha` sale de un hecho, nunca de la posición en el embudo**: la entrega, del estado, porque entregar y volver al taller mueven el estado de verdad; la visita, de `visitaHecha`, que cambiar de etapa no toca. Si agregás un derivado, decidí primero de qué hecho sale su `hecha`.
+- **`eventosParaAvisar(datos, hoy, preferencias)` usa la misma función.** La anticipación es una ventana, de hoy a N días, no un día exacto. Salen lo inactivo y lo hecho.
 - `vencimientoDelPresupuesto` son `DIAS_HABILES_PARA_PRESUPUESTAR` (5, una semana de trabajo) días hábiles (ADR 0038). `sumarDias` y `diasEntre` cuentan en UTC sobre fechas `AAAA-MM-DD`: sin librería de fechas y sin `Temporal`.
 - **No tiene gemela en SQL: la base no calcula eventos.** La función de borde de los avisos importa este código fuente con Deno, que es otra razón para los imports relativos con `.ts`.
 

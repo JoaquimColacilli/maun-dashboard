@@ -1,5 +1,6 @@
 import type { EstadoLiquidado, EstadoProyecto } from '@maun/domain';
 
+import type { ColumnaDeMarca } from './agenda.ts';
 import type { ClienteMaun } from './cliente.ts';
 import type { Database, Json } from './database.types.ts';
 import { leerLote, RespuestaInvalidaError, type FilaDe, type Lote } from './replica.ts';
@@ -195,6 +196,7 @@ export const COLUMNAS_DE_PROYECTO = [
   'direccion_entrega',
   'notas',
   'vencimiento_presupuesto',
+  'visita_hecha',
 ] as const;
 
 export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];
@@ -312,6 +314,23 @@ export async function guardarTareasDelPresupuesto(
   cliente: ClienteMaun,
   id: string,
   cambios: CambiosDeTareas,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export type CambiosDeMarcas = Partial<Pick<FilaDe<'proyectos'>, ColumnaDeMarca>>;
+
+export async function guardarMarcasDeLaAgenda(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeMarcas,
 ): Promise<FilaDe<'proyectos'>> {
   const { data, error } = await cliente
     .from('proyectos')
