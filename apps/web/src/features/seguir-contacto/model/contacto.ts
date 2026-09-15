@@ -1,8 +1,11 @@
+import type { EstadoProyecto } from '@maun/domain';
+
 import {
   cambiaLaFila,
   datosActualesDelProyecto,
   etapaAlGuardarElContacto,
   ultimoContactoAlGuardar,
+  vencimientoPropuesto,
   type Pago,
   type Proyecto,
 } from '@/entities/proyecto';
@@ -16,6 +19,7 @@ export interface ValoresDelContacto {
   visita: string;
   sena: number | null;
   notas: string;
+  vencimiento: string;
 }
 
 export interface ErroresDelContacto {
@@ -39,7 +43,29 @@ export function valoresDelContacto(
     visita: proyecto?.fecha_visita ?? '',
     sena: sena === undefined ? null : sena.monto_centavos,
     notas: proyecto?.notas ?? '',
+    vencimiento: proyecto?.vencimiento_presupuesto ?? '',
   };
+}
+
+export function muestraElVencimiento(proyecto: Proyecto | undefined): boolean {
+  return (
+    proyecto !== undefined &&
+    (proyecto.estado === 'contacto' ||
+      proyecto.estado === 'relevamiento' ||
+      proyecto.estado === 'a_presupuestar')
+  );
+}
+
+function vencimientoDelContacto(
+  proyecto: Proyecto | undefined,
+  estado: EstadoProyecto,
+  valores: ValoresDelContacto,
+  hoy: string,
+): string | null {
+  const escrito = valores.vencimiento.trim();
+  if (escrito !== '') return escrito;
+  if (proyecto !== undefined && proyecto.vencimiento_presupuesto !== null) return null;
+  return vencimientoPropuesto(proyecto, estado, valores.visita.trim(), hoy);
 }
 
 export function erroresDelContacto(
@@ -74,6 +100,7 @@ const DATOS_DE_UN_CONTACTO_NUEVO: DatosDeProyecto = {
   fecha_entrega: null,
   direccion_entrega: '',
   notas: '',
+  vencimiento_presupuesto: null,
 };
 
 function pagosDeLaSena(
@@ -135,6 +162,7 @@ export function pedidoDelContacto({
       fecha_visita: visita === '' ? null : visita,
       ultimo_contacto: ultimoContactoAlGuardar(proyecto, estado, hoy, visita === '' ? hoy : visita),
       notas: valores.notas.trim(),
+      vencimiento_presupuesto: vencimientoDelContacto(proyecto, estado, valores, hoy),
     },
     pagos: pagosDeLaSena(valores, sena, idDeSenaNueva, hoy),
     gastos: [],

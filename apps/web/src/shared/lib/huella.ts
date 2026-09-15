@@ -176,11 +176,24 @@ function alOcultarse(): void {
   sellar({ salioEn: ocultaDesde });
 }
 
+export const TOPE_DE_UNA_VUELTA_POR_AVISO_MS = 10_000;
+
+let vueltaPorUnAvisoEn: number | null = null;
+
+export function anotarVueltaPorUnAviso(): void {
+  if (document.visibilityState !== 'hidden') return;
+  vueltaPorUnAvisoEn = Date.now();
+}
+
 function alVolver(): void {
   const saliaAbierta = salioAbierta;
+  const desdeElAviso =
+    vueltaPorUnAvisoEn === null ? Number.POSITIVE_INFINITY : Date.now() - vueltaPorUnAvisoEn;
+  const porUnAviso = desdeElAviso >= 0 && desdeElAviso < TOPE_DE_UNA_VUELTA_POR_AVISO_MS;
   ocultaDesde = null;
   salioAbierta = false;
-  if (apertura !== 'abierta' || !saliaAbierta) return;
+  vueltaPorUnAvisoEn = null;
+  if (apertura !== 'abierta' || !saliaAbierta || porUnAviso) return;
   apertura = 'cerrada';
   avisar();
 }

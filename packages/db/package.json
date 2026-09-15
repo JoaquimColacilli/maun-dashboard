@@ -35,6 +35,7 @@
     "@maun/config": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
+    "deno": "catalog:",
     "eslint": "catalog:",
     "pg": "catalog:",
     "prettier": "catalog:",

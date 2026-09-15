@@ -4,6 +4,7 @@ import {
   codigoDeAcceso,
   errorDelEnlace,
   esAltaRepetida,
+  esFalloDeRed,
   mensajeDeAcceso,
   RechazoDeAcceso,
 } from './errores';
@@ -49,6 +50,17 @@ describe('los rechazos del acceso, en castellano de taller', () => {
   it('sin señal lo dice como falta de conexión', () => {
     expect(mensajeDeAcceso(new TypeError('Failed to fetch'))).toBe(
       'No hay conexión con el servidor. Probá de nuevo cuando vuelva la señal.',
+    );
+  });
+
+  it('una función de borde que no se alcanza también es falta de conexión', () => {
+    expect(
+      esFalloDeRed(
+        conNombre('FunctionsFetchError', 'Failed to send a request to the Edge Function'),
+      ),
+    ).toBe(true);
+    expect(esFalloDeRed(conNombre('FunctionsHttpError', 'Edge Function returned a non-2xx'))).toBe(
+      false,
     );
   });
 

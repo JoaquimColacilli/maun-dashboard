@@ -18,6 +18,7 @@ const ASPECTO: Readonly<
 
 function Tarjeta({ aviso }: { aviso: AvisoEnPantalla }) {
   const aspecto = ASPECTO[aviso.tono];
+  const { accion } = aviso;
   return (
     <div
       className={`pointer-events-auto flex items-start gap-2.5 rounded-panel border bg-paper py-2.5 pr-1.5 pl-3.5 shadow-toast ${aspecto.borde}`}
@@ -35,6 +36,18 @@ function Tarjeta({ aviso }: { aviso: AvisoEnPantalla }) {
           <p className="mt-0.5 text-meta leading-relaxed text-text-2">{aviso.detalle}</p>
         )}
       </div>
+      {accion !== null && (
+        <button
+          type="button"
+          onClick={() => {
+            descartarDePantalla(aviso.id);
+            accion.alTocar();
+          }}
+          className="flex min-h-9 flex-none items-center rounded-field px-2.5 text-label font-semibold text-ink underline underline-offset-3 hover:bg-surface"
+        >
+          {accion.etiqueta}
+        </button>
+      )}
       <button
         type="button"
         aria-label="Cerrar el aviso"

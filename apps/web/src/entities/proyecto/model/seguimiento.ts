@@ -1,4 +1,9 @@
-import { ESTADOS_DE_SEGUIMIENTO, faseDe, type EstadoProyecto } from '@maun/domain';
+import {
+  ESTADOS_DE_SEGUIMIENTO,
+  faseDe,
+  vencimientoDelPresupuesto,
+  type EstadoProyecto,
+} from '@maun/domain';
 
 import { filasDe, type Replica } from '@/shared/api';
 import { diasHasta, fechaLarga, hoyLocal, relativa } from '@/shared/lib';
@@ -45,6 +50,20 @@ export function ultimoContactoAlGuardar(
 ): string | null {
   if (actual === undefined || actual.estado !== estado) return dia < hoy ? dia : hoy;
   return actual.ultimo_contacto;
+}
+
+export function vencimientoPropuesto(
+  actual: Proyecto | undefined,
+  estado: EstadoProyecto,
+  visita: string | null,
+  hoy: string,
+): string | null {
+  const vigente = actual?.vencimiento_presupuesto ?? null;
+  if (vigente !== null || estado !== 'a_presupuestar' || actual?.estado === 'a_presupuestar') {
+    return vigente;
+  }
+  const relevamiento = visita !== null && visita !== '' && visita <= hoy ? visita : hoy;
+  return vencimientoDelPresupuesto(relevamiento);
 }
 
 export function ultimasActividades(replica: Replica): Map<string, string> {

@@ -76,27 +76,75 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
     await expect(
       page.getByRole('region', { name: 'Lo que la base rechazó o ajustó' }),
     ).toBeVisible();
+
+    await aInicio(page);
+    await page
+      .getByRole('region', { name: 'Hoy en la agenda' })
+      .getByRole('link', { name: 'Ver la agenda' })
+      .click();
+    await expect(titulo(page, 'Agenda')).toBeVisible();
   });
 
-  test('el avatar de Inicio se alcanza con el teclado y dice a dónde lleva', async ({ page }) => {
+  test('la agenda y el avatar de Inicio se alcanzan con el teclado y dicen a dónde llevan', async ({
+    page,
+  }) => {
     await page.goto('/');
     await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
 
+    const agenda = page.getByRole('link', { name: 'Agenda', exact: true });
     const avatar = page.getByRole('link', { name: 'Ajustes y tu cuenta' });
     await expect(page.getByRole('main').locator('header').first()).toMatchAriaSnapshot(`
       - heading "Inicio" [level=1]
+      - link "Agenda"
       - link "Ajustes y tu cuenta"
     `);
 
     let alcanzado = false;
     for (let paso = 0; paso < 10 && !alcanzado; paso += 1) {
       await page.keyboard.press('Tab');
-      alcanzado = await avatar.evaluate((el) => el === document.activeElement);
+      alcanzado = await agenda.evaluate((el) => el === document.activeElement);
     }
     expect(alcanzado).toBe(true);
+    await page.keyboard.press('Tab');
+    expect(await avatar.evaluate((el) => el === document.activeElement)).toBe(true);
 
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Enter');
+    await expect(titulo(page, 'Agenda')).toBeVisible();
+
+    await aInicio(page);
+    await avatar.focus();
     await page.keyboard.press('Enter');
     await expect(titulo(page, 'Ajustes')).toBeVisible();
+  });
+
+  test('el ícono de la agenda está al lado de la foto, mide lo que un dedo y no es una campana', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/');
+    await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+
+    const encabezado = page.getByRole('main').locator('header').first();
+    const agenda = encabezado.getByRole('link', { name: 'Agenda', exact: true });
+    const avatar = encabezado.getByRole('link', { name: 'Ajustes y tu cuenta' });
+    const caja = await agenda.boundingBox();
+    const cajaDelAvatar = await avatar.boundingBox();
+    if (caja === null || cajaDelAvatar === null) throw new Error('el encabezado no se ve');
+
+    expect(caja.width).toBeGreaterThanOrEqual(44);
+    expect(caja.height).toBeGreaterThanOrEqual(44);
+    expect(caja.x + caja.width).toBeLessThanOrEqual(cajaDelAvatar.x + 0.5);
+    expect(
+      Math.abs(caja.y + caja.height / 2 - (cajaDelAvatar.y + cajaDelAvatar.height / 2)),
+    ).toBeLessThan(1);
+    await expect(agenda.locator('svg.lucide-calendar-days')).toHaveAttribute('aria-hidden', 'true');
+    await expect(encabezado.locator('svg.lucide-bell')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Hoy en la agenda' })).toBeVisible();
+
+    await encabezado.screenshot({ path: testInfo.outputPath('inicio-celular-encabezado.png') });
+    console.log(
+      `ícono de la agenda: ${String(caja.width)}×${String(caja.height)} px, avatar: ${String(cajaDelAvatar.width)}×${String(cajaDelAvatar.height)} px`,
+    );
   });
 });
 
@@ -109,5 +157,14 @@ test.describe('en escritorio', () => {
 
     await expect(page.getByRole('link', { name: 'Ajustes y tu cuenta' })).toHaveCount(0);
     await expect(barra(page).getByRole('button', { name: 'Ajustes' })).toBeVisible();
+  });
+
+  test('la Agenda está en la barra lateral y no suma un bloque en Inicio', async ({ page }) => {
+    await page.goto('/');
+    await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+
+    await expect(page.getByRole('region', { name: 'Hoy en la agenda' })).toHaveCount(0);
+    await barra(page).getByRole('button', { name: 'Agenda' }).click();
+    await expect(titulo(page, 'Agenda')).toBeVisible();
   });
 });

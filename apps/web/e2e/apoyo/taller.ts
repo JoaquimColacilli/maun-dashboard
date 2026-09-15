@@ -198,7 +198,66 @@ export async function movimientosDelTaller({
   )) as FilaDeMovimiento[];
 }
 
+export async function vaciarAnotaciones({ entorno, accessToken }: SesionDePrueba): Promise<number> {
+  const vivas = (await pedir(entorno, '/rest/v1/anotaciones?select=id&deleted_at=is.null', {
+    accessToken,
+  })) as { id: string }[];
+  if (vivas.length === 0) return 0;
+
+  await pedir(entorno, '/rest/v1/anotaciones?deleted_at=is.null', {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+  });
+  return vivas.length;
+}
+
+export interface FilaDeAnotacion {
+  id: string;
+  fecha: string;
+  texto: string;
+  categoria: string;
+  hecha: boolean;
+  importante: boolean;
+}
+
+export async function anotacionesDelTaller({
+  entorno,
+  accessToken,
+}: SesionDePrueba): Promise<FilaDeAnotacion[]> {
+  return (await pedir(
+    entorno,
+    '/rest/v1/anotaciones?select=id,fecha,texto,categoria,hecha,importante&deleted_at=is.null&order=fecha,texto',
+    { accessToken },
+  )) as FilaDeAnotacion[];
+}
+
+export async function crearAnotacionPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  datos: {
+    fecha: string;
+    texto: string;
+    categoria?: 'materiales' | 'taller';
+    hora?: string;
+    proyecto_id?: string;
+    importante?: boolean;
+    hecha?: boolean;
+  },
+): Promise<string> {
+  const filas = (await pedir(entorno, '/rest/v1/anotaciones', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(datos),
+  })) as { id: string }[];
+  const fila = filas[0];
+  if (fila === undefined) throw new Error('el alta de la anotación no devolvió la fila');
+  return fila.id;
+}
+
 export async function vaciarTaller(sesion: SesionDePrueba): Promise<void> {
+  await vaciarAnotaciones(sesion);
   await vaciarMovimientos(sesion);
   await vaciarProyectos(sesion);
   await vaciarClientes(sesion);
@@ -396,6 +455,55 @@ export async function guardarProyectoPorRpc(
       p_proyecto: pedido.proyecto,
       p_pagos: pedido.pagos,
       p_gastos: pedido.gastos,
+    }),
+  });
+}
+
+export interface PreferenciasDeAvisosDePrueba {
+  zona: string;
+  hora: string;
+  avisos: Record<string, { activo: boolean; anticipacion: number }>;
+}
+
+export interface EstadoDeLosAvisosDePrueba {
+  suscripto: boolean;
+  dispositivos: number;
+  preferencias: PreferenciasDeAvisosDePrueba | null;
+}
+
+export async function estadoDeLosAvisosPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  endpoint: string | null,
+): Promise<EstadoDeLosAvisosDePrueba> {
+  return (await pedir(entorno, '/rest/v1/rpc/estado_de_mis_avisos', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify(endpoint === null ? {} : { p_endpoint: endpoint }),
+  })) as EstadoDeLosAvisosDePrueba;
+}
+
+export async function darDeBajaAvisosPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  endpoint: string,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/rpc/dar_de_baja_suscripcion', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify({ p_endpoint: endpoint }),
+  });
+}
+
+export async function guardarPreferenciasDeAvisosPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  preferencias: PreferenciasDeAvisosDePrueba,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/rpc/guardar_preferencias_de_avisos', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify({
+      p_zona: preferencias.zona,
+      p_hora: preferencias.hora,
+      p_avisos: preferencias.avisos,
     }),
   });
 }

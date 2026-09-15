@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas** y **Diezmo**. Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas**, **Diezmo**, la **Agenda** (ADR 0034) y los **Avisos** (ADR 0036). Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño; la agenda y los avisos son agregados nuestros.
 
 ## Capas (FSD, ADR 0006)
 
@@ -12,11 +12,13 @@ src/
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
                desbloquear-la-app, activar-huella,
                cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
-               editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto)
+               editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto,
+               llevar-la-agenda, recibir-avisos)
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
-               proyecto y movimiento
+               proyecto, movimiento y agenda
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
-               uuid, sync, huella, teclado) y ui
+               uuid, sync, huella, teclado, push) y ui
+  sw/          el service worker propio (ADR 0035), fuera de src y con su tsconfig
 ```
 
 - Solo se importa hacia capas de abajo, y un slice no importa a otro de su misma capa.
@@ -39,7 +41,7 @@ src/
 - **El registro es auto-servicio:** quien confirma su mail sale con su propio taller, creado por un trigger de `auth.users` en la misma transacción que la cuenta. No hay pantalla de "sin acceso" y no la agregues: una sesión sin taller es un alta que quedó a medias, y cae en el error genérico con reintentar.
 - Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso, y al revés tampoco: son mensajes distintos sobre el mismo `ErrorDeCarga`.
 - `RutaConAcceso` trata `isPaused` igual que `isError`. Sin nada guardado y sin red, la query de la réplica queda **en pausa, no en error**: sin ese caso la pantalla se quedaba en el skeleton para siempre, sin mensaje y sin forma de salir.
-- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/seguimiento`, `/proyectos`, `/clientes`, `/finanzas`, `/diezmo` y `/ajustes`.
+- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/agenda` (con la hoja `/agenda/anotar`), `/seguimiento`, `/proyectos`, `/clientes`, `/finanzas`, `/diezmo`, `/ajustes` y `/ajustes/avisos`.
 - **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
 
@@ -56,7 +58,7 @@ src/
 - **La pantalla de bloqueo es la máquina de `features/desbloquear-la-app/model/fase.ts`**: pide sola una vez al montarse, una falla cae al formulario y de ahí solo sale con un toque, y reintentar no vuelve al diseño de la huella. Un estado nuevo va ahí, con su test, no como un `setState` suelto.
 - **Un `SIGNED_OUT` que no salió de `salir()` es una sesión vencida**: el acceso lo dice. Un evento sin sesión que no es un cierre no cambia el estado de la sesión (lo decide `leerClaims`).
 - **Activar la huella marca la apertura en curso como desbloqueada.** Si no, la guarda bloquearía la app en el mismo momento en que el usuario la activa.
-- **La huella se pide cada vez que se sale y se vuelve a entrar** (ADR 0026 y 0028). Volver de segundo plano bloquea si la app estaba abierta cuando se ocultó; abrirla bloquea siempre. No hay minuto de gracia: el dueño lo probó y lo quiere así. **No lo cambies por `sessionStorage`**: sobrevive a la restauración de la app y el bloqueo deja de existir.
+- **La huella se pide cada vez que se sale y se vuelve a entrar** (ADR 0026 y 0028). Volver de segundo plano bloquea si la app estaba abierta cuando se ocultó; abrirla bloquea siempre. No hay minuto de gracia: el dueño lo probó y lo quiere así. **No lo cambies por `sessionStorage`**: sobrevive a la restauración de la app y el bloqueo deja de existir. **La única vuelta sin huella es tocar un aviso con la app abierta atrás** (ADR 0037): el service worker le manda `MAUN_VUELTA_POR_UN_AVISO` a la ventana, la app anota la vuelta (`anotarVueltaPorUnAviso`, que vale 10 s, solo con la página oculta, y se consume al volver), contesta y recién ahí el service worker la enfoca. No agregues otra puerta así: cada una es una vuelta sin huella.
 - **La única apertura sin huella es una recarga de verdad**: tipo de navegación `reload`, página no descartada (`document.wasDiscarded`) y a menos de `TOPE_DE_UNA_RECARGA_MS` (15 s) de la última vez adentro. La recarga misma anota `salioEn` al descargarse, por eso `salioEn` se escribe al ocultarse estando a la vista y nunca en un `pagehide` con el documento ya oculto: cerrar desde recientes una app que estaba hace rato afuera no puede renovar el momento. Ensanchar el tope deja pasar las restauraciones que Android informa como recarga.
 - **Desbloquear y activar el bloqueo borran la salida pendiente** (`salioAbierta`): el pedido de la huella del sistema puede ocultar la página, y sin eso desbloquear volvería a bloquear apenas la página vuelve a la vista.
 - **Toda forma nueva de desbloquear pasa por `marcarDesbloqueada`**, que es la que anota el momento. Los listeners los prende `ConBloqueo` con `vigilarElBloqueo()`; no los registres al importar el módulo.
@@ -77,7 +79,7 @@ src/
 
 ## Pantallas y navegación (ADR 0013)
 
-- **La app renderiza desde la réplica local, nunca desde la red.** La réplica llega por contexto (`useReplicaDelTaller()`), provista por `RutaConAcceso`, que ya la tiene resuelta antes de dejar pasar. **Ninguna pantalla adentro del marco tiene estado de carga**: si te encontrás escribiendo un skeleton para una de ellas, la pantalla no puede quedarse sin datos y el skeleton está de más.
+- **La app renderiza desde la réplica local, nunca desde la red.** La réplica llega por contexto (`useReplicaDelTaller()`), provista por `RutaConAcceso`, que ya la tiene resuelta antes de dejar pasar. **Ninguna pantalla adentro del marco tiene estado de carga**: si te encontrás escribiendo un skeleton para una de ellas, la pantalla no puede quedarse sin datos y el skeleton está de más. La única excepción es Avisos (`/ajustes/avisos`), que no sale de la réplica (ADR 0036).
 - Sin `lazy` ni Suspense con spinner para las pantallas del taller: se importan directo. El code splitting queda para las de acceso, que son las únicas que dependen de la red.
 - **En el celular, Ajustes se abre desde el avatar del encabezado de Inicio** (ADR 0024): es el único destino del sidebar sin lugar en la barra inferior, y ahí vive el registro de lo que la base rechazó. La barra inferior no se toca. Si un destino nuevo no entra en ella, el avatar pasa a abrir una hoja corta desde abajo con los que falten. `destinos-en-celular.spec.ts` recorre el camino a cada uno.
 - `app/layout/destinos.ts` es el modelo de la navegación: los destinos, cuáles se ven en cada ancho y `destinoResaltado`, que marca Proyectos cuando estás en Seguimiento y no hay destino propio. `Navegacion.tsx` elige **una sola** de las tres barras con `matchMedia`: tres `<nav>` en el DOM son tres landmarks.
@@ -120,7 +122,7 @@ src/
 - `crearQueryClient()` siembra `onlineManager` con `navigator.onLine`. **No lo saques**: `onlineManager` arranca en `true` fijo y solo cambia con los eventos de `window`, así que abrir la app ya sin señal la dejaba creyendo que hay red, con las mutaciones fallando en vez de encolarse (ADR 0014).
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
-- El service worker precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
+- El service worker (propio, `sw/sw.ts`, ADR 0035) precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
 - **La foto de perfil es la única escritura que no pasa por la cola** (ADR 0022): la cola maneja mutaciones de JSON, no archivos. `FormularioDePerfil` recorta y achica en el navegador (`features/editar-perfil/model`) y `subirFotoDeLaPersona` sube con `upsert` a `fotos-de-perfil/{usuario}/foto` y guarda la URL con `cacheNonce` en `user_metadata.foto`. Sin señal no abre el selector y lo dice. `esFalloDeRed` reconoce el `StorageUnknownError` de storage-js. Otro dispositivo ve la foto nueva recién cuando renueva la sesión, igual que el nombre.
 - El bundle se parte en dos: el vendor en su propio chunk y el código de la app en otro (`manualChunks` en `vite.config.ts`). No baja el arranque, pero un cambio de pantalla deja de obligar a rebajar el bundle entero del precache (ADR 0015).
 
@@ -248,6 +250,48 @@ src/
   «arregles».
 - Proyecto nuevo solo ofrece estados de obra: un contacto entra por Seguimiento.
 
+## Agenda (ADR 0034)
+
+- **Lo que sale de un trabajo no se guarda.** Visitas, vencimientos de presupuesto y entregas los arma `eventosDeLaAgenda` (`@maun/domain`) desde la réplica (`datosDeLaAgendaDeLaReplica`), para el rango que se muestra. La misma función alimenta la grilla, la lista, el día y lo que se avisa. No agregues una tabla ni una columna de eventos.
+- **Lo propio es una `anotacion`**, con tres mutaciones en la cola (alta, que también restaura para deshacer; edición y baja). Van con `metaDeAvisos(..., { silencioso: true })`: el aviso con «Deshacer» lo pone la acción (`features/llevar-la-agenda/model/acciones.ts`) y la cola solo avisa los errores. Un guardado, un aviso (ADR 0030).
+- **Un derivado no se edita ni se borra desde la agenda**: la fila dice de dónde sale y ofrece abrir el trabajo (`DERIVADA` en `entities/agenda`). No le agregues un botón de borrar.
+- **Lo hecho no desaparece: va abajo de lo pendiente, tachado y más bajo** (ADR 0034), en la capa, en la hoja y en la lista del celular y en la celda. Ordená con `conLoHechoAlFinal`, y contá con `resumenDelDia`, `resumenDelMes` y `cuentaDelDia`, que cuentan lo pendiente y dicen aparte lo hecho.
+  - La fila y el chip dicen «hecha» para el lector de pantalla: no lo dejes solo en el gris.
+  - Una lista con casillas que cambian de lugar al tildar usa `useAccionesConFoco`, o el foco del teclado se pierde cuando React vuelve a montar la fila.
+  - «Hoy en la agenda» de Inicio muestra solo lo pendiente, a propósito.
+- **Los colores de tesoro están reservados.** Las categorías usan los tokens `ag-*` y una forma (cuadrado, punteado, rombo, círculo, barra): nunca solo el color.
+- En el celular, lista con `TiraDelMes` (`role="group"` con `aria-pressed`). En tablet y PC, `GrillaDelMes` (dos eventos por celda en tablet, tres en la PC, y «+N más»).
+- **En la lista del celular, cada día con cosas tiene «Anotar» en su encabezado**, que abre la hoja de anotar con ese día. El día vacío lo tiene en el cuerpo, y no se duplica. Anotar no puede depender de abrir la hoja del día con el ícono de ampliar.
+- **La grilla del mes ocupa todo el ancho del área de contenido, siempre, y el día se abre en una capa anclada a su celda** (ADR 0034). Es un `popover="auto"` que se ubica con posicionamiento anclado de CSS (`app/styles/index.css`): la celda abierta es `--dia-abierto` (la marca `data-abierto`) y la grilla, `--grilla-del-mes`. Abre a la derecha del día y `position-try-fallbacks` la da vuelta sola hacia la izquierda y hacia arriba. Mide dos columnas y un poco, así que viernes, sábado y domingo abren siempre a la izquierda. **No la midas con JavaScript, no la pongas al costado y no la dejes fija en un lugar.**
+  - Los botones de la grilla que abren el día son invocadores del popover (`idDeLaCapa`, `popovertargetaction="show"`): sin eso, tocar otro día cuenta como tocar fuera y la cierra.
+  - La punta son dos triángulos anclados a la celda y a la capa a la vez; el del lado que no corresponde queda de ancho cero. No hace falta `@container anchored()`, que solo tiene Chrome.
+  - Escape y «Cerrar el día» devuelven el foco al día; tocar fuera lo deja donde se tocó. Scrollear la agenda la cierra: los tres motores la mueven con el día sin volver a elegir el lado, y quedaba cortada.
+  - **Escape lo cierra la app en su `keydown`, no el evento `toggle`.** El `toggle` llega en otra tarea, cuando el navegador ya devolvió el foco al día. Un Enter en ese hueco encontraba el estado todavía abierto y cerraba la capa en vez de abrirla: lo encontró el e2e del teclado. El `toggle` queda para tocar fuera.
+  - **Antes de abrir una hoja, la app cierra la capa** (`anotarCerrandoElDia`): `showModal` cierra los popover y WebKit no dispara `toggle`, así que el estado quedaría abierto.
+  - Sin soporte de anclaje, `@supports` la deja centrada y sin punta.
+  - `agenda.spec.ts` mide los siete casos (lunes, miércoles, viernes, sábado, domingo, primera y última fila) a 1440 y a 1024 px, con la grilla a todo el ancho.
+- **La hoja del día del celular es un `<dialog>` modal y la capa de la PC va en la capa superior: las dos tapan los avisos globales**, y tocar uno cerraría la capa. El deshacer adentro va por el aviso local de `DetalleDelDia` (`aviso`). Si movés una acción con deshacer a otra hoja o capa, pasa lo mismo.
+- **Una réplica guardada antes de la agenda no trae `anotaciones`.** `filasDe` tolera la tabla que falta y `necesitaReconcile` pide `bootstrap()`. No subas `VERSION_CACHE` para esto: se lleva la cola.
+- `vencimiento_presupuesto` se propone al pasar a «a presupuestar» (`vencimientoPropuesto`) y se edita en la hoja del contacto. `guardar_proyecto` lo escribe solo si viene la clave: los datos nuevos de un contacto llevan `vencimiento_presupuesto: null` explícito.
+- **En el celular la agenda no está en la barra** (decisión con el dueño, objeción en el ADR): se llega por el ícono al lado de la foto en el encabezado de Inicio y por «Hoy en la agenda», y «Anotar algo» es la primera acción del botón redondo.
+
+## Avisos (ADR 0036)
+
+- **Las suscripciones y las preferencias no están en la réplica ni en la cola.** Van por RPC (`shared/api/avisos.ts`) y necesitan señal. No las sumes a `TABLAS_REPLICADAS` ni les registres una mutación.
+- **`Notification.requestPermission()` se llama en el toque, antes de cualquier `await`**: `ActivarLosAvisos` llama a `pedirPermisoDeAvisos()` en el `onClick` y le pasa la promesa a `terminarDeActivar`. Safari lo rechaza fuera del gesto. Nunca se pide al abrir la app ni al entrar a la pantalla; `ActivarLosAvisos.test.tsx` y el e2e lo verifican.
+- **La zona se pregunta.** El select arranca vacío la primera vez; si la persona ya eligió en otro dispositivo, viene esa. No la completes con `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+- **Las fases salen de `faseDeLosAvisos`**: sin claves, sin instalar (solo el iPhone abierto desde Safari), sin soporte, denegado, sin pedir y activos. Un estado nuevo va ahí, con su test.
+- **Si el servidor puede mandar lo dice el `GET` de la función** (`servidorDeAvisos`), que trae también la clave pública. No hay variable de entorno de la clave: no la agregues al bundle.
+- **Es la única pantalla del marco con carga y error propios**, porque no sale de la réplica.
+- Los cambios de preferencias son optimistas, van en serie (`cadena`) y vuelven atrás si la base los rechaza.
+- **La carga del push la arma `supabase/functions/avisos/texto.ts` y la lee `sw/sw.ts`** (`titulo`, `cuerpo`, `url`, `etiqueta`): si cambia una, cambia la otra.
+- **No hay campana, y no la agregues** (ADR 0036). Una campana promete una bandeja de mensajes y la app no tiene ninguna: los avisos son push, y lo que existe es una pantalla de configuración en Ajustes, a un toque del avatar. Tampoco va «Avisos» aparte en la barra lateral: Ajustes ya está ahí. Si alguna vez hace falta el historial de lo avisado, es una bandeja de verdad y va en su propio paso. El ícono del encabezado de Inicio es la agenda.
+
+## El service worker (ADR 0035)
+
+- **Es propio: `sw/sw.ts` con `injectManifest`.** Tiene el precache de Workbox, la limpieza de caches viejos, la navegación al `index.html`, el mensaje `SKIP_WAITING` del aviso de versión nueva y los handlers de `push` y `notificationclick`. Compila con `tsconfig.sw.json` (lib WebWorker) y lo revisa el mismo ESLint.
+- Un cambio en el precache o en el registro se verifica abriendo sin señal, encolando y viendo aparecer «Hay una versión nueva» con el service worker en espera, no solo con los e2e.
+
 ## Cosas que muerden en el e2e
 
 - **Antes de `context.setOffline(true)` hay que esperar dos cosas**: `navigator.serviceWorker.ready`, porque el service worker es el que sirve el shell al reabrir, y que la réplica ya esté guardada en IndexedDB. Sin lo segundo, reabrir sin señal encuentra el dispositivo vacío.
@@ -278,3 +322,10 @@ src/
 - **Después de `page.reload()` con `context.setOffline(true)`, `navigator.onLine` vuelve a dar `true`** (medido en el bloqueo): la app arranca creyendo que hay señal. Para que se entere, `window.dispatchEvent(new Event('offline'))`, que es lo que escucha `onlineManager`.
 - Chromium headless sin autenticador rechaza la mediación condicional con `NotSupportedError`. La app lo calla; un test que espera la ceremonia necesita el autenticador virtual.
 - **Un `vite preview` que quedó levantado en el 4173 se reusa** (`reuseExistingServer`), y el e2e corre contra un build viejo. Bajalo antes de correr.
+- **Chromium headless no muestra notificaciones**: `Notification.permission` queda `denied` aunque `grantPermissions(['notifications'])` lo conceda, y `showNotification` rechaza. El push se prueba entregándolo por CDP (`ServiceWorker.deliverPushMessage`) y espiando `showNotification` adentro del service worker (`espiarNotificaciones` de `apoyo/avisos.ts`). Un `PushEvent` construido a mano no sirve: `waitUntil` rechaza los eventos que no despachó el navegador.
+- **Tampoco se suscribe a un servicio de push real.** `simularPush` reemplaza `PushManager` y `Notification.requestPermission` antes de cargar, y anota si cada pedido llegó con activación del usuario (`navigator.userActivation.isActive`). Los endpoints son `https://push.example/e2e-…` y el `afterEach` los da de baja por RPC: si agregás un test de avisos, dejá ese `afterEach`.
+- **Con los avisos activos, `getByLabel('¿Dónde vivís?')` encuentra la sección y el select**: usá `getByRole('combobox', { name: '¿Dónde vivís?' })`.
+- **Tocar un aviso no se puede probar tal cual.** `bloqueo.spec.ts` manda desde el service worker (`trabajador.evaluate`) el mismo `MAUN_VUELTA_POR_UN_AVISO` que manda `notificationclick`, y después simula la vuelta con `alFrente`. El `focus()` real queda sin ejercitar.
+- **Para probar que una vuelta no bloquea, la huella del teléfono virtual tiene que no verificar** (`huellaQueVerifica(telefono, false)`). Con la huella que se confirma sola, el bloqueo aparece y se va antes de que el test lo vea, y un bloqueo indebido pasa por bueno.
+- **En la PC, con la capa del día abierta, sus textos también están en la celda**: un texto aparece dos veces. Buscalo dentro de la celda (`laAnotacionDeHoy`, `celda`) o de la capa (`getByRole('complementary')`).
+- **La capa tapa los días de al lado.** Para probar que tocar otro día la mueve, elegí uno que no quede debajo: `agenda.spec.ts` va de un lunes al domingo de la misma fila. Las puntas se miden con `getBoundingClientRect` (`puntaDe`), porque la que no corresponde tiene ancho cero.

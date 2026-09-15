@@ -6,7 +6,7 @@ select plan(18);
 
 select tables_are(
   'public',
-  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'movimientos', 'ajustes'],
+  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'movimientos', 'ajustes', 'anotaciones'],
   'public tiene exactamente las tablas esperadas: una tabla nueva obliga a revisar esta suite'
 );
 
@@ -20,7 +20,11 @@ select set_eq(
     select p.proname::text from pg_proc p
     where p.pronamespace = 'public'::regnamespace and p.prorettype <> 'event_trigger'::regtype
   $$,
-  array['bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto'],
+  array[
+    'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
+    'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos',
+    'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida', 'avisos_por_mandar'
+  ],
   'public expone exactamente las funciones esperadas'
 );
 

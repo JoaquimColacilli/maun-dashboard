@@ -60,6 +60,7 @@ export const esquemaDeProyecto = z.object({
   fecha_entrega: z.string(),
   direccion_entrega: texto(500),
   notas: texto(10_000),
+  vencimiento_presupuesto: z.string(),
   pagos: z.array(filaDinamica),
   gastos: z.array(filaDinamica),
 });
@@ -101,6 +102,7 @@ export function valoresDelFormulario(
       fecha_entrega: '',
       direccion_entrega: inicial.direccion ?? '',
       notas: '',
+      vencimiento_presupuesto: '',
       pagos: [],
       gastos: [],
     };
@@ -121,6 +123,7 @@ export function valoresDelFormulario(
     fecha_entrega: fecha(proyecto.fecha_entrega),
     direccion_entrega: proyecto.direccion_entrega,
     notas: proyecto.notas,
+    vencimiento_presupuesto: fecha(proyecto.vencimiento_presupuesto),
     pagos: pagos.map((pago) => ({
       id: pago.id,
       fecha: pago.fecha,
@@ -152,6 +155,7 @@ export function datosDelFormulario(valores: FormularioDeProyecto): DatosDeProyec
     fecha_entrega: fechaOnNull(valores.fecha_entrega),
     direccion_entrega: valores.direccion_entrega.trim(),
     notas: valores.notas.trim(),
+    vencimiento_presupuesto: fechaOnNull(valores.vencimiento_presupuesto),
   };
 }
 

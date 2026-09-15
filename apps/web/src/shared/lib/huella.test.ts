@@ -261,6 +261,53 @@ describe('el segundo plano', () => {
     window.removeEventListener('maun:bloqueo-cambio', avisos);
   });
 
+  it('volver por tocar un aviso no bloquea, y la vuelta siguiente sí', async () => {
+    const huella = await adentro();
+
+    cambiarVisibilidad('hidden');
+    vi.setSystemTime(AHORA + 2 * SEGUNDO);
+    huella.anotarVueltaPorUnAviso();
+    cambiarVisibilidad('visible');
+    expect(huella.appBloqueada('ana')).toBe(false);
+
+    cambiarVisibilidad('hidden');
+    cambiarVisibilidad('visible');
+    expect(huella.appBloqueada('ana')).toBe(true);
+  });
+
+  it('la vuelta por un aviso vence: si la app vuelve pasado el tope, bloquea', async () => {
+    const huella = await adentro();
+
+    cambiarVisibilidad('hidden');
+    huella.anotarVueltaPorUnAviso();
+    vi.setSystemTime(AHORA + huella.TOPE_DE_UNA_VUELTA_POR_AVISO_MS);
+    cambiarVisibilidad('visible');
+
+    expect(huella.appBloqueada('ana')).toBe(true);
+  });
+
+  it('un aviso tocado con la app a la vista no deja nada anotado para la próxima vuelta', async () => {
+    const huella = await adentro();
+
+    huella.anotarVueltaPorUnAviso();
+    cambiarVisibilidad('hidden');
+    cambiarVisibilidad('visible');
+
+    expect(huella.appBloqueada('ana')).toBe(true);
+  });
+
+  it('un aviso no abre una app que ya estaba bloqueada', async () => {
+    guardarMarca({});
+    const huella = await moduloVigilado();
+    expect(huella.appBloqueada('ana')).toBe(true);
+
+    cambiarVisibilidad('hidden');
+    huella.anotarVueltaPorUnAviso();
+    cambiarVisibilidad('visible');
+
+    expect(huella.appBloqueada('ana')).toBe(true);
+  });
+
   it('un aviso de visible sin haberse ocultado antes no bloquea', async () => {
     const huella = await adentro();
 

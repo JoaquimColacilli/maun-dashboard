@@ -108,6 +108,7 @@ export {
   situacionDelContacto,
   ultimasActividades,
   ultimoContactoAlGuardar,
+  vencimientoPropuesto,
   type ContactoEnLista,
   type EtapaDeSeguimiento,
   type PasoDelContacto,

@@ -20,6 +20,99 @@
   }
 }
 
+@layer components {
+  .capa-del-dia {
+    inset: 0;
+    margin: auto;
+    width: 20rem;
+    max-height: calc(100dvh - 16px);
+  }
+
+  .punta-del-dia {
+    display: none;
+  }
+
+  @supports (anchor-name: --a) {
+    [data-grilla-del-mes] {
+      anchor-name: --grilla-del-mes;
+    }
+
+    [data-grilla-del-mes] [data-abierto] {
+      anchor-name: --dia-abierto;
+    }
+
+    .capa-del-dia {
+      anchor-name: --capa-del-dia;
+      position-anchor: --dia-abierto;
+      inset: auto;
+      left: anchor(right);
+      right: max(anchor(--grilla-del-mes right), 8px);
+      top: anchor(top);
+      bottom: max(anchor(--grilla-del-mes bottom), 8px);
+      margin: 0 0 0 12px;
+      justify-self: start;
+      align-self: start;
+      width: max(20rem, calc(anchor-size(--grilla-del-mes width) * 2 / 7 + 1rem));
+      position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline,
+        --a-lo-alto-de-la-grilla,
+        --a-lo-alto-de-la-grilla flip-inline,
+        --a-lo-alto-de-la-ventana,
+        --a-lo-alto-de-la-ventana flip-inline;
+    }
+
+    .punta-del-dia {
+      display: block;
+      position: fixed;
+      position-anchor: --dia-abierto;
+      top: calc(anchor(top) + 11px);
+      height: 16px;
+      pointer-events: none;
+      filter: drop-shadow(0 -1px 0 var(--color-hairline)) drop-shadow(0 1px 0 var(--color-hairline));
+    }
+
+    .punta-del-dia::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-color: var(--color-paper);
+    }
+
+    .punta-del-dia[data-punta='hacia-la-izquierda'] {
+      left: anchor(right);
+      right: calc(anchor(--capa-del-dia left) - 1px);
+    }
+
+    .punta-del-dia[data-punta='hacia-la-izquierda']::before {
+      clip-path: polygon(100% 0, 0 50%, 100% 100%);
+    }
+
+    .punta-del-dia[data-punta='hacia-la-derecha'] {
+      left: calc(anchor(--capa-del-dia right) - 1px);
+      right: anchor(left);
+    }
+
+    .punta-del-dia[data-punta='hacia-la-derecha']::before {
+      clip-path: polygon(0 0, 100% 50%, 0 100%);
+    }
+  }
+}
+
+@position-try --a-lo-alto-de-la-grilla {
+  top: max(anchor(--grilla-del-mes top), 8px);
+  bottom: max(anchor(--grilla-del-mes bottom), 8px);
+  align-self: center;
+}
+
+@position-try --a-lo-alto-de-la-ventana {
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  align-self: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

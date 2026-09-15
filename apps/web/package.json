@@ -46,6 +46,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-pwa": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "workbox-precaching": "catalog:",
+    "workbox-routing": "catalog:"
   }
 }

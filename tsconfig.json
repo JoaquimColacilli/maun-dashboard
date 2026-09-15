@@ -1,6 +1,6 @@
 {
   "files": [],
-  "exclude": ["design-reference"],
+  "exclude": ["design-reference", "supabase/functions"],
   "references": [
     { "path": "./packages/domain" },
     { "path": "./packages/db" },

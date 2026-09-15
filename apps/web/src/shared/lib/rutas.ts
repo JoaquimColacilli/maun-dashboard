@@ -59,3 +59,17 @@ export function rutaDelMovimiento(id: string): string {
 }
 
 export const RUTA_DE_DIEZMO = '/diezmo';
+
+export const RUTA_DE_AJUSTES = '/ajustes';
+
+export const RUTA_DE_AVISOS = '/ajustes/avisos';
+
+export const RUTA_DE_AGENDA = '/agenda';
+
+export const RUTA_DE_ANOTAR = '/agenda/anotar';
+
+export function rutaDeAnotar(fecha?: string): string {
+  return fecha === undefined
+    ? RUTA_DE_ANOTAR
+    : `${RUTA_DE_ANOTAR}?${new URLSearchParams({ fecha }).toString()}`;
+}

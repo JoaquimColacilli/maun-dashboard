@@ -6,12 +6,15 @@
 
 -- Schemas ----------------------------------------------------------------------------------------
 
--- schema private: authenticated:USAGE
+-- schema private: authenticated:USAGE, service_role:USAGE
 comment on schema private is 'Helpers de RLS, triggers y funciones internas. La Data API no expone este schema: nada de acá se llama por RPC.';
 -- schema public: anon:USAGE, authenticated:USAGE, public:USAGE, service_role:USAGE
 comment on schema public is 'standard public schema';
 
 -- Enums ------------------------------------------------------------------------------------------
+
+create type public.categoria_anotacion as enum ('materiales', 'taller');
+comment on type public.categoria_anotacion is 'Qué clase de cosa anotó el dueño: materiales (comprar, encargar, retirar) o taller (trabajo, mandados, cobros). Entrega, visita y presupuesto no están: son categorías de lo que se calcula, y eso no se guarda.';
 
 create type public.comprobante as enum ('factura_a', 'factura_b', 'factura_c', 'remito', 'sin_comprobante');
 comment on type public.comprobante is 'Comprobante a emitir al cliente.';
@@ -80,6 +83,52 @@ create policy ajustes_lectura on public.ajustes as permissive
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
 grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo) on public.ajustes to authenticated;
+
+create table public.anotaciones (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  fecha date not null,
+  hora time without time zone,
+  texto text not null,
+  categoria categoria_anotacion not null default 'taller'::categoria_anotacion,
+  proyecto_id uuid,
+  hecha boolean not null default false,
+  importante boolean not null default false,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint anotaciones_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint anotaciones_pkey PRIMARY KEY (id),
+  constraint anotaciones_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint anotaciones_texto_valido CHECK (btrim(texto) <> ''::text AND char_length(texto) <= 500)
+);
+comment on table public.anotaciones is 'Lo que el dueño anota a mano en la agenda. Las visitas, las entregas y los vencimientos de presupuesto no están acá: se calculan desde el proyecto (ADR 0034).';
+comment on column public.anotaciones.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.anotaciones.fecha is 'El día de la anotación. El día es la unidad de la agenda.';
+comment on column public.anotaciones.hora is 'Hora opcional: «15hs retirar el pulpo». Null es «en algún momento del día».';
+comment on column public.anotaciones.proyecto_id is 'Trabajo al que se refiere, si se refiere a uno. Borrar el proyecto (lógico) no borra la anotación.';
+comment on column public.anotaciones.hecha is 'La tildó como hecha. Sigue en la agenda, tachada.';
+comment on column public.anotaciones.importante is 'La marcó como importante: el círculo con que en el cuaderno de papel marca lo importante de la semana.';
+comment on column public.anotaciones.deleted_at is 'Borrado lógico, como en todo el household: delta() lo trae para que el cliente la saque de su copia.';
+CREATE INDEX anotaciones_household_actualizado ON public.anotaciones USING btree (household_id, updated_at);
+CREATE INDEX anotaciones_household_proyecto ON public.anotaciones USING btree (household_id, proyecto_id);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON anotaciones FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.anotaciones enable row level security;
+create policy anotaciones_alta on public.anotaciones as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy anotaciones_edicion on public.anotaciones as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy anotaciones_lectura on public.anotaciones as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.anotaciones to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.anotaciones to service_role;
+grant insert (id, fecha, hora, texto, categoria, proyecto_id, hecha, importante, deleted_at) on public.anotaciones to authenticated;
+grant update (id, fecha, hora, texto, categoria, proyecto_id, hecha, importante, deleted_at) on public.anotaciones to authenticated;
 
 create table public.clientes (
   id uuid not null default private.uuidv7(),
@@ -364,6 +413,7 @@ create table public.proyectos (
   dist_fijos_previo_centavos bigint,
   dist_liquidado_at timestamp with time zone,
   reapertura_sueldo_mensual boolean,
+  vencimiento_presupuesto date,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
@@ -408,6 +458,7 @@ comment on column public.proyectos.dist_sueldo_previo_centavos is 'Congelado al 
 comment on column public.proyectos.dist_fijos_previo_centavos is 'Congelado al liquidar: costos fijos que el mes ya llevaba liquidados por otros proyectos en ese instante.';
 comment on column public.proyectos.dist_liquidado_at is 'Congelado al liquidar: el instante de la liquidación. Ordena las liquidaciones de un mismo mes.';
 comment on column public.proyectos.reapertura_sueldo_mensual is 'Modo del sueldo del cobro que se reabrió. El próximo cobro lo conserva aunque los ajustes hayan cambiado.';
+comment on column public.proyectos.vencimiento_presupuesto is 'Fecha límite para entregar el presupuesto de un contacto. La app la propone a tres días hábiles del relevamiento cuando el contacto pasa a presupuestar, y se edita como la entrega estimada. La agenda la muestra mientras el contacto no mandó el presupuesto.';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -427,8 +478,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto) on public.proyectos to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -536,6 +587,27 @@ comment on policy fotos_de_perfil_ver_la_propia on storage.objects is 'No es par
 
 -- Funciones --------------------------------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION public.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
+ RETURNS boolean
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.anotar_aviso(p_suscripcion, p_dia, p_mandado)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function anotar_aviso(uuid,date,boolean) is 'Solo para la función de borde de los avisos (service_role).';
+
+CREATE OR REPLACE FUNCTION public.avisos_por_mandar(p_ahora timestamp with time zone DEFAULT now())
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select private.avisos_por_mandar(p_ahora)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function avisos_por_mandar(timestamp with time zone) is 'Solo para la función de borde de los avisos (service_role).';
+
 CREATE OR REPLACE FUNCTION public.bootstrap()
  RETURNS jsonb
  LANGUAGE sql
@@ -567,11 +639,24 @@ AS $function$
     ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.deleted_at is null
+    ),
+    'anotaciones', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.anotaciones t where t.deleted_at is null
     )
   )
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function bootstrap() is 'Todo el household del usuario en un JSON, sin filas borradas, más el cursor para el primer delta. Es también el reconcile completo: el cliente reemplaza su copia entera con esto.';
+
+CREATE OR REPLACE FUNCTION public.borrar_suscripcion_vencida(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.borrar_suscripcion_vencida(p_endpoint)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function borrar_suscripcion_vencida(text) is 'Solo para la función de borde de los avisos (service_role).';
 
 CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
  RETURNS proyectos
@@ -604,6 +689,16 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha, la distribución que le mostró al usuario y el acumulado del mes que vio. Si ese acumulado no es el de la base, la liquidación se congela con el de la base y la app lo ve comparando dist_sueldo_previo_centavos contra lo que mandó.';
+
+CREATE OR REPLACE FUNCTION public.dar_de_baja_suscripcion(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.dar_de_baja_suscripcion(p_endpoint)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function dar_de_baja_suscripcion(text) is 'Apaga los avisos en este dispositivo.';
 
 CREATE OR REPLACE FUNCTION public.delta(p_desde timestamp with time zone)
  RETURNS jsonb
@@ -646,12 +741,36 @@ begin
     ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.updated_at >= v_desde
+    ),
+    'anotaciones', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.anotaciones t where t.updated_at >= v_desde
     )
   );
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function delta(timestamp with time zone) is 'Filas del household cambiadas desde el cursor, incluidas las borradas (deleted_at no null), más el cursor siguiente. Aplica un solape de cinco minutos.';
+
+CREATE OR REPLACE FUNCTION public.estado_de_mis_avisos(p_endpoint text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select private.estado_de_mis_avisos(p_endpoint)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function estado_de_mis_avisos(text) is 'Si este dispositivo recibe avisos y las preferencias de la persona. preferencias es null hasta que activa los avisos por primera vez.';
+
+CREATE OR REPLACE FUNCTION public.guardar_preferencias_de_avisos(p_zona text, p_hora time without time zone, p_avisos jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.guardar_preferencias_de_avisos(p_zona, p_hora, p_avisos)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function guardar_preferencias_de_avisos(text,time without time zone,jsonb) is 'Cambia la zona horaria, la hora y qué avisa.';
 
 CREATE OR REPLACE FUNCTION public.guardar_proyecto(p_proyecto jsonb, p_pagos jsonb, p_gastos jsonb)
  RETURNS jsonb
@@ -664,6 +783,7 @@ declare
   v_fila public.proyectos;
   v_existia boolean;
   v_sin_cambios boolean;
+  v_vencimiento date;
 begin
   if p_proyecto is null or jsonb_typeof(p_proyecto) <> 'object' then
     raise exception 'El proyecto va en un objeto jsonb' using errcode = '22023';
@@ -691,7 +811,8 @@ begin
     entrega_estimada date,
     fecha_entrega date,
     direccion_entrega text,
-    notas text
+    notas text,
+    vencimiento_presupuesto text
   );
 
   if v_p.id is null or v_p.cliente_id is null or v_p.titulo is null or v_p.estado is null then
@@ -725,6 +846,11 @@ begin
   select * into v_actual from public.proyectos p where p.id = v_p.id for update;
   v_existia := found;
 
+  v_vencimiento := case
+    when p_proyecto ? 'vencimiento_presupuesto' then nullif(v_p.vencimiento_presupuesto, '')::date
+    else v_actual.vencimiento_presupuesto
+  end;
+
   if v_existia then
     if v_actual.deleted_at is not null then
       raise exception 'El proyecto está borrado' using errcode = 'MN002';
@@ -734,13 +860,14 @@ begin
       v_actual.cliente_id, v_actual.titulo, v_actual.descripcion, v_actual.estado,
       v_actual.presupuesto_centavos, v_actual.forma_pago, v_actual.comprobante,
       v_actual.fecha_visita, v_actual.ultimo_contacto, v_actual.fecha_inicio,
-      v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas
+      v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas,
+      v_actual.vencimiento_presupuesto
     ) is not distinct from (
       v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
       v_p.presupuesto_centavos, v_p.forma_pago, v_p.comprobante,
       v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio,
       v_p.entrega_estimada, v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''),
-      coalesce(v_p.notas, '')
+      coalesce(v_p.notas, ''), v_vencimiento
     );
 
     -- Un guardado hecho sin señal sobre una versión vieja no pisa en silencio lo que hay. La
@@ -782,7 +909,8 @@ begin
       entrega_estimada = v_p.entrega_estimada,
       fecha_entrega = v_p.fecha_entrega,
       direccion_entrega = coalesce(v_p.direccion_entrega, ''),
-      notas = coalesce(v_p.notas, '')
+      notas = coalesce(v_p.notas, ''),
+      vencimiento_presupuesto = v_vencimiento
     where id = v_p.id
     returning * into v_fila;
   else
@@ -790,12 +918,13 @@ begin
       insert into public.proyectos (
         id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
         fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega,
-        direccion_entrega, notas
+        direccion_entrega, notas, vencimiento_presupuesto
       ) values (
         v_p.id, v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
         v_p.presupuesto_centavos, v_p.forma_pago, v_p.comprobante,
         v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio, v_p.entrega_estimada,
-        v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, '')
+        v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
+        v_vencimiento
       )
       returning * into v_fila;
     exception
@@ -882,6 +1011,130 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function guardar_proyecto(jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos y sus gastos en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de pagos y gastos vienen marcadas con borrado en su propio array. Un proyecto liquidado rechaza el cambio de sus hijos con MN001, por la guarda de pagos y gastos.';
 
+CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  update private.suscripciones_de_avisos
+  set ultimo_dia_avisado = greatest(coalesce(ultimo_dia_avisado, p_dia), p_dia),
+      ultimo_envio = case when p_mandado then now() else ultimo_envio end
+  where id = p_suscripcion;
+  return found;
+end;
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.anotar_aviso(uuid,date,boolean) is 'Anota que el día ya se miró para ese dispositivo, y si además salió un aviso, cuándo. Un día sin nada que avisar también se anota: si no, se volvería a mirar en cada vuelta del trabajo.';
+
+CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    jsonb_typeof(p_avisos) = 'object'
+    and (select array_agg(clave order by clave) from jsonb_object_keys(p_avisos) as clave)
+      = array['anotaciones', 'entregas', 'presupuestos', 'visitas']
+    and (
+      select bool_and(
+        case
+          when jsonb_typeof(valor) <> 'object' then false
+          else jsonb_typeof(valor -> 'activo') = 'boolean'
+            and coalesce(valor ->> 'anticipacion', '') in ('0', '1', '2', '3')
+            and valor - 'activo' - 'anticipacion' = '{}'::jsonb
+        end
+      )
+      from jsonb_each(p_avisos) as e (clave, valor)
+    ),
+    false
+  )
+$function$;
+-- execute: solo el dueño
+comment on function private.avisos_bien_formados(jsonb) is 'Qué avisa y con cuánta anticipación: las cuatro claves de AVISOS_DE_LA_AGENDA de @maun/domain, cada una con activo y una anticipación de 0 a 3 días.';
+
+CREATE OR REPLACE FUNCTION private.avisos_por_mandar(p_ahora timestamp with time zone)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  with locales as (
+    select
+      s.id,
+      s.user_id,
+      s.endpoint,
+      s.p256dh,
+      s.auth,
+      s.ultimo_dia_avisado,
+      p.avisos,
+      p.hora,
+      (p_ahora at time zone p.zona) as ahora_local
+    from private.suscripciones_de_avisos s
+    join private.preferencias_de_avisos p on p.user_id = s.user_id
+  ),
+  debidas as (
+    select
+      l.*,
+      l.ahora_local::date as dia,
+      (
+        select m.household_id
+        from public.household_members m
+        where m.user_id = l.user_id and m.deleted_at is null
+        order by m.created_at
+        limit 1
+      ) as household_id
+    from locales l
+    -- La hora local de cada persona, calculada acá con su zona: desde la hora que eligió y durante
+    -- tres horas, una vez por día local.
+    where l.ahora_local >= l.ahora_local::date + l.hora
+      and l.ahora_local < l.ahora_local::date + l.hora + interval '3 hours'
+      and (l.ultimo_dia_avisado is null or l.ultimo_dia_avisado < l.ahora_local::date)
+  )
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', d.id,
+        'endpoint', d.endpoint,
+        'p256dh', d.p256dh,
+        'auth', d.auth,
+        'dia', d.dia,
+        'preferencias', d.avisos,
+        'filas', jsonb_build_object(
+          'proyectos', (
+            select coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb)
+            from public.proyectos p
+            where p.household_id = d.household_id
+              and p.deleted_at is null
+              and p.estado in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso')
+          ),
+          'clientes', (
+            select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'nombre', c.nombre, 'zona', c.zona)), '[]'::jsonb)
+            from public.clientes c
+            where c.household_id = d.household_id and c.deleted_at is null
+          ),
+          'anotaciones', (
+            select coalesce(jsonb_agg(to_jsonb(a)), '[]'::jsonb)
+            from public.anotaciones a
+            where a.household_id = d.household_id
+              and a.deleted_at is null
+              and not a.hecha
+              and a.fecha between d.dia and d.dia + 3
+          )
+        )
+      )
+      order by d.id
+    ),
+    '[]'::jsonb
+  )
+  from debidas d
+  where d.household_id is not null
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.avisos_por_mandar(timestamp with time zone) is 'Los dispositivos a los que les toca el aviso de la mañana en este momento, según la zona horaria y la hora de cada persona, con los datos de su taller que necesita la agenda. Qué avisar lo decide eventosParaAvisar de @maun/domain en la función de borde, no esta consulta.';
+
 CREATE OR REPLACE FUNCTION private.borrar_hijos_de_proyecto()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -904,6 +1157,20 @@ begin
 end;
 $function$;
 -- execute: solo el dueño
+
+CREATE OR REPLACE FUNCTION private.borrar_suscripcion_vencida(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  delete from private.suscripciones_de_avisos where endpoint = p_endpoint;
+  return found;
+end;
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.borrar_suscripcion_vencida(text) is 'El servicio de push contestó 404 o 410: esa suscripción ya no existe. Sin borrarla la tabla crece para siempre y cada envío hace trabajo muerto.';
 
 CREATE OR REPLACE FUNCTION private.cascada(p_cobrado_centavos bigint, p_gastos_centavos bigint, p_diezmo_bp integer, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, OUT neta_centavos bigint, OUT diezmo_centavos bigint, OUT sueldo_centavos bigint, OUT fijos_centavos bigint, OUT remanente_centavos bigint)
  RETURNS record
@@ -1008,6 +1275,22 @@ $function$;
 -- execute: solo el dueño
 comment on function private.crear_taller_del_usuario() is 'Trigger de auth.users: a la cuenta que confirma su mail le crea el taller, la membresía de titular y los ajustes en cero. Idempotente: si ya tuvo taller, no hace nada.';
 
+CREATE OR REPLACE FUNCTION private.dar_de_baja_suscripcion(p_endpoint text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  delete from private.suscripciones_de_avisos
+  where endpoint = p_endpoint
+    and user_id = (select auth.uid());
+  return found;
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.dar_de_baja_suscripcion(text) is 'Borra este dispositivo si es del usuario de la sesión. Un endpoint de otra cuenta no se toca.';
+
 CREATE OR REPLACE FUNCTION private.es_reenvio(p_old jsonb, p_new jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -1017,6 +1300,75 @@ AS $function$
   select (p_old - array['created_at', 'updated_at', 'version']) = (p_new - array['created_at', 'updated_at', 'version'])
 $function$;
 -- execute: authenticated:EXECUTE
+
+CREATE OR REPLACE FUNCTION private.estado_de_los_avisos(p_usuario uuid, p_endpoint text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select jsonb_build_object(
+    'suscripto', exists (
+      select 1 from private.suscripciones_de_avisos s
+      where s.user_id = p_usuario and s.endpoint = p_endpoint
+    ),
+    'ultimo_envio', (
+      select s.ultimo_envio from private.suscripciones_de_avisos s
+      where s.user_id = p_usuario and s.endpoint = p_endpoint
+    ),
+    'dispositivos', (
+      select count(*) from private.suscripciones_de_avisos s where s.user_id = p_usuario
+    ),
+    'preferencias', (
+      select jsonb_build_object('zona', p.zona, 'hora', to_char(p.hora, 'HH24:MI'), 'avisos', p.avisos)
+      from private.preferencias_de_avisos p
+      where p.user_id = p_usuario
+    )
+  )
+$function$;
+-- execute: solo el dueño
+comment on function private.estado_de_los_avisos(uuid,text) is 'Si este dispositivo recibe avisos, cuándo salió el último, cuántos dispositivos tiene la persona y sus preferencias. Solo la llaman las funciones de avisos.';
+
+CREATE OR REPLACE FUNCTION private.estado_de_mis_avisos(p_endpoint text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select private.estado_de_los_avisos((select auth.uid()), p_endpoint)
+$function$;
+-- execute: authenticated:EXECUTE
+
+CREATE OR REPLACE FUNCTION private.guardar_preferencias_de_avisos(p_zona text, p_hora time without time zone, p_avisos jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_usuario uuid := (select auth.uid());
+begin
+  if v_usuario is null then
+    raise exception 'Hace falta una sesión para cambiar los avisos' using errcode = '42501';
+  end if;
+  perform private.validar_zona(p_zona);
+  if p_hora is null or not private.avisos_bien_formados(p_avisos) then
+    raise exception 'Las preferencias de avisos no tienen la forma esperada' using errcode = '22023';
+  end if;
+
+  insert into private.preferencias_de_avisos (user_id, zona, hora, avisos)
+  values (v_usuario, p_zona, p_hora, p_avisos)
+  on conflict (user_id) do update set
+    zona = excluded.zona,
+    hora = excluded.hora,
+    avisos = excluded.avisos,
+    actualizada_en = now();
+
+  return private.estado_de_los_avisos(v_usuario, null);
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.guardar_preferencias_de_avisos(text,time without time zone,jsonb) is 'Guarda la zona horaria, la hora y qué avisa, para el usuario de la sesión.';
 
 CREATE OR REPLACE FUNCTION private.household_actual()
  RETURNS uuid
@@ -1418,6 +1770,72 @@ $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
 
+CREATE OR REPLACE FUNCTION private.pedir_los_avisos()
+ RETURNS bigint
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_url text;
+  v_secreto text;
+begin
+  select decrypted_secret into v_url from vault.decrypted_secrets where name = 'avisos_url';
+  select decrypted_secret into v_secreto from vault.decrypted_secrets where name = 'avisos_secreto';
+  if v_url is null or v_secreto is null then
+    return null;
+  end if;
+
+  return net.http_post(
+    url := v_url,
+    body := '{}'::jsonb,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || v_secreto
+    ),
+    timeout_milliseconds := 30000
+  );
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.pedir_los_avisos() is 'Le pide a la función de borde que mande los avisos que tocan. La llama pg_cron. Sin avisos_url y avisos_secreto en Vault devuelve null y no pide nada.';
+
+CREATE OR REPLACE FUNCTION private.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text, p_zona text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_usuario uuid := (select auth.uid());
+begin
+  if v_usuario is null then
+    raise exception 'Hace falta una sesión para activar los avisos' using errcode = '42501';
+  end if;
+  perform private.validar_zona(p_zona);
+
+  -- El mismo endpoint es el mismo dispositivo. Si lo registra otra cuenta (cambió de usuario en el
+  -- mismo teléfono), pasa a ser suyo y arranca de cero: los avisos del anterior dejan de llegar.
+  insert into private.suscripciones_de_avisos as s (user_id, endpoint, p256dh, auth)
+  values (v_usuario, p_endpoint, p_p256dh, p_auth)
+  on conflict (endpoint) do update set
+    user_id = excluded.user_id,
+    p256dh = excluded.p256dh,
+    auth = excluded.auth,
+    actualizada_en = now(),
+    ultimo_envio = case when s.user_id = excluded.user_id then s.ultimo_envio end,
+    ultimo_dia_avisado = case when s.user_id = excluded.user_id then s.ultimo_dia_avisado end;
+
+  insert into private.preferencias_de_avisos (user_id, zona)
+  values (v_usuario, p_zona)
+  on conflict (user_id) do update set zona = excluded.zona, actualizada_en = now();
+
+  return private.estado_de_los_avisos(v_usuario, p_endpoint);
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.registrar_suscripcion(text,text,text,text) is 'Registra este dispositivo para el usuario de la sesión, reasignándolo si era de otra cuenta, y guarda la zona horaria que eligió la persona.';
+
 CREATE OR REPLACE FUNCTION private.reversion_valida(p_desde estado_proyecto, p_hacia estado_proyecto)
  RETURNS boolean
  LANGUAGE sql
@@ -1527,6 +1945,26 @@ end;
 $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.revertir_liquidacion(uuid,integer,estado_proyecto,estado_proyecto) is 'Descongela la distribución de un proyecto liquidado: reabre un cobrado a entregado guardando la foto del cobro, o reactiva un perdido a un estado de seguimiento sin foto. Los demás proyectos del mes no se recalculan. Rechaza con MN006 si el proyecto cambió. Reconoce el reenvío idéntico.';
+
+CREATE OR REPLACE FUNCTION private.suscripciones_para_probar(p_usuario uuid, p_endpoint text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object('id', s.id, 'endpoint', s.endpoint, 'p256dh', s.p256dh, 'auth', s.auth)
+      order by s.creada_en
+    ),
+    '[]'::jsonb
+  )
+  from private.suscripciones_de_avisos s
+  where s.user_id = p_usuario
+    and (p_endpoint is null or s.endpoint = p_endpoint)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function private.suscripciones_para_probar(uuid,text) is 'Los dispositivos de una persona, o uno solo si se pasa el endpoint, para mandarles el aviso de prueba. El usuario lo validó la función de borde con su token.';
 
 CREATE OR REPLACE FUNCTION private.topes_de_la_liquidacion(p_objetivo_sueldo_centavos bigint, p_objetivo_fijos_centavos bigint, p_sueldo_mensual boolean, p_sueldo_previo_centavos bigint, p_fijos_previo_centavos bigint, OUT tope_sueldo_centavos bigint, OUT tope_fijos_centavos bigint)
  RETURNS record
@@ -1832,6 +2270,20 @@ $function$;
 -- execute: solo el dueño
 comment on function private.validar_proyecto() is 'Guarda de proyectos: un liquidado (cobrado o perdido) no cambia de estado editándolo, y con pagos o gastos no se borra (MN001); un borrado no revive (MN002); un proyecto vivo no cuelga de un cliente borrado (MN005); el estado solo sigue transiciones válidas (MN007). Deja pasar el reenvío idéntico de la cola.';
 
+CREATE OR REPLACE FUNCTION private.validar_zona(p_zona text)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO ''
+AS $function$
+begin
+  if p_zona is null or not exists (select 1 from pg_catalog.pg_timezone_names where name = p_zona) then
+    raise exception 'La zona horaria no existe' using errcode = '22023';
+  end if;
+end;
+$function$;
+-- execute: solo el dueño
+
 CREATE OR REPLACE FUNCTION public.reabrir_proyecto(p_proyecto_id uuid, p_version integer)
  RETURNS proyectos
  LANGUAGE sql
@@ -1851,3 +2303,24 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function reactivar_perdido(uuid,integer,estado_proyecto) is 'RPC de reactivación de un perdido: descongela su liquidación y lo vuelve al estado de seguimiento elegido.';
+
+CREATE OR REPLACE FUNCTION public.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text, p_zona text)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select private.registrar_suscripcion(p_endpoint, p_p256dh, p_auth, p_zona)
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function registrar_suscripcion(text,text,text,text) is 'Activa los avisos en este dispositivo. No pasa por la cola de salida: sin señal no se puede suscribir a un servicio de push de todas formas.';
+
+CREATE OR REPLACE FUNCTION public.suscripciones_para_probar(p_usuario uuid, p_endpoint text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select private.suscripciones_para_probar(p_usuario, p_endpoint)
+$function$;
+-- execute: service_role:EXECUTE
+comment on function suscripciones_para_probar(uuid,text) is 'Solo para la función de borde de los avisos (service_role).';

@@ -27,7 +27,9 @@ as a side effect of editing.
 
 Around that core sit a client list, a ledger of every movement, a tithe screen that states the debt in
 words instead of as a signed number, and a monthly view of what came in, what went out and how much of
-the salary is still uncovered.
+the salary is still uncovered. An agenda puts the dates that follow from the jobs, such as visits, quote
+deadlines and estimated deliveries, next to the owner's own notes, and each device can receive a
+best-effort reminder in the morning.
 
 The shortest description of the system is what changed from the file it replaced:
 
@@ -216,6 +218,11 @@ why the system looks the way it does:
   project it becomes, so the deposit never has to move.
 - [0023](docs/adr/0023-sesion-bloqueo-con-huella-y-passkeys.md): the fingerprint lock as a barrier to
   use, not a security boundary.
+- [0034](docs/adr/0034-la-agenda-calcula-lo-que-sale-de-los-trabajos.md): the agenda computes what
+  follows from each job instead of storing it, so a date has one source and the reminder cannot
+  disagree with the screen.
+- [0036](docs/adr/0036-avisos-por-dispositivo-fuera-de-la-replica.md): push subscriptions belong to a
+  device, not to the workshop, so they stay out of the replica; reminders are best effort.
 
 [Parity with the old system](docs/paridad-con-el-sistema-viejo.md) maps every feature and calculation of
 the old file to where it lives now, including what was deliberately left out. The old file itself is
@@ -304,6 +311,9 @@ workshop id, its indexes and its tests; the structural test rejects it otherwise
 - `libro mayor`: the ledger. `movimiento` is a manual entry, `ajuste` a correction.
 - `réplica`: the local copy of a workshop. `cola de salida` is the outbound queue.
 - `ajustes`: the workshop's settings.
+- `agenda`: the calendar. `anotación` is a note the owner writes in it; `derivado` is an event computed
+  from a job.
+- `aviso`: a notice. On screen it is a toast; `avisos de la agenda` are the morning push reminders.
 - `MN001` and the codes after it: business rejections raised by the database.
 
 </details>
@@ -316,7 +326,7 @@ packages/domain   pure business rules: money, the cascade, caps, states, the led
 packages/db       database client, generated types, replica merging, and database tooling
 packages/ui       the design system: tokens and components, importing nothing from the repository
 packages/config   shared TypeScript and lint configuration
-supabase          hand-written migrations, pgTAP tests, the seed, and the schema snapshot
+supabase          hand-written migrations, pgTAP tests, the reminder edge function, the seed, and the schema snapshot
 docs/adr          architecture decision records
 docs/referencia   the old HTML file, kept as a reference
 ```

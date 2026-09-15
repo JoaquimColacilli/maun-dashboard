@@ -133,6 +133,12 @@
   --color-cocos-tint: var(--tesoro-cocos-tint);
   --color-paper-notas: var(--paper-notas);
   --color-paper-notas-line: var(--paper-notas-line);
+  --color-ag-entrega: var(--ag-entrega);
+  --color-ag-presupuesto: var(--ag-presupuesto);
+  --color-ag-visita: var(--ag-visita);
+  --color-ag-materiales: var(--ag-materiales);
+  --color-ag-taller: var(--ag-taller);
+  --color-ag-marca: var(--ag-marca);
 
   --font-sans: var(--font-ui);
 
@@ -172,6 +178,18 @@
 
   --paper-notas: #fcfbf8;
   --paper-notas-line: #e6e1d6;
+
+  /* La agenda tiene su propia familia de colores: ninguna categoría comparte tono con un tesoro, que
+     quedan reservados para la plata. El color nunca va solo: cada categoría tiene además su forma. La
+     marca es el círculo que el dueño hace a mano en el cuaderno, y va solo como anillo. */
+  --ag-entrega: #141414;
+  --ag-presupuesto: #9a3b18;
+  --ag-visita: #0e5c63;
+  --ag-materiales: #4e6b22;
+  --ag-taller: #6a6660;
+  --ag-marca: #c2185b;
+  --celda-min: 96px;
+  --tira-celda: 44px;
 
   --tnum: 'tnum';
 
@@ -255,6 +273,13 @@
 
     --paper-notas: #1a1916;
     --paper-notas-line: #2f2c26;
+
+    --ag-entrega: #ededed;
+    --ag-presupuesto: #e59268;
+    --ag-visita: #64b8bd;
+    --ag-materiales: #a6c86d;
+    --ag-taller: #b3afa8;
+    --ag-marca: #ff90b4;
   }
 }
 

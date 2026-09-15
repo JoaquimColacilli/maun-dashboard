@@ -1,6 +1,14 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import {
+  CLAVE_DE_ANOTACION,
+  CLAVE_DE_ANOTACION_NUEVA,
+  CLAVE_DE_BAJA_DE_ANOTACION,
+  MUTACION_DE_ANOTACION,
+  MUTACION_DE_ANOTACION_NUEVA,
+  MUTACION_DE_BAJA_DE_ANOTACION,
+} from '@/entities/agenda';
+import {
   CLAVE_DE_BAJA_DE_CLIENTE,
   CLAVE_DE_CLIENTE,
   CLAVE_DE_CLIENTE_NUEVO,
@@ -82,6 +90,15 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_REVERSION, MUTACION_DE_REVERSION);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_ANOTACION_NUEVA, MUTACION_DE_ANOTACION_NUEVA);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_ANOTACION, MUTACION_DE_ANOTACION);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ANOTACION, MUTACION_DE_BAJA_DE_ANOTACION);
   },
 ];
 

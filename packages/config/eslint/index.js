@@ -139,8 +139,12 @@ const ACCESO_A_DATOS = {
 
 export function web(dir) {
   return defineConfig(
-    base(dir, ['tsconfig.app.json', 'tsconfig.node.json']),
+    base(dir, ['tsconfig.app.json', 'tsconfig.node.json', 'tsconfig.sw.json']),
     react,
+    {
+      files: ['sw/**/*.ts'],
+      languageOptions: { globals: globals.serviceworker },
+    },
     {
       files: ['src/**/*.{ts,tsx}'],
       extends: [reactRefresh.configs.vite],

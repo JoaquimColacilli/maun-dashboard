@@ -2,7 +2,7 @@
 -- reenvío de la cola, el conflicto de versión y la guarda del proyecto liquidado.
 -- Los helpers viven en el schema tests, que el rollback del runner se lleva con todo lo demás.
 
-select plan(36);
+select plan(43);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('b', tests.crear_usuario('b@maun.test'));
@@ -489,6 +489,69 @@ select is(
   ),
   jsonb_build_array('Biblioteca', '2', '1'),
   'la respuesta trae el agregado entero: el proyecto con sus pagos y sus gastos'
+);
+
+
+-- El vencimiento del presupuesto ------------------------------------------------------------------
+
+select lives_ok(
+  $$
+    select public.guardar_proyecto(
+      tests.proyecto('aaaaaaaa-0000-7000-8000-000000000040', null, 'Vestidor', 'a_presupuestar')
+        || jsonb_build_object('vencimiento_presupuesto', '2026-09-17'),
+      '[]'::jsonb, '[]'::jsonb
+    )
+  $$,
+  'un contacto a presupuestar se guarda con su fecha límite'
+);
+
+select is(
+  (select vencimiento_presupuesto from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000040'),
+  '2026-09-17'::date,
+  'la fecha límite queda guardada'
+);
+
+select lives_ok(
+  $$
+    select public.guardar_proyecto(
+      tests.proyecto('aaaaaaaa-0000-7000-8000-000000000040', 1, 'Vestidor con espejo', 'a_presupuestar'),
+      '[]'::jsonb, '[]'::jsonb
+    )
+  $$,
+  'un guardado sin la clave, como el de un bundle viejo servido por el service worker, no rebota'
+);
+
+select is(
+  (select array[titulo, vencimiento_presupuesto::text] from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000040'),
+  array['Vestidor con espejo', '2026-09-17'],
+  'guarda lo que trae y no borra la fecha límite que no conoce'
+);
+
+select lives_ok(
+  $$
+    select public.guardar_proyecto(
+      tests.proyecto('aaaaaaaa-0000-7000-8000-000000000040', 1, 'Vestidor con espejo', 'a_presupuestar'),
+      '[]'::jsonb, '[]'::jsonb
+    )
+  $$,
+  'el reenvío de ese guardado, con la versión vieja y sin la clave, se reconoce y no rebota'
+);
+
+select lives_ok(
+  $$
+    select public.guardar_proyecto(
+      tests.proyecto('aaaaaaaa-0000-7000-8000-000000000040', 2, 'Vestidor con espejo', 'a_presupuestar')
+        || jsonb_build_object('vencimiento_presupuesto', ''),
+      '[]'::jsonb, '[]'::jsonb
+    )
+  $$,
+  'la fecha límite vacía que manda un input de fecha no rompe el guardado con un 22007'
+);
+
+select is(
+  (select vencimiento_presupuesto from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000040'),
+  null::date,
+  'mandarla vacía la saca'
 );
 
 select * from finish();

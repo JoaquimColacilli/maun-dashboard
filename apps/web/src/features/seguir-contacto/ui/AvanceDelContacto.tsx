@@ -9,6 +9,7 @@ import {
   MUTACION_DE_PROYECTO,
   pasoSiguiente,
   rutaDeAprobacion,
+  vencimientoPropuesto,
   type EtapaDeSeguimiento,
   type Proyecto,
   type SituacionDelContacto,
@@ -52,7 +53,18 @@ export function AvanceDelContacto({
 
   function mover(cambios: CambiosDeProyecto, dia?: string): void {
     setRechazo(null);
-    guardar.mutate(guardadoDeUnPaso(proyecto, cambios, hoyLocal(), dia), { onError: setRechazo });
+    const hoy = hoyLocal();
+    const vencimiento = vencimientoPropuesto(
+      proyecto,
+      cambios.estado ?? proyecto.estado,
+      cambios.fecha_visita ?? proyecto.fecha_visita,
+      hoy,
+    );
+    const conVencimiento =
+      vencimiento === proyecto.vencimiento_presupuesto
+        ? cambios
+        : { ...cambios, vencimiento_presupuesto: vencimiento };
+    guardar.mutate(guardadoDeUnPaso(proyecto, conVencimiento, hoy, dia), { onError: setRechazo });
   }
 
   function aprobar(): void {

@@ -3,6 +3,8 @@
 - Estado: aceptada
 - Fecha: 2026-09-13
 - Corrige al [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md): ya no hay minuto de gracia.
+- Corregido por el [0037](0037-tocar-un-aviso-vuelve-sin-pedir-la-huella.md): volver a la app por tocar
+  un aviso, con la app abierta atrás, no pide la huella.
 
 ## Contexto
 

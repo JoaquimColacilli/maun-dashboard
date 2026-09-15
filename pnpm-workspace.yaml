@@ -24,6 +24,7 @@ catalog:
   '@types/react-dom': 19.3.0
   '@vitejs/plugin-react': 6.1.1
   '@vitest/coverage-v8': 5.0.0
+  deno: 2.9.6
   downshift: 9.4.0
   eslint: 10.10.0
   eslint-config-prettier: 10.1.8
@@ -52,10 +53,13 @@ catalog:
   vite: 8.2.2
   vite-plugin-pwa: 1.3.0
   vitest: 5.0.0
+  workbox-precaching: 7.4.1
+  workbox-routing: 7.4.1
   workbox-window: 7.4.1
   zod: 4.5.4
 
 minimumReleaseAge: 1440
 
 allowBuilds:
+  deno: true
   unrs-resolver: false

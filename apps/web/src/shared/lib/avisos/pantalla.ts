@@ -2,6 +2,11 @@ import { useSyncExternalStore } from 'react';
 
 export type TonoDelAviso = 'hecho' | 'en-cola' | 'error';
 
+export interface AccionDelAviso {
+  etiqueta: string;
+  alTocar: () => void;
+}
+
 export interface AvisoEnPantalla {
   id: number;
   clave: string;
@@ -9,6 +14,7 @@ export interface AvisoEnPantalla {
   texto: string;
   detalle: string | null;
   veces: number;
+  accion: AccionDelAviso | null;
 }
 
 export interface TextosDeAviso {
@@ -21,6 +27,7 @@ export interface AvisosDeUnaMutacion extends TextosDeAviso {
   que: QueSeGuarda;
   sujeto: string | null;
   errorEnPantalla: boolean;
+  silencioso: boolean;
 }
 
 export const TEXTOS_DE_AVISO = {
@@ -89,13 +96,23 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Perfil anotado sin señal: se guarda solo cuando vuelva.',
     error: 'No se guardó el perfil.',
   },
+  anotacion: {
+    hecho: 'Anotación guardada.',
+    enCola: 'Anotación hecha sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la anotación.',
+  },
+  anotacionBorrada: {
+    hecho: 'Anotación borrada.',
+    enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',
+    error: 'No se borró la anotación.',
+  },
 } as const satisfies Record<string, TextosDeAviso>;
 
 export type QueSeGuarda = keyof typeof TEXTOS_DE_AVISO;
 
 export function metaDeAvisos(
   que: QueSeGuarda,
-  opciones: { errorEnPantalla?: boolean; sujeto?: string } = {},
+  opciones: { errorEnPantalla?: boolean; sujeto?: string; silencioso?: boolean } = {},
 ): { avisos: AvisosDeUnaMutacion } {
   return {
     avisos: {
@@ -103,6 +120,7 @@ export function metaDeAvisos(
       que,
       sujeto: opciones.sujeto ?? null,
       errorEnPantalla: opciones.errorEnPantalla ?? false,
+      silencioso: opciones.silencioso ?? false,
     },
   };
 }
@@ -135,6 +153,7 @@ export function avisosDeLaMeta(meta: unknown): AvisosDeUnaMutacion | undefined {
     enCola: posible.enCola,
     error: posible.error,
     errorEnPantalla: posible.errorEnPantalla === true,
+    silencioso: posible.silencioso === true,
   };
 }
 
@@ -174,6 +193,7 @@ export interface NuevoAviso {
   detalle?: string;
   textoParaVarios?: (veces: number) => string;
   reemplaza?: string;
+  accion?: AccionDelAviso;
 }
 
 export function avisoEnPantalla(id: number): AvisoEnPantalla | undefined {
@@ -187,6 +207,7 @@ export function avisarEnPantalla({
   detalle,
   textoParaVarios,
   reemplaza,
+  accion,
 }: NuevoAviso): number {
   const previo =
     avisos.find((aviso) => aviso.clave === clave) ??
@@ -199,6 +220,7 @@ export function avisarEnPantalla({
     texto: veces > 1 && textoParaVarios !== undefined ? textoParaVarios(veces) : texto,
     detalle: detalle ?? null,
     veces,
+    accion: accion ?? null,
   };
 
   if (previo === undefined) proximoId += 1;

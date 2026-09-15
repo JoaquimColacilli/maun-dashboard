@@ -44,6 +44,26 @@ export {
   type TablaReplicada,
 } from './replica.ts';
 
+export { datosDeLaAgenda, datosDeLaAgendaDeLaReplica, type FilasDeLaAgenda } from './agenda.ts';
+
+export {
+  consultarServidorDeAvisos,
+  darDeBajaSuscripcion,
+  FUNCION_DE_AVISOS,
+  guardarPreferenciasDeAvisos,
+  leerEstadoDeLosAvisos,
+  leerResultadoDeLaPrueba,
+  leerServidorDeAvisos,
+  probarLosAvisos,
+  registrarSuscripcion,
+  traerEstadoDeLosAvisos,
+  type EstadoDeLosAvisos,
+  type PreferenciasDeLaPersona,
+  type ResultadoDeLaPrueba,
+  type ServidorDeAvisos,
+  type SuscripcionDelDispositivo,
+} from './avisos.ts';
+
 export {
   datosDelLibro,
   liquidacionesDeLaReplica,
@@ -56,13 +76,17 @@ export {
 
 export {
   COLUMNAS_DE_AJUSTES,
+  COLUMNAS_DE_ANOTACION,
   COLUMNAS_DE_CLIENTE,
   COLUMNAS_DE_MOVIMIENTO,
+  borrarAnotacion,
   borrarCliente,
   borrarMovimiento,
   borrarProyecto,
   COLUMNAS_DE_PROYECTO,
   guardarAjustes,
+  guardarAnotacionNueva,
+  guardarCambiosDeAnotacion,
   guardarCambiosDeCliente,
   guardarCambiosDeMovimiento,
   guardarCambiosDeProyecto,
@@ -75,13 +99,17 @@ export {
   revertirLiquidacion,
   traerBootstrap,
   traerDelta,
+  type AnotacionNueva,
   type CambiosDeAjustes,
+  type CambiosDeAnotacion,
   type CambiosDeCliente,
   type CambiosDeMovimiento,
   type BajaDeFilaHija,
   type CambiosDeProyecto,
   type ClienteNuevo,
   type ColumnaDeAjustes,
+  type ColumnaDeAnotacion,
+  type DatosDeAnotacion,
   type ColumnaDeCliente,
   type ColumnaDeMovimiento,
   type ColumnaDeProyecto,

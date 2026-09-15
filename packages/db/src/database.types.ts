@@ -64,6 +64,69 @@ export type Database = {
           },
         ];
       };
+      anotaciones: {
+        Row: {
+          categoria: Database['public']['Enums']['categoria_anotacion'];
+          created_at: string;
+          deleted_at: string | null;
+          fecha: string;
+          hecha: boolean;
+          hora: string | null;
+          household_id: string;
+          id: string;
+          importante: boolean;
+          proyecto_id: string | null;
+          texto: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          categoria?: Database['public']['Enums']['categoria_anotacion'];
+          created_at?: string;
+          deleted_at?: string | null;
+          fecha: string;
+          hecha?: boolean;
+          hora?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          proyecto_id?: string | null;
+          texto: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          categoria?: Database['public']['Enums']['categoria_anotacion'];
+          created_at?: string;
+          deleted_at?: string | null;
+          fecha?: string;
+          hecha?: boolean;
+          hora?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          proyecto_id?: string | null;
+          texto?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'anotaciones_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'anotaciones_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       clientes: {
         Row: {
           condicion_fiscal: Database['public']['Enums']['condicion_fiscal'];
@@ -418,6 +481,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         Insert: {
@@ -460,6 +524,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
+          vencimiento_presupuesto?: string | null;
           version?: number;
         };
         Update: {
@@ -502,6 +567,7 @@ export type Database = {
           titulo?: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
+          vencimiento_presupuesto?: string | null;
           version?: number;
         };
         Relationships: [
@@ -541,7 +607,16 @@ export type Database = {
       };
     };
     Functions: {
+      anotar_aviso: {
+        Args: { p_dia: string; p_mandado: boolean; p_suscripcion: string };
+        Returns: boolean;
+      };
+      avisos_por_mandar: { Args: { p_ahora?: string }; Returns: Json };
       bootstrap: { Args: never; Returns: Json };
+      borrar_suscripcion_vencida: {
+        Args: { p_endpoint: string };
+        Returns: boolean;
+      };
       cerrar_perdido: {
         Args: {
           p_cobrado_centavos: number;
@@ -599,6 +674,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -664,6 +740,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -673,7 +750,16 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      dar_de_baja_suscripcion: {
+        Args: { p_endpoint: string };
+        Returns: boolean;
+      };
       delta: { Args: { p_desde: string }; Returns: Json };
+      estado_de_mis_avisos: { Args: { p_endpoint?: string }; Returns: Json };
+      guardar_preferencias_de_avisos: {
+        Args: { p_avisos: Json; p_hora: string; p_zona: string };
+        Returns: Json;
+      };
       guardar_proyecto: {
         Args: { p_gastos: Json; p_pagos: Json; p_proyecto: Json };
         Returns: Json;
@@ -720,6 +806,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -775,6 +862,7 @@ export type Database = {
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
+          vencimiento_presupuesto: string | null;
           version: number;
         };
         SetofOptions: {
@@ -784,8 +872,22 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      registrar_suscripcion: {
+        Args: {
+          p_auth: string;
+          p_endpoint: string;
+          p_p256dh: string;
+          p_zona: string;
+        };
+        Returns: Json;
+      };
+      suscripciones_para_probar: {
+        Args: { p_endpoint?: string; p_usuario: string };
+        Returns: Json;
+      };
     };
     Enums: {
+      categoria_anotacion: 'materiales' | 'taller';
       comprobante: 'factura_a' | 'factura_b' | 'factura_c' | 'remito' | 'sin_comprobante';
       condicion_fiscal: 'consumidor_final' | 'monotributo' | 'responsable_inscripto' | 'exento';
       estado_proyecto:
@@ -924,6 +1026,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      categoria_anotacion: ['materiales', 'taller'],
       comprobante: ['factura_a', 'factura_b', 'factura_c', 'remito', 'sin_comprobante'],
       condicion_fiscal: ['consumidor_final', 'monotributo', 'responsable_inscripto', 'exento'],
       estado_proyecto: [
