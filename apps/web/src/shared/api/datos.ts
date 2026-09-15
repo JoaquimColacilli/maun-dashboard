@@ -1,6 +1,9 @@
 import {
   aplicarLote,
   borrarAnotacion,
+  borrarArchivo,
+  guardarArchivoNuevo,
+  type ArchivoNuevo,
   borrarCliente,
   borrarMovimiento,
   borrarProyecto,
@@ -159,6 +162,17 @@ export async function darDeBajaAnotacion(
   borradoEn: string,
 ): Promise<FilaDe<'anotaciones'>> {
   return borrarAnotacion(clienteMaun(), id, borradoEn);
+}
+
+export async function crearArchivo(
+  nuevo: ArchivoNuevo,
+  restaurado = false,
+): Promise<FilaDe<'archivos'>> {
+  return guardarArchivoNuevo(clienteMaun(), nuevo, restaurado);
+}
+
+export async function darDeBajaArchivo(id: string, borradoEn: string): Promise<FilaDe<'archivos'>> {
+  return borrarArchivo(clienteMaun(), id, borradoEn);
 }
 
 export async function liquidarElProyecto(

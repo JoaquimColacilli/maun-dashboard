@@ -6,6 +6,12 @@ export {
   mandarAvisoDePrueba,
   servidorDeAvisos,
 } from './avisos';
+export {
+  BUCKET_DE_ARCHIVOS,
+  quitarDelBucketDeArchivos,
+  subirAlBucketDeArchivos,
+  urlDelArchivo,
+} from './archivos';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   codigoDeAcceso,
@@ -38,8 +44,10 @@ export {
 } from './sesion';
 export {
   crearAnotacion,
+  crearArchivo,
   crearCliente,
   darDeBajaAnotacion,
+  darDeBajaArchivo,
   darDeBajaCliente,
   darDeBajaMovimiento,
   darDeBajaProyecto,
@@ -89,6 +97,7 @@ export {
   totalesDelProyecto,
   totalesPorProyecto,
   type AnotacionNueva,
+  type ArchivoNuevo,
   type CambiosDeAjustes,
   type CambiosDeAnotacion,
   type CambiosDeCliente,

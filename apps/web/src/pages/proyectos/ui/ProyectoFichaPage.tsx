@@ -21,6 +21,7 @@ import {
   useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import { AvanceDeLaObra, BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
@@ -319,6 +320,10 @@ export function ProyectoFichaPage() {
               titulo="Notas de obra"
               placeholder="Medidas, qué falta, qué hablar con el cliente…"
             />
+          </div>
+
+          <div className="mt-6">
+            <ArchivosDelTrabajo proyectoId={proyecto.id} />
           </div>
         </div>
 

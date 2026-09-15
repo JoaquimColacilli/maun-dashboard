@@ -111,7 +111,7 @@ Versión fijada: **2.117.0**. No hay CI que la imponga: mantené la local en esa
 5. `pnpm --filter @maun/db gen:types` y `pnpm --filter @maun/db db:esquema`. Commiteá `src/database.types.ts` y `supabase/esquema.sql`: ninguno de los dos se edita a mano.
 6. `pnpm --filter @maun/db sb db advisors --linked` y `pnpm verify`.
 
-`supabase/esquema.sql` es la vista del estado final del esquema: `public`, `private` y **los triggers sobre `auth.users`**, que no son nuestra tabla pero sostienen el alta de cuentas. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
+`supabase/esquema.sql` es la vista del estado final del esquema: `public`, `private`, **los triggers sobre `auth.users`**, que no son nuestra tabla pero sostienen el alta de cuentas, y **los buckets y las políticas de `storage.objects`** (las fotos de perfil y los archivos de los trabajos, ADR 0022 y 0039). Un bucket nuevo agrega sus políticas a la lista de `15_fotos_de_perfil.sql`, que exige exactamente las que hay. `tests/esquema.test.ts` lo compara contra la base viva: si falla, o faltó el paso 5 o alguien cambió la base por fuera del repo. Nunca se toca el esquema desde el SQL Editor del dashboard.
 
 ## Tests de Vitest que tocan la base
 

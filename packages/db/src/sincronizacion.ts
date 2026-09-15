@@ -418,6 +418,53 @@ export async function borrarAnotacion(
   return data;
 }
 
+export const COLUMNAS_DE_ARCHIVO = [
+  'proyecto_id',
+  'nombre',
+  'tipo',
+  'bytes',
+  'ancho',
+  'alto',
+] as const;
+
+export type ColumnaDeArchivo = (typeof COLUMNAS_DE_ARCHIVO)[number];
+
+export type DatosDeArchivo = Pick<FilaDe<'archivos'>, ColumnaDeArchivo>;
+
+export type ArchivoNuevo = DatosDeArchivo & { id: string };
+
+export async function guardarArchivoNuevo(
+  cliente: ClienteMaun,
+  nuevo: ArchivoNuevo,
+  restaurado = false,
+): Promise<FilaDe<'archivos'>> {
+  const fila: Database['public']['Tables']['archivos']['Insert'] = restaurado
+    ? { ...nuevo, deleted_at: null }
+    : nuevo;
+  const { data, error } = await cliente
+    .from('archivos')
+    .upsert(fila, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function borrarArchivo(
+  cliente: ClienteMaun,
+  id: string,
+  borradoEn: string,
+): Promise<FilaDe<'archivos'>> {
+  const { data, error } = await cliente
+    .from('archivos')
+    .update({ deleted_at: borradoEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export interface PedidoDeLiquidacion {
   proyectoId: string;
   version: number;

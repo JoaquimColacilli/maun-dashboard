@@ -111,6 +111,16 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',
     error: 'No se borró la anotación.',
   },
+  archivo: {
+    hecho: 'Archivo guardado.',
+    enCola: 'Archivo anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se guardó el archivo.',
+  },
+  archivoBorrado: {
+    hecho: 'Archivo borrado.',
+    enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',
+    error: 'No se borró el archivo.',
+  },
 } as const satisfies Record<string, TextosDeAviso>;
 
 export type QueSeGuarda = keyof typeof TEXTOS_DE_AVISO;

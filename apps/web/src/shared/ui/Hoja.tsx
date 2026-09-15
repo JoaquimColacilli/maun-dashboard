@@ -59,6 +59,7 @@ const ANCHO = {
   angosto: 'w-[min(440px,calc(100%-40px))]',
   normal: 'w-[min(560px,calc(100%-40px))]',
   amplio: 'w-[min(600px,calc(100%-40px))]',
+  visor: 'w-[min(1100px,calc(100%-40px))]',
 } as const;
 
 const TRANSICION =

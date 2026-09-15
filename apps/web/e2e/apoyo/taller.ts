@@ -256,7 +256,75 @@ export async function crearAnotacionPorRest(
   return fila.id;
 }
 
+export interface FilaDeArchivo {
+  id: string;
+  household_id: string;
+  proyecto_id: string;
+  nombre: string;
+  tipo: string;
+  bytes: number;
+  ancho: number | null;
+  alto: number | null;
+  deleted_at: string | null;
+}
+
+export async function archivosDelTaller(
+  { entorno, accessToken }: SesionDePrueba,
+  incluirBorrados = false,
+): Promise<FilaDeArchivo[]> {
+  const filtro = incluirBorrados ? '' : '&deleted_at=is.null';
+  return (await pedir(
+    entorno,
+    `/rest/v1/archivos?select=id,household_id,proyecto_id,nombre,tipo,bytes,ancho,alto,deleted_at${filtro}&order=nombre`,
+    { accessToken },
+  )) as FilaDeArchivo[];
+}
+
+export function rutasDelArchivo(fila: FilaDeArchivo): string[] {
+  const base = `${fila.household_id}/${fila.proyecto_id}/${fila.id}`;
+  if (fila.tipo === 'application/pdf') return [`${base}.pdf`];
+  const extension = fila.tipo === 'image/jpeg' ? 'jpg' : 'webp';
+  return [`${base}.${extension}`, `${base}.mini.${extension}`];
+}
+
+export async function objetosDelTrabajo(
+  { entorno, accessToken }: SesionDePrueba,
+  householdId: string,
+  proyectoId: string,
+): Promise<string[]> {
+  const lista = (await pedir(entorno, '/storage/v1/object/list/archivos', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify({ prefix: `${householdId}/${proyectoId}`, limit: 100 }),
+  })) as { name: string }[];
+  return lista.map((objeto) => `${householdId}/${proyectoId}/${objeto.name}`);
+}
+
+export async function vaciarArchivos(sesion: SesionDePrueba): Promise<number> {
+  const { entorno, accessToken } = sesion;
+  const filas = await archivosDelTaller(sesion, true);
+  const rutas = filas.flatMap(rutasDelArchivo);
+  if (rutas.length > 0) {
+    await pedir(entorno, '/storage/v1/object/archivos', {
+      method: 'DELETE',
+      accessToken,
+      body: JSON.stringify({ prefixes: rutas }),
+    });
+  }
+  const vivas = filas.filter((fila) => fila.deleted_at === null);
+  if (vivas.length > 0) {
+    await pedir(entorno, '/rest/v1/archivos?deleted_at=is.null', {
+      method: 'PATCH',
+      accessToken,
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+    });
+  }
+  return vivas.length;
+}
+
 export async function vaciarTaller(sesion: SesionDePrueba): Promise<void> {
+  await vaciarArchivos(sesion);
   await vaciarAnotaciones(sesion);
   await vaciarMovimientos(sesion);
   await vaciarProyectos(sesion);

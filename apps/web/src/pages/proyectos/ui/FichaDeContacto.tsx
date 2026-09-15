@@ -16,6 +16,7 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
 import { fechaLarga, formatearPesos, hoyLocal, relativa, useAvisosDelProyecto } from '@/shared/lib';
@@ -223,6 +224,8 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             titulo="Notas"
             placeholder="Lo que te dijo por teléfono, medidas, cómo llegar…"
           />
+
+          <ArchivosDelTrabajo proyectoId={proyecto.id} />
 
           <section aria-label="Si no sale" className="rounded-panel bg-surface-3 px-4 py-3.5">
             <h2 className="text-section font-semibold">Si no sale</h2>

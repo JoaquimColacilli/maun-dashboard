@@ -27,6 +27,8 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   perfil: 'guardado',
   anotacion: 'guardado',
   anotacionBorrada: 'guardado',
+  archivo: 'guardado',
+  archivoBorrado: 'guardado',
 };
 
 const CLAVE_DE_LO_ANOTADO = 'anotado-sin-senal';

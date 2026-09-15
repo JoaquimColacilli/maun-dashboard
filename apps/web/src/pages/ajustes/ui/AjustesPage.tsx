@@ -3,6 +3,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
 import {
+  ESPACIO_DEL_PLAN_BYTES,
+  ESPACIO_PARA_AVISAR_BYTES,
+  espacioUsado,
+  pesoLegible,
+} from '@/entities/archivo';
+import {
   describirDesenlace,
   useReplicaDelTaller,
   useSincronizarAhora,
@@ -150,6 +156,7 @@ export function AjustesPage() {
   const estadoSync = useEstadoSync();
   const household = householdDe(replica);
   const ajustes = ajustesDe(replica);
+  const usado = espacioUsado(replica);
 
   return (
     <Pagina className="gap-5">
@@ -242,6 +249,23 @@ export function AjustesPage() {
               Corregir el saldo de Cocos
             </h2>
             <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
+          </section>
+
+          <section aria-labelledby="titulo-espacio" className={SECCION}>
+            <h2 id="titulo-espacio" className="text-section font-semibold">
+              Espacio para archivos
+            </h2>
+            <p className="text-body leading-relaxed text-text-2 tabular-nums">
+              Las fotos y los PDF de los trabajos ocupan {pesoLegible(usado)} de{' '}
+              {pesoLegible(ESPACIO_DEL_PLAN_BYTES)}.
+            </p>
+            {usado >= ESPACIO_PARA_AVISAR_BYTES && (
+              <p className="text-label leading-relaxed font-medium text-atencion">
+                Se está llenando. Cuando llegue a 1 GB no se van a poder subir más archivos, y
+                pasado ese límite la app entera puede dejar de andar. Avisale a quien te mantiene la
+                app antes de que se llene.
+              </p>
+            )}
           </section>
         </div>
 

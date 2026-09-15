@@ -67,6 +67,16 @@ export { useAlgoEnCurso, useHayAlgoEnCurso } from './en-curso';
 export { useTirarParaActualizar, type FaseDelTiron, type Tiron } from './tirar-para-actualizar';
 export { formatearPesos } from './plata';
 export {
+  codificarLienzo,
+  decodificarImagen,
+  ImagenIlegible,
+  lienzoDelDocumento,
+  type ContextoDeSalida,
+  type ImagenDecodificada,
+  type LienzoDeSalida,
+  type MedidasDeImagen,
+} from './imagen';
+export {
   abiertaComoApp,
   avisosSoportados,
   datosDeLaSuscripcion,

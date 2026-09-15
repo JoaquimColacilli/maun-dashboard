@@ -42,3 +42,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0036](0036-avisos-por-dispositivo-fuera-de-la-replica.md)      | Avisos: una suscripción por dispositivo, fuera de la réplica | Aceptada             |
 | [0037](0037-tocar-un-aviso-vuelve-sin-pedir-la-huella.md)       | Tocar un aviso vuelve a la app sin pedir la huella           | Aceptada             |
 | [0038](0038-el-embudo-del-seguimiento.md)                       | El embudo: estimativo, tareas de presupuestar y el pago      | Aceptada             |
+| [0039](0039-archivos-de-los-trabajos.md)                        | Archivos de los trabajos: achicados, por el CDN y con tope   | Aceptada             |

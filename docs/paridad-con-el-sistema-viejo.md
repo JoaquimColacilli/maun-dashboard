@@ -243,6 +243,14 @@ paridad**: el original no tenía nada antes del presupuesto.
 - **Qué sigue depende de si se cobró la visita, pero nunca bloquea**: sin cobrar sugiere el estimativo y
   deja mandar el presupuesto igual.
 
+De los archivos de los trabajos (ADR 0039). **Agregado nuestro, no paridad**: el original no guardaba
+ningún archivo.
+
+- **Fotos, capturas, renders y PDF** en cada contacto y cada obra, achicados en el navegador antes de
+  subirse. Las imágenes se ven en un visor y los PDF se abren en otra pestaña; borrar tiene deshacer.
+- **Los videos no entran**, y la pantalla dice por qué: no caben en el espacio del plan.
+- **Ajustes muestra cuánto espacio ocupan** y avisa antes de que se llene.
+
 ---
 
 ## 8. Seguimiento, contra lo que obligaba el original

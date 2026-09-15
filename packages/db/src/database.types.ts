@@ -127,6 +127,66 @@ export type Database = {
           },
         ];
       };
+      archivos: {
+        Row: {
+          alto: number | null;
+          ancho: number | null;
+          bytes: number;
+          created_at: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          nombre: string;
+          proyecto_id: string;
+          tipo: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          alto?: number | null;
+          ancho?: number | null;
+          bytes: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          nombre: string;
+          proyecto_id: string;
+          tipo: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          alto?: number | null;
+          ancho?: number | null;
+          bytes?: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          nombre?: string;
+          proyecto_id?: string;
+          tipo?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'archivos_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'archivos_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       clientes: {
         Row: {
           condicion_fiscal: Database['public']['Enums']['condicion_fiscal'];

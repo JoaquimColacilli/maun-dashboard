@@ -123,7 +123,7 @@ src/
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
 - El service worker (propio, `sw/sw.ts`, ADR 0035) precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
-- **La foto de perfil es la única escritura que no pasa por la cola** (ADR 0022): la cola maneja mutaciones de JSON, no archivos. `FormularioDePerfil` recorta y achica en el navegador (`features/editar-perfil/model`) y `subirFotoDeLaPersona` sube con `upsert` a `fotos-de-perfil/{usuario}/foto` y guarda la URL con `cacheNonce` en `user_metadata.foto`. Sin señal no abre el selector y lo dice. `esFalloDeRed` reconoce el `StorageUnknownError` de storage-js. Otro dispositivo ve la foto nueva recién cuando renueva la sesión, igual que el nombre.
+- **La foto de perfil y los binarios de los archivos de los trabajos son las únicas escrituras que no pasan por la cola** (ADR 0022 y 0039): la cola maneja mutaciones de JSON, no archivos. La fila de un archivo sí va por la cola. `FormularioDePerfil` recorta y achica en el navegador (`features/editar-perfil/model`) y `subirFotoDeLaPersona` sube con `upsert` a `fotos-de-perfil/{usuario}/foto` y guarda la URL con `cacheNonce` en `user_metadata.foto`. Sin señal no abre el selector y lo dice. `esFalloDeRed` reconoce el `StorageUnknownError` de storage-js. Otro dispositivo ve la foto nueva recién cuando renueva la sesión, igual que el nombre.
 - El bundle se parte en dos: el vendor en su propio chunk y el código de la app en otro (`manualChunks` en `vite.config.ts`). No baja el arranque, pero un cambio de pantalla deja de obligar a rebajar el bundle entero del precache (ADR 0015).
 
 ## Sistema de diseño
@@ -252,6 +252,17 @@ src/
 - **El presupuesto estimativo es una etapa, y lo que sigue se sugiere, no se impone** (ADR 0038). `situacionDelContacto` recibe lo cobrado (`resumen.cobrado`) y mira las tareas: devuelve la `sugerencia`, y `pasosDelContacto` arma los botones, el sugerido primero. **No agregues una guarda, un `check` ni un botón deshabilitado que mire los pagos para dejar pasar de etapa**: el dueño pidió poder presupuestar sin haber cobrado la visita. Si alguien quiere volverlo obligatorio, se habla con el dueño antes.
 - **Las tareas de presupuestar son cuatro columnas booleanas, no estados** (`TAREAS_DEL_PRESUPUESTO`, `MUTACION_DE_TAREAS`). Cada tilde es un update de su columna sola y `guardar_proyecto` no las escribe. Una fila de la réplica guardada antes de que existieran puede no traerlas: leelas con `tareaHecha`, nunca con la columna directa.
 - **«Ya fui a relevar» pide el día** (`FormularioDelRelevamiento`, `model/relevamiento.ts`), propone el vencimiento y, sin pagos, anota la seña en el mismo guardado (`guardadoDeUnPaso` acepta pagos). Corregir el día después corre el vencimiento solo si era el propuesto (`valoresConOtraVisita`).
+
+## Archivos de los trabajos (ADR 0039)
+
+- **Cuelgan de `proyectos`, así que valen para un contacto y para una obra** (`ArchivosDelTrabajo`, en las dos fichas). La fila (`public.archivos`) está en la réplica y va por la cola; el binario se sube en línea, y **sin señal no se sube**: el selector no se abre y lo dice (`SIN_SENAL_PARA_ARCHIVOS`).
+- **Nunca se sube una imagen original.** `prepararImagen` la achica a 2000 px y hace una miniatura de 480, en WebP o en JPEG donde no hay WebP (`codificarLienzo`, en `shared/lib`, el mismo de la foto de perfil). La ficha muestra la miniatura; el visor, la completa.
+- **La ruta sale del id, nunca del nombre:** `rutaDelArchivo` y `rutaDeLaMiniatura` (`{household}/{proyecto}/{id}.webp` y `.mini.webp`). Se sirven con `urlDelArchivo`, la URL pública que pasa por el CDN, con cache de un año. No uses URL firmadas ni `download()`: no cachean y todo sale como tráfico sin cache.
+- **Lo que no entra se explica:** un video dice por qué no y qué sí (`LOS_VIDEOS_NO_ENTRAN`), un PDF de más de 10 MB dice su peso. El `accept` incluye `video/*` a propósito, para que la explicación aparezca. No lo cambies por un error genérico.
+- **Borrar es una baja lógica con «Deshacer»**; el binario se quita del bucket cuando vence el deshacer (`borrarArchivo`, `ESPERA_ANTES_DE_QUITAR_DEL_BUCKET_MS`).
+- **Ajustes muestra el espacio usado** y avisa desde los 800 MB: pasarse del giga puede dejar la app entera respondiendo 402 (ADR 0039).
+- **Una tabla nueva en la réplica rompe la sincronización de un bundle nuevo contra una base sin migrar** (`leerLote` exige la clave). La migración se aplica antes de mergear.
+- `archivos.spec.ts` sube a Storage una vez por corrida, solo en `escritorio`, y `vaciarArchivos` quita del bucket lo que subió.
 
 ## Agenda (ADR 0034)
 
