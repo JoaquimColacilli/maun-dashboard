@@ -143,7 +143,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
                 <span className="flex-none text-right">
                   <span className="block text-body font-semibold tabular-nums">
                     {proyecto.presupuesto_centavos === null
-                      ? 'A presupuestar'
+                      ? 'Sin presupuesto'
                       : formatearPesos(proyecto.presupuesto_centavos)}
                   </span>
                   <span className="mt-1 block">

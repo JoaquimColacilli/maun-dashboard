@@ -257,8 +257,9 @@ export function AjustesPage() {
               Espacio para archivos
             </h2>
             <p className="text-body leading-relaxed text-text-2 tabular-nums">
-              Las fotos y los PDF de los trabajos ocupan {pesoLegible(usado)} de{' '}
-              {pesoLegible(ESPACIO_DEL_PLAN_BYTES)}.
+              Las fotos y los PDF de los trabajos ocupan{' '}
+              <span className="whitespace-nowrap">{pesoLegible(usado)}</span> de{' '}
+              <span className="whitespace-nowrap">{pesoLegible(ESPACIO_DEL_PLAN_BYTES)}</span>.
             </p>
             {usado >= ESPACIO_PARA_AVISAR_BYTES && (
               <p className="text-label leading-relaxed font-medium text-atencion">

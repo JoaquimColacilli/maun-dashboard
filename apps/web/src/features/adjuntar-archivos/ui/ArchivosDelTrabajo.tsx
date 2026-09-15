@@ -250,9 +250,11 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
           {recienSubidos.map((subido) => (
             <li key={`${subido.nombre}-${String(subido.subido)}`}>
               {subido.nombre}:{' '}
-              {subido.original === subido.subido
-                ? pesoLegible(subido.subido)
-                : `${pesoLegible(subido.original)} → ${pesoLegible(subido.subido)}`}
+              <span className="whitespace-nowrap">
+                {subido.original === subido.subido
+                  ? pesoLegible(subido.subido)
+                  : `${pesoLegible(subido.original)} → ${pesoLegible(subido.subido)}`}
+              </span>
             </li>
           ))}
         </ul>

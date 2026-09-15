@@ -366,7 +366,7 @@ function Sidebar({
           <span>{sincronizacion}</span>
         </div>
       </div>
-      <VersionDeLaApp className="mt-1 flex min-h-9 items-center self-start rounded-field px-2.5 text-left text-meta text-text-3 underline-offset-3 hover:text-ink hover:underline" />
+      <VersionDeLaApp className="mt-1 flex min-h-9 items-center self-start rounded-field px-2.5 text-left text-meta text-balance text-text-3 underline-offset-3 hover:text-ink hover:underline" />
     </nav>
   );
 }
