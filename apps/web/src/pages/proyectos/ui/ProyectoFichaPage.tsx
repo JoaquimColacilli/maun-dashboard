@@ -1,7 +1,7 @@
 import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
-import { enlaceDeMapa } from '@/entities/cliente';
+import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
   COMPROBANTE,
   despieceDelProyecto,
@@ -21,6 +21,7 @@ import {
   useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import { AvanceDeLaObra, BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
@@ -164,7 +165,7 @@ export function ProyectoFichaPage() {
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
           <Link
-            to={`/clientes/${cliente.id}`}
+            to={rutaDelCliente(cliente.id)}
             className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
           >
             {cliente.nombre}
@@ -319,6 +320,10 @@ export function ProyectoFichaPage() {
               titulo="Notas de obra"
               placeholder="Medidas, qué falta, qué hablar con el cliente…"
             />
+          </div>
+
+          <div className="mt-6">
+            <ArchivosDelTrabajo proyectoId={proyecto.id} />
           </div>
         </div>
 

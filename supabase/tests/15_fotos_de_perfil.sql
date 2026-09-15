@@ -27,12 +27,16 @@ select policies_are(
   'storage',
   'objects',
   array[
+    'archivos_borrar_los_del_taller',
+    'archivos_reemplazar_los_del_taller',
+    'archivos_subir_al_taller',
+    'archivos_ver_los_del_taller',
     'fotos_de_perfil_borrar_la_propia',
     'fotos_de_perfil_reemplazar_la_propia',
     'fotos_de_perfil_subir_a_la_carpeta_propia',
     'fotos_de_perfil_ver_la_propia'
   ],
-  'storage.objects tiene las cuatro políticas de las fotos y ninguna otra'
+  'storage.objects tiene las cuatro políticas de las fotos, las cuatro de los archivos de los trabajos y ninguna otra'
 );
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));

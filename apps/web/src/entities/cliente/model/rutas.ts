@@ -1,3 +1,1 @@
-export function rutaDelCliente(id: string): string {
-  return `/clientes/${id}`;
-}
+export { rutaDelCliente } from '@/shared/lib';

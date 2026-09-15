@@ -1,4 +1,4 @@
-import type { EstadoProyecto } from '@maun/domain';
+import { vencimientoDelPresupuesto, type EstadoProyecto } from '@maun/domain';
 
 import {
   cambiaLaFila,
@@ -6,10 +6,12 @@ import {
   etapaAlGuardarElContacto,
   ultimoContactoAlGuardar,
   vencimientoPropuesto,
+  yaSeRelevo,
   type Pago,
   type Proyecto,
 } from '@/entities/proyecto';
 import type { DatosDeProyecto, PagoParaGuardar, ProyectoParaGuardar } from '@/shared/api';
+import { fechaDelEnlace, hayCambios } from '@/shared/lib';
 
 export const CONCEPTO_DE_LA_SENA = 'Seña de la visita';
 
@@ -48,6 +50,21 @@ export function valoresDelContacto(
   };
 }
 
+function recortados(valores: ValoresDelContacto): ValoresDelContacto {
+  return { ...valores, titulo: valores.titulo.trim(), notas: valores.notas.trim() };
+}
+
+export function hayCambiosEnElContacto(
+  iniciales: ValoresDelContacto,
+  actuales: ValoresDelContacto,
+  telefonoDelCliente: string,
+  telefonoEscrito: string | undefined,
+): boolean {
+  const cambioElTelefono =
+    telefonoEscrito !== undefined && telefonoEscrito.trim() !== telefonoDelCliente.trim();
+  return cambioElTelefono || hayCambios(recortados(iniciales), recortados(actuales));
+}
+
 export function muestraElVencimiento(proyecto: Proyecto | undefined): boolean {
   return (
     proyecto !== undefined &&
@@ -55,6 +72,33 @@ export function muestraElVencimiento(proyecto: Proyecto | undefined): boolean {
       proyecto.estado === 'relevamiento' ||
       proyecto.estado === 'a_presupuestar')
   );
+}
+
+export function etiquetaDeLaVisita(proyecto: Proyecto | undefined, hoy: string): string {
+  return proyecto !== undefined && yaSeRelevo(proyecto, hoy)
+    ? 'Día que fuiste a relevar'
+    : 'Visita';
+}
+
+function vencimientoDeLaVisita(visita: string, hoy: string): string | null {
+  const fecha = fechaDelEnlace(visita);
+  return fecha === undefined || fecha > hoy ? null : vencimientoDelPresupuesto(fecha);
+}
+
+export function valoresConOtraVisita(
+  proyecto: Proyecto | undefined,
+  valores: ValoresDelContacto,
+  visita: string,
+  hoy: string,
+): ValoresDelContacto {
+  const siguientes = { ...valores, visita };
+  if (proyecto === undefined || proyecto.estado !== 'a_presupuestar') return siguientes;
+
+  const propuestoAntes = vencimientoDeLaVisita(valores.visita, hoy);
+  const puestoAMano = valores.vencimiento !== '' && valores.vencimiento !== propuestoAntes;
+  const propuestoAhora = vencimientoDeLaVisita(visita, hoy);
+  if (puestoAMano || propuestoAhora === null) return siguientes;
+  return { ...siguientes, vencimiento: propuestoAhora };
 }
 
 function vencimientoDelContacto(
@@ -150,7 +194,7 @@ export function pedidoDelContacto({
   const base =
     proyecto === undefined ? DATOS_DE_UN_CONTACTO_NUEVO : datosActualesDelProyecto(proyecto);
   const visita = valores.visita.trim();
-  const estado = etapaAlGuardarElContacto(proyecto?.estado, visita, hoy);
+  const estado = etapaAlGuardarElContacto(proyecto, visita, hoy);
 
   return {
     id,

@@ -22,8 +22,8 @@ comment on type public.comprobante is 'Comprobante a emitir al cliente.';
 create type public.condicion_fiscal as enum ('consumidor_final', 'monotributo', 'responsable_inscripto', 'exento');
 comment on type public.condicion_fiscal is 'Condición frente al IVA del cliente.';
 
-create type public.estado_proyecto as enum ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'perdido', 'en_curso', 'entregado', 'cobrado');
-comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro: los primeros cinco estados son de seguimiento, los últimos tres de obra. Las transiciones válidas viven en @maun/domain.';
+create type public.estado_proyecto as enum ('contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'perdido', 'en_curso', 'entregado', 'cobrado');
+comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro: los primeros seis estados son de seguimiento (contacto, presupuesto estimativo, relevamiento, a presupuestar, presupuesto enviado y perdido), los últimos tres de obra. Las transiciones válidas viven en @maun/domain.';
 
 create type public.forma_pago as enum ('efectivo', 'transferencia', 'cuotas', 'mixto');
 comment on type public.forma_pago is 'Forma de pago acordada con el cliente para el proyecto.';
@@ -129,6 +129,54 @@ grant select on public.anotaciones to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.anotaciones to service_role;
 grant insert (id, fecha, hora, texto, categoria, proyecto_id, hecha, importante, deleted_at) on public.anotaciones to authenticated;
 grant update (id, fecha, hora, texto, categoria, proyecto_id, hecha, importante, deleted_at) on public.anotaciones to authenticated;
+
+create table public.archivos (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  proyecto_id uuid not null,
+  nombre text not null,
+  tipo text not null,
+  bytes bigint not null,
+  ancho integer,
+  alto integer,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint archivos_bytes_validos CHECK (bytes > 0 AND bytes <= 20971520),
+  constraint archivos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint archivos_medidas_validas CHECK ((ancho IS NULL) = (alto IS NULL) AND (ancho IS NULL OR ancho > 0 AND alto > 0)),
+  constraint archivos_nombre_valido CHECK (btrim(nombre) <> ''::text AND char_length(nombre) <= 200),
+  constraint archivos_pkey PRIMARY KEY (id),
+  constraint archivos_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint archivos_tipo_valido CHECK (tipo = ANY (ARRAY['image/webp'::text, 'image/jpeg'::text, 'application/pdf'::text]))
+);
+comment on table public.archivos is 'Los archivos de un trabajo (contacto u obra): fotos, capturas y PDF. El binario vive en el bucket archivos, en {household}/{proyecto}/{id}.{extensión}; esta fila es lo que la réplica trae (ADR 0039).';
+comment on column public.archivos.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.archivos.nombre is 'El nombre con el que se eligió el archivo, para mostrarlo. La ruta en el bucket sale del id, no del nombre.';
+comment on column public.archivos.tipo is 'Lo que quedó en el bucket: image/webp o image/jpeg (la app convierte toda imagen antes de subirla) o application/pdf. La extensión de la ruta sale de acá.';
+comment on column public.archivos.bytes is 'Lo que ocupa en el bucket: el archivo y, si es una imagen, su miniatura. La suma del taller es lo que se compara contra el espacio del plan.';
+comment on column public.archivos.ancho is 'Ancho en píxeles de una imagen, para reservarle el lugar antes de que cargue. Null en un PDF.';
+comment on column public.archivos.alto is 'Alto en píxeles de una imagen. Null en un PDF.';
+comment on column public.archivos.deleted_at is 'Borrado lógico, como en todo el household. La app quita el binario del bucket cuando vence el deshacer.';
+CREATE INDEX archivos_household_actualizado ON public.archivos USING btree (household_id, updated_at);
+CREATE INDEX archivos_household_proyecto ON public.archivos USING btree (household_id, proyecto_id);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON archivos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.archivos enable row level security;
+create policy archivos_alta on public.archivos as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy archivos_edicion on public.archivos as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy archivos_lectura on public.archivos as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.archivos to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.archivos to service_role;
+grant insert (id, proyecto_id, nombre, tipo, bytes, ancho, alto, deleted_at) on public.archivos to authenticated;
+grant update (id, proyecto_id, nombre, tipo, bytes, ancho, alto, deleted_at) on public.archivos to authenticated;
 
 create table public.clientes (
   id uuid not null default private.uuidv7(),
@@ -414,6 +462,10 @@ create table public.proyectos (
   dist_liquidado_at timestamp with time zone,
   reapertura_sueldo_mensual boolean,
   vencimiento_presupuesto date,
+  presupuesto_diseno boolean not null default false,
+  presupuesto_despiece boolean not null default false,
+  presupuesto_cotizacion boolean not null default false,
+  presupuesto_pdf boolean not null default false,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
@@ -458,7 +510,11 @@ comment on column public.proyectos.dist_sueldo_previo_centavos is 'Congelado al 
 comment on column public.proyectos.dist_fijos_previo_centavos is 'Congelado al liquidar: costos fijos que el mes ya llevaba liquidados por otros proyectos en ese instante.';
 comment on column public.proyectos.dist_liquidado_at is 'Congelado al liquidar: el instante de la liquidación. Ordena las liquidaciones de un mismo mes.';
 comment on column public.proyectos.reapertura_sueldo_mensual is 'Modo del sueldo del cobro que se reabrió. El próximo cobro lo conserva aunque los ajustes hayan cambiado.';
-comment on column public.proyectos.vencimiento_presupuesto is 'Fecha límite para entregar el presupuesto de un contacto. La app la propone a tres días hábiles del relevamiento cuando el contacto pasa a presupuestar, y se edita como la entrega estimada. La agenda la muestra mientras el contacto no mandó el presupuesto.';
+comment on column public.proyectos.vencimiento_presupuesto is 'Fecha límite para entregar el presupuesto de un contacto. La app la propone a cinco días hábiles del relevamiento (una semana de trabajo) cuando el contacto pasa a presupuestar, y desde el día que pasa si viene de un estimativo; se edita como la entrega estimada. La agenda la muestra mientras el contacto no mandó el presupuesto ni un estimativo.';
+comment on column public.proyectos.presupuesto_diseno is 'Tarea de presupuestar: el diseño está hecho. Es una tilde adentro de la etapa «a presupuestar», no un estado (ADR 0038).';
+comment on column public.proyectos.presupuesto_despiece is 'Tarea de presupuestar: el despiece está hecho.';
+comment on column public.proyectos.presupuesto_cotizacion is 'Tarea de presupuestar: la cotización está hecha (madera y herrajes, flete, ayudante).';
+comment on column public.proyectos.presupuesto_pdf is 'Tarea de presupuestar: el PDF del presupuesto está armado. Con las cuatro tildadas, la app sugiere marcar que se mandó; el estado lo cambia el dueño.';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -478,8 +534,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf) on public.proyectos to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -569,7 +625,27 @@ CREATE TRIGGER taller_al_crear_la_cuenta AFTER INSERT ON auth.users FOR EACH ROW
 
 -- Storage ----------------------------------------------------------------------------------------
 
+-- bucket archivos: público, tope 10485760 bytes, tipos image/webp, image/jpeg, application/pdf
 -- bucket fotos-de-perfil: público, tope 524288 bytes, tipos image/webp, image/jpeg
+create policy archivos_borrar_los_del_taller on storage.objects as permissive
+  for delete to authenticated
+  using (((bucket_id = 'archivos'::text) AND ((storage.foldername(name))[1] = ANY (ARRAY( SELECT (h.h)::text AS h
+   FROM private.user_household_ids() h(h))))));
+create policy archivos_reemplazar_los_del_taller on storage.objects as permissive
+  for update to authenticated
+  using (((bucket_id = 'archivos'::text) AND ((storage.foldername(name))[1] = ANY (ARRAY( SELECT (h.h)::text AS h
+   FROM private.user_household_ids() h(h))))))
+  with check (((bucket_id = 'archivos'::text) AND ((storage.foldername(name))[1] = ANY (ARRAY( SELECT (h.h)::text AS h
+   FROM private.user_household_ids() h(h))))));
+create policy archivos_subir_al_taller on storage.objects as permissive
+  for insert to authenticated
+  with check (((bucket_id = 'archivos'::text) AND ((storage.foldername(name))[1] = ANY (ARRAY( SELECT (h.h)::text AS h
+   FROM private.user_household_ids() h(h))))));
+create policy archivos_ver_los_del_taller on storage.objects as permissive
+  for select to authenticated
+  using (((bucket_id = 'archivos'::text) AND ((storage.foldername(name))[1] = ANY (ARRAY( SELECT (h.h)::text AS h
+   FROM private.user_household_ids() h(h))))));
+comment on policy archivos_ver_los_del_taller on storage.objects is 'No es para leer los archivos (el bucket es público y se leen por URL): es para la subida con upsert, que chequea si el objeto existe con un select bajo la RLS del usuario. Sin esta política ese chequeo nunca encuentra el archivo anterior y la subida falla con un error de RLS.';
 create policy fotos_de_perfil_borrar_la_propia on storage.objects as permissive
   for delete to authenticated
   using (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
@@ -642,6 +718,9 @@ AS $function$
     ),
     'anotaciones', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.anotaciones t where t.deleted_at is null
+    ),
+    'archivos', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.archivos t where t.deleted_at is null
     )
   )
 $function$;
@@ -744,6 +823,9 @@ begin
     ),
     'anotaciones', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.anotaciones t where t.updated_at >= v_desde
+    ),
+    'archivos', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.archivos t where t.updated_at >= v_desde
     )
   );
 end;
@@ -1108,7 +1190,10 @@ AS $function$
             from public.proyectos p
             where p.household_id = d.household_id
               and p.deleted_at is null
-              and p.estado in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso')
+              and p.estado in (
+                'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado',
+                'en_curso'
+              )
           ),
           'clientes', (
             select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'nombre', c.nombre, 'zona', c.zona)), '[]'::jsonb)
@@ -1148,6 +1233,12 @@ begin
     and deleted_at is null;
 
   update public.gastos
+  set deleted_at = new.deleted_at
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and deleted_at is null;
+
+  update public.archivos
   set deleted_at = new.deleted_at
   where household_id = new.household_id
     and proyecto_id = new.id
@@ -1402,7 +1493,9 @@ AS $function$
   select coalesce(
     case p_hacia
       when 'cobrado' then p_desde = 'entregado'
-      when 'perdido' then p_desde in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso')
+      when 'perdido' then p_desde in (
+        'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso'
+      )
       else false
     end,
     false
@@ -1845,7 +1938,9 @@ AS $function$
   select coalesce(
     case p_desde
       when 'cobrado' then p_hacia = 'entregado'
-      when 'perdido' then p_hacia in ('contacto', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado')
+      when 'perdido' then p_hacia in (
+        'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado'
+      )
       else false
     end,
     false
@@ -2015,14 +2110,18 @@ AS $function$
     select 1
     from (
       values
-        ('contacto', 'relevamiento'), ('contacto', 'a_presupuestar'), ('contacto', 'presupuesto_enviado'),
-        ('contacto', 'en_curso'),
-        ('relevamiento', 'contacto'), ('relevamiento', 'a_presupuestar'), ('relevamiento', 'presupuesto_enviado'),
-        ('relevamiento', 'en_curso'),
-        ('a_presupuestar', 'contacto'), ('a_presupuestar', 'relevamiento'), ('a_presupuestar', 'presupuesto_enviado'),
-        ('a_presupuestar', 'en_curso'),
-        ('presupuesto_enviado', 'contacto'), ('presupuesto_enviado', 'relevamiento'),
-        ('presupuesto_enviado', 'a_presupuestar'), ('presupuesto_enviado', 'en_curso'),
+        ('contacto', 'presupuesto_estimativo'), ('contacto', 'relevamiento'), ('contacto', 'a_presupuestar'),
+        ('contacto', 'presupuesto_enviado'), ('contacto', 'en_curso'),
+        ('presupuesto_estimativo', 'contacto'), ('presupuesto_estimativo', 'relevamiento'),
+        ('presupuesto_estimativo', 'a_presupuestar'), ('presupuesto_estimativo', 'presupuesto_enviado'),
+        ('presupuesto_estimativo', 'en_curso'),
+        ('relevamiento', 'contacto'), ('relevamiento', 'presupuesto_estimativo'), ('relevamiento', 'a_presupuestar'),
+        ('relevamiento', 'presupuesto_enviado'), ('relevamiento', 'en_curso'),
+        ('a_presupuestar', 'contacto'), ('a_presupuestar', 'presupuesto_estimativo'), ('a_presupuestar', 'relevamiento'),
+        ('a_presupuestar', 'presupuesto_enviado'), ('a_presupuestar', 'en_curso'),
+        ('presupuesto_enviado', 'contacto'), ('presupuesto_enviado', 'presupuesto_estimativo'),
+        ('presupuesto_enviado', 'relevamiento'), ('presupuesto_enviado', 'a_presupuestar'),
+        ('presupuesto_enviado', 'en_curso'),
         ('en_curso', 'presupuesto_enviado'), ('en_curso', 'entregado'),
         ('entregado', 'en_curso')
     ) as t (desde, hasta)

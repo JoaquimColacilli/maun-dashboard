@@ -10,6 +10,7 @@ export const TABLAS_REPLICADAS = [
   'gastos',
   'movimientos',
   'anotaciones',
+  'archivos',
 ] as const;
 
 export type TablaReplicada = (typeof TABLAS_REPLICADAS)[number];

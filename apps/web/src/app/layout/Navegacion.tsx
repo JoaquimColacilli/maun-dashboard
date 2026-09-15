@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router';
 
+import { VersionDeLaApp } from '@/features/ver-novedades';
 import { conFondo, esRutaDeHoja, useAnchoDePantalla, useUbicacionVisible } from '@/shared/lib';
 import { Avatar, Icono } from '@/shared/ui';
 
@@ -365,6 +366,7 @@ function Sidebar({
           <span>{sincronizacion}</span>
         </div>
       </div>
+      <VersionDeLaApp className="mt-1 flex min-h-9 items-center self-start rounded-field px-2.5 text-left text-meta text-balance text-text-3 underline-offset-3 hover:text-ink hover:underline" />
     </nav>
   );
 }

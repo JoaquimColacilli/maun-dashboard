@@ -9,9 +9,12 @@ import {
   filasDe,
   guardarElProyecto,
   householdDe,
+  marcarTareasDelPresupuesto,
   quitarFilaLocal,
   type CambiosDeProyecto,
+  type CambiosDeTareas,
   type FilaDe,
+  type PagoParaGuardar,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
   type Replica,
@@ -21,9 +24,11 @@ import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/
 import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
 import { datosActualesDelProyecto } from '../model/liquidacion';
 import { ultimoContactoAlGuardar } from '../model/seguimiento';
+import { cambiaAlgunaTarea } from '../model/tareas';
 
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
+export const CLAVE_DE_TAREAS = ['proyectos', 'tareas'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
 
 const REINTENTOS = 5;
@@ -44,6 +49,13 @@ export interface EdicionDeProyecto {
   cambios: CambiosDeProyecto;
   previos: CambiosDeProyecto;
   version?: number;
+}
+
+export interface MarcaDeTareas {
+  id: string;
+  cambios: CambiosDeTareas;
+  previos: CambiosDeTareas;
+  version: number;
 }
 
 export interface BajaDeProyecto {
@@ -77,6 +89,7 @@ export function guardadoDeUnPaso(
   cambios: CambiosDeProyecto,
   hoy: string,
   dia?: string,
+  pagos: readonly PagoParaGuardar[] = [],
 ): GuardadoDeProyecto {
   const datos = { ...datosActualesDelProyecto(proyecto), ...cambios };
   return {
@@ -87,7 +100,7 @@ export function guardadoDeUnPaso(
         ...datos,
         ultimo_contacto: ultimoContactoAlGuardar(proyecto, datos.estado, hoy, dia),
       },
-      pagos: [],
+      pagos,
       gastos: [],
     },
     previos: { proyecto, pagos: [], gastos: [] },
@@ -116,6 +129,10 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         deleted_at: null,
         version: 1,
         vencimiento_presupuesto: null,
+        presupuesto_diseno: false,
+        presupuesto_despiece: false,
+        presupuesto_cotizacion: false,
+        presupuesto_pdf: false,
         fecha_cobro: null,
         dist_cobrado_centavos: null,
         dist_gastos_centavos: null,
@@ -276,6 +293,43 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   },
   onError: (_error, variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => sinLosCambios(replica, variables));
+  },
+};
+
+function conTareas(replica: Replica, id: string, cambios: CambiosDeTareas): Replica {
+  const actual = filaPorId(replica, 'proyectos', id);
+  if (!actual) return replica;
+  const cambia = cambiaAlgunaTarea(actual, cambios);
+  return aplicarFilaLocal(replica, 'proyectos', {
+    ...actual,
+    ...cambios,
+    version: cambia ? actual.version + 1 : actual.version,
+    updated_at: cambia ? new Date().toISOString() : actual.updated_at,
+  });
+}
+
+function sinLasTareas(replica: Replica, { id, previos, version }: MarcaDeTareas): Replica {
+  const actual = filaPorId(replica, 'proyectos', id);
+  if (!actual) return replica;
+  return aplicarFilaLocal(replica, 'proyectos', { ...actual, ...previos, version });
+}
+
+export const MUTACION_DE_TAREAS: MutationOptions<FilaDe<'proyectos'>, unknown, MarcaDeTareas> = {
+  mutationKey: CLAVE_DE_TAREAS,
+  mutationFn: ({ id, cambios }) => marcarTareasDelPresupuesto(id, cambios),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id, cambios }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) => conTareas(replica, id, cambios));
+    await guardarCacheAhora();
+  },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
+  },
+  onError: (_error, variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLasTareas(replica, variables));
   },
 };
 

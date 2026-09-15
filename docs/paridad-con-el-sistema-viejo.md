@@ -225,11 +225,40 @@ original no tiene calendario, ni fechas límite de presupuesto, ni notas sueltas
   la PC, también sin señal.
 - **Las anotaciones**: materiales o taller, con hora opcional, un trabajo opcional, tildar, marcar como
   importante y borrar, cada cosa con deshacer.
-- **La fecha límite del presupuesto** de un contacto, propuesta a tres días hábiles al pasar a «a
-  presupuestar» y editable.
+- **La fecha límite del presupuesto** de un contacto, propuesta al pasar a «a presupuestar» y editable
+  (cinco días hábiles desde el ADR 0038).
 - **El ícono de la agenda y «Hoy en la agenda» en Inicio** y **«Anotar algo»** en el botón redondo del celular.
 - **El aviso de la mañana**, por dispositivo, con qué avisa, la anticipación, la hora y la zona horaria
   que elige la persona. Es un recordatorio de mejor esfuerzo, y la pantalla lo dice.
+
+Del embudo del seguimiento (ADR 0038), pedido por el dueño después de usar la app. **Agregado nuestro, no
+paridad**: el original no tenía nada antes del presupuesto.
+
+- **El presupuesto estimativo** como etapa propia, para las consultas que arrancan con un número
+  aproximado y para el relevamiento que no se cobró.
+- **El día del relevamiento** se anota al marcar que fue, y se corrige desde la ficha; de ese día sale
+  el plazo del presupuesto, una semana de trabajo, que se corre solo mientras no se lo ponga a mano.
+- **Las tareas de presupuestar** (diseñar, despiezar, cotizar, armar el PDF) como tildes, y la sugerencia
+  de mandarlo cuando están las cuatro.
+- **Qué sigue depende de si se cobró la visita, pero nunca bloquea**: sin cobrar sugiere el estimativo y
+  deja mandar el presupuesto igual.
+
+De los archivos de los trabajos (ADR 0039). **Agregado nuestro, no paridad**: el original no guardaba
+ningún archivo.
+
+- **Fotos, capturas, renders y PDF** en cada contacto y cada obra, achicados en el navegador antes de
+  subirse. Las imágenes se ven en un visor y los PDF se abren en otra pestaña; borrar tiene deshacer.
+- **Los videos no entran**, y la pantalla dice por qué: no caben en el espacio del plan.
+- **Ajustes muestra cuánto espacio ocupan** y avisa antes de que se llene.
+
+De los enlaces, los formularios y las novedades (ADR 0040 y 0041). **Agregado nuestro, no paridad.**
+
+- **Tocar un trabajo o un cliente lleva a su ficha** desde el historial del cliente, la entrega más próxima
+  de Inicio, «Hoy en la agenda» y el día de la agenda.
+- **Un formulario en hoja pregunta antes de descartar**, y solo si tiene algo cargado: tocando afuera, con
+  Escape, con la cruz y con «Cancelar».
+- **La versión de la app a la vista**, en la barra lateral de la PC y al final de Ajustes, y **las novedades**
+  de cada versión, que aparecen solas una vez después de actualizar y se vuelven a abrir desde la versión.
 
 ---
 
@@ -241,7 +270,7 @@ Lo que el HTML hacía con un trabajo que todavía no estaba aprobado, y qué pas
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `guardarProy()` exige presupuesto                                    | **No se replica.** Un contacto se guarda con cliente y qué pide. El presupuesto llega en «Mandé el presupuesto», opcional, o en el pasaje, obligatorio.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Cargar un pago en `presupuestado` lo pasa solo a `en_curso`          | **No se replica.** Ningún estado cambia solo. Aprobar es una pantalla propia (`/proyectos/:id/aprobar`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Cuatro estados: `presupuestado`, `en_curso`, `entregado`, `cobrado`  | **Ampliado.** Cuatro de seguimiento (contacto, relevamiento, a presupuestar, presupuesto enviado), dos de obra, cobrado y perdido. Existen desde la 2A.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Cuatro estados: `presupuestado`, `en_curso`, `entregado`, `cobrado`  | **Ampliado.** Cinco de seguimiento (contacto, estimativo enviado, relevamiento, a presupuestar, presupuesto enviado), dos de obra, cobrado y perdido. Los cuatro primeros existen desde la 2A; el estimativo, desde el ADR 0038.                                                                                                                                                                                                                                                                                                                                                           |
 | Los pagos entran a MAUN en cualquier estado                          | **Está, igual.** La seña de la visita entra a la caja el día que se carga, y al aprobar sigue siendo el mismo pago: no se vuelve a cargar ni se duplica.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Los insumos **no** salen de MAUN mientras está en `presupuestado`    | **No se replica, a propósito: es una diferencia deliberada.** La vista `libro_mayor` descuenta un gasto el día que se carga, en cualquier estado. En el original, `presupuestado` era el estacionamiento de todo lo que todavía no era un trabajo, porque no existía Seguimiento. Hoy el estado tiene sentido propio, y la plata de la nafta salió de verdad. `cerrar_perdido` ya netea esos gastos contra la seña retenida, así que la cuenta cierra. Volver a lo del original sería replicar un rodeo para un problema que ya no existe. Decidido con el dueño en el paso 12 (ADR 0019). |
 | Un presupuesto que no prosperó queda para siempre en `presupuestado` | **Corregido.** Se da por perdido, y la seña se liquida: diezmo sí, sueldo no (ADR 0011).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |

@@ -755,6 +755,21 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
     ],
   },
   {
+    nombre:
+      'un estimativo que no avanzó se da por perdido, vuelve a estimativo y se cierra otra vez',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {
+      estimativo: { estado: 'presupuesto_estimativo', pagos: [3_000_000], gastos: [500_000] },
+      p1: entregado(200_000_000),
+    },
+    pasos: [
+      { liquidar: 'perdido', proyecto: 'estimativo', fecha: '2026-09-15' },
+      { liquidar: 'cobrado', proyecto: 'p1', fecha: '2026-09-16' },
+      { revertir: 'presupuesto_estimativo', proyecto: 'estimativo' },
+      { liquidar: 'perdido', proyecto: 'estimativo', fecha: '2026-10-02' },
+    ],
+  },
+  {
     nombre: 'un cobro con el acumulado del mes viejo se ajusta, y lo congelado es lo del dominio',
     ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
     proyectos: {

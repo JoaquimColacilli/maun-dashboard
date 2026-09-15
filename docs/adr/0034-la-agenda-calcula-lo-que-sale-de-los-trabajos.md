@@ -45,6 +45,8 @@ con tres mutaciones: alta (que también restaura, para deshacer), edición y baj
 presupuestar» si no tenía: tres días hábiles (`DIAS_HABILES_PARA_PRESUPUESTAR`) desde la visita, o desde
 hoy si la visita todavía no pasó. Se edita en la hoja del contacto. `guardar_proyecto` la escribe solo si
 la clave viene en el pedido: un bundle viejo servido por el service worker no la manda y no la borra.
+**Actualizado por el [0038](0038-el-embudo-del-seguimiento.md):** son cinco días hábiles, se corre al
+corregir el día del relevamiento si no se la puso a mano, y no sale en la agenda con un estimativo enviado.
 
 **Pantallas.** En el celular, lista cronológica con la tira del mes arriba, y el día en una hoja. Cada
 día con cosas tiene «Anotar» en su encabezado, que abre la hoja de anotar con ese día. El día vacío lo

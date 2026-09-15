@@ -18,6 +18,7 @@ import {
   anotacionNueva,
   erroresDeLaAnotacion,
   esFecha,
+  hayCambiosEnLaAnotacion,
   hayErrores,
   LARGO_MAXIMO_DEL_TEXTO,
   trabajosParaAnotar,
@@ -51,9 +52,8 @@ export function HojaDeAnotacion({
   const ids = useId();
   const campoDeTexto = useRef<HTMLTextAreaElement>(null);
   const [id] = useState(uuidv7);
-  const [valores, setValores] = useState<ValoresDeLaAnotacion>(() =>
-    valoresIniciales(fechaInicial),
-  );
+  const [iniciales] = useState<ValoresDeLaAnotacion>(() => valoresIniciales(fechaInicial));
+  const [valores, setValores] = useState<ValoresDeLaAnotacion>(iniciales);
   const [errores, setErrores] = useState<ErroresDeLaAnotacion>({});
 
   const hoy = hoyLocal();
@@ -93,7 +93,11 @@ export function HojaDeAnotacion({
   }
 
   return (
-    <Hoja titulo="Anotar algo" alCerrar={alCerrar}>
+    <Hoja
+      titulo="Anotar algo"
+      alCerrar={alCerrar}
+      conCambios={hayCambiosEnLaAnotacion(iniciales, valores)}
+    >
       <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 md:px-6 md:py-5">
           <div className="flex flex-col gap-1.5">

@@ -1,6 +1,6 @@
 export const DIAS_HABILES_DE_ENTREGA = 21;
 
-export const DIAS_HABILES_PARA_PRESUPUESTAR = 3;
+export const DIAS_HABILES_PARA_PRESUPUESTAR = 5;
 
 const MS_POR_DIA = 86_400_000;
 const FORMATO = /^(\d{4})-(\d{2})-(\d{2})$/;

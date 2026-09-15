@@ -1,6 +1,9 @@
 import {
   aplicarLote,
   borrarAnotacion,
+  borrarArchivo,
+  guardarArchivoNuevo,
+  type ArchivoNuevo,
   borrarCliente,
   borrarMovimiento,
   borrarProyecto,
@@ -14,6 +17,7 @@ import {
   guardarMovimiento,
   guardarNombreDelTaller,
   guardarProyecto,
+  guardarTareasDelPresupuesto,
   liquidarProyecto,
   necesitaReconcile,
   replicaVacia,
@@ -26,6 +30,7 @@ import {
   type CambiosDeCliente,
   type CambiosDeMovimiento,
   type CambiosDeProyecto,
+  type CambiosDeTareas,
   type ClienteNuevo,
   type FilaDe,
   type MovimientoNuevo,
@@ -120,6 +125,13 @@ export async function editarProyecto(
   return guardarCambiosDeProyecto(clienteMaun(), id, cambios);
 }
 
+export async function marcarTareasDelPresupuesto(
+  id: string,
+  cambios: CambiosDeTareas,
+): Promise<FilaDe<'proyectos'>> {
+  return guardarTareasDelPresupuesto(clienteMaun(), id, cambios);
+}
+
 export async function darDeBajaCliente(id: string, borradoEn: string): Promise<FilaDe<'clientes'>> {
   return borrarCliente(clienteMaun(), id, borradoEn);
 }
@@ -150,6 +162,17 @@ export async function darDeBajaAnotacion(
   borradoEn: string,
 ): Promise<FilaDe<'anotaciones'>> {
   return borrarAnotacion(clienteMaun(), id, borradoEn);
+}
+
+export async function crearArchivo(
+  nuevo: ArchivoNuevo,
+  restaurado = false,
+): Promise<FilaDe<'archivos'>> {
+  return guardarArchivoNuevo(clienteMaun(), nuevo, restaurado);
+}
+
+export async function darDeBajaArchivo(id: string, borradoEn: string): Promise<FilaDe<'archivos'>> {
+  return borrarArchivo(clienteMaun(), id, borradoEn);
 }
 
 export async function liquidarElProyecto(

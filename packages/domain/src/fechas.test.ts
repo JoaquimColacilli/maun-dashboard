@@ -12,14 +12,18 @@ import {
 } from './fechas.ts';
 
 describe('vencimientoDelPresupuesto', () => {
-  it('son tres días hábiles desde el relevamiento', () => {
-    expect(DIAS_HABILES_PARA_PRESUPUESTAR).toBe(3);
-    expect(vencimientoDelPresupuesto('2026-09-07')).toBe('2026-09-10');
+  it('es una semana de trabajo desde el relevamiento: cinco días hábiles', () => {
+    expect(DIAS_HABILES_PARA_PRESUPUESTAR).toBe(5);
+    expect(vencimientoDelPresupuesto('2026-09-07')).toBe('2026-09-14');
   });
 
-  it('un relevamiento del jueves vence el martes, y salta los feriados que se le pasan', () => {
-    expect(vencimientoDelPresupuesto('2026-09-10')).toBe('2026-09-15');
-    expect(vencimientoDelPresupuesto('2026-10-08', ['2026-10-12'])).toBe('2026-10-14');
+  it('un relevamiento del jueves vence el jueves siguiente, y salta los feriados que se le pasan', () => {
+    expect(vencimientoDelPresupuesto('2026-09-10')).toBe('2026-09-17');
+    expect(vencimientoDelPresupuesto('2026-10-08', ['2026-10-12'])).toBe('2026-10-16');
+  });
+
+  it('un relevamiento del sábado vence el viernes siguiente', () => {
+    expect(vencimientoDelPresupuesto('2026-09-12')).toBe('2026-09-18');
   });
 });
 

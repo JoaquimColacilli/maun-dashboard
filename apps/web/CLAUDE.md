@@ -2,6 +2,16 @@
 
 React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas**, **Diezmo**, la **Agenda** (ADR 0034) y los **Avisos** (ADR 0036). Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño; la agenda y los avisos son agregados nuestros.
 
+## Novedades: parte de terminar un PR (ADR 0041)
+
+Leelo antes de empezar, no al final. Una versión nueva es un PR mergeado a `main`, y el dueño la ve al tocar «Actualizar».
+
+- **Todo PR que cambie algo que el usuario pueda notar agrega una entrada nueva arriba de todo en `src/features/ver-novedades/model/novedades.ts`**, con su número de versión: la fecha (`AAAA-MM-DD`, o `.2` si ya hay otra ese día). La versión de la app es la de esa entrada, así que se sube en el mismo PR, no después.
+- Se escribe en el idioma de él: qué puede hacer ahora que antes no podía. Sin nombres de tablas, sin nombres de paquetes, sin emojis, sin mencionar a ninguna IA. Tres o cuatro líneas como máximo; lo que no cambia lo que puede hacer, no va.
+- Un PR que no cambia nada visible, como un arreglo interno o una reorganización, no agrega entrada: forzar una novedad donde no la hay entrena a ignorarlas.
+- `novedades.test.ts` controla la fecha, el orden, el largo, los emojis y una lista de palabras técnicas. Si algo es visible para él y está dicho en su idioma no lo puede controlar: eso es tuyo.
+- La versión vista es estado del dispositivo (`maun:novedades-vistas`), como el tema: no va a la réplica ni a la cola. Aparecen solas una vez por versión, solo si ya había sesión al abrir la app y cuando no hay nada en curso. Son un popover, no un `<dialog>`: informan sin bloquear.
+
 ## Capas (FSD, ADR 0006)
 
 ```
@@ -13,7 +23,7 @@ src/
                desbloquear-la-app, activar-huella,
                cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
                editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto,
-               llevar-la-agenda, recibir-avisos)
+               llevar-la-agenda, recibir-avisos, adjuntar-archivos, ver-novedades)
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
                proyecto, movimiento y agenda
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
@@ -123,7 +133,7 @@ src/
 - Un rechazo definitivo tapa la cola, que drena de a una. Por eso el formulario frena lo que la base rechazaría por `check` (el formato del CUIT y el del email) aunque el resto de la validación solo advierta.
 - Si cambia la forma de los datos persistidos, subí `VERSION_CACHE`.
 - El service worker (propio, `sw/sw.ts`, ADR 0035) precachea solo el shell: no agregues `runtimeCaching` para la API de Supabase.
-- **La foto de perfil es la única escritura que no pasa por la cola** (ADR 0022): la cola maneja mutaciones de JSON, no archivos. `FormularioDePerfil` recorta y achica en el navegador (`features/editar-perfil/model`) y `subirFotoDeLaPersona` sube con `upsert` a `fotos-de-perfil/{usuario}/foto` y guarda la URL con `cacheNonce` en `user_metadata.foto`. Sin señal no abre el selector y lo dice. `esFalloDeRed` reconoce el `StorageUnknownError` de storage-js. Otro dispositivo ve la foto nueva recién cuando renueva la sesión, igual que el nombre.
+- **La foto de perfil y los binarios de los archivos de los trabajos son las únicas escrituras que no pasan por la cola** (ADR 0022 y 0039): la cola maneja mutaciones de JSON, no archivos. La fila de un archivo sí va por la cola. `FormularioDePerfil` recorta y achica en el navegador (`features/editar-perfil/model`) y `subirFotoDeLaPersona` sube con `upsert` a `fotos-de-perfil/{usuario}/foto` y guarda la URL con `cacheNonce` en `user_metadata.foto`. Sin señal no abre el selector y lo dice. `esFalloDeRed` reconoce el `StorageUnknownError` de storage-js. Otro dispositivo ve la foto nueva recién cuando renueva la sesión, igual que el nombre.
 - El bundle se parte en dos: el vendor en su propio chunk y el código de la app en otro (`manualChunks` en `vite.config.ts`). No baja el arranque, pero un cambio de pantalla deja de obligar a rebajar el bundle entero del precache (ADR 0015).
 
 ## Sistema de diseño
@@ -169,6 +179,7 @@ src/
 - **El foco de una fila nueva lo pone `shouldFocus` de `useFieldArray`.** No agregues otro foco propio: compiten y el que llega tarde escribe en el campo equivocado.
 - Las tres pestañas (`Seguimiento · Activos · Historial`) son rutas, no estado local: `/seguimiento` y `/proyectos` montan la misma pantalla. No hay `pages/seguimiento`.
 - `despieceDelProyecto` y `DistribucionDespiece` los comparten la ficha y la pantalla de cobro: lo que cambia entre las dos es el modo (`real` o `proyeccion`), no la cuenta. La proyección sale de `calcularLiquidacion` del dominio, nunca del `despiece` del diseño, que reparte sobre el presupuesto.
+- **Todo título de un trabajo y todo nombre de un cliente que se muestra lleva a su ficha** (`rutaDelProyecto` y `rutaDelCliente`, las dos en `shared/lib`). Una fila de una lista usa el link estirado de `TarjetaDeProyecto` (el título es el `Link` con `data-tarjeta` y `after:absolute after:inset-0`, la fila es `relative`); un nombre de cliente suelto usa `EnlaceACliente`. No llevan enlace: el encabezado de la propia ficha, un control de formulario (combobox, select, input), un texto que ya vive adentro de un botón que navega (la fila de Clientes, el chip del libro) y los avisos transitorios. `enlaces.spec.ts` recorre los lugares donde faltaba.
 - **Toda tarjeta de una lista de proyectos es `TarjetaDeProyecto`** (`entities/proyecto`), dentro de `TarjetasDeProyectos`: Seguimiento, Activos e Historial en el celular. El borde, el enlace estirado, el foco y la marca de liquidación viven ahí; el cliente entra por `cliente` (un slice de `entities` no importa a otro) y lo de abajo por `pie`. Si una lista de proyectos se ve distinta, no le copies clases: usá el componente.
 - **El ordenamiento de listas es `shared/lib/orden.ts`**, compartido con Clientes. Lo que falta va al final en los dos sentidos y el desempate es estable. Si agregás una columna, es un `Criterio` más, no otro `sort`.
 - `entregaEstimada` cuenta solo días de semana: acepta feriados por parámetro, pero **nadie le pasa una lista todavía**.
@@ -243,12 +254,31 @@ src/
   defecto de `HOJAS_POR_RUTA`. No vuelvas a un `?volverA=`: el fondo viaja en el `state`.
 - **Toda hoja es `Hoja` de `@/shared/ui`**, un `<dialog>` nativo con `showModal`, y entra y sale con
   CSS (`@starting-style` y `transition-behavior: allow-discrete`). Para que la salida se vea, quien la
-  abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. jsdom no tiene
+  abre la envuelve en `ConSalida`, que la deja montada hasta que termina la transición. Si se vuelve a abrir mientras sale, `ConSalida` la monta de nuevo: una apertura nunca hereda el estado de la anterior (ADR 0040). jsdom no tiene
   `showModal`: el polyfill vive en `vitest.setup.ts`.
+- **Un formulario en `Hoja` le pasa `conCambios`, y su «Cancelar» llama a `pedirCierre`** (ADR 0040), que
+  la hoja le da cuando `children` es una función. Con cambios, tocar afuera, Escape, la cruz y «Cancelar»
+  preguntan «¿Cerrar sin guardar?»; sin cambios cierran de una. Los cambios se miden contra lo que había al
+  abrir, con los textos recortados (`hayCambios`), o con `isDirty` si es react-hook-form. No uses
+  `confirm()` ni un segundo modal encima.
 - **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). Es una diferencia
   deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
   «arregles».
 - Proyecto nuevo solo ofrece estados de obra: un contacto entra por Seguimiento.
+- **El presupuesto estimativo es una etapa, y lo que sigue se sugiere, no se impone** (ADR 0038). `situacionDelContacto` recibe lo cobrado (`resumen.cobrado`) y mira las tareas: devuelve la `sugerencia`, y `pasosDelContacto` arma los botones, el sugerido primero. **No agregues una guarda, un `check` ni un botón deshabilitado que mire los pagos para dejar pasar de etapa**: el dueño pidió poder presupuestar sin haber cobrado la visita. Si alguien quiere volverlo obligatorio, se habla con el dueño antes.
+- **Las tareas de presupuestar son cuatro columnas booleanas, no estados** (`TAREAS_DEL_PRESUPUESTO`, `MUTACION_DE_TAREAS`). Cada tilde es un update de su columna sola y `guardar_proyecto` no las escribe. Una fila de la réplica guardada antes de que existieran puede no traerlas: leelas con `tareaHecha`, nunca con la columna directa.
+- **«Ya fui a relevar» pide el día** (`FormularioDelRelevamiento`, `model/relevamiento.ts`), propone el vencimiento y, sin pagos, anota la seña en el mismo guardado (`guardadoDeUnPaso` acepta pagos). Corregir el día después corre el vencimiento solo si era el propuesto (`valoresConOtraVisita`).
+
+## Archivos de los trabajos (ADR 0039)
+
+- **Cuelgan de `proyectos`, así que valen para un contacto y para una obra** (`ArchivosDelTrabajo`, en las dos fichas). La fila (`public.archivos`) está en la réplica y va por la cola; el binario se sube en línea, y **sin señal no se sube**: el selector no se abre y lo dice (`SIN_SENAL_PARA_ARCHIVOS`).
+- **Nunca se sube una imagen original.** `prepararImagen` la achica a 2000 px y hace una miniatura de 480, en WebP o en JPEG donde no hay WebP (`codificarLienzo`, en `shared/lib`, el mismo de la foto de perfil). La ficha muestra la miniatura; el visor, la completa.
+- **La ruta sale del id, nunca del nombre:** `rutaDelArchivo` y `rutaDeLaMiniatura` (`{household}/{proyecto}/{id}.webp` y `.mini.webp`). Se sirven con `urlDelArchivo`, la URL pública que pasa por el CDN, con cache de un año. No uses URL firmadas ni `download()`: no cachean y todo sale como tráfico sin cache.
+- **Lo que no entra se explica:** un video dice por qué no y qué sí (`LOS_VIDEOS_NO_ENTRAN`), un PDF de más de 10 MB dice su peso. El `accept` incluye `video/*` a propósito, para que la explicación aparezca. No lo cambies por un error genérico.
+- **Borrar es una baja lógica con «Deshacer»**; el binario se quita del bucket cuando vence el deshacer (`borrarArchivo`, `ESPERA_ANTES_DE_QUITAR_DEL_BUCKET_MS`).
+- **Ajustes muestra el espacio usado** y avisa desde los 800 MB: pasarse del giga puede dejar la app entera respondiendo 402 (ADR 0039).
+- **Una tabla nueva en la réplica rompe la sincronización de un bundle nuevo contra una base sin migrar** (`leerLote` exige la clave). La migración se aplica antes de mergear.
+- `archivos.spec.ts` sube a Storage una vez por corrida, solo en `escritorio`, y `vaciarArchivos` quita del bucket lo que subió.
 
 ## Agenda (ADR 0034)
 
@@ -276,7 +306,7 @@ src/
   - `agenda.spec.ts` mide los siete casos (lunes, miércoles, viernes, sábado, domingo, primera y última fila) a 1440 y a 1024 px, con la grilla a todo el ancho.
 - **La hoja del día del celular es un `<dialog>` modal y la capa de la PC va en la capa superior: las dos tapan los avisos globales**, y tocar uno cerraría la capa. El deshacer adentro va por el aviso local de `DetalleDelDia` (`aviso`). Si movés una acción con deshacer a otra hoja o capa, pasa lo mismo.
 - **Una réplica guardada antes de la agenda no trae `anotaciones`.** `filasDe` tolera la tabla que falta y `necesitaReconcile` pide `bootstrap()`. No subas `VERSION_CACHE` para esto: se lleva la cola.
-- `vencimiento_presupuesto` se propone al pasar a «a presupuestar» (`vencimientoPropuesto`) y se edita en la hoja del contacto. `guardar_proyecto` lo escribe solo si viene la clave: los datos nuevos de un contacto llevan `vencimiento_presupuesto: null` explícito.
+- `vencimiento_presupuesto` se propone al pasar a «a presupuestar» (`vencimientoPropuesto`, cinco días hábiles desde el relevamiento, o desde ese día si viene de un estimativo) y se edita en la hoja del contacto. `guardar_proyecto` lo escribe solo si viene la clave: los datos nuevos de un contacto llevan `vencimiento_presupuesto: null` explícito.
 - **En el celular la agenda no está en la barra** (decisión con el dueño, objeción en el ADR): se llega por el ícono al lado de la foto en el encabezado de Inicio y por «Hoy en la agenda», y «Anotar algo» es la primera acción del botón redondo.
 
 ## Avisos (ADR 0036)

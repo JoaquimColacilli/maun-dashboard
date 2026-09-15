@@ -6,6 +6,10 @@ export function rutaDelProyecto(id: string): string {
   return `/proyectos/${id}`;
 }
 
+export function rutaDelCliente(id: string): string {
+  return `/clientes/${id}`;
+}
+
 export function rutaDeEdicion(id: string): string {
   return `/proyectos/${id}/editar`;
 }

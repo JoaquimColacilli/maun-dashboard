@@ -18,9 +18,10 @@ import {
 } from './estados.ts';
 
 describe('estados', () => {
-  it('son los ocho del enum de Postgres, en el mismo orden', () => {
+  it('son los nueve del enum de Postgres, en el mismo orden', () => {
     expect(ESTADOS).toEqual([
       'contacto',
+      'presupuesto_estimativo',
       'relevamiento',
       'a_presupuestar',
       'presupuesto_enviado',
@@ -42,12 +43,13 @@ describe('estados', () => {
       'seguimiento',
       'seguimiento',
       'seguimiento',
+      'seguimiento',
       'historial',
       'activos',
       'activos',
       'historial',
     ]);
-    expect(ESTADOS_DE_SEGUIMIENTO.map(faseDe)).toEqual(Array(4).fill('seguimiento'));
+    expect(ESTADOS_DE_SEGUIMIENTO.map(faseDe)).toEqual(Array(5).fill('seguimiento'));
   });
 
   it('liquidado es cobrado o perdido: los dos tienen la distribución congelada', () => {
@@ -61,8 +63,25 @@ describe('transiciones manuales', () => {
     for (const estado of ESTADOS) expect(puedeCambiarEstado(estado, estado)).toBe(false);
   });
 
-  it('son diecinueve', () => {
-    expect(Object.values(TRANSICIONES).flat()).toHaveLength(19);
+  it('son veintiocho: las veinte del seguimiento, las cinco que lo convierten en obra y las tres de la obra', () => {
+    expect(Object.values(TRANSICIONES).flat()).toHaveLength(28);
+  });
+
+  it('el estimativo es una etapa optativa entre el contacto y el relevamiento, y no se salta a la obra entregada', () => {
+    expect(puedeCambiarEstado('contacto', 'presupuesto_estimativo')).toBe(true);
+    expect(puedeCambiarEstado('presupuesto_estimativo', 'relevamiento')).toBe(true);
+    expect(puedeCambiarEstado('contacto', 'relevamiento')).toBe(true);
+    expect(puedeCambiarEstado('a_presupuestar', 'presupuesto_estimativo')).toBe(true);
+    expect(puedeCambiarEstado('presupuesto_estimativo', 'a_presupuestar')).toBe(true);
+    expect(puedeCambiarEstado('presupuesto_estimativo', 'en_curso')).toBe(true);
+    expect(puedeCambiarEstado('presupuesto_estimativo', 'entregado')).toBe(false);
+    expect(puedeCambiarEstado('en_curso', 'presupuesto_estimativo')).toBe(false);
+  });
+
+  it('un estimativo que no avanzó se da por perdido, y un perdido puede volver a estimativo', () => {
+    expect(puedeCerrarPerdido('presupuesto_estimativo')).toBe(true);
+    expect(puedeRevertir('perdido', 'presupuesto_estimativo')).toBe(true);
+    expect(puedeCobrar('presupuesto_estimativo')).toBe(false);
   });
 
   it('nadie llega a un estado liquidado ni sale de uno a mano: eso es liquidar y revertir', () => {

@@ -6,6 +6,12 @@ export {
   mandarAvisoDePrueba,
   servidorDeAvisos,
 } from './avisos';
+export {
+  BUCKET_DE_ARCHIVOS,
+  quitarDelBucketDeArchivos,
+  subirAlBucketDeArchivos,
+  urlDelArchivo,
+} from './archivos';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   codigoDeAcceso,
@@ -38,8 +44,10 @@ export {
 } from './sesion';
 export {
   crearAnotacion,
+  crearArchivo,
   crearCliente,
   darDeBajaAnotacion,
+  darDeBajaArchivo,
   darDeBajaCliente,
   darDeBajaMovimiento,
   darDeBajaProyecto,
@@ -50,6 +58,7 @@ export {
   editarProyecto,
   guardarElProyecto,
   liquidarElProyecto,
+  marcarTareasDelPresupuesto,
   registrarMovimiento,
   renombrarTaller,
   revertirLaLiquidacion,
@@ -65,6 +74,7 @@ export {
   COLUMNAS_DE_CLIENTE,
   COLUMNAS_DE_MOVIMIENTO,
   COLUMNAS_DE_PROYECTO,
+  COLUMNAS_DE_TAREAS,
   datosDeLaAgenda,
   datosDeLaAgendaDeLaReplica,
   datosDelLibro,
@@ -87,6 +97,7 @@ export {
   totalesDelProyecto,
   totalesPorProyecto,
   type AnotacionNueva,
+  type ArchivoNuevo,
   type CambiosDeAjustes,
   type CambiosDeAnotacion,
   type CambiosDeCliente,
@@ -100,7 +111,9 @@ export {
   type ServidorDeAvisos,
   type SuscripcionDelDispositivo,
   type CambiosDeProyecto,
+  type CambiosDeTareas,
   type ClienteNuevo,
+  type ColumnaDeTarea,
   type DatosDeCliente,
   type DatosDeMovimiento,
   type DatosDeProyecto,

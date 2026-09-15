@@ -1,5 +1,6 @@
 export const ESTADOS = [
   'contacto',
+  'presupuesto_estimativo',
   'relevamiento',
   'a_presupuestar',
   'presupuesto_enviado',
@@ -17,6 +18,7 @@ export type Fase = 'seguimiento' | 'activos' | 'historial';
 
 export const ESTADOS_DE_SEGUIMIENTO = [
   'contacto',
+  'presupuesto_estimativo',
   'relevamiento',
   'a_presupuestar',
   'presupuesto_enviado',
@@ -24,6 +26,7 @@ export const ESTADOS_DE_SEGUIMIENTO = [
 
 const FASES: Readonly<Record<EstadoProyecto, Fase>> = {
   contacto: 'seguimiento',
+  presupuesto_estimativo: 'seguimiento',
   relevamiento: 'seguimiento',
   a_presupuestar: 'seguimiento',
   presupuesto_enviado: 'seguimiento',
@@ -34,10 +37,41 @@ const FASES: Readonly<Record<EstadoProyecto, Fase>> = {
 };
 
 export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyecto[]>> = {
-  contacto: ['relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso'],
-  relevamiento: ['contacto', 'a_presupuestar', 'presupuesto_enviado', 'en_curso'],
-  a_presupuestar: ['contacto', 'relevamiento', 'presupuesto_enviado', 'en_curso'],
-  presupuesto_enviado: ['contacto', 'relevamiento', 'a_presupuestar', 'en_curso'],
+  contacto: [
+    'presupuesto_estimativo',
+    'relevamiento',
+    'a_presupuestar',
+    'presupuesto_enviado',
+    'en_curso',
+  ],
+  presupuesto_estimativo: [
+    'contacto',
+    'relevamiento',
+    'a_presupuestar',
+    'presupuesto_enviado',
+    'en_curso',
+  ],
+  relevamiento: [
+    'contacto',
+    'presupuesto_estimativo',
+    'a_presupuestar',
+    'presupuesto_enviado',
+    'en_curso',
+  ],
+  a_presupuestar: [
+    'contacto',
+    'presupuesto_estimativo',
+    'relevamiento',
+    'presupuesto_enviado',
+    'en_curso',
+  ],
+  presupuesto_enviado: [
+    'contacto',
+    'presupuesto_estimativo',
+    'relevamiento',
+    'a_presupuestar',
+    'en_curso',
+  ],
   perdido: [],
   en_curso: ['presupuesto_enviado', 'entregado'],
   entregado: ['en_curso'],

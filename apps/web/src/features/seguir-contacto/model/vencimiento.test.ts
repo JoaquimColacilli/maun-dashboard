@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import type { FilaDe } from '@/shared/api';
 
-import { muestraElVencimiento, pedidoDelContacto, type ValoresDelContacto } from './contacto';
+import {
+  etiquetaDeLaVisita,
+  muestraElVencimiento,
+  pedidoDelContacto,
+  valoresConOtraVisita,
+  type ValoresDelContacto,
+} from './contacto';
 
 const HOY = '2026-09-14';
 
@@ -40,7 +46,7 @@ function contacto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     fecha_entrega: null,
     direccion_entrega: '',
     notas: '',
-    vencimiento_presupuesto: '2026-09-15',
+    vencimiento_presupuesto: '2026-09-17',
     fecha_cobro: null,
     dist_cobrado_centavos: null,
     dist_gastos_centavos: null,
@@ -61,6 +67,10 @@ function contacto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    presupuesto_diseno: false,
+    presupuesto_despiece: false,
+    presupuesto_cotizacion: false,
+    presupuesto_pdf: false,
     ...extra,
   };
 }
@@ -81,7 +91,7 @@ describe('el vencimiento del presupuesto desde la hoja del contacto', () => {
     const datos = pedido(undefined, { visita: '2026-09-11' }).datos;
 
     expect(datos.estado).toBe('a_presupuestar');
-    expect(datos.vencimiento_presupuesto).toBe('2026-09-16');
+    expect(datos.vencimiento_presupuesto).toBe('2026-09-18');
   });
 
   it('un contacto nuevo sin visita, o con la visita más adelante, no tiene fecha límite', () => {
@@ -101,11 +111,60 @@ describe('el vencimiento del presupuesto desde la hoja del contacto', () => {
     ).toBeNull();
   });
 
-  it('el campo se ve mientras el presupuesto no se mandó', () => {
+  it('el campo se ve mientras el presupuesto no se mandó, ni se mandó un estimativo', () => {
     expect(muestraElVencimiento(undefined)).toBe(false);
     expect(muestraElVencimiento(contacto({ estado: 'contacto' }))).toBe(true);
     expect(muestraElVencimiento(contacto({ estado: 'a_presupuestar' }))).toBe(true);
+    expect(muestraElVencimiento(contacto({ estado: 'presupuesto_estimativo' }))).toBe(false);
     expect(muestraElVencimiento(contacto({ estado: 'presupuesto_enviado' }))).toBe(false);
     expect(muestraElVencimiento(contacto({ estado: 'en_curso' }))).toBe(false);
+  });
+});
+
+describe('corregir el día del relevamiento después de marcarlo', () => {
+  const armado = contacto();
+  const enLaHoja = valores({ visita: '2026-09-10', vencimiento: '2026-09-17' });
+
+  it('si el vencimiento era el propuesto, se corre con el día nuevo', () => {
+    expect(valoresConOtraVisita(armado, enLaHoja, '2026-09-08', HOY)).toMatchObject({
+      visita: '2026-09-08',
+      vencimiento: '2026-09-15',
+    });
+  });
+
+  it('si lo había puesto a mano, no lo toca', () => {
+    const aMano = { ...enLaHoja, vencimiento: '2026-09-30' };
+    expect(valoresConOtraVisita(armado, aMano, '2026-09-08', HOY)).toMatchObject({
+      visita: '2026-09-08',
+      vencimiento: '2026-09-30',
+    });
+  });
+
+  it('una fecha a medio escribir o que todavía no llegó no mueve el vencimiento', () => {
+    expect(valoresConOtraVisita(armado, enLaHoja, '', HOY).vencimiento).toBe('2026-09-17');
+    expect(valoresConOtraVisita(armado, enLaHoja, '2026-09-20', HOY).vencimiento).toBe(
+      '2026-09-17',
+    );
+  });
+
+  it('sin vencimiento, el primer día válido lo propone', () => {
+    const sinFecha = { ...enLaHoja, vencimiento: '' };
+    expect(valoresConOtraVisita(armado, sinFecha, '2026-09-11', HOY).vencimiento).toBe(
+      '2026-09-18',
+    );
+  });
+
+  it('fuera de a presupuestar, cambiar la visita no inventa un vencimiento', () => {
+    const agendado = contacto({ estado: 'relevamiento', vencimiento_presupuesto: null });
+    const hoja = valores({ visita: '2026-09-20' });
+    expect(valoresConOtraVisita(agendado, hoja, '2026-09-12', HOY).vencimiento).toBe('');
+    expect(valoresConOtraVisita(undefined, hoja, '2026-09-12', HOY).vencimiento).toBe('');
+  });
+
+  it('la etiqueta dice relevamiento cuando la visita ya pasó y el contacto avanzó', () => {
+    expect(etiquetaDeLaVisita(armado, HOY)).toBe('Día que fuiste a relevar');
+    expect(etiquetaDeLaVisita(contacto({ estado: 'relevamiento' }), HOY)).toBe('Visita');
+    expect(etiquetaDeLaVisita(contacto({ fecha_visita: '2026-09-20' }), HOY)).toBe('Visita');
+    expect(etiquetaDeLaVisita(undefined, HOY)).toBe('Visita');
   });
 });

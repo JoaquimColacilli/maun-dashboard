@@ -9,6 +9,12 @@ import {
   MUTACION_DE_BAJA_DE_ANOTACION,
 } from '@/entities/agenda';
 import {
+  CLAVE_DE_ARCHIVO_NUEVO,
+  CLAVE_DE_BAJA_DE_ARCHIVO,
+  MUTACION_DE_ARCHIVO_NUEVO,
+  MUTACION_DE_BAJA_DE_ARCHIVO,
+} from '@/entities/archivo';
+import {
   CLAVE_DE_BAJA_DE_CLIENTE,
   CLAVE_DE_CLIENTE,
   CLAVE_DE_CLIENTE_NUEVO,
@@ -30,11 +36,13 @@ import {
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
   CLAVE_DE_REVERSION,
+  CLAVE_DE_TAREAS,
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_LIQUIDACION,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
   MUTACION_DE_REVERSION,
+  MUTACION_DE_TAREAS,
 } from '@/entities/proyecto';
 import { CLAVE_DEL_PERFIL, MUTACION_DEL_PERFIL } from '@/entities/sesion';
 import {
@@ -83,6 +91,9 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
     queryClient.setMutationDefaults(CLAVE_DE_NOTAS, MUTACION_DE_NOTAS);
   },
   (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_TAREAS, MUTACION_DE_TAREAS);
+  },
+  (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_PROYECTO, MUTACION_DE_BAJA_DE_PROYECTO);
   },
   (queryClient) => {
@@ -99,6 +110,12 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ANOTACION, MUTACION_DE_BAJA_DE_ANOTACION);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_ARCHIVO_NUEVO, MUTACION_DE_ARCHIVO_NUEVO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ARCHIVO, MUTACION_DE_BAJA_DE_ARCHIVO);
   },
 ];
 

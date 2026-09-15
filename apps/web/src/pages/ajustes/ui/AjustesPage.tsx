@@ -3,6 +3,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
 import {
+  ESPACIO_DEL_PLAN_BYTES,
+  ESPACIO_PARA_AVISAR_BYTES,
+  espacioUsado,
+  pesoLegible,
+} from '@/entities/archivo';
+import {
   describirDesenlace,
   useReplicaDelTaller,
   useSincronizarAhora,
@@ -15,6 +21,7 @@ import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
+import { VersionDeLaApp } from '@/features/ver-novedades';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import {
   describirEstadoSync,
@@ -150,6 +157,7 @@ export function AjustesPage() {
   const estadoSync = useEstadoSync();
   const household = householdDe(replica);
   const ajustes = ajustesDe(replica);
+  const usado = espacioUsado(replica);
 
   return (
     <Pagina className="gap-5">
@@ -243,6 +251,24 @@ export function AjustesPage() {
             </h2>
             <AjusteDeCocos saldo={saldosDeLaReplica(replica).cocos} />
           </section>
+
+          <section aria-labelledby="titulo-espacio" className={SECCION}>
+            <h2 id="titulo-espacio" className="text-section font-semibold">
+              Espacio para archivos
+            </h2>
+            <p className="text-body leading-relaxed text-text-2 tabular-nums">
+              Las fotos y los PDF de los trabajos ocupan{' '}
+              <span className="whitespace-nowrap">{pesoLegible(usado)}</span> de{' '}
+              <span className="whitespace-nowrap">{pesoLegible(ESPACIO_DEL_PLAN_BYTES)}</span>.
+            </p>
+            {usado >= ESPACIO_PARA_AVISAR_BYTES && (
+              <p className="text-label leading-relaxed font-medium text-atencion">
+                Se está llenando. Cuando llegue a 1 GB no se van a poder subir más archivos, y
+                pasado ese límite la app entera puede dejar de andar. Avisale a quien te mantiene la
+                app antes de que se llene.
+              </p>
+            )}
+          </section>
         </div>
 
         <section
@@ -253,6 +279,19 @@ export function AjustesPage() {
             Cuenta
           </h2>
           <BotonSalir />
+        </section>
+
+        <section
+          aria-labelledby="titulo-version"
+          className={`${SECCION} items-start xl:col-start-1 xl:row-start-3`}
+        >
+          <h2 id="titulo-version" className="text-section font-semibold">
+            Versión de la app
+          </h2>
+          <VersionDeLaApp
+            conInvitacion
+            className="flex min-h-tap flex-col items-start justify-center gap-0.5 rounded-field text-left text-body text-text-2"
+          />
         </section>
       </div>
     </Pagina>

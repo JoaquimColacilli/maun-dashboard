@@ -123,6 +123,7 @@ function derivadosDelProyecto(
   if (
     enSeguimiento &&
     proyecto.estado !== 'presupuesto_enviado' &&
+    proyecto.estado !== 'presupuesto_estimativo' &&
     proyecto.vencimientoPresupuesto !== null
   ) {
     eventos.push({

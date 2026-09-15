@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useState, type SyntheticEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
-import { CONDICION } from '@/entities/cliente';
+import { CONDICION, EnlaceACliente } from '@/entities/cliente';
 import {
   COMPROBANTE,
   COMPROBANTES_EN_ORDEN,
@@ -125,7 +125,13 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
             Activos
           </span>
         </p>
-        <p className="text-label text-text-2">{resumen.nombreDelCliente}</p>
+        <p className="text-label text-text-2">
+          {cliente === undefined ? (
+            resumen.nombreDelCliente
+          ) : (
+            <EnlaceACliente id={cliente.id} nombre={cliente.nombre} />
+          )}
+        </p>
         <h1 className="mt-0.5 font-display text-h1 leading-tight lg:text-h1-lg">
           Pasar «{proyecto.titulo}» a Proyectos
         </h1>

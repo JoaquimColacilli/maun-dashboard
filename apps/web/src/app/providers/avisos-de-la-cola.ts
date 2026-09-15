@@ -22,10 +22,13 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   proyectoAvanzado: 'proyecto',
   contactoGuardado: 'proyecto',
   contactoAvanzado: 'proyecto',
+  tareaDelPresupuesto: 'proyecto',
   contactoBorrado: 'baja-de-proyecto',
   perfil: 'guardado',
   anotacion: 'guardado',
   anotacionBorrada: 'guardado',
+  archivo: 'guardado',
+  archivoBorrado: 'guardado',
 };
 
 const CLAVE_DE_LO_ANOTADO = 'anotado-sin-senal';
