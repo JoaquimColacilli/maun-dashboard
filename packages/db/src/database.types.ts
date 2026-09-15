@@ -524,6 +524,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
           fecha_entrega: string | null;
@@ -537,6 +538,7 @@ export type Database = {
           presupuesto_cotizacion: boolean;
           presupuesto_despiece: boolean;
           presupuesto_diseno: boolean;
+          presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
@@ -547,6 +549,8 @@ export type Database = {
           updated_at: string;
           vencimiento_presupuesto: string | null;
           version: number;
+          visita_hecha: boolean;
+          visita_importante: boolean;
         };
         Insert: {
           cliente_id: string;
@@ -571,6 +575,7 @@ export type Database = {
           dist_tope_fijos_centavos?: number | null;
           dist_tope_sueldo_centavos?: number | null;
           entrega_estimada?: string | null;
+          entrega_importante?: boolean;
           estado?: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro?: string | null;
           fecha_entrega?: string | null;
@@ -584,6 +589,7 @@ export type Database = {
           presupuesto_cotizacion?: boolean;
           presupuesto_despiece?: boolean;
           presupuesto_diseno?: boolean;
+          presupuesto_importante?: boolean;
           presupuesto_pdf?: boolean;
           reapertura_fecha_cobro?: string | null;
           reapertura_objetivo_fijos_centavos?: number | null;
@@ -594,6 +600,8 @@ export type Database = {
           updated_at?: string;
           vencimiento_presupuesto?: string | null;
           version?: number;
+          visita_hecha?: boolean;
+          visita_importante?: boolean;
         };
         Update: {
           cliente_id?: string;
@@ -618,6 +626,7 @@ export type Database = {
           dist_tope_fijos_centavos?: number | null;
           dist_tope_sueldo_centavos?: number | null;
           entrega_estimada?: string | null;
+          entrega_importante?: boolean;
           estado?: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro?: string | null;
           fecha_entrega?: string | null;
@@ -631,6 +640,7 @@ export type Database = {
           presupuesto_cotizacion?: boolean;
           presupuesto_despiece?: boolean;
           presupuesto_diseno?: boolean;
+          presupuesto_importante?: boolean;
           presupuesto_pdf?: boolean;
           reapertura_fecha_cobro?: string | null;
           reapertura_objetivo_fijos_centavos?: number | null;
@@ -641,6 +651,8 @@ export type Database = {
           updated_at?: string;
           vencimiento_presupuesto?: string | null;
           version?: number;
+          visita_hecha?: boolean;
+          visita_importante?: boolean;
         };
         Relationships: [
           {
@@ -729,6 +741,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
           fecha_entrega: string | null;
@@ -742,6 +755,7 @@ export type Database = {
           presupuesto_cotizacion: boolean;
           presupuesto_despiece: boolean;
           presupuesto_diseno: boolean;
+          presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
@@ -752,6 +766,8 @@ export type Database = {
           updated_at: string;
           vencimiento_presupuesto: string | null;
           version: number;
+          visita_hecha: boolean;
+          visita_importante: boolean;
         };
         SetofOptions: {
           from: '*';
@@ -799,6 +815,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
           fecha_entrega: string | null;
@@ -812,6 +829,7 @@ export type Database = {
           presupuesto_cotizacion: boolean;
           presupuesto_despiece: boolean;
           presupuesto_diseno: boolean;
+          presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
@@ -822,6 +840,8 @@ export type Database = {
           updated_at: string;
           vencimiento_presupuesto: string | null;
           version: number;
+          visita_hecha: boolean;
+          visita_importante: boolean;
         };
         SetofOptions: {
           from: '*';
@@ -869,6 +889,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
           fecha_entrega: string | null;
@@ -882,6 +903,7 @@ export type Database = {
           presupuesto_cotizacion: boolean;
           presupuesto_despiece: boolean;
           presupuesto_diseno: boolean;
+          presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
@@ -892,6 +914,8 @@ export type Database = {
           updated_at: string;
           vencimiento_presupuesto: string | null;
           version: number;
+          visita_hecha: boolean;
+          visita_importante: boolean;
         };
         SetofOptions: {
           from: '*';
@@ -929,6 +953,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
           fecha_entrega: string | null;
@@ -942,6 +967,7 @@ export type Database = {
           presupuesto_cotizacion: boolean;
           presupuesto_despiece: boolean;
           presupuesto_diseno: boolean;
+          presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
@@ -952,6 +978,8 @@ export type Database = {
           updated_at: string;
           vencimiento_presupuesto: string | null;
           version: number;
+          visita_hecha: boolean;
+          visita_importante: boolean;
         };
         SetofOptions: {
           from: '*';

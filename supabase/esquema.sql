@@ -466,6 +466,10 @@ create table public.proyectos (
   presupuesto_despiece boolean not null default false,
   presupuesto_cotizacion boolean not null default false,
   presupuesto_pdf boolean not null default false,
+  visita_hecha boolean not null default false,
+  visita_importante boolean not null default false,
+  entrega_importante boolean not null default false,
+  presupuesto_importante boolean not null default false,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
@@ -515,6 +519,10 @@ comment on column public.proyectos.presupuesto_diseno is 'Tarea de presupuestar:
 comment on column public.proyectos.presupuesto_despiece is 'Tarea de presupuestar: el despiece está hecho.';
 comment on column public.proyectos.presupuesto_cotizacion is 'Tarea de presupuestar: la cotización está hecha (madera y herrajes, flete, ayudante).';
 comment on column public.proyectos.presupuesto_pdf is 'Tarea de presupuestar: el PDF del presupuesto está armado. Con las cuatro tildadas, la app sugiere marcar que se mandó; el estado lo cambia el dueño.';
+comment on column public.proyectos.visita_hecha is 'La visita de relevamiento ya pasó. Lo anota «Ya fui a relevar» y se corrige desde la hoja del contacto; mover la visita a un día que todavía no llegó lo apaga. No sale de la etapa: cambiar de etapa, aprobar o perder el contacto no lo toca, y la agenda muestra la visita tachada en su día (ADR 0042).';
+comment on column public.proyectos.visita_importante is 'Marca de importante de la visita en la agenda: el círculo que el dueño hace en su cuaderno. Una columna por evento derivado; el umbral para pasar a una tabla de marcas está en el ADR 0042.';
+comment on column public.proyectos.entrega_importante is 'Marca de importante de la entrega en la agenda. La entrega entregada la conserva.';
+comment on column public.proyectos.presupuesto_importante is 'Marca de importante del vencimiento del presupuesto en la agenda.';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -534,8 +542,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante) on public.proyectos to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -866,6 +874,7 @@ declare
   v_existia boolean;
   v_sin_cambios boolean;
   v_vencimiento date;
+  v_visita_hecha boolean;
 begin
   if p_proyecto is null or jsonb_typeof(p_proyecto) <> 'object' then
     raise exception 'El proyecto va en un objeto jsonb' using errcode = '22023';
@@ -894,7 +903,8 @@ begin
     fecha_entrega date,
     direccion_entrega text,
     notas text,
-    vencimiento_presupuesto text
+    vencimiento_presupuesto text,
+    visita_hecha boolean
   );
 
   if v_p.id is null or v_p.cliente_id is null or v_p.titulo is null or v_p.estado is null then
@@ -933,6 +943,11 @@ begin
     else v_actual.vencimiento_presupuesto
   end;
 
+  v_visita_hecha := case
+    when p_proyecto ? 'visita_hecha' then coalesce(v_p.visita_hecha, false)
+    else coalesce(v_actual.visita_hecha, false)
+  end;
+
   if v_existia then
     if v_actual.deleted_at is not null then
       raise exception 'El proyecto está borrado' using errcode = 'MN002';
@@ -943,13 +958,13 @@ begin
       v_actual.presupuesto_centavos, v_actual.forma_pago, v_actual.comprobante,
       v_actual.fecha_visita, v_actual.ultimo_contacto, v_actual.fecha_inicio,
       v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas,
-      v_actual.vencimiento_presupuesto
+      v_actual.vencimiento_presupuesto, v_actual.visita_hecha
     ) is not distinct from (
       v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
       v_p.presupuesto_centavos, v_p.forma_pago, v_p.comprobante,
       v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio,
       v_p.entrega_estimada, v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''),
-      coalesce(v_p.notas, ''), v_vencimiento
+      coalesce(v_p.notas, ''), v_vencimiento, v_visita_hecha
     );
 
     -- Un guardado hecho sin señal sobre una versión vieja no pisa en silencio lo que hay. La
@@ -992,7 +1007,8 @@ begin
       fecha_entrega = v_p.fecha_entrega,
       direccion_entrega = coalesce(v_p.direccion_entrega, ''),
       notas = coalesce(v_p.notas, ''),
-      vencimiento_presupuesto = v_vencimiento
+      vencimiento_presupuesto = v_vencimiento,
+      visita_hecha = v_visita_hecha
     where id = v_p.id
     returning * into v_fila;
   else
@@ -1000,13 +1016,13 @@ begin
       insert into public.proyectos (
         id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
         fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega,
-        direccion_entrega, notas, vencimiento_presupuesto
+        direccion_entrega, notas, vencimiento_presupuesto, visita_hecha
       ) values (
         v_p.id, v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
         v_p.presupuesto_centavos, v_p.forma_pago, v_p.comprobante,
         v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio, v_p.entrega_estimada,
         v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
-        v_vencimiento
+        v_vencimiento, v_visita_hecha
       )
       returning * into v_fila;
     exception
