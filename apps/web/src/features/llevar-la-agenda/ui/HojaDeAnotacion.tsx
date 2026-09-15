@@ -2,7 +2,12 @@ import { CATEGORIAS_PROPIAS, sumarDias } from '@maun/domain';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
 
-import { AYUDA_DE_LA_PROPIA, CATEGORIA, MarcaDeCategoria } from '@/entities/agenda';
+import {
+  AYUDA_DE_LA_PROPIA,
+  CaminosALosTrabajos,
+  CATEGORIA,
+  MarcaDeCategoria,
+} from '@/entities/agenda';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filasDe } from '@/shared/api';
 import { hoyLocal, uuidv7 } from '@/shared/lib';
@@ -12,6 +17,7 @@ import { anotar, type Avisador } from '../model/acciones';
 import {
   anotacionNueva,
   erroresDeLaAnotacion,
+  esFecha,
   hayErrores,
   LARGO_MAXIMO_DEL_TEXTO,
   trabajosParaAnotar,
@@ -156,6 +162,12 @@ export function HojaDeAnotacion({
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-1">
+              <CaminosALosTrabajos
+                fecha={esFecha(valores.fecha) ? valores.fecha : undefined}
+                alIr={alCerrar}
+              />
             </div>
           </div>
 

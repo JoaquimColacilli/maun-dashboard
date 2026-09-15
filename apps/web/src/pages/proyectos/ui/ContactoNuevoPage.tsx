@@ -1,13 +1,14 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { rutaDelProyecto } from '@/entities/proyecto';
 import { HojaDeContacto } from '@/features/seguir-contacto';
-import { useCerrarHoja } from '@/shared/lib';
+import { fechaDelEnlace, PARAMETRO_DE_VISITA, useCerrarHoja } from '@/shared/lib';
 
 export function ContactoNuevoPage() {
   const navegar = useNavigate();
   const cerrar = useCerrarHoja();
+  const [parametros] = useSearchParams();
 
   const alGuardar = useCallback(
     (id: string) => {
@@ -16,5 +17,11 @@ export function ContactoNuevoPage() {
     [navegar],
   );
 
-  return <HojaDeContacto alCerrar={cerrar} alGuardar={alGuardar} />;
+  return (
+    <HojaDeContacto
+      visitaInicial={fechaDelEnlace(parametros.get(PARAMETRO_DE_VISITA))}
+      alCerrar={cerrar}
+      alGuardar={alGuardar}
+    />
+  );
 }

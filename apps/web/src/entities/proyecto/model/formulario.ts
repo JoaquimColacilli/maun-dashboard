@@ -84,7 +84,13 @@ export function valoresDelFormulario(
   proyecto: Proyecto | undefined,
   pagos: readonly Pago[],
   gastos: readonly Gasto[],
-  inicial: { clienteId?: string; comprobante?: Comprobante; direccion?: string; hoy: string },
+  inicial: {
+    clienteId?: string;
+    comprobante?: Comprobante;
+    direccion?: string;
+    entrega?: string;
+    hoy: string;
+  },
 ): FormularioDeProyecto {
   if (proyecto === undefined) {
     return {
@@ -98,7 +104,7 @@ export function valoresDelFormulario(
       fecha_visita: '',
       ultimo_contacto: '',
       fecha_inicio: inicial.hoy,
-      entrega_estimada: '',
+      entrega_estimada: inicial.entrega ?? '',
       fecha_entrega: '',
       direccion_entrega: inicial.direccion ?? '',
       notas: '',

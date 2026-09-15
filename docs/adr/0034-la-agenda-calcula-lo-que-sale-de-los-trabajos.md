@@ -56,6 +56,26 @@ derivado no se edita ni se borra desde la agenda: dice de dónde sale y ofrece �
 «Deshacer» en el aviso. Esas mutaciones van `silencioso`, para que el aviso siga siendo uno solo (ADR
 0030).
 
+**Los caminos a lo que sale de los trabajos.** «Anotar algo» sigue ofreciendo solo Materiales y Taller:
+las visitas y las entregas no se anotan a mano. Pero para agendar una visita había que saber que se
+carga desde el contacto, y eso no se ve desde la agenda. Por eso `CaminosALosTrabajos`
+(`entities/agenda`) aparece abajo de las dos opciones de la hoja de anotar y en el día libre de la capa
+y de la hoja del día. Explica en una línea que las visitas y las entregas salen del contacto y del
+proyecto, y ofrece dos enlaces:
+
+- **«Cargar un contacto de seguimiento»** abre la hoja de contacto encima de la agenda
+  (`/seguimiento/nuevo?visita=`), con la fecha de la visita puesta.
+- **«Cargar un proyecto»** abre la pantalla de proyecto nuevo (`/proyectos/nuevo?entrega=`) con la
+  entrega estimada puesta. Llega sin el cálculo automático a 21 días hábiles del inicio, que la pisaría.
+- **El día viaja en la URL**, como el tesoro de Finanzas: `rutaDeContactoNuevo`, `rutaDeProyectoNuevo` y
+  `fechaDelEnlace` (`shared/lib/rutas.ts`), que descarta lo que no sea una fecha que existe. En la hoja
+  de anotar vale la fecha elegida en ese momento; en el día libre, ese día.
+- **Antes de navegar se cierra lo que estaba abierto**: la hoja de anotar, la capa o la hoja del día. Si
+  la hoja de anotar es la de la ruta `/agenda/anotar` (la del botón redondo del celular), el enlace
+  reemplaza esa entrada del historial en vez de cerrarla, para no navegar dos veces.
+- **El enlace al proyecto no lleva fondo.** El proyecto nuevo es una pantalla y no una hoja: con fondo,
+  `Marco` dibujaría la agenda en su lugar.
+
 **Lo hecho se queda en el día, abajo de lo pendiente.** Tildar una anotación no la saca: si
 desapareciera, no se sabría si se hizo o si se borró sola. Aplica en la capa de la PC, en la hoja y en
 la lista del celular, y en la celda de la grilla.
@@ -172,6 +192,11 @@ la relación entre lo que se tocó y lo que se abre, y tapa mucho menos que una 
   aparece en la celda y en el aviso global.
 - **La capa no atrapa el foco.** Con Tab se sale a la grilla, a propósito, para poder elegir otro día.
   Escape la cierra desde cualquier lado de la pantalla, porque lo maneja el navegador.
+- **Los caminos no vuelven a la agenda.** Guardar el contacto o el proyecto lleva a su ficha, como en el
+  resto de la app, y cancelar el proyecto lleva a Proyectos. Cancelar el contacto sí vuelve a la agenda,
+  porque es una hoja encima de ella.
+- **La fila del día vacío en la lista del celular no muestra los caminos.** Tiene «Anotar», que abre la
+  hoja con los caminos; sumarlos a cada fila vacía cargaba la lista.
 - **La tira del mes scrollea de costado**, como en el diseño, y la regla del repo dice «nunca scroll
   horizontal» para los selectores. La tira no esconde opciones que haya que elegir: son los días del mes,
   con hoy a la vista. Es `role="group"` con botones `aria-pressed`, no `tablist`: no controla paneles.
@@ -252,6 +277,14 @@ la relación entre lo que se tocó y lo que se abre, y tapa mucho menos que una 
   No se probó con un lector de pantalla de verdad: se revisó el árbol de accesibilidad que expone
   Chromium y el recorrido con Tab.
 
+- **Los caminos.** `agenda.spec.ts`, en celular y escritorio:
+  - Desde «Anotar algo», que en la PC es la hoja abierta por estado y en el celular la de la ruta, la hoja
+    sigue con dos opciones. El camino al contacto abre «Cargar contacto» con la visita del día elegido en
+    la URL y en el campo, y la hoja de anotar ya no está. Guardado, la visita aparece ese día en la agenda.
+  - Desde el día libre de la capa y de la hoja, el camino al proyecto abre la pantalla con la entrega
+    estimada de ese día y sin la ayuda del cálculo automático. Guardado, la entrega aparece ese día.
+  - Unitarios: las rutas y `fechaDelEnlace` en `rutas.test.ts`, la visita inicial en `contacto.test.ts` y la
+    entrega inicial en `formulario.test.ts`.
 - `destinos-en-celular.spec.ts`: el encabezado de Inicio es «Inicio», el enlace «Agenda» y el de
   Ajustes, en ese orden para el lector de pantalla. Los dos se alcanzan con Tab y abren su pantalla con
   Enter. El ícono mide 44 × 44 px, está a la izquierda de la foto y a su misma altura, es `aria-hidden` y

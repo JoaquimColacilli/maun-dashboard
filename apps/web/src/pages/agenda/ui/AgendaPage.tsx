@@ -443,6 +443,10 @@ export function AgendaPage() {
                   setAnotandoDesdeElDia(true);
                   setAnotando(fecha);
                 }}
+                alIrAUnTrabajo={() => {
+                  setDiaAbierto(null);
+                  setAvisoDelDia(null);
+                }}
               />
             </Hoja>
           )}
@@ -625,6 +629,10 @@ export function AgendaPage() {
                 }}
                 alAnotar={() => {
                   anotarCerrandoElDia(diaAbierto);
+                }}
+                alIrAUnTrabajo={() => {
+                  setDiaAbierto(null);
+                  setAvisoDelDia(null);
                 }}
                 alCerrar={cerrarElDia}
               />

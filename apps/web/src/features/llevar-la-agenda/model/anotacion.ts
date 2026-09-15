@@ -1,6 +1,7 @@
-import { estaLiquidado, sumarDias, type CategoriaPropia } from '@maun/domain';
+import { estaLiquidado, type CategoriaPropia } from '@maun/domain';
 
 import type { AnotacionNueva, FilaDe } from '@/shared/api';
+import { fechaDelEnlace } from '@/shared/lib';
 
 export const LARGO_MAXIMO_DEL_TEXTO = 500;
 
@@ -30,12 +31,7 @@ export function valoresIniciales(fecha: string): ValoresDeLaAnotacion {
 }
 
 export function esFecha(valor: string | null): valor is string {
-  if (valor === null || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
-  try {
-    return sumarDias(valor, 0) === valor;
-  } catch {
-    return false;
-  }
+  return fechaDelEnlace(valor) !== undefined;
 }
 
 export function fechaDelParametro(valor: string | null, porDefecto: string): string {
