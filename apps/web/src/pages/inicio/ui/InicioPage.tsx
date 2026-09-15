@@ -45,6 +45,7 @@ import {
   relativa,
   RUTA_DE_DIEZMO,
   rutaDeFinanzasDelTesoro,
+  rutaDelProyecto,
   useAnchoDePantalla,
 } from '@/shared/lib';
 import { Avatar, Button, FilaDeAcciones, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
@@ -462,7 +463,9 @@ export function InicioPage() {
                     ? relativa(proximaEntrega.entrega_estimada, hoy)
                     : ''
                 }
-                alElegir={irA('/proyectos')}
+                alElegir={irA(
+                  proximaEntrega === undefined ? '/proyectos' : rutaDelProyecto(proximaEntrega.id),
+                )}
               />
               <Acceso
                 icono="hand-coins"

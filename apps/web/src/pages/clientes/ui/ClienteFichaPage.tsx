@@ -15,10 +15,9 @@ import {
   nombreCorto,
   ORIGEN,
   resumenDeCliente,
-  type Proyecto,
   type ResumenDeCliente,
 } from '@/entities/cliente';
-import { RUTA_DE_PROYECTO_NUEVO } from '@/entities/proyecto';
+import { EstadoBadge, RUTA_DE_PROYECTO_NUEVO, rutaDelProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
@@ -32,30 +31,6 @@ import {
   Pagina,
   type NombreDeIcono,
 } from '@/shared/ui';
-
-const ESTADO_ETIQUETA: Record<Proyecto['estado'], string> = {
-  contacto: 'Contacto',
-  presupuesto_estimativo: 'Estimativo enviado',
-  relevamiento: 'Relevamiento',
-  a_presupuestar: 'A presupuestar',
-  presupuesto_enviado: 'Presupuesto enviado',
-  perdido: 'Perdido',
-  en_curso: 'En curso',
-  entregado: 'Entregado',
-  cobrado: 'Cobrado',
-};
-
-const ESTADO_TONO: Record<Proyecto['estado'], string> = {
-  contacto: 'border-border text-text-2',
-  presupuesto_estimativo: 'border-border text-text-2',
-  relevamiento: 'border-border text-text-2',
-  a_presupuestar: 'border-border text-text-2',
-  presupuesto_enviado: 'border-border text-text-2',
-  perdido: 'border-border text-text-3',
-  en_curso: 'border-ink text-ink',
-  entregado: 'border-atencion bg-atencion-tint text-atencion',
-  cobrado: 'border-hogar bg-hogar-tint text-hogar',
-};
 
 function Accion({
   icono,
@@ -150,10 +125,16 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
             return (
               <li
                 key={proyecto.id}
-                className="flex items-center gap-3 border-b border-hairline py-3"
+                className="relative flex items-center gap-3 border-b border-hairline py-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-body-lg font-medium">{proyecto.titulo}</span>
+                  <Link
+                    to={rutaDelProyecto(proyecto.id)}
+                    data-tarjeta
+                    className="block truncate text-body-lg font-medium after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+                  >
+                    {proyecto.titulo}
+                  </Link>
                   <span className="mt-0.5 block text-meta text-text-3">
                     {enSeguimiento ? 'Seguimiento' : 'Obra'}
                     {fecha === undefined ? '' : `, ${relativa(fecha, hoy)}`}
@@ -165,10 +146,8 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
                       ? 'A presupuestar'
                       : formatearPesos(proyecto.presupuesto_centavos)}
                   </span>
-                  <span
-                    className={`mt-1 inline-block rounded-control border px-1.5 text-badge font-semibold ${ESTADO_TONO[proyecto.estado]}`}
-                  >
-                    {ESTADO_ETIQUETA[proyecto.estado]}
+                  <span className="mt-1 block">
+                    <EstadoBadge estado={proyecto.estado} />
                   </span>
                 </span>
               </li>

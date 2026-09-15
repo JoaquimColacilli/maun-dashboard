@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { EnlaceACliente } from '@/entities/cliente';
 import {
   ajustesDeLaReplica,
   datosActualesDelProyecto,
@@ -154,7 +155,13 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       </Link>
 
       <header>
-        <p className="text-label text-text-2">{resumen.nombreDelCliente}</p>
+        <p className="text-label text-text-2">
+          {resumen.cliente === undefined ? (
+            resumen.nombreDelCliente
+          ) : (
+            <EnlaceACliente id={resumen.cliente.id} nombre={resumen.cliente.nombre} />
+          )}
+        </p>
         <h1 className="mt-0.5 font-display text-h1 leading-tight lg:text-h1-lg">
           {textos.titulo} «{proyecto.titulo}»
         </h1>

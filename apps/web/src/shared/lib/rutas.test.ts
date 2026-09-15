@@ -7,9 +7,18 @@ import {
   PARAMETRO_DE_VISITA,
   rutaDeContactoNuevo,
   rutaDeFinanzasDelTesoro,
+  rutaDelCliente,
+  rutaDelProyecto,
   rutaDeProyectoNuevo,
   tesoroDelParametro,
 } from './rutas';
+
+describe('las fichas de un trabajo y de un cliente', () => {
+  it('cada uno tiene su ruta por id', () => {
+    expect(rutaDelProyecto('p1')).toBe('/proyectos/p1');
+    expect(rutaDelCliente('c1')).toBe('/clientes/c1');
+  });
+});
 
 describe('el filtro de tesoro en la URL de Finanzas', () => {
   it('cada tesoro arma su enlace a Finanzas con el filtro puesto', () => {

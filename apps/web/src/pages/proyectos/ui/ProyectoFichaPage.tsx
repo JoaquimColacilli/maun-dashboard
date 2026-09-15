@@ -1,7 +1,7 @@
 import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
-import { enlaceDeMapa } from '@/entities/cliente';
+import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
   COMPROBANTE,
   despieceDelProyecto,
@@ -165,7 +165,7 @@ export function ProyectoFichaPage() {
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
           <Link
-            to={`/clientes/${cliente.id}`}
+            to={rutaDelCliente(cliente.id)}
             className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
           >
             {cliente.nombre}

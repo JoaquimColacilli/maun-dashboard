@@ -96,6 +96,7 @@ export {
   rutaDeEdicion,
   rutaDeFinanzasDelTesoro,
   rutaDeMovimientoNuevo,
+  rutaDelCliente,
   rutaDelMovimiento,
   rutaDelProyecto,
   rutaDeAnotar,

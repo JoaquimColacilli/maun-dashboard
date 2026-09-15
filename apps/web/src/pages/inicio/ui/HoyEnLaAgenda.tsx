@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { MarcaConAnillo, nombreDelEvento } from '@/entities/agenda';
 import { datosDeLaAgendaDeLaReplica, type Replica } from '@/shared/api';
-import { RUTA_DE_AGENDA } from '@/shared/lib';
+import { RUTA_DE_AGENDA, rutaDelProyecto } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 const MAXIMO = 3;
@@ -41,7 +41,16 @@ export function HoyEnLaAgenda({ replica, hoy }: { replica: Replica; hoy: string 
                 categoria={evento.categoria}
                 importante={evento.clase === 'propia' && evento.importante}
               />
-              <span className="min-w-0 flex-1 truncate text-body">{nombreDelEvento(evento)}</span>
+              {evento.clase === 'derivada' ? (
+                <Link
+                  to={rutaDelProyecto(evento.proyectoId)}
+                  className="flex min-h-tap min-w-0 flex-1 items-center text-body underline decoration-hairline underline-offset-2 hover:decoration-ink"
+                >
+                  <span className="truncate">{nombreDelEvento(evento)}</span>
+                </Link>
+              ) : (
+                <span className="min-w-0 flex-1 truncate text-body">{nombreDelEvento(evento)}</span>
+              )}
             </li>
           ))}
         </ul>

@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 
-import { AccionesDeContacto } from '@/entities/cliente';
+import { AccionesDeContacto, rutaDelCliente } from '@/entities/cliente';
 import {
   EstadoBadge,
   gastosDelProyecto,
@@ -107,7 +107,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
           <Link
-            to={`/clientes/${cliente.id}`}
+            to={rutaDelCliente(cliente.id)}
             className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
           >
             {cliente.nombre}

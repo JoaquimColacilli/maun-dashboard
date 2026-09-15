@@ -1,5 +1,7 @@
 import type { EventoDeLaAgenda, EventoDerivado, EventoPropio } from '@maun/domain';
+import { Link } from 'react-router';
 
+import { rutaDelCliente, rutaDelProyecto } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
 import { detalleDelEvento, textoDelEvento, urgenciaDelEvento } from '../model/calendario';
@@ -19,6 +21,33 @@ export interface FilaDeEventoProps {
   acciones: AccionesDeLaAgenda;
   enElDia?: boolean;
   alAbrirElDia?: (fecha: string) => void;
+}
+
+const ENLACE_EN_EL_DETALLE =
+  'underline decoration-hairline underline-offset-2 hover:decoration-ink';
+
+function DetalleConEnlaces({ evento }: { evento: EventoDeLaAgenda }) {
+  if (evento.clase === 'propia') {
+    if (evento.proyectoId === null || evento.proyecto === null) return <>{evento.proyecto ?? ''}</>;
+    return (
+      <Link to={rutaDelProyecto(evento.proyectoId)} className={ENLACE_EN_EL_DETALLE}>
+        {evento.proyecto}
+      </Link>
+    );
+  }
+  const cliente = evento.cliente.trim();
+  const lugar = evento.lugar.trim();
+  return (
+    <>
+      {cliente !== '' && (
+        <Link to={rutaDelCliente(evento.clienteId)} className={ENLACE_EN_EL_DETALLE}>
+          {cliente}
+        </Link>
+      )}
+      {cliente !== '' && lugar !== '' && ', '}
+      {lugar}
+    </>
+  );
 }
 
 function Contenido({
@@ -58,9 +87,14 @@ function Contenido({
       {!hecha &&
         (detalle !== '' || (urgencia !== null && urgencia.tono !== 'normal') || enElDia) && (
           <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-label text-text-2">
-            {detalle !== '' && (
-              <span className={enElDia ? '' : 'max-w-full truncate'}>{detalle}</span>
-            )}
+            {detalle !== '' &&
+              (enElDia ? (
+                <span>
+                  <DetalleConEnlaces evento={evento} />
+                </span>
+              ) : (
+                <span className="max-w-full truncate">{detalle}</span>
+              ))}
             {urgencia !== null && urgencia.tono !== 'normal' && (
               <span
                 className={`font-semibold ${urgencia.tono === 'alerta' ? 'text-alerta' : 'text-atencion'}`}
