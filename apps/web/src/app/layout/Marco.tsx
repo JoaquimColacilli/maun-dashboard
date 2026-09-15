@@ -10,6 +10,7 @@ import { useLocation, useRoutes, type Location } from 'react-router';
 
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { OfertaDeHuella } from '@/features/activar-huella';
+import { Novedades } from '@/features/ver-novedades';
 import {
   describirEstadoSync,
   esRutaDeHoja,
@@ -196,6 +197,8 @@ export function Marco() {
       <Avisos />
 
       <OfertaDeHuella />
+
+      <Novedades />
 
       <span aria-live="polite" className="sr-only">
         {anuncio}

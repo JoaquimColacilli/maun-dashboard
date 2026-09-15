@@ -21,6 +21,7 @@ import { BotonSalir } from '@/features/cerrar-sesion';
 import { FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
+import { VersionDeLaApp } from '@/features/ver-novedades';
 import { ajustesDe, householdDe, mensajeDeSincronizacion, saldosDeLaReplica } from '@/shared/api';
 import {
   describirEstadoSync,
@@ -277,6 +278,19 @@ export function AjustesPage() {
             Cuenta
           </h2>
           <BotonSalir />
+        </section>
+
+        <section
+          aria-labelledby="titulo-version"
+          className={`${SECCION} items-start xl:col-start-1 xl:row-start-3`}
+        >
+          <h2 id="titulo-version" className="text-section font-semibold">
+            Versión de la app
+          </h2>
+          <VersionDeLaApp
+            conInvitacion
+            className="flex min-h-tap flex-col items-start justify-center gap-0.5 rounded-field text-left text-body text-text-2"
+          />
         </section>
       </div>
     </Pagina>

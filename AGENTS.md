@@ -2,6 +2,16 @@
 
 App de finanzas y proyectos de un taller de muebles a medida en Argentina. Reemplaza un HTML con localStorage. La usa una sola persona, desde la PC del taller y desde el celular con mala señal: es offline-first. Un usuario hoy, pero el aislamiento multi-tenant por `household_id` existe desde el día uno.
 
+## Antes de dar un PR por terminado: las novedades
+
+La app le muestra al dueño qué cambió cada vez que se actualiza. Una versión nueva es un PR mergeado a `main`: ahí sale el deploy a Netlify y le llega la actualización, así que la unidad es el PR, no el commit. El contenido es un archivo, `apps/web/src/features/ver-novedades/model/novedades.ts` (ADR 0041).
+
+- Todo PR que cambie algo que el usuario pueda notar agrega una entrada nueva, arriba de todo en ese archivo, con su número de versión: la fecha (`AAAA-MM-DD`, o `AAAA-MM-DD.2` si ya hay otra ese día).
+- La entrada se escribe en el idioma de él: qué puede hacer ahora que antes no podía. Sin nombres de tablas, sin nombres de paquetes, sin emojis, sin mencionar a ninguna IA.
+- Tres o cuatro líneas como máximo. Lo que no cambia lo que él puede hacer, no va.
+- Un PR que no cambia nada visible, como un arreglo interno o una reorganización, no agrega entrada. Forzar una novedad donde no la hay entrena a ignorarlas.
+- El número de versión se sube en el mismo PR, no después. La versión de la app es la de la entrada más nueva: agregar la entrada es subirla.
+
 ## Estructura
 
 | Carpeta           | Qué es                                                                 |

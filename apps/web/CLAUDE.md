@@ -2,6 +2,16 @@
 
 React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas**, **Diezmo**, la **Agenda** (ADR 0034) y los **Avisos** (ADR 0036). Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño; la agenda y los avisos son agregados nuestros.
 
+## Novedades: parte de terminar un PR (ADR 0041)
+
+Leelo antes de empezar, no al final. Una versión nueva es un PR mergeado a `main`, y el dueño la ve al tocar «Actualizar».
+
+- **Todo PR que cambie algo que el usuario pueda notar agrega una entrada nueva arriba de todo en `src/features/ver-novedades/model/novedades.ts`**, con su número de versión: la fecha (`AAAA-MM-DD`, o `.2` si ya hay otra ese día). La versión de la app es la de esa entrada, así que se sube en el mismo PR, no después.
+- Se escribe en el idioma de él: qué puede hacer ahora que antes no podía. Sin nombres de tablas, sin nombres de paquetes, sin emojis, sin mencionar a ninguna IA. Tres o cuatro líneas como máximo; lo que no cambia lo que puede hacer, no va.
+- Un PR que no cambia nada visible, como un arreglo interno o una reorganización, no agrega entrada: forzar una novedad donde no la hay entrena a ignorarlas.
+- `novedades.test.ts` controla la fecha, el orden, el largo, los emojis y una lista de palabras técnicas. Si algo es visible para él y está dicho en su idioma no lo puede controlar: eso es tuyo.
+- La versión vista es estado del dispositivo (`maun:novedades-vistas`), como el tema: no va a la réplica ni a la cola. Aparecen solas una vez por versión, solo si ya había sesión al abrir la app y cuando no hay nada en curso. Son un popover, no un `<dialog>`: informan sin bloquear.
+
 ## Capas (FSD, ADR 0006)
 
 ```
@@ -13,7 +23,7 @@ src/
                desbloquear-la-app, activar-huella,
                cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
                editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto,
-               llevar-la-agenda, recibir-avisos)
+               llevar-la-agenda, recibir-avisos, adjuntar-archivos, ver-novedades)
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
                proyecto, movimiento y agenda
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,

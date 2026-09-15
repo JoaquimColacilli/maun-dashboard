@@ -251,6 +251,15 @@ ningún archivo.
 - **Los videos no entran**, y la pantalla dice por qué: no caben en el espacio del plan.
 - **Ajustes muestra cuánto espacio ocupan** y avisa antes de que se llene.
 
+De los enlaces, los formularios y las novedades (ADR 0040 y 0041). **Agregado nuestro, no paridad.**
+
+- **Tocar un trabajo o un cliente lleva a su ficha** desde el historial del cliente, la entrega más próxima
+  de Inicio, «Hoy en la agenda» y el día de la agenda.
+- **Un formulario en hoja pregunta antes de descartar**, y solo si tiene algo cargado: tocando afuera, con
+  Escape, con la cruz y con «Cancelar».
+- **La versión de la app a la vista**, en la barra lateral de la PC y al final de Ajustes, y **las novedades**
+  de cada versión, que aparecen solas una vez después de actualizar y se vuelven a abrir desde la versión.
+
 ---
 
 ## 8. Seguimiento, contra lo que obligaba el original
