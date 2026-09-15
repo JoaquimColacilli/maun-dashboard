@@ -36,13 +36,16 @@ export interface ConSalidaProps<T> {
 }
 
 export function ConSalida<T>({ valor, children }: ConSalidaProps<T>) {
-  const [ultimo, setUltimo] = useState<{ valor: T } | null>(() =>
-    estaPresente(valor) ? { valor } : null,
+  const [ultimo, setUltimo] = useState<{ valor: T; apertura: number } | null>(() =>
+    estaPresente(valor) ? { valor, apertura: 0 } : null,
   );
   const [previo, setPrevio] = useState(valor);
   if (previo !== valor) {
     setPrevio(valor);
-    if (estaPresente(valor)) setUltimo({ valor });
+    if (estaPresente(valor)) {
+      const reabreMientrasSale = ultimo !== null && !estaPresente(previo);
+      setUltimo({ valor, apertura: (ultimo?.apertura ?? 0) + (reabreMientrasSale ? 1 : 0) });
+    }
   }
 
   const presente = estaPresente(valor);
@@ -52,7 +55,11 @@ export function ConSalida<T>({ valor, children }: ConSalidaProps<T>) {
   const salida = useMemo(() => ({ saliendo: !presente, alTerminar }), [presente, alTerminar]);
 
   if (ultimo === null) return null;
-  return <ContextoDeSalida value={salida}>{children(ultimo.valor)}</ContextoDeSalida>;
+  return (
+    <ContextoDeSalida key={ultimo.apertura} value={salida}>
+      {children(ultimo.valor)}
+    </ContextoDeSalida>
+  );
 }
 
 const ANCHO = {

@@ -229,6 +229,61 @@ describe('la hoja', () => {
     expect(alCerrar).toHaveBeenCalledOnce();
   });
 
+  function Contador() {
+    const [veces, setVeces] = useState(0);
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setVeces(veces + 1);
+        }}
+      >
+        {`Tocado ${String(veces)}`}
+      </button>
+    );
+  }
+
+  function HojaConEstado() {
+    const [abierta, setAbierta] = useState(true);
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => {
+            setAbierta(!abierta);
+          }}
+        >
+          Alternar
+        </button>
+        <ConSalida valor={abierta}>
+          {() => (
+            <Hoja
+              titulo="Editar el contacto"
+              alCerrar={() => {
+                setAbierta(false);
+              }}
+            >
+              <Contador />
+            </Hoja>
+          )}
+        </ConSalida>
+      </>
+    );
+  }
+
+  it('volver a abrirla mientras sale la monta de nuevo, sin el estado de la apertura anterior', () => {
+    render(<HojaConEstado />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tocado 0' }));
+    expect(screen.getByRole('button', { name: 'Tocado 1' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Alternar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Alternar' }));
+
+    expect(screen.getByRole('dialog', { name: 'Editar el contacto' })).toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: 'Tocado 0' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tocado 1' })).not.toBeInTheDocument();
+  });
+
   it('se puede volver a abrir mientras sale', () => {
     render(<Prueba />);
 
