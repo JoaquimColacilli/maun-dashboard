@@ -11,6 +11,7 @@ import {
   nombreDelEvento,
   numeroDelDia,
   semanasDelMes,
+  textoDeLoHecho,
 } from '../model/calendario';
 import { DERIVADA } from '../model/categorias';
 import { MarcaDeCategoria } from './MarcaDeCategoria';
@@ -130,9 +131,7 @@ export function GrillaDelMes({
                     <span
                       aria-hidden
                       className={`flex size-[18px] flex-none items-center justify-center rounded-pill ${
-                        evento.clase === 'propia' && evento.importante
-                          ? 'ring-[1.5px] ring-ag-marca'
-                          : ''
+                        evento.importante ? 'ring-[1.5px] ring-ag-marca' : ''
                       }`}
                     >
                       <MarcaDeCategoria categoria={evento.categoria} />
@@ -144,7 +143,7 @@ export function GrillaDelMes({
                     >
                       {textoCorto(evento)}
                     </span>
-                    {hecha && <span className="sr-only">, hecha</span>}
+                    {hecha && <span className="sr-only">, {textoDeLoHecho(evento)}</span>}
                   </button>
                 );
               })}

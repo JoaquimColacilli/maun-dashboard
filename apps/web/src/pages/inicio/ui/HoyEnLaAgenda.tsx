@@ -12,7 +12,7 @@ export function HoyEnLaAgenda({ replica, hoy }: { replica: Replica; hoy: string 
   const pendientes = eventosDeLaAgenda(datosDeLaAgendaDeLaReplica(replica), {
     desde: hoy,
     hasta: hoy,
-  }).filter((evento) => !(evento.clase === 'propia' && evento.hecha));
+  }).filter((evento) => !evento.hecha);
 
   return (
     <section

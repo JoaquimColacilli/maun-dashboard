@@ -32,6 +32,7 @@ export {
   resumenDelDia,
   resumenDelMes,
   semanasDelMes,
+  textoDeLoHecho,
   textoDelEvento,
   urgenciaDelEvento,
   type CeldaDelMes,

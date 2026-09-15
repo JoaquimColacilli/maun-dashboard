@@ -61,6 +61,7 @@ export interface DatosDeLaDerivada {
   corta: string;
   origen: string;
   abrir: string;
+  hecha: string;
 }
 
 export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = {
@@ -69,18 +70,21 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
     corta: 'Entrega',
     origen: 'Sale de la entrega estimada del proyecto',
     abrir: 'Abrir el proyecto',
+    hecha: 'entregada',
   },
   visita: {
     accion: 'Relevamiento',
     corta: 'Relevamiento',
     origen: 'Sale de la fecha de visita del contacto',
     abrir: 'Abrir el contacto',
+    hecha: 'ya fuiste',
   },
   presupuesto: {
     accion: 'Entregar presupuesto',
     corta: 'Presupuesto',
     origen: 'Sale de la fecha límite del presupuesto del contacto',
     abrir: 'Abrir el contacto',
+    hecha: 'enviado',
   },
 };
 

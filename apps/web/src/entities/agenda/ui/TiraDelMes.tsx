@@ -2,6 +2,7 @@ import type { EventoDeLaAgenda } from '@maun/domain';
 import { useLayoutEffect, useRef } from 'react';
 
 import {
+  cuentaDelDia,
   diaDeLaSemana,
   diaEnPalabras,
   eventosDelDia,
@@ -18,11 +19,6 @@ export interface TiraDelMesProps {
   elegido: string;
   eventos: readonly EventoDeLaAgenda[];
   alElegir: (fecha: string) => void;
-}
-
-function cuantas(cantidad: number): string {
-  if (cantidad === 0) return 'nada agendado';
-  return cantidad === 1 ? '1 cosa' : `${String(cantidad)} cosas`;
 }
 
 export function TiraDelMes({ mes, hoy, elegido, eventos, alElegir }: TiraDelMesProps) {
@@ -59,7 +55,7 @@ export function TiraDelMes({ mes, hoy, elegido, eventos, alElegir }: TiraDelMesP
             data-fecha={fecha}
             aria-pressed={esElegido}
             aria-current={esHoy ? 'date' : undefined}
-            aria-label={`${diaEnPalabras(fecha)}, ${cuantas(delDia.length)}${marcado ? ', con algo marcado' : ''}`}
+            aria-label={`${diaEnPalabras(fecha)}, ${cuentaDelDia(delDia)}${marcado ? ', con algo marcado' : ''}`}
             onClick={() => {
               alElegir(fecha);
             }}

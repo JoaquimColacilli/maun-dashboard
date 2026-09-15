@@ -14,20 +14,24 @@ export {
 } from './api/liquidacion';
 export {
   CLAVE_DE_BAJA_DE_PROYECTO,
+  CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
   CLAVE_DE_TAREAS,
   guardadoDeUnPaso,
   hijosDelProyecto,
   MUTACION_DE_BAJA_DE_PROYECTO,
+  MUTACION_DE_MARCAS,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
   MUTACION_DE_TAREAS,
   type BajaDeProyecto,
   type EdicionDeProyecto,
   type GuardadoDeProyecto,
+  type MarcaDeLaAgenda,
   type MarcaDeTareas,
 } from './api/mutacion';
+export { cambiaAlgunaMarca, marcaDeImportante, marcaPuesta } from './model/marcas';
 export {
   buscarProyectos,
   CRITERIOS,

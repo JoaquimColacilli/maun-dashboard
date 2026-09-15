@@ -9,8 +9,10 @@ import {
   filasDe,
   guardarElProyecto,
   householdDe,
+  marcarEnLaAgenda,
   marcarTareasDelPresupuesto,
   quitarFilaLocal,
+  type CambiosDeMarcas,
   type CambiosDeProyecto,
   type CambiosDeTareas,
   type FilaDe,
@@ -23,12 +25,14 @@ import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/
 
 import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
 import { datosActualesDelProyecto } from '../model/liquidacion';
+import { cambiaAlgunaMarca } from '../model/marcas';
 import { ultimoContactoAlGuardar } from '../model/seguimiento';
 import { cambiaAlgunaTarea } from '../model/tareas';
 
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
 export const CLAVE_DE_TAREAS = ['proyectos', 'tareas'] as const;
+export const CLAVE_DE_MARCAS = ['proyectos', 'marcas'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
 
 const REINTENTOS = 5;
@@ -55,6 +59,13 @@ export interface MarcaDeTareas {
   id: string;
   cambios: CambiosDeTareas;
   previos: CambiosDeTareas;
+  version: number;
+}
+
+export interface MarcaDeLaAgenda {
+  id: string;
+  cambios: CambiosDeMarcas;
+  previos: CambiosDeMarcas;
   version: number;
 }
 
@@ -133,6 +144,9 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         presupuesto_despiece: false,
         presupuesto_cotizacion: false,
         presupuesto_pdf: false,
+        visita_importante: false,
+        entrega_importante: false,
+        presupuesto_importante: false,
         fecha_cobro: null,
         dist_cobrado_centavos: null,
         dist_gastos_centavos: null,
@@ -296,19 +310,31 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   },
 };
 
-function conTareas(replica: Replica, id: string, cambios: CambiosDeTareas): Replica {
+type CambiosDeUnaColumnaSuelta = CambiosDeTareas | CambiosDeMarcas;
+
+function conUnaColumnaSuelta(
+  replica: Replica,
+  id: string,
+  cambios: CambiosDeUnaColumnaSuelta,
+  cambia: (actual: FilaDe<'proyectos'>) => boolean,
+): Replica {
   const actual = filaPorId(replica, 'proyectos', id);
   if (!actual) return replica;
-  const cambia = cambiaAlgunaTarea(actual, cambios);
+  const cambiaAlgo = cambia(actual);
   return aplicarFilaLocal(replica, 'proyectos', {
     ...actual,
     ...cambios,
-    version: cambia ? actual.version + 1 : actual.version,
-    updated_at: cambia ? new Date().toISOString() : actual.updated_at,
+    version: cambiaAlgo ? actual.version + 1 : actual.version,
+    updated_at: cambiaAlgo ? new Date().toISOString() : actual.updated_at,
   });
 }
 
-function sinLasTareas(replica: Replica, { id, previos, version }: MarcaDeTareas): Replica {
+function sinLaColumnaSuelta(
+  replica: Replica,
+  id: string,
+  previos: CambiosDeUnaColumnaSuelta,
+  version: number,
+): Replica {
   const actual = filaPorId(replica, 'proyectos', id);
   if (!actual) return replica;
   return aplicarFilaLocal(replica, 'proyectos', { ...actual, ...previos, version });
@@ -322,14 +348,37 @@ export const MUTACION_DE_TAREAS: MutationOptions<FilaDe<'proyectos'>, unknown, M
   retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
   onMutate: async ({ id, cambios }, { client }) => {
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
-    cambiarReplicas(client, (replica) => conTareas(replica, id, cambios));
+    cambiarReplicas(client, (replica) =>
+      conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgunaTarea(actual, cambios)),
+    );
     await guardarCacheAhora();
   },
   onSuccess: (fila, _variables, _contexto, { client }) => {
     cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
   },
-  onError: (_error, variables, _contexto, { client }) => {
-    cambiarReplicas(client, (replica) => sinLasTareas(replica, variables));
+  onError: (_error, { id, previos, version }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLaColumnaSuelta(replica, id, previos, version));
+  },
+};
+
+export const MUTACION_DE_MARCAS: MutationOptions<FilaDe<'proyectos'>, unknown, MarcaDeLaAgenda> = {
+  mutationKey: CLAVE_DE_MARCAS,
+  mutationFn: ({ id, cambios }) => marcarEnLaAgenda(id, cambios),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id, cambios }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) =>
+      conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgunaMarca(actual, cambios)),
+    );
+    await guardarCacheAhora();
+  },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
+  },
+  onError: (_error, { id, previos, version }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLaColumnaSuelta(replica, id, previos, version));
   },
 };
 

@@ -92,7 +92,11 @@ export function eventosDelDia(
 }
 
 export function estaHecha(evento: EventoDeLaAgenda): boolean {
-  return evento.clase === 'propia' && evento.hecha;
+  return evento.hecha;
+}
+
+export function textoDeLoHecho(evento: EventoDeLaAgenda): string {
+  return evento.clase === 'propia' ? 'hecha' : DERIVADA[evento.categoria].hecha;
 }
 
 export function conLoHechoAlFinal(eventos: readonly EventoDeLaAgenda[]): EventoDeLaAgenda[] {
@@ -106,26 +110,39 @@ function plural(cantidad: number, singular: string, varios: string): string {
   return `${String(cantidad)} ${cantidad === 1 ? singular : varios}`;
 }
 
+interface CuentaDeLoPendiente {
+  compromisos: number;
+  anotadas: number;
+  hechas: number;
+}
+
+function cuentaDeLoPendiente(eventos: readonly EventoDeLaAgenda[]): CuentaDeLoPendiente {
+  const pendientes = eventos.filter((evento) => !estaHecha(evento));
+  const compromisos = pendientes.filter((evento) => evento.clase === 'derivada').length;
+  return {
+    compromisos,
+    anotadas: pendientes.length - compromisos,
+    hechas: eventos.length - pendientes.length,
+  };
+}
+
 export function resumenDelMes(eventos: readonly EventoDeLaAgenda[]): string {
   if (eventos.length === 0) return 'sin nada agendado';
-  const compromisos = eventos.filter((evento) => evento.clase === 'derivada').length;
-  const hechas = eventos.filter((evento) => estaHecha(evento)).length;
+  const { compromisos, anotadas, hechas } = cuentaDeLoPendiente(eventos);
   const partes = [
     plural(compromisos, 'compromiso', 'compromisos'),
-    plural(eventos.length - compromisos - hechas, 'anotación', 'anotaciones'),
+    plural(anotadas, 'anotación', 'anotaciones'),
   ];
   if (hechas > 0) partes.push(plural(hechas, 'hecha', 'hechas'));
   return partes.join(' · ');
 }
 
 export function resumenDelDia(eventos: readonly EventoDeLaAgenda[]): string {
-  const compromisos = eventos.filter((evento) => evento.clase === 'derivada').length;
-  const hechas = eventos.filter((evento) => estaHecha(evento)).length;
-  const pendientes = eventos.length - compromisos - hechas;
+  const { compromisos, anotadas, hechas } = cuentaDeLoPendiente(eventos);
 
   const partes: string[] = [];
   if (compromisos > 0) partes.push(plural(compromisos, 'compromiso', 'compromisos'));
-  if (pendientes > 0) partes.push(plural(pendientes, 'cosa anotada', 'cosas anotadas'));
+  if (anotadas > 0) partes.push(plural(anotadas, 'cosa anotada', 'cosas anotadas'));
   if (hechas > 0) partes.push(plural(hechas, 'hecha', 'hechas'));
   return partes.length === 0 ? 'Nada agendado' : partes.join(' · ');
 }
@@ -149,7 +166,7 @@ export interface UrgenciaDelEvento {
 }
 
 export function urgenciaDelEvento(evento: EventoDeLaAgenda, hoy: string): UrgenciaDelEvento | null {
-  if (evento.clase === 'propia') return null;
+  if (evento.clase === 'propia' || estaHecha(evento)) return null;
   const dias = diasEntre(hoy, evento.fecha);
   if (dias < 0) return { texto: `atrasada, era ${relativa(evento.fecha, hoy)}`, tono: 'alerta' };
   if (dias === 0) return { texto: 'es hoy', tono: 'alerta' };
@@ -188,5 +205,5 @@ export function diasConEventos(
 }
 
 export function hayImportante(eventos: readonly EventoDeLaAgenda[]): boolean {
-  return eventos.some((evento) => evento.clase === 'propia' && evento.importante);
+  return eventos.some((evento) => evento.importante);
 }
