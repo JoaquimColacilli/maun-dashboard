@@ -20,6 +20,7 @@ import {
   hijosDelProyecto,
   MUTACION_DE_PROYECTO,
   opcionesDelProyecto,
+  opcionVacia,
   pagosDelProyecto,
   presupuestoDeLasOpciones,
   filaRevertida,
@@ -60,12 +61,14 @@ export interface PantallaDeProyectoProps {
   proyectoId?: string;
   clienteInicial?: string;
   entregaInicial?: string;
+  agregarUnaOpcion?: boolean;
 }
 
 export function PantallaDeProyecto({
   proyectoId,
   clienteInicial,
   entregaInicial,
+  agregarUnaOpcion = false,
 }: PantallaDeProyectoProps) {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
@@ -127,6 +130,23 @@ export function PantallaDeProyecto({
   const pagos = useFieldArray({ control, name: 'pagos', keyName: 'clave' });
   const gastos = useFieldArray({ control, name: 'gastos', keyName: 'clave' });
   const opciones = useFieldArray({ control, name: 'opciones', keyName: 'clave' });
+  const { append: agregarOpcion } = opciones;
+  const [agregarLaPrimeraOpcion] = useState(
+    () =>
+      agregarUnaOpcion &&
+      proyectoId !== undefined &&
+      opcionesDelProyecto(replica, proyectoId).length === 0,
+  );
+
+  useEffect(() => {
+    if (!agregarLaPrimeraOpcion) return;
+    const cuadro = requestAnimationFrame(() => {
+      agregarOpcion(opcionVacia(uuidv7()));
+    });
+    return () => {
+      cancelAnimationFrame(cuadro);
+    };
+  }, [agregarLaPrimeraOpcion, agregarOpcion]);
 
   const clienteId = useWatch({ control, name: 'cliente_id' });
   const inicio = useWatch({ control, name: 'fecha_inicio' });

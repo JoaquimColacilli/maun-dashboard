@@ -122,6 +122,35 @@ test('tres opciones se guardan, sobreviven a recargar, y mientras ninguna esté 
   await expect(page.getByText('Todavía no hay presupuesto', { exact: false })).toBeVisible();
 });
 
+test('en la ficha de un contacto sin opciones está a la vista cómo cargar la primera, sin pasar por los pagos', async ({
+  page,
+}, testInfo) => {
+  const id = await trabajo('Escritorio', { estado: 'a_presupuestar', pago: 15_000_000 });
+
+  await abrirLaFicha(page, id, 'Escritorio');
+  await expect(lasOpciones(page)).toBeVisible();
+  await expect(lasOpciones(page).getByRole('listitem')).toHaveCount(0);
+  await lasOpciones(page).scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: testInfo.outputPath(`contacto-sin-opciones-${testInfo.project.name}.png`),
+  });
+  await lasOpciones(page).getByRole('button', { name: 'Cargar las opciones' }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/editar$`));
+  const detalle = page.getByLabel('Qué incluye la opción 1');
+  await expect(detalle).toBeFocused(CARGA);
+  await expect(detalle).toBeInViewport();
+  await expect(page.getByLabel('Qué incluye la opción 2')).toHaveCount(0);
+
+  await detalle.fill('Solo el escritorio de Alan');
+  await page.getByLabel('Importe de la opción 1').fill(String(SOLO_ALAN / 100));
+  await page.getByRole('button', { name: 'Guardar los cambios' }).click();
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Escritorio' })).toBeVisible(CARGA);
+  await expect(laOpcion(page, 'Solo el escritorio de Alan')).toBeVisible();
+  await expect.poll(async () => (await opcionesDe(sesion, id)).length, CARGA).toBe(1);
+});
+
 test('tildar una opción le pone el presupuesto al trabajo, cambiar de opinión lo cambia, y destildar lo deja sin presupuesto', async ({
   page,
 }) => {

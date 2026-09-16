@@ -150,6 +150,16 @@ formulario: **con opciones vivas, no hay campo de presupuesto**. Había dos luga
 Los demás caminos que escriben esa columna mandan el valor que ya tiene la fila
 (`datosActualesDelProyecto`) y no le ofrecen a nadie escribirlo.
 
+### 7. En la ficha de un contacto, cargar la primera opción está a la vista
+
+Las opciones se cargan en el formulario grande. Desde la ficha de un contacto, el único enlace a ese
+formulario decía «Cargar otro pago o un gasto», y la sección de opciones no aparecía mientras no hubiera
+ninguna: justo en la etapa en la que él arma las variantes.
+
+- **Sin opciones, la ficha del contacto muestra la sección igual**, en el mismo lugar, con «Cargar las
+  opciones». Abre el formulario con la primera opción ya agregada, y el foco queda en su detalle.
+- **En la ficha de una obra no aparece**: ahí está «Editar», y las variantes se arman antes.
+
 ## Por qué un porcentaje y no un monto
 
 Es la única parte donde el pedido se puede leer de dos maneras, y se discutió antes de escribir código.
@@ -226,11 +236,6 @@ immediate`, que es un camino que la app no recorre nunca. Es una garantía proba
   Es un rodeo, no un callejón, y no forcé nada para evitarlo: dejar editar el importe de la elegida ahí
   mismo sería otra forma de escribir una opción, fuera del formulario. Si el rodeo resulta frecuente,
   eso es lo que habría que hablar.
-- **En la ficha de un contacto no hay un camino a la vista para cargar la primera opción.** Las
-  opciones se cargan en el formulario grande, y desde la ficha del contacto el único enlace a ese
-  formulario dice «Cargar otro pago o un gasto»; la sección de opciones de la ficha no aparece mientras
-  no haya ninguna. En la ficha de una obra está «Editar». Es justo la etapa en la que él arma las
-  variantes, así que es probable que no la encuentre sola.
 - **El `23505` del índice lo destapó el e2e en el celular, después de pasar dos veces en pgTAP y una
   en escritorio.** El orden dentro de un upsert es azar, así que el mismo código fallaba o no según la
   corrida: el peor tipo de bug. El test que lo cubre ahora **no manda en el pedido la opción que

@@ -1,24 +1,31 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
 
 import {
   aprobacionDeUnaOpcion,
   MUTACION_DE_PROYECTO,
   opcionAprobada,
   opcionesDelProyecto,
+  rutaDeEdicion,
   type OpcionDePresupuesto,
   type Proyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { avisarEnPantalla, formatearPesos, metaDeAvisos } from '@/shared/lib';
-import { Icono } from '@/shared/ui';
+import { Button, Icono } from '@/shared/ui';
 
 export interface OpcionesDelTrabajoProps {
   proyecto: Proyecto;
+  ofreceCargarLaPrimera?: boolean;
 }
 
-export function OpcionesDelTrabajo({ proyecto }: OpcionesDelTrabajoProps) {
+export function OpcionesDelTrabajo({
+  proyecto,
+  ofreceCargarLaPrimera = false,
+}: OpcionesDelTrabajoProps) {
   const replica = useReplicaDelTaller();
+  const navegar = useNavigate();
   const opciones = opcionesDelProyecto(replica, proyecto.id);
 
   const ultimo = useRef({ proyecto, opciones });
@@ -31,7 +38,28 @@ export function OpcionesDelTrabajo({ proyecto }: OpcionesDelTrabajoProps) {
     meta: metaDeAvisos('proyectoGuardado', { silencioso: true }),
   });
 
-  if (opciones.length === 0) return null;
+  if (opciones.length === 0) {
+    if (!ofreceCargarLaPrimera) return null;
+    return (
+      <section aria-label="Opciones de presupuesto" className="mt-5">
+        <h2 className="text-section font-semibold">Opciones de presupuesto</h2>
+        <p className="mt-1.5 text-meta leading-normal text-text-3">
+          Si le presentás más de una variante, cargá cada una con su importe. Cuando elija, tildás
+          la que aprobó.
+        </p>
+        <Button
+          variant="secundario"
+          className="mt-2.5"
+          onClick={() => {
+            void navegar(rutaDeEdicion(proyecto.id), { state: { primeraOpcion: true } });
+          }}
+        >
+          <Icono nombre="plus" tamano={16} />
+          Cargar las opciones
+        </Button>
+      </section>
+    );
+  }
 
   const aprobada = opcionAprobada(opciones);
 

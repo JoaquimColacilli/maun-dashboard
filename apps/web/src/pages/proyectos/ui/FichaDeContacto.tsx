@@ -153,7 +153,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             }}
           />
 
-          <OpcionesDelTrabajo proyecto={proyecto} />
+          <OpcionesDelTrabajo proyecto={proyecto} ofreceCargarLaPrimera />
 
           <BloqueDeLaSena
             sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
