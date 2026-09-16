@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-16',
+    lineas: [
+      'Un mismo trabajo puede tener varios presupuestos, cada uno con su importe y su detalle. Cuando el cliente elige, tildás el que aprobó y ese pasa a ser el presupuesto del trabajo.',
+      'Los que no eligió quedan a la vista, así sabés qué le ofreciste. Mientras no tildes ninguno, el trabajo no muestra presupuesto en vez de inventar uno.',
+      'La ficha te dice cuánto es la seña, cuánto cobraste y cuánto falta para llegar. Si ya cobraste la visita del relevamiento, ya viene descontada.',
+      'La seña sale del porcentaje que pongas en Ajustes, la mitad por defecto, y la podés cambiar en un trabajo puntual.',
+    ],
+  },
+  {
     version: '2026-09-15.2',
     lineas: [
       'Cuando marcás que entregaste un proyecto, la entrega queda tachada en su día de la agenda, abajo de lo pendiente. Si vuelve al taller, vuelve a estar pendiente.',
