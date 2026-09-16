@@ -68,6 +68,13 @@ trabajos sin presupuesto, con la raya y el saldo en null.
   cambia de comportamiento en nada.
 - **A lo sumo hay una aprobada viva por trabajo**, y eso lo sostiene un índice único parcial
   (`where aprobada and deleted_at is null`). Sin él, «el presupuesto del trabajo» no sería una función.
+- **Ese índice obliga a un orden de escritura.** Se evalúa fila por fila, apenas se escribe cada una,
+  porque un índice no se puede diferir: solo un constraint puede, y un único parcial no puede ser un
+  constraint. El upsert de las opciones toca todas las filas en una sola sentencia y **el orden entre
+  ellas no está definido**, así que mover la aprobación de una opción a otra dejaba dos prendidas por
+  un instante y cortaba con `23505`: un rechazo definitivo, sin traducción, que además tapa la cola.
+  `guardar_proyecto` **apaga todas las aprobaciones del trabajo antes del upsert**
+  (`20260916170000_una_aprobada_por_vez.sql`), y así el índice deja de depender del azar.
 
 ### 3. No puede haber dos caminos que escriban ese número, y lo garantiza la base
 
@@ -192,6 +199,15 @@ immediate`, que es un camino que la app no recorre nunca. Es una garantía proba
   justamente el de la opción aprobada, así que coinciden y no se nota; pero si alguien lo edita ahí, el
   cambio se pierde sin avisar. Lo que corresponde es que esa pantalla muestre las opciones en vez del
   campo cuando las hay. No lo hice en este paso, y es lo segundo a revisar.
+- **El `23505` del índice lo destapó el e2e en el celular, después de pasar dos veces en pgTAP y una
+  en escritorio.** El orden dentro de un upsert es azar, así que el mismo código fallaba o no según la
+  corrida: el peor tipo de bug. El test que lo cubre ahora **no manda en el pedido la opción que
+  estaba aprobada**, que es el caso que falla siempre y no a veces. Vale como recordatorio de que un
+  test verde sobre una sentencia con orden indefinido no prueba nada.
+- **Un `23505` le llega crudo al usuario.** La causa está removida, pero `traducirRechazo` no tiene
+  entrada para ese código: si alguna vez aparece otro choque de unicidad, se va a ver el texto de
+  Postgres en la pantalla, que es justo lo que el ADR 0016 prohíbe. No lo traduje en este paso porque
+  no hay ningún camino conocido que lo produzca; si aparece uno, va con su traducción.
 - **Una opción borrada no se puede recuperar desde la pantalla.** La baja es lógica y la fila queda,
   pero no hay un «ver las borradas». El deshacer del formulario cubre el error del momento; un borrado
   de la semana pasada, no.
