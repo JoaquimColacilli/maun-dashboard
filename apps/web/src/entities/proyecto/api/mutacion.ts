@@ -45,6 +45,7 @@ export interface GuardadoDeProyecto {
     proyecto: FilaDe<'proyectos'> | null;
     pagos: readonly FilaDe<'pagos'>[];
     gastos: readonly FilaDe<'gastos'>[];
+    opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
   };
 }
 
@@ -76,6 +77,7 @@ export interface BajaDeProyecto {
     proyecto: FilaDe<'proyectos'>;
     pagos: readonly FilaDe<'pagos'>[];
     gastos: readonly FilaDe<'gastos'>[];
+    opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
   };
 }
 
@@ -88,10 +90,17 @@ function cambiarReplicas(cliente: QueryClient, cambio: (replica: Replica) => Rep
 export function hijosDelProyecto(
   replica: Replica,
   proyectoId: string,
-): { pagos: FilaDe<'pagos'>[]; gastos: FilaDe<'gastos'>[] } {
+): {
+  pagos: FilaDe<'pagos'>[];
+  gastos: FilaDe<'gastos'>[];
+  opciones: FilaDe<'opciones_de_presupuesto'>[];
+} {
   return {
     pagos: filasDe(replica, 'pagos').filter((pago) => pago.proyecto_id === proyectoId),
     gastos: filasDe(replica, 'gastos').filter((gasto) => gasto.proyecto_id === proyectoId),
+    opciones: filasDe(replica, 'opciones_de_presupuesto').filter(
+      (opcion) => opcion.proyecto_id === proyectoId,
+    ),
   };
 }
 
@@ -114,7 +123,40 @@ export function guardadoDeUnPaso(
       pagos,
       gastos: [],
     },
-    previos: { proyecto, pagos: [], gastos: [] },
+    // Sin la clave de opciones: un paso que solo mueve el estado no las toca (ADR 0043).
+    previos: { proyecto, pagos: [], gastos: [], opciones: [] },
+  };
+}
+
+// Aprobar una opción es reversible, así que va con un toque y deshacer, no con una confirmación
+// (ADR 0016). Pasa por el agregado como todo lo demás: el presupuesto lo vuelve a derivar la base.
+export function aprobacionDeUnaOpcion(
+  proyecto: FilaDe<'proyectos'>,
+  opciones: readonly FilaDe<'opciones_de_presupuesto'>[],
+  id: string,
+  aprobada: boolean,
+): GuardadoDeProyecto {
+  const quedan = opciones.map((opcion) => ({
+    id: opcion.id,
+    descripcion: opcion.descripcion,
+    monto_centavos: opcion.monto_centavos,
+    aprobada: aprobada && opcion.id === id,
+  }));
+  const elegida = quedan.find((opcion) => opcion.aprobada);
+
+  return {
+    pedido: {
+      id: proyecto.id,
+      version: proyecto.version,
+      datos: {
+        ...datosActualesDelProyecto(proyecto),
+        presupuesto_centavos: elegida?.monto_centavos ?? null,
+      },
+      pagos: [],
+      gastos: [],
+      opciones: quedan,
+    },
+    previos: { proyecto, pagos: [], gastos: [], opciones },
   };
 }
 
@@ -140,6 +182,7 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         deleted_at: null,
         version: 1,
         vencimiento_presupuesto: null,
+        sena_bp: null,
         presupuesto_diseno: false,
         presupuesto_despiece: false,
         presupuesto_cotizacion: false,
@@ -211,6 +254,26 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
     });
   }
 
+  for (const opcion of pedido.opciones ?? []) {
+    if (opcion.borrado === true) {
+      siguiente = quitarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion.id);
+      continue;
+    }
+    const previo = filaPorId(siguiente, 'opciones_de_presupuesto', opcion.id);
+    siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', {
+      id: opcion.id,
+      household_id: household.id,
+      proyecto_id: pedido.id,
+      descripcion: opcion.descripcion,
+      monto_centavos: opcion.monto_centavos,
+      aprobada: opcion.aprobada,
+      created_at: previo?.created_at ?? ahora,
+      updated_at: ahora,
+      deleted_at: null,
+      version: previo?.version ?? 1,
+    });
+  }
+
   return siguiente;
 }
 
@@ -234,6 +297,9 @@ function conLoQueVolvio(
     : aplicarFilaLocal(replica, 'proyectos', guardado.proyecto);
   for (const pago of guardado.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
   for (const gasto of guardado.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
+  for (const opcion of guardado.opciones) {
+    siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion);
+  }
   return siguiente;
 }
 
@@ -245,8 +311,14 @@ function comoEstaba(replica: Replica, { pedido, previos }: GuardadoDeProyecto): 
 
   for (const pago of pedido.pagos) siguiente = quitarFilaLocal(siguiente, 'pagos', pago.id);
   for (const gasto of pedido.gastos) siguiente = quitarFilaLocal(siguiente, 'gastos', gasto.id);
+  for (const opcion of pedido.opciones ?? []) {
+    siguiente = quitarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion.id);
+  }
   for (const pago of previos.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
   for (const gasto of previos.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
+  for (const opcion of previos.opciones) {
+    siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion);
+  }
   return siguiente;
 }
 
@@ -383,10 +455,13 @@ export const MUTACION_DE_MARCAS: MutationOptions<FilaDe<'proyectos'>, unknown, M
 };
 
 function sinElProyecto(replica: Replica, id: string): Replica {
-  const { pagos, gastos } = hijosDelProyecto(replica, id);
+  const { pagos, gastos, opciones } = hijosDelProyecto(replica, id);
   let siguiente = quitarFilaLocal(replica, 'proyectos', id);
   for (const pago of pagos) siguiente = quitarFilaLocal(siguiente, 'pagos', pago.id);
   for (const gasto of gastos) siguiente = quitarFilaLocal(siguiente, 'gastos', gasto.id);
+  for (const opcion of opciones) {
+    siguiente = quitarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion.id);
+  }
   return siguiente;
 }
 
@@ -413,6 +488,9 @@ export const MUTACION_DE_BAJA_DE_PROYECTO: MutationOptions<
       let siguiente = aplicarFilaLocal(replica, 'proyectos', previos.proyecto);
       for (const pago of previos.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
       for (const gasto of previos.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
+      for (const opcion of previos.opciones) {
+        siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion);
+      }
       return siguiente;
     });
   },

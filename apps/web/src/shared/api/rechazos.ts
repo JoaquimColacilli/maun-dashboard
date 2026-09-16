@@ -150,6 +150,12 @@ const PARA_TODOS: Readonly<Record<string, (contexto: ContextoDelRechazo) => Rech
     queHacer: 'Elegí otro cliente para el trabajo, o volvé a cargar el cliente que borraste.',
     codigo: '',
   }),
+  MN009: () => ({
+    titulo: 'El presupuesto de este trabajo sale de la opción que tildes.',
+    queHacer:
+      'Tildá la que te aprobaron, y si querés escribir el presupuesto a mano, sacá las opciones primero. Solo se puede tildar una.',
+    codigo: '',
+  }),
   MN008: (contexto) => ({
     titulo: 'Esta app quedó vieja y no saca la misma cuenta que el servidor.',
     queHacer:

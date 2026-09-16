@@ -93,7 +93,7 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
           pagos: [],
           gastos: [],
         },
-        previos: { proyecto, pagos: [], gastos: [] },
+        previos: { proyecto, pagos: [], gastos: [], opciones: [] },
       },
       {
         onSuccess: () => {

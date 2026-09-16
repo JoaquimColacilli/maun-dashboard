@@ -7,14 +7,19 @@ import {
   type CambiosDeAjustes,
   type FilaDe,
 } from '@/shared/api';
-import { formatearPorcentaje, parsearPorcentaje, useEstadoSync } from '@/shared/lib';
+import {
+  formatearPorcentaje,
+  parsearPorcentaje,
+  SENA_MAXIMA_BP,
+  useEstadoSync,
+} from '@/shared/lib';
 import { Button, Campo, MoneyInput } from '@/shared/ui';
 
 import { MUTACION_DE_AJUSTES, MUTACION_DEL_NOMBRE } from '../api/mutacion';
 
 const LARGO_DEL_NOMBRE = 120;
 
-type CampoDelFormulario = 'nombre' | 'sueldo' | 'fijos' | 'meta' | 'tasa';
+type CampoDelFormulario = 'nombre' | 'sueldo' | 'fijos' | 'meta' | 'tasa' | 'sena';
 
 interface ErrorDelFormulario {
   campo: CampoDelFormulario;
@@ -48,6 +53,7 @@ export function FormularioDeConfiguracion({
   const [fijos, setFijos] = useState<number | null>(ajustes.costos_fijos_centavos);
   const [meta, setMeta] = useState<number | null>(ajustes.meta_cocos_centavos);
   const [tasa, setTasa] = useState(() => formatearPorcentaje(ajustes.tasa_cocos_anual_bp));
+  const [sena, setSena] = useState(() => formatearPorcentaje(ajustes.sena_bp));
   const [error, setError] = useState<ErrorDelFormulario | undefined>(undefined);
 
   const mutacionDeAjustes = useMutation(MUTACION_DE_AJUSTES);
@@ -80,6 +86,9 @@ export function FormularioDeConfiguracion({
       costos_fijos_centavos: fijos,
       meta_cocos_centavos: meta,
       tasa_cocos_anual_bp: parsearPorcentaje(tasa),
+      // Con su propio tope: el check de la base acepta la seña entre 0 y 100%, y un check violado es
+      // un rechazo definitivo que tapa la cola.
+      sena_bp: parsearPorcentaje(sena, SENA_MAXIMA_BP),
     };
 
     const faltante: [CampoDelFormulario, number | null | undefined][] = [
@@ -87,6 +96,7 @@ export function FormularioDeConfiguracion({
       ['fijos', valores.costos_fijos_centavos],
       ['meta', valores.meta_cocos_centavos],
       ['tasa', valores.tasa_cocos_anual_bp],
+      ['sena', valores.sena_bp],
     ];
     const invalido = faltante.find(([, valor]) => valor === undefined || valor === null);
     if (invalido) {
@@ -95,7 +105,9 @@ export function FormularioDeConfiguracion({
         mensaje:
           invalido[0] === 'tasa'
             ? 'Escribí la tasa como un porcentaje, por ejemplo 40. Podés dejarla en 0.'
-            : 'Escribí un importe, por ejemplo 1.800.000. Podés dejarlo en 0.',
+            : invalido[0] === 'sena'
+              ? 'Escribí la seña como un porcentaje entre 0 y 100, por ejemplo 50.'
+              : 'Escribí un importe, por ejemplo 1.800.000. Podés dejarlo en 0.',
       });
       return;
     }
@@ -146,6 +158,16 @@ export function FormularioDeConfiguracion({
         value={meta}
         error={error?.campo === 'meta' ? error.mensaje : undefined}
         onChange={setMeta}
+      />
+      <Campo
+        etiqueta="Seña que pedís (%)"
+        inputMode="decimal"
+        ayuda="Qué parte del presupuesto pedís para confirmar un trabajo. Lo normal es la mitad, y en un trabajo puntual la podés cambiar."
+        value={sena}
+        error={error?.campo === 'sena' ? error.mensaje : undefined}
+        onChange={(evento) => {
+          setSena(evento.target.value);
+        }}
       />
       <Campo
         etiqueta="Tasa anual de Cocos (%)"

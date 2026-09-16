@@ -42,6 +42,7 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     descripcion: '',
     estado: 'contacto',
     presupuesto_centavos: null,
+    sena_bp: null,
     forma_pago: null,
     comprobante: 'sin_comprobante',
     fecha_visita: null,

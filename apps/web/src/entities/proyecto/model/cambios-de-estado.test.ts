@@ -32,6 +32,7 @@ function proyecto(extra: Partial<Proyecto> = {}): Proyecto {
     descripcion: '',
     estado: 'en_curso',
     presupuesto_centavos: 50_000_000,
+    sena_bp: null,
     forma_pago: null,
     comprobante: 'sin_comprobante',
     fecha_visita: null,
@@ -182,7 +183,7 @@ describe('lo que cambia al pasar de estado', () => {
     expect(guardado.pedido.datos.estado).toBe('presupuesto_enviado');
     expect(guardado.pedido.datos.titulo).toBe('Placard');
     expect(guardado.pedido.datos.ultimo_contacto).toBe(HOY);
-    expect(guardado.previos).toEqual({ proyecto: fila, pagos: [], gastos: [] });
+    expect(guardado.previos).toEqual({ proyecto: fila, pagos: [], gastos: [], opciones: [] });
   });
 });
 

@@ -8,10 +8,11 @@ import {
   type CambiosDeProyecto,
   type DatosDeProyecto,
   type GastoParaGuardar,
+  type OpcionParaGuardar,
   type PagoParaGuardar,
   type ProyectoParaGuardar,
 } from '@/shared/api';
-import { hoyLocal } from '@/shared/lib';
+import { formatearPorcentaje, hoyLocal, parsearPorcentaje, SENA_MAXIMA_BP } from '@/shared/lib';
 
 import {
   COMPROBANTES_EN_ORDEN,
@@ -21,6 +22,7 @@ import {
   type Pago,
   type Proyecto,
 } from './catalogos';
+import { senaDelProyecto, type OpcionDePresupuesto } from './opciones';
 
 const SIN_MONTO = 'Poné cuánto, en pesos.';
 
@@ -31,15 +33,25 @@ function texto(maximo: number) {
     .max(maximo, { error: `No puede pasar de ${String(maximo)} caracteres.` });
 }
 
+const monto = z
+  .number()
+  .int()
+  .nullable()
+  .refine((valor) => valor !== null && valor > 0, { error: SIN_MONTO });
+
 const filaDinamica = z.object({
   id: z.string(),
   fecha: z.string().min(1, { error: 'Poné la fecha.' }),
   detalle: texto(500),
-  monto: z
-    .number()
-    .int()
-    .nullable()
-    .refine((valor) => valor !== null && valor > 0, { error: SIN_MONTO }),
+  monto,
+});
+
+// Una opción no lleva fecha: es un importe con su detalle, no un movimiento de plata (ADR 0043).
+const filaDeOpcion = z.object({
+  id: z.string(),
+  detalle: texto(500),
+  monto,
+  aprobada: z.boolean(),
 });
 
 export const esquemaDeProyecto = z.object({
@@ -52,6 +64,14 @@ export const esquemaDeProyecto = z.object({
     .int()
     .nonnegative({ error: 'Revisá el presupuesto: va en pesos.' })
     .nullable(),
+  // El tope es el del check de la base: un valor más alto sería un rechazo definitivo, y un rechazo
+  // definitivo tapa la cola, que drena de a una.
+  sena: z
+    .string()
+    .refine(
+      (valor) => valor.trim() === '' || parsearPorcentaje(valor, SENA_MAXIMA_BP) !== undefined,
+      { error: 'La seña va entre 0 y 100.' },
+    ),
   forma_pago: z.enum(FORMAS_EN_ORDEN).nullable(),
   comprobante: z.enum(COMPROBANTES_EN_ORDEN),
   fecha_visita: z.string(),
@@ -65,10 +85,12 @@ export const esquemaDeProyecto = z.object({
   vencimiento_presupuesto: z.string(),
   pagos: z.array(filaDinamica),
   gastos: z.array(filaDinamica),
+  opciones: z.array(filaDeOpcion),
 });
 
 export type FormularioDeProyecto = z.infer<typeof esquemaDeProyecto>;
 export type FilaDinamica = z.infer<typeof filaDinamica>;
+export type FilaDeOpcion = z.infer<typeof filaDeOpcion>;
 
 function fecha(valor: string | null): string {
   return valor ?? '';
@@ -82,10 +104,33 @@ export function filaVacia(id: string, hoy: string = hoyLocal()): FilaDinamica {
   return { id, fecha: hoy, detalle: '', monto: null };
 }
 
+export function opcionVacia(id: string): FilaDeOpcion {
+  return { id, detalle: '', monto: null, aprobada: false };
+}
+
+// Tildar una es destildar las demás: la base solo deja una aprobada viva por trabajo, y dos tildadas
+// se rechazan con MN009, que es definitivo.
+export function conLaOpcionAprobada(
+  opciones: readonly FilaDeOpcion[],
+  id: string,
+  aprobada: boolean,
+): FilaDeOpcion[] {
+  return opciones.map((opcion) => ({
+    ...opcion,
+    aprobada: aprobada && opcion.id === id,
+  }));
+}
+
+export function presupuestoDeLasOpciones(opciones: readonly FilaDeOpcion[]): number | null {
+  if (opciones.length === 0) return null;
+  return opciones.find((opcion) => opcion.aprobada)?.monto ?? null;
+}
+
 export function valoresDelFormulario(
   proyecto: Proyecto | undefined,
   pagos: readonly Pago[],
   gastos: readonly Gasto[],
+  opciones: readonly OpcionDePresupuesto[],
   inicial: {
     clienteId?: string;
     comprobante?: Comprobante;
@@ -101,6 +146,7 @@ export function valoresDelFormulario(
       descripcion: '',
       estado: 'en_curso',
       presupuesto: null,
+      sena: '',
       forma_pago: 'transferencia',
       comprobante: inicial.comprobante ?? 'sin_comprobante',
       fecha_visita: '',
@@ -114,8 +160,11 @@ export function valoresDelFormulario(
       vencimiento_presupuesto: '',
       pagos: [],
       gastos: [],
+      opciones: [],
     };
   }
+
+  const propia = senaDelProyecto(proyecto);
 
   return {
     cliente_id: proyecto.cliente_id,
@@ -123,6 +172,7 @@ export function valoresDelFormulario(
     descripcion: proyecto.descripcion,
     estado: proyecto.estado,
     presupuesto: proyecto.presupuesto_centavos,
+    sena: propia === null ? '' : formatearPorcentaje(propia),
     forma_pago: proyecto.forma_pago,
     comprobante: proyecto.comprobante,
     fecha_visita: fecha(proyecto.fecha_visita),
@@ -146,6 +196,12 @@ export function valoresDelFormulario(
       detalle: gasto.descripcion,
       monto: gasto.monto_centavos,
     })),
+    opciones: opciones.map((opcion) => ({
+      id: opcion.id,
+      detalle: opcion.descripcion,
+      monto: opcion.monto_centavos,
+      aprobada: opcion.aprobada,
+    })),
   };
 }
 
@@ -159,7 +215,14 @@ export function datosDelFormulario(
     titulo: valores.titulo.trim(),
     descripcion: valores.descripcion.trim(),
     estado: valores.estado,
-    presupuesto_centavos: valores.presupuesto,
+    // Con opciones, el presupuesto no se elige: sale de la aprobada. La base lo vuelve a derivar y no
+    // le cree a este número, pero la fila optimista de la réplica sí sale de acá (ADR 0043).
+    presupuesto_centavos:
+      valores.opciones.length > 0
+        ? presupuestoDeLasOpciones(valores.opciones)
+        : valores.presupuesto,
+    sena_bp:
+      valores.sena.trim() === '' ? null : (parsearPorcentaje(valores.sena, SENA_MAXIMA_BP) ?? null),
     forma_pago: valores.forma_pago,
     comprobante: valores.comprobante,
     fecha_visita: fechaVisita,
@@ -186,7 +249,7 @@ export function pedidoDeGuardado(
   id: string,
   version: number | null,
   valores: FormularioDeProyecto,
-  existentes: { pagos: readonly string[]; gastos: readonly string[] },
+  existentes: { pagos: readonly string[]; gastos: readonly string[]; opciones: readonly string[] },
 ): ProyectoParaGuardar {
   const monto = (valor: number | null) => valor ?? 0;
 
@@ -204,12 +267,20 @@ export function pedidoDeGuardado(
     monto_centavos: monto(fila.monto),
   }));
 
+  const opciones: OpcionParaGuardar[] = valores.opciones.map((fila) => ({
+    id: fila.id,
+    descripcion: fila.detalle.trim(),
+    monto_centavos: monto(fila.monto),
+    aprobada: fila.aprobada,
+  }));
+
   return {
     id,
     version,
     datos: datosDelFormulario(valores),
     pagos: [...pagos, ...bajasDe(pagos, existentes.pagos)],
     gastos: [...gastos, ...bajasDe(gastos, existentes.gastos)],
+    opciones: [...opciones, ...bajasDe(opciones, existentes.opciones)],
   };
 }
 

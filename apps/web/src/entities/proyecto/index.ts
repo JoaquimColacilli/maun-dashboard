@@ -13,6 +13,7 @@ export {
   type ReversionDeProyecto,
 } from './api/liquidacion';
 export {
+  aprobacionDeUnaOpcion,
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
@@ -85,17 +86,29 @@ export {
 } from './model/entrega';
 export {
   cambiaLaFila,
+  conLaOpcionAprobada,
   datosDelFormulario,
   esquemaDeProyecto,
   estadosDisponibles,
   filaVacia,
+  opcionVacia,
   pedidoDeGuardado,
+  presupuestoDeLasOpciones,
   totalDeLasFilas,
   valoresDelFormulario,
   versionDelGuardado,
+  type FilaDeOpcion,
   type FilaDinamica,
   type FormularioDeProyecto,
 } from './model/formulario';
+export {
+  opcionAprobada,
+  opcionesDelProyecto,
+  senaDelProyecto,
+  senaDelTaller,
+  senaDelTrabajo,
+  type OpcionDePresupuesto,
+} from './model/opciones';
 export {
   cambiosAlPasar,
   cambiosDeEstado,
@@ -152,6 +165,7 @@ export {
   rutaDeEdicion,
   rutaDelProyecto,
 } from './model/rutas';
+export { BloqueDeLaSena, type BloqueDeLaSenaProps } from './ui/BloqueDeLaSena';
 export { DistribucionDespiece, type DistribucionDespieceProps } from './ui/DistribucionDespiece';
 export { EntregaRelativa, type EntregaRelativaProps } from './ui/EntregaRelativa';
 export { EstadoBadge } from './ui/EstadoBadge';

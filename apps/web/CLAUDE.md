@@ -184,6 +184,17 @@ src/
 - **El ordenamiento de listas es `shared/lib/orden.ts`**, compartido con Clientes. Lo que falta va al final en los dos sentidos y el desempate es estable. Si agregás una columna, es un `Criterio` más, no otro `sort`.
 - `entregaEstimada` cuenta solo días de semana: acepta feriados por parámetro, pero **nadie le pasa una lista todavía**.
 
+## Las opciones de presupuesto y la seña (ADR 0043)
+
+- **Las opciones son hijas del agregado**, como los pagos y los gastos: se escriben por `guardar_proyecto` con el cuarto parámetro y una sola mutación en la cola. **No les agregues una mutación propia**, por lo mismo que no la tienen los pagos (ADR 0015).
+- **Sin la clave, no se tocan.** `ProyectoParaGuardar.opciones` es opcional y `p_opciones` viaja en `null` cuando falta: así un paso que solo mueve el estado (`guardadoDeUnPaso`) no las pisa, y un bundle viejo no las borra.
+- **Con opciones vivas el presupuesto no se escribe: se deriva de la tildada.** No hay campo en el formulario, hay un valor calculado (`presupuestoDeLasOpciones`). La base lo garantiza igual con un trigger de constraint **diferido** y rechaza con `MN009`: la pantalla no es la que sostiene el invariante. Si no hay opciones, el presupuesto se carga como siempre.
+- **Aprobar es un toque con deshacer desde la ficha** (`OpcionesDelTrabajo`), no una pantalla ni un «¿estás seguro?»: es reversible (ADR 0016). La mutación va `silencioso` y el aviso con «Deshacer» lo pone la acción. Agregar, editar y quitar opciones sí van en el formulario grande (`FilasDeOpciones`).
+- **Tildar una destilda las demás** (`conLaOpcionAprobada`): la base solo acepta una aprobada viva y dos rebotan con `MN009`, que es definitivo y tapa la cola.
+- **Las opciones que no eligieron no se borran.** Se siguen viendo, con la aprobada destacada con ícono y palabra, nunca solo con el color.
+- **La seña es un porcentaje**: `ajustes.sena_bp` (la mitad por defecto) y `proyectos.sena_bp` pisándolo. La cuenta es `calcularSena` del dominio y no tiene gemela en SQL. Leelas con `senaDelTaller` y `senaDelProyecto`, que toleran una fila guardada antes de las columnas.
+- **El campo de la seña usa `parsearPorcentaje(texto, SENA_MAXIMA_BP)`.** El tope por defecto de ese helper es el de la tasa de Cocos (1000%) y el `check` de la seña corta en 100%: sin el tope propio, un 500% pasaría el formulario y la base lo rechazaría con una violación de check.
+
 ## Cobrar y liquidar (ADR 0016)
 
 - **Cobrar y dar por perdido son pantallas propias** (`/proyectos/:id/cobrar` y `/cerrar`), no un botón con un modal. **No agregues un «¿estás seguro?»**: lo que confirma es el despiece con los importes reales, y el botón dice el verbo. Reabrir sí lleva confirmación liviana, porque deshace un reparto cerrado.
