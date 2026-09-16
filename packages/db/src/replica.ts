@@ -8,6 +8,7 @@ export const TABLAS_REPLICADAS = [
   'proyectos',
   'pagos',
   'gastos',
+  'opciones_de_presupuesto',
   'movimientos',
   'anotaciones',
   'archivos',

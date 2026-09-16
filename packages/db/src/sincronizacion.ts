@@ -34,6 +34,7 @@ export const COLUMNAS_DE_AJUSTES = [
   'costos_fijos_centavos',
   'meta_cocos_centavos',
   'tasa_cocos_anual_bp',
+  'sena_bp',
 ] as const;
 
 export type ColumnaDeAjustes = (typeof COLUMNAS_DE_AJUSTES)[number];
@@ -197,6 +198,7 @@ export const COLUMNAS_DE_PROYECTO = [
   'notas',
   'vencimiento_presupuesto',
   'visita_hecha',
+  'sena_bp',
 ] as const;
 
 export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];
@@ -221,21 +223,39 @@ export type PagoParaGuardar = (FilaHijaViva & { concepto: string }) | BajaDeFila
 
 export type GastoParaGuardar = (FilaHijaViva & { descripcion: string }) | BajaDeFilaHija;
 
+// Una opción no lleva fecha: es un importe con su detalle, no un movimiento de plata.
+export type OpcionParaGuardar =
+  | {
+      id: string;
+      descripcion: string;
+      monto_centavos: number;
+      aprobada: boolean;
+      borrado?: false;
+    }
+  | BajaDeFilaHija;
+
 export interface ProyectoParaGuardar {
   id: string;
   version: number | null;
   datos: DatosDeProyecto;
   pagos: readonly PagoParaGuardar[];
   gastos: readonly GastoParaGuardar[];
+  // Sin esta clave, guardar_proyecto no toca las opciones. Es lo que hace que un paso que solo
+  // cambia el estado no tenga que mandarlas, y que un bundle viejo no las borre (ADR 0043).
+  opciones?: readonly OpcionParaGuardar[];
 }
 
 export interface ProyectoGuardado {
   proyecto: FilaDe<'proyectos'>;
   pagos: readonly FilaDe<'pagos'>[];
   gastos: readonly FilaDe<'gastos'>[];
+  opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
 }
 
-function filasDelAgregado<T extends 'pagos' | 'gastos'>(valor: unknown, tabla: T): FilaDe<T>[] {
+function filasDelAgregado<T extends 'pagos' | 'gastos' | 'opciones_de_presupuesto'>(
+  valor: unknown,
+  tabla: T,
+): FilaDe<T>[] {
   if (!Array.isArray(valor)) {
     throw new RespuestaInvalidaError(`guardar_proyecto no devolvió la lista de ${tabla}.`);
   }
@@ -268,6 +288,7 @@ export function leerProyectoGuardado(valor: unknown): ProyectoGuardado {
     proyecto: proyecto as FilaDe<'proyectos'>,
     pagos: filasDelAgregado(cuerpo.pagos, 'pagos'),
     gastos: filasDelAgregado(cuerpo.gastos, 'gastos'),
+    opciones: filasDelAgregado(cuerpo.opciones_de_presupuesto, 'opciones_de_presupuesto'),
   };
 }
 
@@ -279,6 +300,7 @@ export async function guardarProyecto(
     p_proyecto: { id: pedido.id, version: pedido.version, ...pedido.datos } as unknown as Json,
     p_pagos: pedido.pagos as unknown as Json,
     p_gastos: pedido.gastos as unknown as Json,
+    p_opciones: (pedido.opciones ?? null) as unknown as Json,
   });
   if (error) throw error;
   return leerProyectoGuardado(data);
