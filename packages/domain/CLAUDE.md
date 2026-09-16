@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`) y la agenda con lo que se avisa (`agenda.ts`). Las decisiones están en el ADR 0011, y las de la agenda en el 0034.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`) y la agenda con lo que se avisa (`agenda.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034 y las de la seña en el 0043.
 
 ## Pureza (la aplican las herramientas)
 
@@ -33,6 +33,12 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 `resumenDelMes` es lo que se muestra por mes: objetivo, liquidado y lo que falta, de sueldo y de fijos.
 
 `sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra el que prometían. Con el tope por proyecto, que es la regla del dueño, cada cobro promete su propio sueldo, con el objetivo con el que se liquidó; con el tope mensual, el mes promete uno. Por eso `LiquidacionRegistrada` lleva `sueldoMensual` (ADR 0011). Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
+
+## La seña
+
+`calcularSena` es la resta que el dueño pidió: cuánto es la seña, cuánto cobró y cuánto falta. La seña es un porcentaje del presupuesto (`ajustes.sena_bp`, la mitad por defecto) y se puede pisar por trabajo (`proyectos.sena_bp`); `porcentajeDeLaSena` dice cuál manda. Devuelve una unión con tres situaciones, no números sueltos: **sin presupuesto no hay seña** y lo dice, y cuando ya la cubrió dice cuánto de más en vez de un negativo. Lo cobrado que recibe incluye la plata de la visita del relevamiento, porque el contacto y el trabajo son la misma fila (ADR 0019).
+
+**No tiene gemela en SQL y no la necesita**, como `resumenDelMes` y `sueldoDelMes`: nada en la base consume la seña. La base sí guarda los dos porcentajes, con su `check` de rango.
 
 ## El CUIT
 

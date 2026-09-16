@@ -51,6 +51,14 @@ export {
 } from './liquidacion.ts';
 
 export {
+  calcularSena,
+  porcentajeDeLaSena,
+  SENA_HABITUAL,
+  type EntradaDeLaSena,
+  type SenaDelTrabajo,
+} from './sena.ts';
+
+export {
   ESTADOS,
   ESTADOS_DE_SEGUIMIENTO,
   esEstado,
