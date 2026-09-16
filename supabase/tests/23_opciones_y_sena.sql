@@ -3,7 +3,7 @@
 -- camino para escribirlo. El trigger que lo garantiza es de constraint y diferido, así que para verlo
 -- fallar adentro de una transacción hay que forzar el chequeo con set constraints all immediate.
 
-select plan(35);
+select plan(37);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller A', tests.id('ana')));
@@ -161,6 +161,33 @@ select throws_ok(
   'MN009',
   null,
   'dos opciones aprobadas a la vez se rechazan: el presupuesto quedaría indefinido'
+);
+
+
+-- Mover la aprobación de una a otra, sin mandar la que estaba aprobada ---------------------------------
+
+-- El caso que destapó el 23505: el índice único parcial se evalúa fila por fila y el orden dentro del
+-- upsert no está definido, así que la que se apaga tiene que apagarse antes, no en la misma sentencia.
+select lives_ok(
+  $$
+    select public.guardar_proyecto(
+      '{"id": "aaaaaaaa-0000-7000-8000-000000000010", "version": null,
+        "cliente_id": "aaaaaaaa-0000-7000-8000-000000000001", "titulo": "Escritorio", "comprobante": "sin_comprobante",
+        "estado": "presupuesto_enviado", "presupuesto_centavos": null}'::jsonb,
+      '[]'::jsonb,
+      '[]'::jsonb,
+      '[{"id": "aaaaaaaa-0000-7000-8000-000000000102", "descripcion": "Los 2 escritorios",
+         "monto_centavos": 230000000, "aprobada": true}]'::jsonb
+    )
+  $$,
+  'se aprueba la otra sin mandar en el pedido la que estaba aprobada'
+);
+
+select is(
+  (select array_agg(id::text order by id) from public.opciones_de_presupuesto
+   where proyecto_id = 'aaaaaaaa-0000-7000-8000-000000000010' and aprobada and deleted_at is null),
+  array['aaaaaaaa-0000-7000-8000-000000000102'],
+  'queda una sola aprobada: la anterior se apagó sola'
 );
 
 

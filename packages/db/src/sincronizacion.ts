@@ -223,7 +223,6 @@ export type PagoParaGuardar = (FilaHijaViva & { concepto: string }) | BajaDeFila
 
 export type GastoParaGuardar = (FilaHijaViva & { descripcion: string }) | BajaDeFilaHija;
 
-// Una opción no lleva fecha: es un importe con su detalle, no un movimiento de plata.
 export type OpcionParaGuardar =
   | {
       id: string;
@@ -240,8 +239,6 @@ export interface ProyectoParaGuardar {
   datos: DatosDeProyecto;
   pagos: readonly PagoParaGuardar[];
   gastos: readonly GastoParaGuardar[];
-  // Sin esta clave, guardar_proyecto no toca las opciones. Es lo que hace que un paso que solo
-  // cambia el estado no tenga que mandarlas, y que un bundle viejo no las borre (ADR 0043).
   opciones?: readonly OpcionParaGuardar[];
 }
 

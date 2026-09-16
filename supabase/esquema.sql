@@ -1195,6 +1195,16 @@ begin
   -- Las opciones solo se tocan si el pedido las trae: p_opciones en null es un bundle viejo, que no
   -- las conoce y no tiene por qué borrarlas.
   if p_opciones is not null then
+    -- Apagar antes de escribir. El índice único parcial de la aprobada se evalúa fila por fila, y el
+    -- orden dentro del upsert no está definido: sin este paso, mover la aprobación de una opción a
+    -- otra dejaba dos prendidas a la vez y cortaba con 23505.
+    update public.opciones_de_presupuesto
+    set aprobada = false
+    where household_id = v_fila.household_id
+      and proyecto_id = v_fila.id
+      and aprobada
+      and deleted_at is null;
+
     insert into public.opciones_de_presupuesto (id, proyecto_id, descripcion, monto_centavos, aprobada)
     select r.id, v_fila.id, coalesce(r.descripcion, ''), r.monto_centavos, coalesce(r.aprobada, false)
     from jsonb_to_recordset(p_opciones) as r (
