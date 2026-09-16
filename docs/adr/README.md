@@ -46,3 +46,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0040](0040-preguntar-antes-de-descartar.md)                    | Un formulario en hoja pregunta antes de descartar            | Aceptada             |
 | [0041](0041-la-version-y-las-novedades.md)                      | La versión es una fecha y las novedades salen de un archivo  | Aceptada             |
 | [0042](0042-lo-hecho-de-los-trabajos-y-las-marcas.md)           | Lo hecho de los trabajos se queda; sus marcas son columnas   | Aceptada             |
+| [0043](0043-las-opciones-de-presupuesto-y-la-sena.md)           | Las opciones de presupuesto y la seña como porcentaje        | Aceptada             |

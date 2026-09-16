@@ -70,6 +70,7 @@ La alternativa de un contador asignado en el commit es más exacta, pero pide un
 | `MN006` | La versión del proyecto, el total cobrado, el de gastos, los topes, la fecha o el diezmo de un perdido no son los que vio el usuario, por ejemplo porque otra liquidación del mismo mes llegó antes: la app vuelve a mostrar la distribución. |
 | `MN007` | Transición de estado inválida, o liquidar o revertir desde un estado que no corresponde.                                                                                                                                                      |
 | `MN008` | La distribución que calculó la app no es la que calcula la base: la app está desactualizada y tiene que recargarse.                                                                                                                           |
+| `MN009` | El presupuesto de un trabajo con opciones no es el de su opción aprobada, o se tildó más de una. Lo rechaza un trigger de constraint diferido, así que salta al cerrar la transacción (ADR 0043).                                             |
 | `42501` | El usuario no tiene household asignado, o no tiene permiso.                                                                                                                                                                                   |
 
 **La UI no miente.** Cuatro estados, visibles y siempre correctos: sin conexión, N cambios pendientes, N cambios rechazados y sincronizado. Nunca "guardado" para algo que está en la cola.
