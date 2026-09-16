@@ -46,7 +46,6 @@ const filaDinamica = z.object({
   monto,
 });
 
-// Una opción no lleva fecha: es un importe con su detalle, no un movimiento de plata (ADR 0043).
 const filaDeOpcion = z.object({
   id: z.string(),
   detalle: texto(500),
@@ -64,8 +63,6 @@ export const esquemaDeProyecto = z.object({
     .int()
     .nonnegative({ error: 'Revisá el presupuesto: va en pesos.' })
     .nullable(),
-  // El tope es el del check de la base: un valor más alto sería un rechazo definitivo, y un rechazo
-  // definitivo tapa la cola, que drena de a una.
   sena: z
     .string()
     .refine(
@@ -108,8 +105,6 @@ export function opcionVacia(id: string): FilaDeOpcion {
   return { id, detalle: '', monto: null, aprobada: false };
 }
 
-// Tildar una es destildar las demás: la base solo deja una aprobada viva por trabajo, y dos tildadas
-// se rechazan con MN009, que es definitivo.
 export function conLaOpcionAprobada(
   opciones: readonly FilaDeOpcion[],
   id: string,
@@ -215,8 +210,6 @@ export function datosDelFormulario(
     titulo: valores.titulo.trim(),
     descripcion: valores.descripcion.trim(),
     estado: valores.estado,
-    // Con opciones, el presupuesto no se elige: sale de la aprobada. La base lo vuelve a derivar y no
-    // le cree a este número, pero la fila optimista de la réplica sí sale de acá (ADR 0043).
     presupuesto_centavos:
       valores.opciones.length > 0
         ? presupuestoDeLasOpciones(valores.opciones)

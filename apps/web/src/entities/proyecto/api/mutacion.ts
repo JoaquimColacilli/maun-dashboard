@@ -123,13 +123,10 @@ export function guardadoDeUnPaso(
       pagos,
       gastos: [],
     },
-    // Sin la clave de opciones: un paso que solo mueve el estado no las toca (ADR 0043).
     previos: { proyecto, pagos: [], gastos: [], opciones: [] },
   };
 }
 
-// Aprobar una opción es reversible, así que va con un toque y deshacer, no con una confirmación
-// (ADR 0016). Pasa por el agregado como todo lo demás: el presupuesto lo vuelve a derivar la base.
 export function aprobacionDeUnaOpcion(
   proyecto: FilaDe<'proyectos'>,
   opciones: readonly FilaDe<'opciones_de_presupuesto'>[],

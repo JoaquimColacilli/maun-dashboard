@@ -14,8 +14,6 @@ import type { Proyecto } from './catalogos';
 
 export type OpcionDePresupuesto = FilaDe<'opciones_de_presupuesto'>;
 
-// Una réplica guardada antes de que existieran las columnas no las trae, igual que con la visita
-// hecha y las marcas (ADR 0042). Hasta el próximo reconcile se lee el valor de siempre.
 type ConSena = { sena_bp?: number | null };
 
 export function senaDelTaller(ajustes: FilaDe<'ajustes'> | undefined): PuntosBasicos {

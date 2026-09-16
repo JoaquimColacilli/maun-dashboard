@@ -31,9 +31,6 @@ describe('parsearPorcentaje', () => {
     expect(parsearPorcentaje('40,555')).toBeUndefined();
   });
 
-  // La seña tiene su propio techo: el check de la base la acepta entre 0 y 100%, y la tasa de Cocos
-  // llega hasta 1000%. Sin el tope propio, un 500% pasaría el formulario y la base lo rechazaría con
-  // una violación de check, que es definitiva y tapa la cola.
   it('con el tope de la seña no deja pasar lo que el check de la seña rechazaría', () => {
     expect(parsearPorcentaje('50', SENA_MAXIMA_BP)).toBe(5000);
     expect(parsearPorcentaje('100', SENA_MAXIMA_BP)).toBe(10_000);

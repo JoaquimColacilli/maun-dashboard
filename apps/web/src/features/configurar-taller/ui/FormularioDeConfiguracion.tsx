@@ -86,8 +86,6 @@ export function FormularioDeConfiguracion({
       costos_fijos_centavos: fijos,
       meta_cocos_centavos: meta,
       tasa_cocos_anual_bp: parsearPorcentaje(tasa),
-      // Con su propio tope: el check de la base acepta la seña entre 0 y 100%, y un check violado es
-      // un rechazo definitivo que tapa la cola.
       sena_bp: parsearPorcentaje(sena, SENA_MAXIMA_BP),
     };
 

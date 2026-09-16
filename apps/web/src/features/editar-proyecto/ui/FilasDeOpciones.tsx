@@ -85,13 +85,13 @@ export function FilasDeOpciones({
 
   return (
     <section
-      aria-label="Opciones de presupuesto"
+      aria-label="Opciones que le presentaste"
       className="@container/opciones flex flex-col gap-2"
       ref={contenedor}
     >
       <div className="flex flex-col gap-0.5 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-section font-semibold">Opciones de presupuesto</h2>
+          <h2 className="text-section font-semibold">Opciones que le presentaste</h2>
           <span role="status" className="text-label text-text-2 tabular-nums">
             {aprobada === undefined || aprobada.monto === null
               ? ''

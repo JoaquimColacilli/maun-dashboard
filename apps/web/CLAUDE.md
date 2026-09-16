@@ -342,6 +342,7 @@ src/
 
 ## Cosas que muerden en el e2e
 
+- **`getByLabel` matchea por subcadena, y también matchea el `aria-label` de una sección.** Una etiqueta o un landmark nuevo cuyo nombre contenga el de un campo que ya existe rompe los specs de todas las demás pantallas: pasó con «Seña de este trabajo (%)» contra `getByLabel('Trabajo')` y con una sección «Opciones de presupuesto» contra `getByLabel('Presupuesto')`. Antes de nombrar un campo o una región, fijate qué otros nombres hay en esa pantalla. Es lo mismo que ya documentaba «Contraseña».
 - **Antes de `context.setOffline(true)` hay que esperar dos cosas**: `navigator.serviceWorker.ready`, porque el service worker es el que sirve el shell al reabrir, y que la réplica ya esté guardada en IndexedDB. Sin lo segundo, reabrir sin señal encuentra el dispositivo vacío.
 - **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
 - **PostgREST rechaza un `PATCH` sin filtro** con un `21000` («UPDATE requires a WHERE clause»), aunque la RLS ya deje una sola fila a la vista: los helpers que editan por REST llevan el filtro igual.

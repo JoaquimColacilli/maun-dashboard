@@ -21,8 +21,6 @@ export function OpcionesDelTrabajo({ proyecto }: OpcionesDelTrabajoProps) {
   const replica = useReplicaDelTaller();
   const opciones = opcionesDelProyecto(replica, proyecto.id);
 
-  // El deshacer se dispara después, cuando la fila optimista ya subió la versión: si el callback
-  // cerrara sobre el proyecto de este render, el guardado saldría con la versión vieja y rebotaría.
   const ultimo = useRef({ proyecto, opciones });
   useEffect(() => {
     ultimo.current = { proyecto, opciones };

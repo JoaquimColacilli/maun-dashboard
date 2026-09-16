@@ -162,8 +162,6 @@ export function PantallaDeProyecto({
       ? ESTADOS_EN_ORDEN.filter((estado) => faseDe(estado) === 'activos')
       : estadosDisponibles(proyecto.estado);
 
-  // Con opciones, el presupuesto no se escribe: sale de la tildada. Es la misma regla que la base
-  // garantiza con su trigger, puesta también en la pantalla para que no haya dónde escribirlo.
   const hayOpciones = filasDeOpciones.length > 0;
   const presupuestoEfectivo = hayOpciones ? presupuestoDeLasOpciones(filasDeOpciones) : presupuesto;
 
@@ -328,10 +326,10 @@ export function PantallaDeProyecto({
 
             <Campo
               {...register('sena')}
-              etiqueta="Seña de este trabajo (%)"
+              etiqueta="Seña propia (%)"
               inputMode="decimal"
               placeholder="La del taller"
-              ayuda="Dejalo vacío para pedir la seña de siempre. Acá va solo si a este le pedís otra."
+              ayuda="Dejalo vacío para pedir la seña de siempre. Completalo solo si a este le pedís otra."
               error={errors.sena?.message}
             />
 
