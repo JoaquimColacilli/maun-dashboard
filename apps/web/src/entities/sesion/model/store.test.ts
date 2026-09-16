@@ -21,9 +21,23 @@ vi.mock('@/shared/api', () => ({
 }));
 
 const ANA: Claims = { usuarioId: 'ana', email: 'ana@taller.com.ar', nombre: 'Ana', foto: '' };
+const BETO: Claims = { usuarioId: 'beto', email: 'beto@taller.com.ar', nombre: 'Beto', foto: '' };
 
 function nunca<T>(): Promise<T> {
   return new Promise(() => undefined);
+}
+
+function validacionEnCamino(): (claims: Claims | undefined) => void {
+  let contestar: (claims: Claims | undefined) => void = () => undefined;
+  api.leerClaims.mockImplementation(
+    () =>
+      new Promise((resolver) => {
+        contestar = resolver;
+      }),
+  );
+  return (claims) => {
+    contestar(claims);
+  };
 }
 
 async function arrancar(): Promise<Store> {
@@ -152,5 +166,58 @@ describe('el estado de la sesión al abrir la app', () => {
     rechazar(new Error('refresh_token_not_found'));
     await vi.advanceTimersByTimeAsync(0);
     expect(store.leerEstadoSesion().tipo).toBe('anonimo');
+  });
+
+  it('una validación que contesta después de cerrar sesión no la vuelve a abrir', async () => {
+    const contestar = validacionEnCamino();
+    const store = await arrancar();
+    api.oyente?.(ANA, 'otro');
+
+    api.oyente?.(undefined, 'cerrada');
+    contestar(ANA);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(store.leerEstadoSesion()).toEqual({ tipo: 'anonimo', vencida: false });
+  });
+
+  it('una validación que contesta después de cerrar no pisa la cuenta con la que se entró enseguida', async () => {
+    const contestar = validacionEnCamino();
+    const store = await arrancar();
+    api.oyente?.(ANA, 'otro');
+
+    api.oyente?.(undefined, 'cerrada');
+    api.oyente?.(BETO, 'otro');
+    contestar(ANA);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(store.leerEstadoSesion()).toMatchObject({ tipo: 'activa', usuarioId: 'beto' });
+  });
+
+  it('una validación que contesta después de que la sesión se venció no la reabre ni borra el motivo', async () => {
+    const contestar = validacionEnCamino();
+    const store = await arrancar();
+    api.oyente?.(ANA, 'otro');
+
+    api.oyente?.(undefined, 'vencida');
+    contestar(ANA);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(store.leerEstadoSesion()).toEqual({ tipo: 'anonimo', vencida: true });
+  });
+
+  it('sin un cierre en el medio, la validación que contesta tarde se sigue aplicando', async () => {
+    const contestar = validacionEnCamino();
+    const store = await arrancar();
+    api.oyente?.(ANA, 'otro');
+    expect(store.leerEstadoSesion()).toMatchObject({ tipo: 'activa', nombre: 'Ana' });
+
+    contestar({ ...ANA, nombre: 'Ana María' });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(store.leerEstadoSesion()).toMatchObject({
+      tipo: 'activa',
+      usuarioId: 'ana',
+      nombre: 'Ana María',
+    });
   });
 });

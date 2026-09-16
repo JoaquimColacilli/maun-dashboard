@@ -39,8 +39,10 @@ function guardar(nuevo: EstadoSesion): void {
 function arrancar(): void {
   if (arrancado) return;
   arrancado = true;
+  let llegoUnCierre = false;
 
   escucharSesion((claims, cambio) => {
+    if (cambio === 'cerrada' || cambio === 'vencida') llegoUnCierre = true;
     if (cambio === 'vencida') {
       guardar(SESION_VENCIDA);
       return;
@@ -56,11 +58,11 @@ function arrancar(): void {
   leerClaims()
     .then((claims) => {
       clearTimeout(tope);
-      guardar(sesionDe(claims, vinoPorRecuperacion()));
+      if (!llegoUnCierre) guardar(sesionDe(claims, vinoPorRecuperacion()));
     })
     .catch(() => {
       clearTimeout(tope);
-      guardar(SESION_ANONIMA);
+      if (!llegoUnCierre) guardar(SESION_ANONIMA);
     });
 }
 
