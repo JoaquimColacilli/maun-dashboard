@@ -6,6 +6,7 @@ import {
   BloqueDeLaSena,
   EstadoBadge,
   gastosDelProyecto,
+  opcionesDelProyecto,
   pagosDelProyecto,
   RUTA_DE_SEGUIMIENTO,
   rutaDeCierre,
@@ -146,6 +147,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             etapa={etapa}
             situacion={situacion}
             cobrado={resumen.cobrado}
+            conOpciones={opcionesDelProyecto(replica, proyecto.id).length > 0}
             alAgendar={() => {
               setEditando('visita');
             }}

@@ -1,6 +1,6 @@
 import { entregaEstimada } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useId, useState, type SyntheticEvent } from 'react';
+import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { CONDICION, EnlaceACliente } from '@/entities/cliente';
@@ -8,25 +8,29 @@ import {
   COMPROBANTE,
   COMPROBANTES_EN_ORDEN,
   comprobanteDeLaCondicion,
-  datosActualesDelProyecto,
   FORMA_DE_PAGO,
   FORMAS_EN_ORDEN,
   MUTACION_DE_PROYECTO,
+  opcionAprobada,
+  rutaDeEdicion,
   rutaDelProyecto,
-  ultimoContactoAlGuardar,
   type Comprobante,
   type FormaDePago,
+  type OpcionDePresupuesto,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
 import { formatearPesos, hoyLocal } from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
+import { errorDelPasaje, guardadoDelPasaje, presupuestoDelPasaje } from '../model/pasaje';
+
 export interface PantallaDePasajeProps {
   resumen: ResumenDeProyecto;
+  opciones: readonly OpcionDePresupuesto[];
 }
 
-export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
+export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const navegar = useNavigate();
   const idCampos = useId();
   const { proyecto, cliente } = resumen;
@@ -36,7 +40,10 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
   const [rechazo, setRechazo] = useState<unknown>(null);
 
   const [presupuesto, setPresupuesto] = useState<number | null>(proyecto.presupuesto_centavos);
-  const [errorDelPresupuesto, setErrorDelPresupuesto] = useState<string | undefined>(undefined);
+  const [opcion, setOpcion] = useState<string | null>(() => opcionAprobada(opciones)?.id ?? null);
+  const [falta, setFalta] = useState<string | undefined>(undefined);
+  const primeraOpcion = useRef<HTMLInputElement>(null);
+  const campoDelPresupuesto = useRef<HTMLInputElement>(null);
   const [forma, setForma] = useState<FormaDePago>(proyecto.forma_pago ?? 'transferencia');
   const [inicio, setInicio] = useState(proyecto.fecha_inicio ?? hoy);
   const [entrega, setEntrega] = useState(
@@ -54,7 +61,9 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
       : proyecto.comprobante,
   );
 
-  const saldo = Math.max(0, (presupuesto ?? 0) - resumen.cobrado);
+  const hayOpciones = opciones.length > 0;
+  const aprobado = presupuestoDelPasaje(opciones, { presupuesto, opcion });
+  const saldo = aprobado === null ? null : Math.max(0, aprobado - resumen.cobrado);
 
   useEffect(() => {
     if (guardar.isPaused) {
@@ -67,34 +76,21 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
 
   function aprobar(evento: SyntheticEvent<HTMLFormElement>): void {
     evento.preventDefault();
-    if (presupuesto === null) {
-      setErrorDelPresupuesto('Poné el presupuesto que aprobó, en pesos.');
+    const encontrado = errorDelPasaje(opciones, { presupuesto, opcion });
+    setFalta(encontrado);
+    if (encontrado !== undefined) {
+      (hayOpciones ? primeraOpcion : campoDelPresupuesto).current?.focus();
       return;
     }
 
-    setErrorDelPresupuesto(undefined);
     setRechazo(null);
     guardar.mutate(
-      {
-        pedido: {
-          id: proyecto.id,
-          version: proyecto.version,
-          datos: {
-            ...datosActualesDelProyecto(proyecto),
-            estado: 'en_curso',
-            ultimo_contacto: ultimoContactoAlGuardar(proyecto, 'en_curso', hoy),
-            presupuesto_centavos: presupuesto,
-            forma_pago: forma,
-            comprobante,
-            fecha_inicio: inicio === '' ? null : inicio,
-            entrega_estimada: entrega === '' ? null : entrega,
-            direccion_entrega: direccion.trim(),
-          },
-          pagos: [],
-          gastos: [],
-        },
-        previos: { proyecto, pagos: [], gastos: [], opciones: [] },
-      },
+      guardadoDelPasaje(
+        proyecto,
+        opciones,
+        { presupuesto, opcion, forma, comprobante, inicio, entrega, direccion },
+        hoy,
+      ),
       {
         onSuccess: () => {
           void navegar(rutaDelProyecto(proyecto.id), {
@@ -142,49 +138,119 @@ export function PantallaDePasaje({ resumen }: PantallaDePasajeProps) {
       </header>
 
       <form noValidate onSubmit={aprobar} className="@container mt-5 flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
-            Presupuesto aprobado
-          </label>
-          <div
-            className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
-              errorDelPresupuesto === undefined ? 'border-ink' : 'border-alerta'
-            }`}
+        {hayOpciones ? (
+          <fieldset
+            aria-describedby={
+              falta === undefined
+                ? `${idCampos}-opciones-ayuda`
+                : `${idCampos}-opciones-ayuda ${idCampos}-opciones-error`
+            }
+            className="flex flex-col gap-1.5"
           >
-            <span aria-hidden className="text-money-lg text-text-3">
-              $
-            </span>
-            <MoneyInput
-              id={`${idCampos}-presupuesto`}
-              placeholder="0"
-              value={presupuesto}
-              aria-invalid={errorDelPresupuesto === undefined ? undefined : true}
-              aria-describedby={
-                errorDelPresupuesto === undefined ? undefined : `${idCampos}-presupuesto-error`
-              }
-              onChange={(centavos) => {
-                setPresupuesto(centavos);
-                setErrorDelPresupuesto(undefined);
-              }}
-              className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
-            />
-          </div>
-          {errorDelPresupuesto !== undefined && (
-            <span
-              id={`${idCampos}-presupuesto-error`}
-              role="alert"
-              className="text-label font-medium text-alerta"
+            <legend className="mb-1.5 text-label text-text-2">Qué opción aprobó</legend>
+            <div className="flex flex-col gap-2">
+              {opciones.map((una, indice) => (
+                <label
+                  key={una.id}
+                  className={`flex min-h-tap cursor-pointer items-center gap-3 rounded-field border px-3.5 py-3 has-checked:border-ink has-checked:bg-surface ${
+                    falta === undefined ? 'border-border' : 'border-alerta'
+                  }`}
+                >
+                  <input
+                    ref={indice === 0 ? primeraOpcion : undefined}
+                    type="radio"
+                    name={`${idCampos}-opcion`}
+                    value={una.id}
+                    checked={opcion === una.id}
+                    onChange={() => {
+                      setOpcion(una.id);
+                      setFalta(undefined);
+                    }}
+                    className="size-5 flex-none accent-ink"
+                  />
+                  <span className="min-w-0 flex-1 text-body-lg leading-snug font-medium">
+                    {una.descripcion.trim() === '' ? 'Opción sin detalle' : una.descripcion}
+                  </span>
+                  <span className="flex-none text-money font-semibold tabular-nums">
+                    {formatearPesos(una.monto_centavos)}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p id={`${idCampos}-opciones-ayuda`} className="text-meta leading-normal text-text-3">
+              El presupuesto del trabajo es el importe de la que elijas. Si aprobó otro importe,{' '}
+              <Link
+                to={rutaDeEdicion(proyecto.id)}
+                className="font-medium text-text-2 underline underline-offset-3"
+              >
+                corregí la opción
+              </Link>{' '}
+              antes de pasarlo.
+            </p>
+            {falta !== undefined && (
+              <span
+                id={`${idCampos}-opciones-error`}
+                role="alert"
+                className="text-label font-medium text-alerta"
+              >
+                {falta}
+              </span>
+            )}
+          </fieldset>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
+              Presupuesto aprobado
+            </label>
+            <div
+              className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
+                falta === undefined ? 'border-ink' : 'border-alerta'
+              }`}
             >
-              {errorDelPresupuesto}
-            </span>
-          )}
-        </div>
+              <span aria-hidden className="text-money-lg text-text-3">
+                $
+              </span>
+              <MoneyInput
+                ref={campoDelPresupuesto}
+                id={`${idCampos}-presupuesto`}
+                placeholder="0"
+                value={presupuesto}
+                aria-invalid={falta === undefined ? undefined : true}
+                aria-describedby={falta === undefined ? undefined : `${idCampos}-presupuesto-error`}
+                onChange={(centavos) => {
+                  setPresupuesto(centavos);
+                  setFalta(undefined);
+                }}
+                className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+              />
+            </div>
+            {falta !== undefined && (
+              <span
+                id={`${idCampos}-presupuesto-error`}
+                role="alert"
+                className="text-label font-medium text-alerta"
+              >
+                {falta}
+              </span>
+            )}
+          </div>
+        )}
 
         <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-field bg-surface px-3.5 py-3 text-body tabular-nums">
+          {hayOpciones && (
+            <>
+              <dt className="text-text-2">Presupuesto aprobado</dt>
+              <dd className="text-right font-semibold">
+                {aprobado === null ? '—' : formatearPesos(aprobado)}
+              </dd>
+            </>
+          )}
           <dt className="text-text-2">Seña ya cobrada</dt>
           <dd className="text-right font-medium text-hogar">{formatearPesos(resumen.cobrado)}</dd>
           <dt className="text-text-2">Saldo a cobrar</dt>
-          <dd className="text-right font-semibold">{formatearPesos(saldo)}</dd>
+          <dd className="text-right font-semibold">
+            {saldo === null ? '—' : formatearPesos(saldo)}
+          </dd>
           {resumen.gastos > 0 && (
             <>
               <dt className="text-text-2">Gastos ya cargados</dt>

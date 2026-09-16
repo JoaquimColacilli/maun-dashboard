@@ -190,6 +190,152 @@ test('un trabajo sin opciones carga el presupuesto como siempre', async ({ page 
     .toBe(CON_BACHA);
 });
 
+test('sin opciones, el pasaje sigue pidiendo el importe: sin escribirlo no pasa y lo muestra', async ({
+  page,
+}) => {
+  const id = await trabajo('Vanitory', { pago: 5_000_000 });
+
+  await page.goto(`/proyectos/${id}/aprobar`);
+  const campo = page.getByRole('textbox', { name: 'Presupuesto aprobado' });
+  await expect(campo).toBeVisible(CARGA);
+  await expect(page.getByRole('group', { name: 'Qué opción aprobó' })).toHaveCount(0);
+  const saldo = page
+    .locator('dt', { hasText: 'Saldo a cobrar' })
+    .locator('xpath=following-sibling::dd[1]');
+  await expect(saldo).toHaveText('—');
+
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Poné el presupuesto que aprobó, en pesos.' }),
+  ).toBeVisible();
+  await expect(campo).toBeFocused();
+  await expect(campo).toBeInViewport();
+
+  await campo.fill(String(CON_BACHA / 100));
+  await expect(saldo).toHaveText('$ 444.200');
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+
+  await expect
+    .poll(async () => (await leerProyecto(sesion, 'Vanitory'))?.estado, CARGA)
+    .toBe('en_curso');
+  expect((await leerProyecto(sesion, 'Vanitory'))?.presupuesto_centavos).toBe(CON_BACHA);
+});
+
+function lasOpcionesDelPasaje(page: Page) {
+  return page.getByRole('group', { name: 'Qué opción aprobó' });
+}
+
+interface PedidoDeGuardado {
+  p_opciones: { descripcion: string; aprobada: boolean }[] | null;
+}
+
+test('al pasar a Proyectos con opciones no hay presupuesto para escribir: se elige la que aprobó y se aprueba en el mismo guardado', async ({
+  page,
+}, testInfo) => {
+  const id = await trabajo('Escritorio', {
+    pago: 15_000_000,
+    opciones: [
+      opcion('Solo el escritorio de Alan', SOLO_ALAN),
+      opcion('Los 2 escritorios', LOS_DOS),
+    ],
+  });
+  const lugar = testInfo.project.name;
+
+  await page.goto(`/proyectos/${id}/aprobar`);
+  await expect(lasOpcionesDelPasaje(page)).toBeVisible(CARGA);
+  await expect(page.getByRole('textbox', { name: 'Presupuesto aprobado' })).toHaveCount(0);
+  await expect(lasOpcionesDelPasaje(page).getByRole('radio')).toHaveCount(2);
+  await expect(lasOpcionesDelPasaje(page).getByRole('radio', { checked: true })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  const aviso = page.getByRole('alert').filter({ hasText: 'Elegí la opción que aprobó.' });
+  const primera = lasOpcionesDelPasaje(page).getByRole('radio').first();
+  await expect(aviso).toBeVisible();
+  await expect(primera).toBeFocused();
+  await expect(primera).not.toBeChecked();
+  await expect(primera).toBeInViewport();
+  await expect(aviso).toBeInViewport();
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/aprobar$`));
+  await page.screenshot({ path: testInfo.outputPath(`pasaje-sin-elegir-${lugar}.png`) });
+
+  await lasOpcionesDelPasaje(page)
+    .getByRole('radio', { name: /Los 2 escritorios/ })
+    .check();
+  const cuentas = page.locator('dl').first();
+  await expect(cuentas).toContainText('$ 2.300.000');
+  await expect(cuentas).toContainText('$ 2.150.000');
+  await page.screenshot({
+    path: testInfo.outputPath(`pasaje-con-opciones-${lugar}.png`),
+    fullPage: true,
+  });
+
+  const guardado = page.waitForRequest('**/rest/v1/rpc/guardar_proyecto');
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  const pedido = (await guardado).postDataJSON() as PedidoDeGuardado;
+  expect(pedido.p_opciones?.filter((una) => una.aprobada).map((una) => una.descripcion)).toEqual([
+    'Los 2 escritorios',
+  ]);
+
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`), CARGA);
+  await expect
+    .poll(async () => (await leerProyecto(sesion, 'Escritorio'))?.estado, CARGA)
+    .toBe('en_curso');
+  expect((await leerProyecto(sesion, 'Escritorio'))?.presupuesto_centavos).toBe(LOS_DOS);
+  expect((await opcionesDe(sesion, id)).map((una) => [una.descripcion, una.aprobada])).toEqual([
+    ['Solo el escritorio de Alan', false],
+    ['Los 2 escritorios', true],
+  ]);
+});
+
+test('con una opción ya aprobada, el pasaje la trae elegida con su importe y no manda las opciones', async ({
+  page,
+}) => {
+  const id = await trabajo('Escritorio', {
+    opciones: [
+      opcion('Solo el escritorio de Alan', SOLO_ALAN, true),
+      opcion('Los 2 escritorios', LOS_DOS),
+    ],
+  });
+
+  await page.goto(`/proyectos/${id}/aprobar`);
+  await expect(
+    lasOpcionesDelPasaje(page).getByRole('radio', { name: /Solo el escritorio de Alan/ }),
+  ).toBeChecked(CARGA);
+  await expect(page.locator('dl').first()).toContainText('$ 1.248.000');
+
+  const guardado = page.waitForRequest('**/rest/v1/rpc/guardar_proyecto');
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  expect(((await guardado).postDataJSON() as PedidoDeGuardado).p_opciones).toBeNull();
+
+  await expect
+    .poll(async () => (await leerProyecto(sesion, 'Escritorio'))?.estado, CARGA)
+    .toBe('en_curso');
+  expect((await leerProyecto(sesion, 'Escritorio'))?.presupuesto_centavos).toBe(SOLO_ALAN);
+});
+
+test('«Mandé el presupuesto» con opciones cambia de etapa sin pedir un importe que se descartaría', async ({
+  page,
+}) => {
+  const id = await trabajo('Escritorio', {
+    estado: 'a_presupuestar',
+    pago: 15_000_000,
+    opciones: [
+      opcion('Solo el escritorio de Alan', SOLO_ALAN),
+      opcion('Los 2 escritorios', LOS_DOS),
+    ],
+  });
+
+  await abrirLaFicha(page, id, 'Escritorio');
+  await page.getByRole('button', { name: 'Mandé el presupuesto' }).click();
+
+  await expect
+    .poll(async () => (await leerProyecto(sesion, 'Escritorio'))?.estado, CARGA)
+    .toBe('presupuesto_enviado');
+  await expect(page.getByRole('button', { name: 'Lo aprobó: pasar a Proyectos' })).toBeVisible();
+  await expect(page.getByLabel('Cuánto presupuestaste')).toHaveCount(0);
+  expect((await leerProyecto(sesion, 'Escritorio'))?.presupuesto_centavos).toBeNull();
+});
+
 test('la seña sale del porcentaje del taller, descuenta lo cobrado en la visita, y con uno propio cambia', async ({
   page,
 }) => {

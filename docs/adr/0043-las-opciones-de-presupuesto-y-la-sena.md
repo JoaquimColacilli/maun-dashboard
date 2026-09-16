@@ -128,6 +128,28 @@ relevamiento técnico» es una resta sobre lo que ya hay.
 **No tiene gemela en SQL y no la necesita**, como `resumenDelMes` y `sueldoDelMes`: nada en la base
 consume la seña. La base guarda los dos porcentajes y su rango, nada más.
 
+### 6. Ninguna pantalla ofrece escribir un presupuesto que se va a descartar
+
+La base garantiza el número, pero una pantalla que deja tipear un importe que después la base ignora
+es un segundo camino a medias: no cambia el dato y confunde cuando pasa. El criterio es el del
+formulario: **con opciones vivas, no hay campo de presupuesto**. Había dos lugares más que lo ofrecían.
+
+- **El pasaje** (`/proyectos/:id/aprobar`) pedía «Presupuesto aprobado» como campo obligatorio. Con
+  opciones, en su lugar pregunta **qué opción aprobó**, con la aprobada ya elegida si la hay, y el
+  presupuesto y el saldo salen de la elegida. Sin elegir no deja pasar, como antes no dejaba pasar sin
+  importe.
+  - **Si la elegida es la que ya estaba aprobada, el guardado no manda las opciones**: es un paso que
+    solo mueve el estado y, sin la clave, la base no las toca.
+  - **Si elige otra, la aprueba en el mismo guardado** (`aprobacionDeUnaOpcion`, la misma que usa la
+    ficha): un solo ítem en la cola. Aprobarla antes con un guardado aparte dejaría la opción aprobada
+    aunque después toque «Volver sin aprobar», que es justo lo que ese botón promete que no pasa.
+- **«Mandé el presupuesto»** abría un formulario con «Cuánto presupuestaste». Con opciones cambia de
+  etapa directo, sin pedir el importe: lo que mandó son las opciones. Este no estaba en la objeción que
+  dejé abierta; apareció buscando en el código todo lo que escribe `presupuesto_centavos`.
+
+Los demás caminos que escriben esa columna mandan el valor que ya tiene la fila
+(`datosActualesDelProyecto`) y no le ofrecen a nadie escribirlo.
+
 ## Por qué un porcentaje y no un monto
 
 Es la única parte donde el pedido se puede leer de dos maneras, y se discutió antes de escribir código.
@@ -172,6 +194,12 @@ y escrita por la misma función, y que la seña pase a ser el primer tramo en ve
   viejo no borra la seña propia de un trabajo.
 - **`MN009` es un código nuevo**, y se suma a la tabla del ADR 0010. Ya no se reintenta sin tocar nada,
   porque `esRechazoDeNegocio` matchea `MN\d{3}`.
+- **En el pasaje, sin presupuesto el saldo dice «—» y no «$ 0»**, con opciones y sin ellas. Es la regla
+  del resto de la app para un trabajo sin presupuesto (ADR 0020), y con opciones sin elegir un «$ 0»
+  diría que no queda nada por cobrar.
+- **Si al pasar falta algo, el foco va a lo que falta**: la primera opción, o el campo del importe. El
+  botón está al final del formulario y en el celular el aviso quedaba fuera de la pantalla: tocar
+  «Pasar a Proyectos» parecía no hacer nada.
 
 ## Objeciones
 
@@ -192,13 +220,17 @@ y escrita por la misma función, y que la seña pase a ser el primer tramo en ve
   (PostgREST directo, un script, un bundle raro). Los tests lo fuerzan con `set constraints all
 immediate`, que es un camino que la app no recorre nunca. Es una garantía probada, pero probada de
   costado.
-- **El pasaje de un contacto con opciones ignora en silencio el presupuesto que se escriba ahí.**
-  `/proyectos/:id/aprobar` pide el presupuesto aprobado como campo obligatorio (ADR 0019) y manda
-  `presupuesto_centavos`. Si ese contacto ya tiene opciones, la base lo deriva igual de la aprobada y
-  lo tipeado no queda. En el uso normal el campo viene precargado con el presupuesto actual, que es
-  justamente el de la opción aprobada, así que coinciden y no se nota; pero si alguien lo edita ahí, el
-  cambio se pierde sin avisar. Lo que corresponde es que esa pantalla muestre las opciones en vez del
-  campo cuando las hay. No lo hice en este paso, y es lo segundo a revisar.
+- **Si el cliente aprueba un importe que no es el de ninguna opción, el pasaje no deja escribirlo.**
+  Pasa cuando se negocia un descuento al aprobar. La regla del punto 6 lo manda a corregir la opción
+  antes de pasar (la ayuda debajo de las opciones tiene el enlace al formulario), y a volver después.
+  Es un rodeo, no un callejón, y no forcé nada para evitarlo: dejar editar el importe de la elegida ahí
+  mismo sería otra forma de escribir una opción, fuera del formulario. Si el rodeo resulta frecuente,
+  eso es lo que habría que hablar.
+- **En la ficha de un contacto no hay un camino a la vista para cargar la primera opción.** Las
+  opciones se cargan en el formulario grande, y desde la ficha del contacto el único enlace a ese
+  formulario dice «Cargar otro pago o un gasto»; la sección de opciones de la ficha no aparece mientras
+  no haya ninguna. En la ficha de una obra está «Editar». Es justo la etapa en la que él arma las
+  variantes, así que es probable que no la encuentre sola.
 - **El `23505` del índice lo destapó el e2e en el celular, después de pasar dos veces en pgTAP y una
   en escritorio.** El orden dentro de un upsert es azar, así que el mismo código fallaba o no según la
   corrida: el peor tipo de bug. El test que lo cubre ahora **no manda en el pedido la opción que
