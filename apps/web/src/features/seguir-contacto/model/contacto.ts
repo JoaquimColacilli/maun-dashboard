@@ -171,6 +171,7 @@ const DATOS_DE_UN_CONTACTO_NUEVO: DatosDeProyecto = {
   descripcion: '',
   estado: 'contacto',
   presupuesto_centavos: null,
+  sena_bp: null,
   forma_pago: null,
   comprobante: 'sin_comprobante',
   fecha_visita: null,

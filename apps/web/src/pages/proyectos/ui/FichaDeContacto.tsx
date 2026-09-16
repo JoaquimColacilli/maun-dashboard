@@ -3,12 +3,16 @@ import { Link, useNavigate } from 'react-router';
 
 import { AccionesDeContacto, rutaDelCliente } from '@/entities/cliente';
 import {
+  BloqueDeLaSena,
   EstadoBadge,
   gastosDelProyecto,
+  opcionesDelProyecto,
   pagosDelProyecto,
   RUTA_DE_SEGUIMIENTO,
   rutaDeCierre,
   rutaDeEdicion,
+  senaDelProyecto,
+  senaDelTrabajo,
   situacionDelContacto,
   ultimasActividades,
   yaSeRelevo,
@@ -17,7 +21,11 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
-import { BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
+import {
+  BorradoDelProyecto,
+  NotasDelProyecto,
+  OpcionesDelTrabajo,
+} from '@/features/editar-proyecto';
 import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
 import { fechaLarga, formatearPesos, hoyLocal, relativa, useAvisosDelProyecto } from '@/shared/lib';
 import { Button, ConSalida, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
@@ -139,9 +147,17 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             etapa={etapa}
             situacion={situacion}
             cobrado={resumen.cobrado}
+            conOpciones={opcionesDelProyecto(replica, proyecto.id).length > 0}
             alAgendar={() => {
               setEditando('visita');
             }}
+          />
+
+          <OpcionesDelTrabajo proyecto={proyecto} ofreceCargarLaPrimera />
+
+          <BloqueDeLaSena
+            sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
+            propia={senaDelProyecto(proyecto) !== null}
           />
 
           <section aria-label="Datos del contacto">

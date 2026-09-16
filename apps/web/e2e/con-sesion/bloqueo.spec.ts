@@ -115,6 +115,47 @@ async function ventanasAbiertas(): Promise<number> {
   return (await alcance.clients.matchAll({ type: 'window', includeUncontrolled: true })).length;
 }
 
+type ConValidaciones = typeof globalThis & { validacionesDeLaSesion: number };
+
+async function retenerLaValidacionDeLaSesion(page: Page): Promise<() => void> {
+  let soltar: () => void = () => undefined;
+  const retenida = new Promise<void>((resolver) => {
+    soltar = resolver;
+  });
+  await page.route('**/auth/v1/.well-known/jwks.json', async (ruta) => {
+    await retenida;
+    await ruta.continue().catch(() => undefined);
+  });
+  await page.addInitScript(() => {
+    const alcance = globalThis as ConValidaciones;
+    const subtle = crypto.subtle;
+    const verificar = subtle.verify.bind(subtle);
+    alcance.validacionesDeLaSesion = 0;
+    subtle.verify = (...argumentos) =>
+      verificar(...argumentos).finally(() => {
+        alcance.validacionesDeLaSesion += 1;
+      });
+  });
+  return soltar;
+}
+
+async function validacionesDeLaSesion(page: Page): Promise<number> {
+  return page.evaluate(() => (globalThis as ConValidaciones).validacionesDeLaSesion);
+}
+
+async function dejarQueLaPantallaReaccione(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((listo) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setTimeout(listo, 0);
+          });
+        });
+      }),
+  );
+}
+
 test.describe('el bloqueo con huella, en el celular', () => {
   test.skip(({ isMobile }) => !isMobile, 'el bloqueo es solo del celular');
 
@@ -174,17 +215,25 @@ test.describe('el bloqueo con huella, en el celular', () => {
     await context.setOffline(false);
   });
 
-  test('«Entrar con otra cuenta» con la cola vacía cierra la sesión y lleva al acceso', async ({
+  test('«Entrar con otra cuenta» con la cola vacía cierra la sesión y lleva al acceso, aunque la validación de la sesión conteste después del cierre', async ({
     page,
   }) => {
+    const soltarLaValidacion = await retenerLaValidacionDeLaSesion(page);
     await page.route('**/auth/v1/logout**', (ruta) => ruta.fulfill({ status: 204 }));
     await bloquearYReabrir(page, false);
     await expect(page.getByLabel('Contraseña', { exact: true })).toBeVisible(CARGA_DEL_TALLER);
+    expect(await validacionesDeLaSesion(page)).toBe(0);
 
     await page.getByRole('button', { name: 'Entrar con otra cuenta' }).click();
-
     await expect(page).toHaveURL(/\/acceso$/, CARGA_DEL_TALLER);
+
+    soltarLaValidacion();
+    await expect.poll(() => validacionesDeLaSesion(page), CARGA_DEL_TALLER).toBe(1);
+    await dejarQueLaPantallaReaccione(page);
+
+    await expect(page).toHaveURL(/\/acceso$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Entrá al taller');
+    await expect(page.getByText('No pudimos leer tus datos')).toHaveCount(0);
     expect(await marcaDeBloqueo(page)).toBeNull();
   });
 

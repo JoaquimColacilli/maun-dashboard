@@ -1,9 +1,11 @@
 # 0031. Ninguna pantalla de sesión encierra
 
-- Estado: aceptada
+- Estado: aceptada, corregida
 - Fecha: 2026-09-14
 - Completa al [0023](0023-sesion-bloqueo-con-huella-y-passkeys.md) y al
   [0012](0012-acceso-sesion-y-cola-de-salida.md).
+- Corregido por el [0044](0044-la-validacion-tardia-no-reabre-la-sesion.md): la validación que contesta
+  después de un cierre ya no manda.
 
 ## Contexto
 
@@ -56,6 +58,9 @@ señal del taller, que conecta y no contesta, la guarda se quedaba en el skeleto
 sesión espera `TOPE_PARA_VALIDAR_LA_SESION_MS` (10 s) y, si todavía no sabe, usa la sesión guardada
 en el dispositivo (`claimsGuardados`): es el mismo escalón que el ADR 0012 ya usa sin red. Si la
 validación contesta después, manda ella: una sesión que ya no sirve sale al acceso.
+
+- **Corregido por el ADR 0044.** Si en el medio llegó un cierre, la validación ya no manda: contestaba
+  con la sesión recién cerrada y la volvía a abrir, y la app quedaba en «No pudimos leer tus datos».
 
 **«Trayendo los datos del taller».** Solo pasa la primera vez en un dispositivo, sin réplica guardada:
 `bootstrap()` no tiene tiempo de espera y la guarda no tenía otra salida que cerrar la app. Pasados

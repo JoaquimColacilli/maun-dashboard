@@ -120,7 +120,7 @@ export {
   RUTA_DE_SEGUIMIENTO,
 } from './rutas';
 export { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from './tesoros';
-export { formatearPorcentaje, parsearPorcentaje } from './porcentaje';
+export { formatearPorcentaje, parsearPorcentaje, SENA_MAXIMA_BP } from './porcentaje';
 export {
   anotarAviso,
   avisosAnotados,

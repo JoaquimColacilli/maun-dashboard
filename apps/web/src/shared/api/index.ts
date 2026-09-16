@@ -127,6 +127,7 @@ export {
   type FilaDe,
   type GastoParaGuardar,
   type MovimientoNuevo,
+  type OpcionParaGuardar,
   type PagoParaGuardar,
   type PedidoDeLiquidacion,
   type PedidoDeReversion,

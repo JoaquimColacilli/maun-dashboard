@@ -15,13 +15,13 @@ update public.movimientos set deleted_at = now() where id = 'aaaaaaaa-0000-7000-
 
 select is(
   (select array_agg(k order by k) from jsonb_object_keys(public.bootstrap()) as k),
-  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'gastos', 'household_members', 'households', 'movimientos', 'pagos', 'proyectos'],
+  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'gastos', 'household_members', 'households', 'movimientos', 'opciones_de_presupuesto', 'pagos', 'proyectos'],
   'bootstrap() trae el cursor y todas las tablas sincronizables'
 );
 
 select is(
   (select array_agg(k order by k) from jsonb_object_keys(public.delta(now())) as k),
-  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'gastos', 'household_members', 'households', 'movimientos', 'pagos', 'proyectos'],
+  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'gastos', 'household_members', 'households', 'movimientos', 'opciones_de_presupuesto', 'pagos', 'proyectos'],
   'delta() trae las mismas claves que bootstrap()'
 );
 

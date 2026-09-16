@@ -34,7 +34,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0028](0028-la-huella-se-pide-cada-vez-que-se-sale.md)          | La huella se pide cada vez que se sale                       | Aceptada, corregida  |
 | [0029](0029-el-estado-se-cambia-desde-la-ficha.md)              | El estado se cambia desde la ficha, con acciones             | Aceptada             |
 | [0030](0030-un-guardado-un-aviso.md)                            | Un guardado, un aviso: esperar el turno no es sin señal      | Aceptada             |
-| [0031](0031-ninguna-pantalla-de-sesion-encierra.md)             | Ninguna pantalla de sesión encierra                          | Aceptada             |
+| [0031](0031-ninguna-pantalla-de-sesion-encierra.md)             | Ninguna pantalla de sesión encierra                          | Aceptada, corregida  |
 | [0032](0032-una-sola-ceremonia-de-webauthn-por-vez.md)          | Una sola ceremonia de WebAuthn por vez                       | Aceptada             |
 | [0033](0033-filas-de-botones.md)                                | Filas de botones: entran todos o bajan todos                 | Aceptada             |
 | [0034](0034-la-agenda-calcula-lo-que-sale-de-los-trabajos.md)   | La agenda calcula lo que sale de los trabajos                | Aceptada             |
@@ -46,3 +46,5 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0040](0040-preguntar-antes-de-descartar.md)                    | Un formulario en hoja pregunta antes de descartar            | Aceptada             |
 | [0041](0041-la-version-y-las-novedades.md)                      | La versión es una fecha y las novedades salen de un archivo  | Aceptada             |
 | [0042](0042-lo-hecho-de-los-trabajos-y-las-marcas.md)           | Lo hecho de los trabajos se queda; sus marcas son columnas   | Aceptada             |
+| [0043](0043-las-opciones-de-presupuesto-y-la-sena.md)           | Las opciones de presupuesto y la seña como porcentaje        | Aceptada             |
+| [0044](0044-la-validacion-tardia-no-reabre-la-sesion.md)        | La validación que llega tarde no reabre la sesión            | Aceptada             |

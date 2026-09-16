@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
 import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
+  BloqueDeLaSena,
   COMPROBANTE,
   despieceDelProyecto,
   DistribucionDespiece,
@@ -18,11 +19,18 @@ import {
   rutaDeCierre,
   rutaDeCobro,
   rutaDeEdicion,
+  senaDelProyecto,
+  senaDelTrabajo,
   useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
-import { AvanceDeLaObra, BorradoDelProyecto, NotasDelProyecto } from '@/features/editar-proyecto';
+import {
+  AvanceDeLaObra,
+  BorradoDelProyecto,
+  NotasDelProyecto,
+  OpcionesDelTrabajo,
+} from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
@@ -239,6 +247,15 @@ export function ProyectoFichaPage() {
           </div>
         </dl>
       </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2 lg:gap-x-11">
+        <BloqueDeLaSena
+          sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
+          propia={senaDelProyecto(proyecto) !== null}
+        />
+      </div>
+
+      <OpcionesDelTrabajo proyecto={proyecto} />
 
       <AvanceDeLaObra resumen={resumen} hoy={hoy} />
 

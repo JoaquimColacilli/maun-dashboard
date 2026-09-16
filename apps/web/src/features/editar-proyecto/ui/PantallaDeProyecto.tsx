@@ -19,7 +19,10 @@ import {
   gastosDelProyecto,
   hijosDelProyecto,
   MUTACION_DE_PROYECTO,
+  opcionesDelProyecto,
+  opcionVacia,
   pagosDelProyecto,
+  presupuestoDeLasOpciones,
   filaRevertida,
   MUTACION_DE_REVERSION,
   pedidoDeGuardado,
@@ -43,6 +46,7 @@ import {
 } from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput } from '@/shared/ui';
 
+import { FilasDeOpciones } from './FilasDeOpciones';
 import { FilasDinamicas } from './FilasDinamicas';
 
 const FECHA_ALINEADA = '@sm/datos:row-span-3 @sm/datos:grid @sm/datos:grid-rows-subgrid';
@@ -57,12 +61,14 @@ export interface PantallaDeProyectoProps {
   proyectoId?: string;
   clienteInicial?: string;
   entregaInicial?: string;
+  agregarUnaOpcion?: boolean;
 }
 
 export function PantallaDeProyecto({
   proyectoId,
   clienteInicial,
   entregaInicial,
+  agregarUnaOpcion = false,
 }: PantallaDeProyectoProps) {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
@@ -80,6 +86,8 @@ export function PantallaDeProyecto({
     version: proyecto?.version ?? null,
     pagos: proyectoId === undefined ? [] : pagosDelProyecto(replica, proyectoId).map((p) => p.id),
     gastos: proyectoId === undefined ? [] : gastosDelProyecto(replica, proyectoId).map((g) => g.id),
+    opciones:
+      proyectoId === undefined ? [] : opcionesDelProyecto(replica, proyectoId).map((o) => o.id),
   });
 
   const guardar = useMutation({
@@ -105,6 +113,7 @@ export function PantallaDeProyecto({
       proyecto,
       proyectoId === undefined ? [] : pagosDelProyecto(replica, proyectoId),
       proyectoId === undefined ? [] : gastosDelProyecto(replica, proyectoId),
+      proyectoId === undefined ? [] : opcionesDelProyecto(replica, proyectoId),
       {
         clienteId: clienteDeArranque?.id,
         comprobante:
@@ -120,6 +129,24 @@ export function PantallaDeProyecto({
 
   const pagos = useFieldArray({ control, name: 'pagos', keyName: 'clave' });
   const gastos = useFieldArray({ control, name: 'gastos', keyName: 'clave' });
+  const opciones = useFieldArray({ control, name: 'opciones', keyName: 'clave' });
+  const { append: agregarOpcion } = opciones;
+  const [agregarLaPrimeraOpcion] = useState(
+    () =>
+      agregarUnaOpcion &&
+      proyectoId !== undefined &&
+      opcionesDelProyecto(replica, proyectoId).length === 0,
+  );
+
+  useEffect(() => {
+    if (!agregarLaPrimeraOpcion) return;
+    const cuadro = requestAnimationFrame(() => {
+      agregarOpcion(opcionVacia(uuidv7()));
+    });
+    return () => {
+      cancelAnimationFrame(cuadro);
+    };
+  }, [agregarLaPrimeraOpcion, agregarOpcion]);
 
   const clienteId = useWatch({ control, name: 'cliente_id' });
   const inicio = useWatch({ control, name: 'fecha_inicio' });
@@ -128,6 +155,7 @@ export function PantallaDeProyecto({
   const formaDePago = useWatch({ control, name: 'forma_pago' });
   const filasDePagos = useWatch({ control, name: 'pagos' });
   const filasDeGastos = useWatch({ control, name: 'gastos' });
+  const filasDeOpciones = useWatch({ control, name: 'opciones' });
 
   const cliente = clientes.find((fila) => fila.id === clienteId);
   const [entregaAuto, setEntregaAuto] = useState(
@@ -154,9 +182,13 @@ export function PantallaDeProyecto({
       ? ESTADOS_EN_ORDEN.filter((estado) => faseDe(estado) === 'activos')
       : estadosDisponibles(proyecto.estado);
 
+  const hayOpciones = filasDeOpciones.length > 0;
+  const presupuestoEfectivo = hayOpciones ? presupuestoDeLasOpciones(filasDeOpciones) : presupuesto;
+
   const totalCobrado = totalDeLasFilas(filasDePagos);
   const totalGastos = totalDeLasFilas(filasDeGastos);
-  const saldo = presupuesto === null ? null : Math.max(0, presupuesto - totalCobrado);
+  const saldo =
+    presupuestoEfectivo === null ? null : Math.max(0, presupuestoEfectivo - totalCobrado);
   const neta = totalCobrado - totalGastos;
 
   function reabrirParaEditar(fila: NonNullable<typeof proyecto>): void {
@@ -181,6 +213,7 @@ export function PantallaDeProyecto({
     const pedido = pedidoDeGuardado(alAbrir.current.id, alAbrir.current.version, valores, {
       pagos: alAbrir.current.pagos,
       gastos: alAbrir.current.gastos,
+      opciones: alAbrir.current.opciones,
     });
 
     setRechazo(null);
@@ -265,27 +298,38 @@ export function PantallaDeProyecto({
               <div
                 className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
                   errors.presupuesto ? 'border-alerta' : 'border-border'
-                }`}
+                } ${hayOpciones ? 'bg-surface' : ''}`}
               >
                 <span aria-hidden className="text-money-lg text-text-3">
                   $
                 </span>
-                <Controller
-                  control={control}
-                  name="presupuesto"
-                  render={({ field }) => (
-                    <MoneyInput
-                      ref={field.ref}
-                      name={field.name}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      id={`${idCampos}-presupuesto`}
-                      placeholder="0"
-                      className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
-                    />
-                  )}
-                />
+                {hayOpciones ? (
+                  <output
+                    id={`${idCampos}-presupuesto`}
+                    className="min-w-0 flex-1 text-money-lg font-semibold text-text-2"
+                  >
+                    {presupuestoEfectivo === null
+                      ? 'Sin definir'
+                      : formatearPesos(presupuestoEfectivo)}
+                  </output>
+                ) : (
+                  <Controller
+                    control={control}
+                    name="presupuesto"
+                    render={({ field }) => (
+                      <MoneyInput
+                        ref={field.ref}
+                        name={field.name}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        id={`${idCampos}-presupuesto`}
+                        placeholder="0"
+                        className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+                      />
+                    )}
+                  />
+                )}
               </div>
               {errors.presupuesto ? (
                 <span role="alert" className="text-label font-medium text-alerta">
@@ -293,10 +337,21 @@ export function PantallaDeProyecto({
                 </span>
               ) : (
                 <span className="text-meta text-text-3">
-                  Dejalo vacío mientras no esté presupuestado.
+                  {hayOpciones
+                    ? 'Sale de la opción que tildes, abajo. Para escribirlo a mano, sacá las opciones.'
+                    : 'Dejalo vacío mientras no esté presupuestado.'}
                 </span>
               )}
             </div>
+
+            <Campo
+              {...register('sena')}
+              etiqueta="Seña propia (%)"
+              inputMode="decimal"
+              placeholder="La del taller"
+              ayuda="Dejalo vacío para pedir la seña de siempre. Completalo solo si a este le pedís otra."
+              error={errors.sena?.message}
+            />
 
             <fieldset className="flex flex-col gap-1.5">
               <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
@@ -475,6 +530,13 @@ export function PantallaDeProyecto({
                 </p>
               </div>
             )}
+            <FilasDeOpciones
+              control={control}
+              register={register}
+              errores={errors}
+              campos={opciones}
+              bloqueado={false}
+            />
             <FilasDinamicas
               lista="pagos"
               titulo="Pagos recibidos"
@@ -520,7 +582,7 @@ export function PantallaDeProyecto({
             <dl className="grid w-full grid-cols-2 gap-x-4 gap-y-1 tabular-nums @min-[21rem]/barra:flex @min-[21rem]/barra:w-auto @min-[21rem]/barra:min-w-[210px] @min-[21rem]/barra:flex-1 md:gap-6 lg:gap-8">
               <Total
                 etiqueta="Presupuesto"
-                valor={presupuesto === null ? '—' : formatearPesos(presupuesto)}
+                valor={presupuestoEfectivo === null ? '—' : formatearPesos(presupuestoEfectivo)}
               />
               <Total etiqueta="Cobrado" valor={formatearPesos(totalCobrado)} tono="text-hogar" />
               <Total etiqueta="Saldo" valor={saldo === null ? '—' : formatearPesos(saldo)} />

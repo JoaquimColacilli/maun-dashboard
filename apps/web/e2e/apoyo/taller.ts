@@ -115,6 +115,7 @@ export interface FilaDeProyecto {
   estado: string;
   version: number;
   presupuesto_centavos: number | null;
+  sena_bp: number | null;
   fecha_entrega: string | null;
   visita_hecha: boolean;
   visita_importante: boolean;
@@ -357,7 +358,7 @@ export async function leerProyecto(
 ): Promise<FilaDeProyecto | undefined> {
   const filas = (await pedir(
     entorno,
-    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos,fecha_entrega,visita_hecha,visita_importante,entrega_importante,presupuesto_importante&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
+    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos,sena_bp,fecha_entrega,visita_hecha,visita_importante,entrega_importante,presupuesto_importante&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
     { accessToken },
   )) as FilaDeProyecto[];
   return filas[0];
@@ -546,7 +547,12 @@ export async function ajustarTaller(
 
 export async function guardarProyectoPorRpc(
   { entorno, accessToken }: SesionDePrueba,
-  pedido: { proyecto: Record<string, unknown>; pagos: unknown[]; gastos: unknown[] },
+  pedido: {
+    proyecto: Record<string, unknown>;
+    pagos: unknown[];
+    gastos: unknown[];
+    opciones?: unknown[];
+  },
 ): Promise<unknown> {
   return pedir(entorno, '/rest/v1/rpc/guardar_proyecto', {
     method: 'POST',
@@ -555,8 +561,27 @@ export async function guardarProyectoPorRpc(
       p_proyecto: pedido.proyecto,
       p_pagos: pedido.pagos,
       p_gastos: pedido.gastos,
+      p_opciones: pedido.opciones ?? null,
     }),
   });
+}
+
+export interface FilaDeOpcion {
+  id: string;
+  descripcion: string;
+  monto_centavos: number;
+  aprobada: boolean;
+}
+
+export async function opcionesDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDeOpcion[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/opciones_de_presupuesto?select=id,descripcion,monto_centavos,aprobada&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=monto_centavos`,
+    { accessToken },
+  )) as FilaDeOpcion[];
 }
 
 export interface PreferenciasDeAvisosDePrueba {

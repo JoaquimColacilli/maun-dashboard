@@ -55,6 +55,7 @@ export interface AvanceDelContactoProps {
   etapa: EtapaDeSeguimiento;
   situacion: SituacionDelContacto;
   cobrado: number;
+  conOpciones: boolean;
   alAgendar: () => void;
 }
 
@@ -63,6 +64,7 @@ export function AvanceDelContacto({
   etapa,
   situacion,
   cobrado,
+  conOpciones,
   alAgendar,
 }: AvanceDelContactoProps) {
   const navegar = useNavigate();
@@ -112,8 +114,11 @@ export function AvanceDelContacto({
         if (cobrado > 0) mover(cambiosAlPasarAPresupuestar(proyecto, hoyLocal()));
         else setFormulario('pasar-a-presupuestar');
         return;
-      case 'relevar':
       case 'presupuesto':
+        if (conOpciones) mover({ estado: 'presupuesto_enviado' });
+        else setFormulario('presupuesto');
+        return;
+      case 'relevar':
         setFormulario(paso.camino);
         return;
     }

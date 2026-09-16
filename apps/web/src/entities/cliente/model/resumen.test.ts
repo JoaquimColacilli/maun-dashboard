@@ -29,6 +29,7 @@ function proyecto(id: string, clienteId: string, extra: Partial<Proyecto> = {}):
     descripcion: '',
     estado: 'en_curso',
     presupuesto_centavos: null,
+    sena_bp: null,
     forma_pago: null,
     comprobante: 'sin_comprobante',
     fecha_visita: null,

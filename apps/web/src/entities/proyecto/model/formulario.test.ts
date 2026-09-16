@@ -13,12 +13,12 @@ import {
 describe('valoresDelFormulario', () => {
   it('un proyecto nuevo que llega desde la agenda trae la entrega estimada de ese día, y si no, arranca vacío', () => {
     expect(
-      valoresDelFormulario(undefined, [], [], { hoy: '2026-09-14', entrega: '2026-10-01' })
+      valoresDelFormulario(undefined, [], [], [], { hoy: '2026-09-14', entrega: '2026-10-01' })
         .entrega_estimada,
     ).toBe('2026-10-01');
-    expect(valoresDelFormulario(undefined, [], [], { hoy: '2026-09-14' }).entrega_estimada).toBe(
-      '',
-    );
+    expect(
+      valoresDelFormulario(undefined, [], [], [], { hoy: '2026-09-14' }).entrega_estimada,
+    ).toBe('');
   });
 });
 
@@ -26,14 +26,18 @@ describe('la visita hecha en el formulario grande', () => {
   const HOY = '2026-09-14';
 
   it('se conserva al guardar, aunque el formulario no la muestre', () => {
-    const valores = valoresDelFormulario(proyecto({ visita_hecha: true }), [], [], { hoy: HOY });
+    const valores = valoresDelFormulario(proyecto({ visita_hecha: true }), [], [], [], {
+      hoy: HOY,
+    });
     expect(valores.visita_hecha).toBe(true);
     expect(datosDelFormulario(valores, HOY).visita_hecha).toBe(true);
-    expect(valoresDelFormulario(undefined, [], [], { hoy: HOY }).visita_hecha).toBe(false);
+    expect(valoresDelFormulario(undefined, [], [], [], { hoy: HOY }).visita_hecha).toBe(false);
   });
 
   it('se apaga si la visita se mueve a un día que todavía no llegó o se borra', () => {
-    const valores = valoresDelFormulario(proyecto({ visita_hecha: true }), [], [], { hoy: HOY });
+    const valores = valoresDelFormulario(proyecto({ visita_hecha: true }), [], [], [], {
+      hoy: HOY,
+    });
     expect(datosDelFormulario({ ...valores, fecha_visita: '2026-09-20' }, HOY).visita_hecha).toBe(
       false,
     );
@@ -43,7 +47,7 @@ describe('la visita hecha en el formulario grande', () => {
   it('una fila guardada en el dispositivo antes de la columna arranca sin la visita hecha', () => {
     const vieja = proyecto();
     delete (vieja as Partial<FilaDe<'proyectos'>>).visita_hecha;
-    expect(valoresDelFormulario(vieja, [], [], { hoy: HOY }).visita_hecha).toBe(false);
+    expect(valoresDelFormulario(vieja, [], [], [], { hoy: HOY }).visita_hecha).toBe(false);
   });
 });
 
@@ -60,6 +64,7 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     descripcion: '',
     estado: 'a_presupuestar',
     presupuesto_centavos: null,
+    sena_bp: null,
     forma_pago: null,
     comprobante: 'sin_comprobante',
     fecha_visita: '2026-09-10',

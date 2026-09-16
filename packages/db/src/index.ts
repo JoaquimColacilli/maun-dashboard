@@ -139,6 +139,7 @@ export {
   type DatosDeProyecto,
   type GastoParaGuardar,
   type MovimientoNuevo,
+  type OpcionParaGuardar,
   type PagoParaGuardar,
   type PedidoDeLiquidacion,
   type PedidoDeReversion,

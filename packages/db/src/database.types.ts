@@ -18,6 +18,7 @@ export type Database = {
           meta_cocos_centavos: number;
           perdido_con_diezmo: boolean;
           perdido_con_sueldo: boolean;
+          sena_bp: number;
           sueldo_mensual_centavos: number;
           sueldo_tope_mensual: boolean;
           tasa_cocos_anual_bp: number;
@@ -33,6 +34,7 @@ export type Database = {
           meta_cocos_centavos?: number;
           perdido_con_diezmo?: boolean;
           perdido_con_sueldo?: boolean;
+          sena_bp?: number;
           sueldo_mensual_centavos?: number;
           sueldo_tope_mensual?: boolean;
           tasa_cocos_anual_bp?: number;
@@ -48,6 +50,7 @@ export type Database = {
           meta_cocos_centavos?: number;
           perdido_con_diezmo?: boolean;
           perdido_con_sueldo?: boolean;
+          sena_bp?: number;
           sueldo_mensual_centavos?: number;
           sueldo_tope_mensual?: boolean;
           tasa_cocos_anual_bp?: number;
@@ -446,6 +449,60 @@ export type Database = {
           },
         ];
       };
+      opciones_de_presupuesto: {
+        Row: {
+          aprobada: boolean;
+          created_at: string;
+          deleted_at: string | null;
+          descripcion: string;
+          household_id: string;
+          id: string;
+          monto_centavos: number;
+          proyecto_id: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          aprobada?: boolean;
+          created_at?: string;
+          deleted_at?: string | null;
+          descripcion?: string;
+          household_id?: string;
+          id?: string;
+          monto_centavos: number;
+          proyecto_id: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          aprobada?: boolean;
+          created_at?: string;
+          deleted_at?: string | null;
+          descripcion?: string;
+          household_id?: string;
+          id?: string;
+          monto_centavos?: number;
+          proyecto_id?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'opciones_de_presupuesto_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'opciones_de_presupuesto_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       pagos: {
         Row: {
           concepto: string;
@@ -544,6 +601,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -595,6 +653,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
           reapertura_sueldo_mensual?: boolean | null;
+          sena_bp?: number | null;
           titulo: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
@@ -646,6 +705,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
           reapertura_sueldo_mensual?: boolean | null;
+          sena_bp?: number | null;
           titulo?: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
@@ -761,6 +821,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -835,6 +896,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -861,7 +923,12 @@ export type Database = {
         Returns: Json;
       };
       guardar_proyecto: {
-        Args: { p_gastos: Json; p_pagos: Json; p_proyecto: Json };
+        Args: {
+          p_gastos: Json;
+          p_opciones?: Json;
+          p_pagos: Json;
+          p_proyecto: Json;
+        };
         Returns: Json;
       };
       reabrir_proyecto: {
@@ -909,6 +976,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -973,6 +1041,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
