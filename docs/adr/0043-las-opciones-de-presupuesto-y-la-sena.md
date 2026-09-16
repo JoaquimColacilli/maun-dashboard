@@ -211,6 +211,15 @@ immediate`, que es un camino que la app no recorre nunca. Es una garantía proba
 - **Una opción borrada no se puede recuperar desde la pantalla.** La baja es lógica y la fila queda,
   pero no hay un «ver las borradas». El deshacer del formulario cubre el error del momento; un borrado
   de la semana pasada, no.
+- **`bloqueo.spec.ts:177` es intermitente, y no es de este cambio.** «Entrar con otra cuenta» con la
+  cola vacía falló en dos de las cuatro corridas completas de la suite; aislado y repetido tres veces
+  sobre el mismo código, pasó dos y falló una. Son siete observaciones sobre el mismo commit: cuatro
+  en verde y tres en rojo, en un camino que este paso no toca (la pantalla de bloqueo y el cierre de
+  sesión). El modo de falla cambia de corrida en corrida —a veces la URL que no llega a `/acceso`, a
+  veces el encabezado que todavía no dice «Entrá al taller»— y tarda 5,7 s cuando falla contra 0,6 s
+  cuando pasa: es una carrera entre la navegación del cierre de sesión y la aserción. Su test hermano
+  de la línea 191 pasó 3 de 3. No lo arreglé acá porque no es de este paso; queda anotado para que el
+  próximo que lo vea en rojo no lo busque en las opciones ni en la seña.
 - **Nada se probó en un teléfono ni con un lector de pantalla de verdad**: se revisó el árbol de
   accesibilidad de Chromium y el recorrido con Tab.
 
