@@ -204,6 +204,11 @@ function Lista({ lista, todas, bloqueado, alCambiar }: ListaProps) {
             type="button"
             aria-label={lista.agregar}
             disabled={nombre.trim() === ''}
+            // Sin esto, apretar el botón le saca el foco al campo primero y lo escrito se pierde
+            // antes de que llegue el click. Además deja el cursor adentro para el ítem siguiente.
+            onMouseDown={(toque) => {
+              toque.preventDefault();
+            }}
             onClick={() => {
               agregar();
             }}

@@ -33,6 +33,12 @@ export function CampoDeNecesidad({
     items: sugerencias,
     inputValue: valor,
     selectedItem: null,
+    // Al salir del campo, downshift borra lo escrito. Acá lo escrito es lo que se va a agregar, y
+    // el botón de agregar está al lado: tocarlo saca el foco del campo y se perdía el nombre.
+    stateReducer: (estado, { type, changes }) =>
+      type === useCombobox.stateChangeTypes.InputBlur
+        ? { ...changes, inputValue: estado.inputValue }
+        : changes,
     itemToString: (entrada) => entrada?.nombre ?? '',
     onInputValueChange: ({ inputValue }) => {
       alEscribir(inputValue);
