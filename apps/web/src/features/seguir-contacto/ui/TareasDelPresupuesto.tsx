@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useId } from 'react';
 
 import {
+  CostosDeCotizar,
   marcaDeLaTarea,
   MUTACION_DE_TAREAS,
   TAREAS_DEL_PRESUPUESTO,
@@ -70,6 +71,11 @@ export function TareasDelPresupuesto({ proyecto }: TareasDelPresupuestoProps) {
                   )}
                 </span>
               </label>
+              {tarea.columna === 'presupuesto_cotizacion' && (
+                <div className="mb-1 ml-8 border-l border-hairline pl-3">
+                  <CostosDeCotizar proyecto={proyecto} />
+                </div>
+              )}
             </li>
           );
         })}

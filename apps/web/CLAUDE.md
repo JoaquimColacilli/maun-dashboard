@@ -197,6 +197,20 @@ src/
 - **La seña es un porcentaje**: `ajustes.sena_bp` (la mitad por defecto) y `proyectos.sena_bp` pisándolo. La cuenta es `calcularSena` del dominio y no tiene gemela en SQL. Leelas con `senaDelTaller` y `senaDelProyecto`, que toleran una fila guardada antes de las columnas.
 - **El campo de la seña usa `parsearPorcentaje(texto, SENA_MAXIMA_BP)`.** El tope por defecto de ese helper es el de la tasa de Cocos (1000%) y el `check` de la seña corta en 100%: sin el tope propio, un 500% pasaría el formulario y la base lo rechazaría con una violación de check.
 
+## Los costos estimados y lo que hace falta (ADR 0045)
+
+- **Los cuatro costos estimados son columnas de `proyectos` y van por su propia mutación** (`MUTACION_DE_COSTOS`, un update de esas cuatro columnas). `guardar_proyecto` no las escribe y `datosDelFormulario` no las manda: guardar el agregado no puede pisarlas. Se guardan solas con la demora de las notas y muestran su estado con `EstadoDeGuardado`.
+- **Null no es cero**: `costoGuardado` devuelve null cuando no se estimó, y el encabezado dice «3 de 4». Leelos con `costosDelProyecto`, que tolera una fila guardada antes de las columnas.
+- **Los costos estimados no alimentan el presupuesto, por ningún camino, y no ofrezcas hacerlo.** El presupuesto incluye su ganancia, que la decide él. `margenDelTrabajo` es una resta derivada y no guardada; **el margen puede ser negativo** y la pantalla lo dice.
+- **Cargar un costo no tilda «Cotizar».** Tildar es suyo.
+- **El bloque aparece una sola vez por ficha**: colgando de la tarea «Cotizar» cuando el contacto está en «a presupuestar» (como lo dibujó él) y como sección propia en cualquier otro estado. Si no, el margen desaparecería justo cuando el presupuesto existe.
+- **Los herrajes y las herramientas son una sola tabla** (`public.necesidades`), hija del agregado: se escriben por `guardar_proyecto` con el quinto parámetro, un ítem en la cola por operación (`guardadoDeLoQueHaceFalta`). **No les agregues una mutación propia.**
+- **Se cargan desde la ficha, no desde el formulario grande**, al revés que las opciones: un herraje se agrega de a uno mientras diseña. La sección está en las dos fichas y abre según el estado.
+- **El catálogo del autocompletado no es una tabla**: son los nombres distintos que ya usó, sacados de la réplica (`catalogoDelTaller`). No hay pantalla de administración y no hace falta señal. `sugerenciasParaEscribir` además saca lo que este trabajo ya tiene cargado.
+- **El botón de agregar lleva `preventDefault` en su `mousedown`.** Sin eso, apretarlo le saca el foco al combobox, downshift borra lo escrito y se agrega una fila vacía. El `stateReducer` del campo conserva lo escrito al salir, por lo mismo.
+- **Las dos listas hablan en su género** (`LISTAS_DEL_TRABAJO`): «Agregar el herraje» y «Agregar la herramienta», «Listo:» y «Lista:». No armes esos textos concatenando el singular.
+- **`BloquePlegable` es `<details>` nativo** y **`EstadoDeGuardado` es el indicador de guardado**, los dos en `shared/ui`. Si una sección de la ficha se pliega o dice «Guardando…», usá esos, no clases copiadas.
+
 ## Cobrar y liquidar (ADR 0016)
 
 - **Cobrar y dar por perdido son pantallas propias** (`/proyectos/:id/cobrar` y `/cerrar`), no un botón con un modal. **No agregues un «¿estás seguro?»**: lo que confirma es el despiece con los importes reales, y el botón dice el verbo. Reabrir sí lleva confirmación liviana, porque deshace un reparto cerrado.
@@ -324,6 +338,18 @@ src/
 - **Una réplica guardada antes de la agenda no trae `anotaciones`.** `filasDe` tolera la tabla que falta y `necesitaReconcile` pide `bootstrap()`. No subas `VERSION_CACHE` para esto: se lleva la cola.
 - `vencimiento_presupuesto` se propone al pasar a «a presupuestar» (`vencimientoPropuesto`, cinco días hábiles desde el relevamiento, o desde ese día si viene de un estimativo) y se edita en la hoja del contacto. `guardar_proyecto` lo escribe solo si viene la clave: los datos nuevos de un contacto llevan `vencimiento_presupuesto: null` explícito.
 - **En el celular la agenda no está en la barra** (decisión con el dueño, objeción en el ADR): se llega por el ícono al lado de la foto en el encabezado de Inicio y por «Hoy en la agenda», y «Anotar algo» es la primera acción del botón redondo.
+
+## Mover en la agenda y el día hora a hora (ADR 0045)
+
+- **Arrastrar un evento derivado escribe la fecha donde vive: en el trabajo.** No es un efecto colateral, es la operación. `COLUMNA_DE_LA_FECHA` dice cuál es, y el arrastre guarda por `guardadoDeUnPaso`, el mismo camino de la ficha, con su aviso y su «Deshacer». Una anotación va por `MUTACION_DE_ANOTACION`.
+- **Lo hecho no se arrastra** (`puedeArrastrarse` en el dominio). **Arrastrar mueve una sola cosa**: correr el relevamiento no corre el plazo del presupuesto, aunque la hoja del contacto sí lo haga al cambiar el día ahí. En un calendario, mover algo mueve eso.
+- **El gesto es propio, sin librería** (`useArrastreDeEventos`): puntero capturado, 4 px con el mouse y **350 ms de presión sostenida con el dedo**. Los chips arrastrables llevan `touch-action: none`, que es lo que la captura necesita; el costo es que un scroll vertical que empiece arriba de un chip no scrollea.
+- **Al soltar, el click se suprime con `preventDefault`** para que el mismo toque no abra además el día. La marca que lo suprime se pone en `pointerup`, se consume en el `click` y se limpia en el `pointerdown` siguiente: el teclado no la toca, porque no genera click.
+- **Con el teclado, agarra la barra espaciadora, no Enter**: Enter ya abre el evento y es el camino sin arrastrar, que WCAG 2.5.7 obliga a conservar. Flechas para mover, Enter o barra para soltar, Escape para cancelar. **Es la misma máquina de estados que el puntero**, en un solo hook: si agregás un camino, agregalo ahí y no al lado.
+- **Cada paso se anuncia** en el `aria-live="assertive"` de la pantalla de agenda.
+- **El día se abre hora a hora**: `DiaPorHoras` dentro de `DetalleDelDia`, con la franja de «Todo el día» arriba y los renglones de 07 a 20, que se estiran solos si algo cae afuera y se abren enteros con «Ver las demás horas». Se scrollea sola a la primera hora con algo.
+- **La entrega y la visita llevan hora opcional**; el vencimiento del presupuesto no, porque es un plazo. La hora se carga al lado de su fecha (el formulario grande y la hoja del contacto) y **si se borra la fecha, se va con ella**.
+- **La capa del día mide tres columnas** (`max(22rem, anchor-size(--grilla-del-mes width) * 3 / 7 - 12px)`): con dos, una entrega adentro de un renglón medía 216 px de ancho y 244 de alto. **La grilla del mes sigue midiendo el área de contenido entera y la capa se sigue dando vuelta sola**: eso no se toca. El `- 12px` es el margen entre la celda y la capa, y sin él el jueves se salía de la grilla.
 
 ## Avisos (ADR 0036)
 

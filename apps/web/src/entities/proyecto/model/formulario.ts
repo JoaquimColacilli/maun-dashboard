@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import {
   COLUMNAS_DE_PROYECTO,
+  horaDeLaEntrega,
+  horaDeLaVisita,
   visitaHecha,
   type BajaDeFilaHija,
   type CambiosDeProyecto,
@@ -72,10 +74,12 @@ export const esquemaDeProyecto = z.object({
   forma_pago: z.enum(FORMAS_EN_ORDEN).nullable(),
   comprobante: z.enum(COMPROBANTES_EN_ORDEN),
   fecha_visita: z.string(),
+  visita_hora: z.string(),
   visita_hecha: z.boolean(),
   ultimo_contacto: z.string(),
   fecha_inicio: z.string(),
   entrega_estimada: z.string(),
+  entrega_hora: z.string(),
   fecha_entrega: z.string(),
   direccion_entrega: texto(500),
   notas: texto(10_000),
@@ -91,6 +95,11 @@ export type FilaDeOpcion = z.infer<typeof filaDeOpcion>;
 
 function fecha(valor: string | null): string {
   return valor ?? '';
+}
+
+// La base guarda una hora como HH:MM:SS y un <input type="time"> escribe HH:MM.
+function hora(valor: string | null | undefined): string {
+  return valor === null || valor === undefined ? '' : valor.slice(0, 5);
 }
 
 function fechaOnNull(valor: string): string | null {
@@ -145,10 +154,12 @@ export function valoresDelFormulario(
       forma_pago: 'transferencia',
       comprobante: inicial.comprobante ?? 'sin_comprobante',
       fecha_visita: '',
+      visita_hora: '',
       visita_hecha: false,
       ultimo_contacto: '',
       fecha_inicio: inicial.hoy,
       entrega_estimada: inicial.entrega ?? '',
+      entrega_hora: '',
       fecha_entrega: '',
       direccion_entrega: inicial.direccion ?? '',
       notas: '',
@@ -171,10 +182,12 @@ export function valoresDelFormulario(
     forma_pago: proyecto.forma_pago,
     comprobante: proyecto.comprobante,
     fecha_visita: fecha(proyecto.fecha_visita),
+    visita_hora: hora(horaDeLaVisita(proyecto)),
     visita_hecha: visitaHecha(proyecto),
     ultimo_contacto: fecha(proyecto.ultimo_contacto),
     fecha_inicio: fecha(proyecto.fecha_inicio),
     entrega_estimada: fecha(proyecto.entrega_estimada),
+    entrega_hora: hora(horaDeLaEntrega(proyecto)),
     fecha_entrega: fecha(proyecto.fecha_entrega),
     direccion_entrega: proyecto.direccion_entrega,
     notas: proyecto.notas,
@@ -205,6 +218,7 @@ export function datosDelFormulario(
   hoy: string = hoyLocal(),
 ): DatosDeProyecto {
   const fechaVisita = fechaOnNull(valores.fecha_visita);
+  const entregaEstimada = fechaOnNull(valores.entrega_estimada);
   return {
     cliente_id: valores.cliente_id,
     titulo: valores.titulo.trim(),
@@ -219,10 +233,13 @@ export function datosDelFormulario(
     forma_pago: valores.forma_pago,
     comprobante: valores.comprobante,
     fecha_visita: fechaVisita,
+    // Una hora sin su día no quiere decir nada: si se borra la fecha, se va con ella.
+    visita_hora: fechaVisita === null ? null : fechaOnNull(valores.visita_hora),
     visita_hecha: valores.visita_hecha && fechaVisita !== null && fechaVisita <= hoy,
     ultimo_contacto: fechaOnNull(valores.ultimo_contacto),
     fecha_inicio: fechaOnNull(valores.fecha_inicio),
-    entrega_estimada: fechaOnNull(valores.entrega_estimada),
+    entrega_estimada: entregaEstimada,
+    entrega_hora: entregaEstimada === null ? null : fechaOnNull(valores.entrega_hora),
     fecha_entrega: fechaOnNull(valores.fecha_entrega),
     direccion_entrega: valores.direccion_entrega.trim(),
     notas: valores.notas.trim(),

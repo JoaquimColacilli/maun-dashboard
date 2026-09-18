@@ -50,6 +50,7 @@ export {
   type FormaDeLaMarca,
 } from './model/categorias';
 export { CaminosALosTrabajos, type CaminosALosTrabajosProps } from './ui/CaminosALosTrabajos';
+export { DiaPorHoras, type DiaPorHorasProps } from './ui/DiaPorHoras';
 export { DetalleDelDia, type AvisoDelDia, type DetalleDelDiaProps } from './ui/DetalleDelDia';
 export { FilaDeEvento, type AccionesDeLaAgenda, type FilaDeEventoProps } from './ui/FilaDeEvento';
 export { GrillaDelMes, type GrillaDelMesProps } from './ui/GrillaDelMes';
@@ -63,3 +64,12 @@ export {
 } from './ui/MarcaDeCategoria';
 export { TiraDelMes, type TiraDelMesProps } from './ui/TiraDelMes';
 export { useAccionesConFoco, type AccionesConFoco } from './ui/useAccionesConFoco';
+export {
+  ESPERA_DEL_DEDO_MS,
+  MOVIMIENTO_QUE_ARRASTRA_PX,
+  useArrastreDeEventos,
+  type AccionesDelArrastre,
+  type ArrastreEnCurso,
+  type PropsDelChip,
+  type UsoDelArrastre,
+} from './ui/useArrastreDeEventos';

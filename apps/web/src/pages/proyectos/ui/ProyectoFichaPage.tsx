@@ -5,6 +5,7 @@ import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
   BloqueDeLaSena,
   COMPROBANTE,
+  CostosDeCotizar,
   despieceDelProyecto,
   DistribucionDespiece,
   esEtapaDeSeguimiento,
@@ -28,6 +29,7 @@ import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import {
   AvanceDeLaObra,
   BorradoDelProyecto,
+  LoQueHaceFalta,
   NotasDelProyecto,
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
@@ -248,11 +250,12 @@ export function ProyectoFichaPage() {
         </dl>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2 lg:gap-x-11">
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-2 lg:gap-x-11">
         <BloqueDeLaSena
           sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
           propia={senaDelProyecto(proyecto) !== null}
         />
+        <CostosDeCotizar proyecto={proyecto} abiertoAlPrincipio={!liquidado} />
       </div>
 
       <OpcionesDelTrabajo proyecto={proyecto} />
@@ -292,6 +295,10 @@ export function ProyectoFichaPage() {
 
       <div className="grid gap-0 lg:grid-cols-2 lg:gap-x-11">
         <div className="min-w-0 lg:order-2">
+          <div className="mt-5">
+            <LoQueHaceFalta proyecto={proyecto} />
+          </div>
+
           <div className="mt-5 rounded-panel border border-hairline px-4 pt-4 pb-3.5">
             <DistribucionDespiece
               despiece={despiece}

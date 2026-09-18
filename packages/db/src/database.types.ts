@@ -449,6 +449,63 @@ export type Database = {
           },
         ];
       };
+      necesidades: {
+        Row: {
+          cantidad: number | null;
+          created_at: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          listo: boolean;
+          nombre: string;
+          proyecto_id: string;
+          tipo: Database['public']['Enums']['tipo_de_necesidad'];
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          cantidad?: number | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          listo?: boolean;
+          nombre: string;
+          proyecto_id: string;
+          tipo: Database['public']['Enums']['tipo_de_necesidad'];
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          cantidad?: number | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          listo?: boolean;
+          nombre?: string;
+          proyecto_id?: string;
+          tipo?: Database['public']['Enums']['tipo_de_necesidad'];
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'necesidades_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'necesidades_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       opciones_de_presupuesto: {
         Row: {
           aprobada: boolean;
@@ -561,6 +618,10 @@ export type Database = {
         Row: {
           cliente_id: string;
           comprobante: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos: number | null;
+          costo_flete_centavos: number | null;
+          costo_herrajes_centavos: number | null;
+          costo_madera_centavos: number | null;
           created_at: string;
           deleted_at: string | null;
           descripcion: string;
@@ -581,6 +642,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_hora: string | null;
           entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
@@ -608,11 +670,16 @@ export type Database = {
           vencimiento_presupuesto: string | null;
           version: number;
           visita_hecha: boolean;
+          visita_hora: string | null;
           visita_importante: boolean;
         };
         Insert: {
           cliente_id: string;
           comprobante?: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos?: number | null;
+          costo_flete_centavos?: number | null;
+          costo_herrajes_centavos?: number | null;
+          costo_madera_centavos?: number | null;
           created_at?: string;
           deleted_at?: string | null;
           descripcion?: string;
@@ -633,6 +700,7 @@ export type Database = {
           dist_tope_fijos_centavos?: number | null;
           dist_tope_sueldo_centavos?: number | null;
           entrega_estimada?: string | null;
+          entrega_hora?: string | null;
           entrega_importante?: boolean;
           estado?: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro?: string | null;
@@ -660,11 +728,16 @@ export type Database = {
           vencimiento_presupuesto?: string | null;
           version?: number;
           visita_hecha?: boolean;
+          visita_hora?: string | null;
           visita_importante?: boolean;
         };
         Update: {
           cliente_id?: string;
           comprobante?: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos?: number | null;
+          costo_flete_centavos?: number | null;
+          costo_herrajes_centavos?: number | null;
+          costo_madera_centavos?: number | null;
           created_at?: string;
           deleted_at?: string | null;
           descripcion?: string;
@@ -685,6 +758,7 @@ export type Database = {
           dist_tope_fijos_centavos?: number | null;
           dist_tope_sueldo_centavos?: number | null;
           entrega_estimada?: string | null;
+          entrega_hora?: string | null;
           entrega_importante?: boolean;
           estado?: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro?: string | null;
@@ -712,6 +786,7 @@ export type Database = {
           vencimiento_presupuesto?: string | null;
           version?: number;
           visita_hecha?: boolean;
+          visita_hora?: string | null;
           visita_importante?: boolean;
         };
         Relationships: [
@@ -781,6 +856,10 @@ export type Database = {
         Returns: {
           cliente_id: string;
           comprobante: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos: number | null;
+          costo_flete_centavos: number | null;
+          costo_herrajes_centavos: number | null;
+          costo_madera_centavos: number | null;
           created_at: string;
           deleted_at: string | null;
           descripcion: string;
@@ -801,6 +880,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_hora: string | null;
           entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
@@ -828,6 +908,7 @@ export type Database = {
           vencimiento_presupuesto: string | null;
           version: number;
           visita_hecha: boolean;
+          visita_hora: string | null;
           visita_importante: boolean;
         };
         SetofOptions: {
@@ -856,6 +937,10 @@ export type Database = {
         Returns: {
           cliente_id: string;
           comprobante: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos: number | null;
+          costo_flete_centavos: number | null;
+          costo_herrajes_centavos: number | null;
+          costo_madera_centavos: number | null;
           created_at: string;
           deleted_at: string | null;
           descripcion: string;
@@ -876,6 +961,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_hora: string | null;
           entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
@@ -903,6 +989,7 @@ export type Database = {
           vencimiento_presupuesto: string | null;
           version: number;
           visita_hecha: boolean;
+          visita_hora: string | null;
           visita_importante: boolean;
         };
         SetofOptions: {
@@ -925,6 +1012,7 @@ export type Database = {
       guardar_proyecto: {
         Args: {
           p_gastos: Json;
+          p_necesidades?: Json;
           p_opciones?: Json;
           p_pagos: Json;
           p_proyecto: Json;
@@ -936,6 +1024,10 @@ export type Database = {
         Returns: {
           cliente_id: string;
           comprobante: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos: number | null;
+          costo_flete_centavos: number | null;
+          costo_herrajes_centavos: number | null;
+          costo_madera_centavos: number | null;
           created_at: string;
           deleted_at: string | null;
           descripcion: string;
@@ -956,6 +1048,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_hora: string | null;
           entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
@@ -983,6 +1076,7 @@ export type Database = {
           vencimiento_presupuesto: string | null;
           version: number;
           visita_hecha: boolean;
+          visita_hora: string | null;
           visita_importante: boolean;
         };
         SetofOptions: {
@@ -1001,6 +1095,10 @@ export type Database = {
         Returns: {
           cliente_id: string;
           comprobante: Database['public']['Enums']['comprobante'];
+          costo_ayudante_centavos: number | null;
+          costo_flete_centavos: number | null;
+          costo_herrajes_centavos: number | null;
+          costo_madera_centavos: number | null;
           created_at: string;
           deleted_at: string | null;
           descripcion: string;
@@ -1021,6 +1119,7 @@ export type Database = {
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
           entrega_estimada: string | null;
+          entrega_hora: string | null;
           entrega_importante: boolean;
           estado: Database['public']['Enums']['estado_proyecto'];
           fecha_cobro: string | null;
@@ -1048,6 +1147,7 @@ export type Database = {
           vencimiento_presupuesto: string | null;
           version: number;
           visita_hecha: boolean;
+          visita_hora: string | null;
           visita_importante: boolean;
         };
         SetofOptions: {
@@ -1089,6 +1189,7 @@ export type Database = {
       origen_contacto: 'referido' | 'redes' | 'volvio' | 'cartel' | 'otro';
       rol_household: 'titular' | 'miembro';
       tesoro: 'hogar' | 'maun' | 'diezmo' | 'cocos';
+      tipo_de_necesidad: 'herraje' | 'herramienta';
       tipo_movimiento:
         'ingreso' | 'gasto' | 'transferencia' | 'pago_diezmo' | 'aporte_cocos' | 'ajuste';
     };
@@ -1230,6 +1331,7 @@ export const Constants = {
       origen_contacto: ['referido', 'redes', 'volvio', 'cartel', 'otro'],
       rol_household: ['titular', 'miembro'],
       tesoro: ['hogar', 'maun', 'diezmo', 'cocos'],
+      tipo_de_necesidad: ['herraje', 'herramienta'],
       tipo_movimiento: [
         'ingreso',
         'gasto',

@@ -1,7 +1,7 @@
 import type { EventoDeLaAgenda, EventoDerivado, EventoPropio } from '@maun/domain';
 import { Link } from 'react-router';
 
-import { rutaDelCliente, rutaDelProyecto } from '@/shared/lib';
+import { rutaDelCliente, rutaDelProyecto, useAnchoDePantalla } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
 import {
@@ -25,6 +25,7 @@ export interface FilaDeEventoProps {
   hoy: string;
   acciones: AccionesDeLaAgenda;
   enElDia?: boolean;
+  sinBorde?: boolean;
   alAbrirElDia?: (fecha: string) => void;
 }
 
@@ -72,7 +73,7 @@ function Contenido({
   return (
     <>
       <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        {evento.clase === 'propia' && evento.hora !== null && (
+        {evento.hora !== null && (
           <span className="text-label font-semibold text-text-2 tabular-nums">{evento.hora}</span>
         )}
         {evento.clase === 'derivada' && (
@@ -154,13 +155,16 @@ function FilaDerivada({
   hoy,
   acciones,
   enElDia,
+  sinBorde,
 }: {
   evento: EventoDerivado;
   hoy: string;
   acciones: AccionesDeLaAgenda;
   enElDia: boolean;
+  sinBorde: boolean;
 }) {
   const derivada = DERIVADA[evento.categoria];
+  const conGrilla = useAnchoDePantalla() !== 'movil';
   const abrir = () => {
     acciones.alAbrirTrabajo(evento);
   };
@@ -169,7 +173,7 @@ function FilaDerivada({
     <li
       data-derivada={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >
@@ -189,7 +193,10 @@ function FilaDerivada({
             <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-field bg-surface px-2.5 py-2 text-meta leading-snug text-text-2">
               <Icono nombre="link-2" tamano={14} />
               <span className="min-w-[10rem] flex-1">
-                {derivada.origen}. Para moverla, cambiá la fecha ahí.
+                {derivada.origen}.{' '}
+                {conGrilla
+                  ? 'Arrastrala en el mes para moverla, o cambiá la fecha ahí.'
+                  : 'Para moverla, cambiá la fecha ahí.'}
               </span>
               <Button variant="secundario" size="chico" onClick={abrir}>
                 {derivada.abrir}
@@ -226,17 +233,26 @@ export function FilaDeEvento({
   hoy,
   acciones,
   enElDia = false,
+  sinBorde = false,
   alAbrirElDia,
 }: FilaDeEventoProps) {
   if (evento.clase === 'derivada') {
-    return <FilaDerivada evento={evento} hoy={hoy} acciones={acciones} enElDia={enElDia} />;
+    return (
+      <FilaDerivada
+        evento={evento}
+        hoy={hoy}
+        acciones={acciones}
+        enElDia={enElDia}
+        sinBorde={sinBorde}
+      />
+    );
   }
 
   return (
     <li
       data-anotacion={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >

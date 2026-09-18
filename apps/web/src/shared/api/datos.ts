@@ -14,6 +14,7 @@ import {
   guardarCambiosDeMovimiento,
   guardarCambiosDeProyecto,
   guardarClienteNuevo,
+  guardarCostosEstimados,
   guardarMarcasDeLaAgenda,
   guardarMovimiento,
   guardarNombreDelTaller,
@@ -29,6 +30,7 @@ import {
   type CambiosDeAjustes,
   type CambiosDeAnotacion,
   type CambiosDeCliente,
+  type CambiosDeCostos,
   type CambiosDeMarcas,
   type CambiosDeMovimiento,
   type CambiosDeProyecto,
@@ -132,6 +134,13 @@ export async function marcarTareasDelPresupuesto(
   cambios: CambiosDeTareas,
 ): Promise<FilaDe<'proyectos'>> {
   return guardarTareasDelPresupuesto(clienteMaun(), id, cambios);
+}
+
+export async function guardarLosCostosEstimados(
+  id: string,
+  cambios: CambiosDeCostos,
+): Promise<FilaDe<'proyectos'>> {
+  return guardarCostosEstimados(clienteMaun(), id, cambios);
 }
 
 export async function marcarEnLaAgenda(

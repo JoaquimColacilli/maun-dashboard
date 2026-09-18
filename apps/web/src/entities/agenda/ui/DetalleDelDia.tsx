@@ -1,19 +1,18 @@
 import type { EventoDeLaAgenda } from '@maun/domain';
-import { useId } from 'react';
 
 import type { AccionDelAviso } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 import {
   etiquetaDelDia,
-  estaHecha,
   mesEnPalabras,
   numeroDelDia,
   resumenDelDia,
   diaEnPalabras,
 } from '../model/calendario';
 import { CaminosALosTrabajos } from './CaminosALosTrabajos';
-import { FilaDeEvento, type AccionesDeLaAgenda } from './FilaDeEvento';
+import { DiaPorHoras } from './DiaPorHoras';
+import { type AccionesDeLaAgenda } from './FilaDeEvento';
 import { useAccionesConFoco } from './useAccionesConFoco';
 
 export interface AvisoDelDia {
@@ -32,6 +31,7 @@ export interface DetalleDelDiaProps {
   conEncabezado?: boolean;
   aviso?: AvisoDelDia | null;
   alDescartarElAviso?: () => void;
+  ahora?: Date;
 }
 
 export function DetalleDelDia({
@@ -45,13 +45,11 @@ export function DetalleDelDia({
   conEncabezado = true,
   aviso = null,
   alDescartarElAviso,
+  ahora,
 }: DetalleDelDiaProps) {
   const accionDelAviso = aviso?.accion ?? null;
   const etiqueta = etiquetaDelDia(fecha, hoy);
-  const idDeLoHecho = useId();
   const { raiz, acciones: accionesConFoco } = useAccionesConFoco<HTMLDivElement>(acciones);
-  const pendientes = eventos.filter((evento) => !estaHecha(evento));
-  const hechas = eventos.filter((evento) => estaHecha(evento));
 
   return (
     <div ref={raiz} className="flex min-h-0 flex-1 flex-col">
@@ -85,7 +83,7 @@ export function DetalleDelDia({
         </header>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 md:px-5.5">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 md:px-5.5">
         {!conEncabezado && <p className="pt-3 text-label text-text-2">{resumenDelDia(eventos)}</p>}
         {eventos.length === 0 ? (
           <div className="flex flex-col gap-2.5 pt-5.5 pb-3">
@@ -97,43 +95,14 @@ export function DetalleDelDia({
             <CaminosALosTrabajos fecha={fecha} alIr={alIrAUnTrabajo} />
           </div>
         ) : (
-          <>
-            {pendientes.length === 0 ? (
-              <p className="pt-4 pb-3 text-body text-text-2">
-                No queda nada pendiente para este día.
-              </p>
-            ) : (
-              <ul aria-label={`Lo pendiente del ${diaEnPalabras(fecha)}`}>
-                {pendientes.map((evento) => (
-                  <FilaDeEvento
-                    key={evento.id}
-                    evento={evento}
-                    hoy={hoy}
-                    acciones={accionesConFoco}
-                    enElDia
-                  />
-                ))}
-              </ul>
-            )}
-            {hechas.length > 0 && (
-              <div className="pt-2">
-                <p id={idDeLoHecho} className="pb-1.5 text-meta font-semibold text-text-3">
-                  Hecho
-                </p>
-                <ul aria-labelledby={idDeLoHecho}>
-                  {hechas.map((evento) => (
-                    <FilaDeEvento
-                      key={evento.id}
-                      evento={evento}
-                      hoy={hoy}
-                      acciones={accionesConFoco}
-                      enElDia
-                    />
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
+          <DiaPorHoras
+            key={fecha}
+            fecha={fecha}
+            hoy={hoy}
+            eventos={eventos}
+            acciones={accionesConFoco}
+            ahora={ahora}
+          />
         )}
       </div>
 

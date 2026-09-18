@@ -1,4 +1,5 @@
 import type { EventoDeLaAgenda } from '@maun/domain';
+import { useId } from 'react';
 
 import {
   DIAS_DE_LA_SEMANA,
@@ -15,6 +16,7 @@ import {
 } from '../model/calendario';
 import { DERIVADA } from '../model/categorias';
 import { MarcaDeCategoria } from './MarcaDeCategoria';
+import type { AccionesDelArrastre } from './useArrastreDeEventos';
 
 export interface GrillaDelMesProps {
   mes: string;
@@ -26,6 +28,7 @@ export interface GrillaDelMesProps {
   alVerElDia?: (fecha: string) => void;
   alAbrirEvento: (evento: EventoDeLaAgenda) => void;
   idDeLaCapa?: string;
+  arrastre?: AccionesDelArrastre;
 }
 
 function textoCorto(evento: EventoDeLaAgenda): string {
@@ -44,8 +47,11 @@ export function GrillaDelMes({
   alVerElDia = alElegirDia,
   alAbrirEvento,
   idDeLaCapa,
+  arrastre,
 }: GrillaDelMesProps) {
   const semanas = semanasDelMes(mes);
+  const idDeLaAyuda = useId();
+  const agarrado = arrastre?.arrastre ?? null;
   const abreLaCapa =
     idDeLaCapa === undefined
       ? {}
@@ -56,6 +62,13 @@ export function GrillaDelMes({
       data-grilla-del-mes
       className="flex flex-col overflow-hidden rounded-panel border border-hairline"
     >
+      {arrastre !== undefined && (
+        <p id={idDeLaAyuda} className="sr-only">
+          Se mueve a otro día arrastrándolo, o agarrándolo con la barra espaciadora, moviéndolo con
+          las flechas y soltándolo con Enter. Escape lo deja donde estaba. También se cambia la
+          fecha abriéndolo.
+        </p>
+      )}
       <div aria-hidden className="grid grid-cols-7 border-b border-hairline bg-surface">
         {DIAS_DE_LA_SEMANA.map((dia) => (
           <div key={dia} className="px-2.5 py-2 text-meta font-semibold text-text-2">
@@ -86,9 +99,10 @@ export function GrillaDelMes({
               key={fecha}
               data-fecha={fecha}
               data-abierto={esElegido ? '' : undefined}
+              data-destino={agarrado?.destino === fecha ? '' : undefined}
               className={`flex min-w-0 flex-col gap-1 overflow-hidden px-1.5 pt-1.5 pb-2 ${
                 fuera || esElegido ? 'bg-surface' : 'bg-paper'
-              }`}
+              } ${agarrado?.destino === fecha ? 'inset-ring-2 inset-ring-ink bg-surface-2' : ''}`}
             >
               <button
                 type="button"
@@ -115,17 +129,27 @@ export function GrillaDelMes({
               </button>
               {delDia.slice(0, maximo).map((evento) => {
                 const hecha = estaHecha(evento);
+                const propiasDelArrastre = arrastre?.propsDelChip(evento);
+                const seEstaMoviendo = agarrado?.evento.id === evento.id;
                 return (
                   <button
                     key={evento.id}
                     type="button"
                     title={nombreDelEvento(evento)}
+                    aria-describedby={propiasDelArrastre === undefined ? undefined : idDeLaAyuda}
                     {...(evento.clase === 'propia' ? abreLaCapa : {})}
-                    onClick={() => {
+                    {...propiasDelArrastre}
+                    onClick={(toque) => {
+                      if (arrastre?.seAcabaDeArrastrar() === true) {
+                        toque.preventDefault();
+                        return;
+                      }
                       alAbrirEvento(evento);
                     }}
                     className={`flex w-full min-w-0 items-center gap-1.5 rounded-[3px] bg-surface px-1.5 text-left hover:bg-surface-2 ${
                       hecha ? 'min-h-5 py-0' : 'min-h-6 py-0.5'
+                    } ${propiasDelArrastre === undefined ? '' : 'touch-none'} ${
+                      seEstaMoviendo ? 'opacity-60 ring-2 ring-ink' : ''
                     }`}
                   >
                     <span

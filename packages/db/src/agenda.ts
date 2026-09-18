@@ -22,8 +22,24 @@ export const COLUMNA_DE_LA_MARCA: Readonly<Record<CategoriaDerivada, ColumnaDeMa
   entrega: 'entrega_importante',
 };
 
+export const COLUMNAS_DE_LA_FECHA = [
+  'vencimiento_presupuesto',
+  'fecha_visita',
+  'entrega_estimada',
+] as const;
+
+export type ColumnaDeLaFecha = (typeof COLUMNAS_DE_LA_FECHA)[number];
+
+// De dónde sale la fecha de cada evento derivado, que es también la única columna donde esa fecha
+// puede vivir: arrastrarlo en la agenda escribe acá (ADR 0045).
+export const COLUMNA_DE_LA_FECHA: Readonly<Record<CategoriaDerivada, ColumnaDeLaFecha>> = {
+  presupuesto: 'vencimiento_presupuesto',
+  visita: 'fecha_visita',
+  entrega: 'entrega_estimada',
+};
+
 type FilaQuizasSinLoHechoNiLasMarcas = Partial<
-  Pick<FilaDe<'proyectos'>, 'visita_hecha' | ColumnaDeMarca>
+  Pick<FilaDe<'proyectos'>, 'visita_hecha' | 'entrega_hora' | 'visita_hora' | ColumnaDeMarca>
 >;
 
 export function visitaHecha(proyecto: FilaDe<'proyectos'>): boolean {
@@ -37,8 +53,16 @@ export function marcadaComoImportante(
   return (proyecto as FilaQuizasSinLoHechoNiLasMarcas)[COLUMNA_DE_LA_MARCA[categoria]] === true;
 }
 
-function horaSinSegundos(hora: string | null): string | null {
-  return hora === null ? null : hora.slice(0, 5);
+function horaSinSegundos(hora: string | null | undefined): string | null {
+  return hora === null || hora === undefined ? null : hora.slice(0, 5);
+}
+
+export function horaDeLaEntrega(proyecto: FilaDe<'proyectos'>): string | null {
+  return horaSinSegundos((proyecto as FilaQuizasSinLoHechoNiLasMarcas).entrega_hora);
+}
+
+export function horaDeLaVisita(proyecto: FilaDe<'proyectos'>): string | null {
+  return horaSinSegundos((proyecto as FilaQuizasSinLoHechoNiLasMarcas).visita_hora);
 }
 
 export function datosDeLaAgenda(filas: FilasDeLaAgenda): DatosDeLaAgenda {
@@ -49,8 +73,10 @@ export function datosDeLaAgenda(filas: FilasDeLaAgenda): DatosDeLaAgenda {
       titulo: proyecto.titulo,
       estado: proyecto.estado,
       fechaVisita: proyecto.fecha_visita,
+      visitaHora: horaDeLaVisita(proyecto),
       visitaHecha: visitaHecha(proyecto),
       entregaEstimada: proyecto.entrega_estimada,
+      entregaHora: horaDeLaEntrega(proyecto),
       vencimientoPresupuesto: proyecto.vencimiento_presupuesto,
       direccionEntrega: proyecto.direccion_entrega,
       importante: {

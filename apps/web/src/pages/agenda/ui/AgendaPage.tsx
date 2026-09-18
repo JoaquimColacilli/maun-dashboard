@@ -26,13 +26,18 @@ import {
   numeroDelDia,
   rangoDeLaGrilla,
   resumenDelMes,
+  semanasDelMes,
   TiraDelMes,
   useAccionesConFoco,
   type AccionesDeLaAgenda,
   type AvisoDelDia,
 } from '@/entities/agenda';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { HojaDeAnotacion, useAccionesDeLaAgenda } from '@/features/llevar-la-agenda';
+import {
+  HojaDeAnotacion,
+  useAccionesDeLaAgenda,
+  useMoverEnLaAgenda,
+} from '@/features/llevar-la-agenda';
 import { datosDeLaAgendaDeLaReplica } from '@/shared/api';
 import { hoyLocal, useAnchoDePantalla, type NuevoAviso } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
@@ -316,6 +321,14 @@ export function AgendaPage() {
 
   const datos = useMemo(() => datosDeLaAgendaDeLaReplica(replica), [replica]);
   const eventos = useMemo(() => eventosDeLaAgenda(datos, rangoDeLaGrilla(mes)), [datos, mes]);
+  const fechasDeLaGrilla = useMemo(
+    () =>
+      semanasDelMes(mes)
+        .flat()
+        .map((celda) => celda.fecha),
+    [mes],
+  );
+  const arrastre = useMoverEnLaAgenda(fechasDeLaGrilla);
   const delMes = eventos.filter((evento) => evento.fecha.startsWith(mes));
   const dia =
     elegido !== null && elegido.startsWith(mes) ? elegido : mes === mesDeHoy ? hoy : `${mes}-01`;
@@ -434,6 +447,7 @@ export function AgendaPage() {
                 hoy={hoy}
                 eventos={eventosDelDia(eventos, fecha)}
                 acciones={accionesDelDia}
+                ahora={new Date()}
                 conEncabezado={false}
                 aviso={avisoDelDia}
                 alDescartarElAviso={() => {
@@ -585,6 +599,10 @@ export function AgendaPage() {
         <p className="mb-3 max-w-[640px] text-label leading-relaxed text-text-2">{MES_VACIO}</p>
       )}
 
+      <p role="status" aria-live="assertive" className="sr-only">
+        {arrastre.anuncio}
+      </p>
+
       <div ref={areaDeLaGrilla}>
         <GrillaDelMes
           mes={mes}
@@ -593,6 +611,7 @@ export function AgendaPage() {
           eventos={visibles}
           maximo={ancho === 'escritorio' ? 3 : 2}
           idDeLaCapa={idDeLaCapa}
+          arrastre={arrastre}
           alElegirDia={elegirDia}
           alVerElDia={setDiaAbierto}
           alAbrirEvento={(evento) => {
@@ -623,6 +642,7 @@ export function AgendaPage() {
                 hoy={hoy}
                 eventos={eventosDelDia(visibles, diaAbierto)}
                 acciones={accionesDelDia}
+                ahora={new Date()}
                 aviso={avisoDelDia}
                 alDescartarElAviso={() => {
                   setAvisoDelDia(null);

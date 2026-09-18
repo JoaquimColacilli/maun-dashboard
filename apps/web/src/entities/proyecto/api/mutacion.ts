@@ -8,14 +8,17 @@ import {
   filaPorId,
   filasDe,
   guardarElProyecto,
+  guardarLosCostosEstimados,
   householdDe,
   marcarEnLaAgenda,
   marcarTareasDelPresupuesto,
   quitarFilaLocal,
+  type CambiosDeCostos,
   type CambiosDeMarcas,
   type CambiosDeProyecto,
   type CambiosDeTareas,
   type FilaDe,
+  type NecesidadParaGuardar,
   type PagoParaGuardar,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
@@ -25,6 +28,7 @@ import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/
 
 import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
 import { datosActualesDelProyecto } from '../model/liquidacion';
+import { cambiaAlgunCosto } from '../model/costos';
 import { cambiaAlgunaMarca } from '../model/marcas';
 import { ultimoContactoAlGuardar } from '../model/seguimiento';
 import { cambiaAlgunaTarea } from '../model/tareas';
@@ -33,6 +37,7 @@ export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
 export const CLAVE_DE_TAREAS = ['proyectos', 'tareas'] as const;
 export const CLAVE_DE_MARCAS = ['proyectos', 'marcas'] as const;
+export const CLAVE_DE_COSTOS = ['proyectos', 'costos'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
 
 const REINTENTOS = 5;
@@ -46,6 +51,7 @@ export interface GuardadoDeProyecto {
     pagos: readonly FilaDe<'pagos'>[];
     gastos: readonly FilaDe<'gastos'>[];
     opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
+    necesidades: readonly FilaDe<'necesidades'>[];
   };
 }
 
@@ -70,6 +76,13 @@ export interface MarcaDeLaAgenda {
   version: number;
 }
 
+export interface CostosDelTrabajo {
+  id: string;
+  cambios: CambiosDeCostos;
+  previos: CambiosDeCostos;
+  version: number;
+}
+
 export interface BajaDeProyecto {
   id: string;
   borradoEn: string;
@@ -78,6 +91,7 @@ export interface BajaDeProyecto {
     pagos: readonly FilaDe<'pagos'>[];
     gastos: readonly FilaDe<'gastos'>[];
     opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
+    necesidades: readonly FilaDe<'necesidades'>[];
   };
 }
 
@@ -94,12 +108,16 @@ export function hijosDelProyecto(
   pagos: FilaDe<'pagos'>[];
   gastos: FilaDe<'gastos'>[];
   opciones: FilaDe<'opciones_de_presupuesto'>[];
+  necesidades: FilaDe<'necesidades'>[];
 } {
   return {
     pagos: filasDe(replica, 'pagos').filter((pago) => pago.proyecto_id === proyectoId),
     gastos: filasDe(replica, 'gastos').filter((gasto) => gasto.proyecto_id === proyectoId),
     opciones: filasDe(replica, 'opciones_de_presupuesto').filter(
       (opcion) => opcion.proyecto_id === proyectoId,
+    ),
+    necesidades: filasDe(replica, 'necesidades').filter(
+      (necesidad) => necesidad.proyecto_id === proyectoId,
     ),
   };
 }
@@ -123,7 +141,7 @@ export function guardadoDeUnPaso(
       pagos,
       gastos: [],
     },
-    previos: { proyecto, pagos: [], gastos: [], opciones: [] },
+    previos: { proyecto, pagos: [], gastos: [], opciones: [], necesidades: [] },
   };
 }
 
@@ -153,7 +171,25 @@ export function aprobacionDeUnaOpcion(
       gastos: [],
       opciones: quedan,
     },
-    previos: { proyecto, pagos: [], gastos: [], opciones },
+    previos: { proyecto, pagos: [], gastos: [], opciones, necesidades: [] },
+  };
+}
+
+export function guardadoDeLoQueHaceFalta(
+  proyecto: FilaDe<'proyectos'>,
+  necesidades: readonly FilaDe<'necesidades'>[],
+  quedan: readonly NecesidadParaGuardar[],
+): GuardadoDeProyecto {
+  return {
+    pedido: {
+      id: proyecto.id,
+      version: proyecto.version,
+      datos: datosActualesDelProyecto(proyecto),
+      pagos: [],
+      gastos: [],
+      necesidades: quedan,
+    },
+    previos: { proyecto, pagos: [], gastos: [], opciones: [], necesidades },
   };
 }
 
@@ -187,6 +223,10 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         visita_importante: false,
         entrega_importante: false,
         presupuesto_importante: false,
+        costo_madera_centavos: null,
+        costo_herrajes_centavos: null,
+        costo_flete_centavos: null,
+        costo_ayudante_centavos: null,
         fecha_cobro: null,
         dist_cobrado_centavos: null,
         dist_gastos_centavos: null,
@@ -271,6 +311,27 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
     });
   }
 
+  for (const necesidad of pedido.necesidades ?? []) {
+    if (necesidad.borrado === true) {
+      siguiente = quitarFilaLocal(siguiente, 'necesidades', necesidad.id);
+      continue;
+    }
+    const previo = filaPorId(siguiente, 'necesidades', necesidad.id);
+    siguiente = aplicarFilaLocal(siguiente, 'necesidades', {
+      id: necesidad.id,
+      household_id: household.id,
+      proyecto_id: pedido.id,
+      tipo: necesidad.tipo,
+      nombre: necesidad.nombre,
+      cantidad: necesidad.cantidad,
+      listo: necesidad.listo,
+      created_at: previo?.created_at ?? ahora,
+      updated_at: ahora,
+      deleted_at: null,
+      version: previo?.version ?? 1,
+    });
+  }
+
   return siguiente;
 }
 
@@ -297,6 +358,9 @@ function conLoQueVolvio(
   for (const opcion of guardado.opciones) {
     siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion);
   }
+  for (const necesidad of guardado.necesidades) {
+    siguiente = aplicarFilaLocal(siguiente, 'necesidades', necesidad);
+  }
   return siguiente;
 }
 
@@ -311,10 +375,16 @@ function comoEstaba(replica: Replica, { pedido, previos }: GuardadoDeProyecto): 
   for (const opcion of pedido.opciones ?? []) {
     siguiente = quitarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion.id);
   }
+  for (const necesidad of pedido.necesidades ?? []) {
+    siguiente = quitarFilaLocal(siguiente, 'necesidades', necesidad.id);
+  }
   for (const pago of previos.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
   for (const gasto of previos.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
   for (const opcion of previos.opciones) {
     siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion);
+  }
+  for (const necesidad of previos.necesidades) {
+    siguiente = aplicarFilaLocal(siguiente, 'necesidades', necesidad);
   }
   return siguiente;
 }
@@ -379,7 +449,7 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   },
 };
 
-type CambiosDeUnaColumnaSuelta = CambiosDeTareas | CambiosDeMarcas;
+type CambiosDeUnaColumnaSuelta = CambiosDeTareas | CambiosDeMarcas | CambiosDeCostos;
 
 function conUnaColumnaSuelta(
   replica: Replica,
@@ -451,13 +521,37 @@ export const MUTACION_DE_MARCAS: MutationOptions<FilaDe<'proyectos'>, unknown, M
   },
 };
 
+export const MUTACION_DE_COSTOS: MutationOptions<FilaDe<'proyectos'>, unknown, CostosDelTrabajo> = {
+  mutationKey: CLAVE_DE_COSTOS,
+  mutationFn: ({ id, cambios }) => guardarLosCostosEstimados(id, cambios),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id, cambios }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) =>
+      conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgunCosto(actual, cambios)),
+    );
+    await guardarCacheAhora();
+  },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
+  },
+  onError: (_error, { id, previos, version }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLaColumnaSuelta(replica, id, previos, version));
+  },
+};
+
 function sinElProyecto(replica: Replica, id: string): Replica {
-  const { pagos, gastos, opciones } = hijosDelProyecto(replica, id);
+  const { pagos, gastos, opciones, necesidades } = hijosDelProyecto(replica, id);
   let siguiente = quitarFilaLocal(replica, 'proyectos', id);
   for (const pago of pagos) siguiente = quitarFilaLocal(siguiente, 'pagos', pago.id);
   for (const gasto of gastos) siguiente = quitarFilaLocal(siguiente, 'gastos', gasto.id);
   for (const opcion of opciones) {
     siguiente = quitarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion.id);
+  }
+  for (const necesidad of necesidades) {
+    siguiente = quitarFilaLocal(siguiente, 'necesidades', necesidad.id);
   }
   return siguiente;
 }
@@ -487,6 +581,9 @@ export const MUTACION_DE_BAJA_DE_PROYECTO: MutationOptions<
       for (const gasto of previos.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
       for (const opcion of previos.opciones) {
         siguiente = aplicarFilaLocal(siguiente, 'opciones_de_presupuesto', opcion);
+      }
+      for (const necesidad of previos.necesidades) {
+        siguiente = aplicarFilaLocal(siguiente, 'necesidades', necesidad);
       }
       return siguiente;
     });

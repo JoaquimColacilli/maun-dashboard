@@ -17,6 +17,29 @@ export {
 export { calcularDistribucion, DIEZMO, type Distribucion, type EntradaCascada } from './cascada.ts';
 
 export {
+  calcularMargen,
+  CATEGORIAS_DE_COSTO,
+  categoriasEstimadas,
+  costoEstimado,
+  SIN_ESTIMAR,
+  type CategoriaDeCosto,
+  type CostosEstimados,
+  type EntradaDelMargen,
+  type MargenDelTrabajo,
+} from './costos.ts';
+
+export {
+  catalogoDeNecesidades,
+  claveDelNombre,
+  sugerenciasDeNecesidad,
+  SUGERENCIAS_MAXIMAS,
+  TIPOS_DE_NECESIDAD,
+  type NecesidadUsada,
+  type NombreDelCatalogo,
+  type TipoDeNecesidad,
+} from './necesidades.ts';
+
+export {
   digitosDeCuit,
   formatearCuit,
   LARGO_DE_CUIT,
@@ -95,9 +118,15 @@ export {
   CATEGORIAS_DE_AGENDA,
   CATEGORIAS_DERIVADAS,
   CATEGORIAS_PROPIAS,
+  diaPorHoras,
   eventosDeLaAgenda,
   eventosParaAvisar,
+  horaDelEvento,
+  HORARIO_DEL_TALLER,
   PREFERENCIAS_INICIALES,
+  puedeArrastrarse,
+  rangoQueEntra,
+  TODO_EL_RELOJ,
   type Anticipacion,
   type AnotacionDeLaAgenda,
   type AvisoDeLaAgenda,
@@ -106,12 +135,15 @@ export {
   type CategoriaPropia,
   type ClienteDeLaAgenda,
   type DatosDeLaAgenda,
+  type DiaPorHoras,
   type EventoDeLaAgenda,
   type EventoDerivado,
   type EventoPropio,
+  type FranjaDelDia,
   type PreferenciaDeAviso,
   type PreferenciasDeAvisos,
   type ProyectoDeLaAgenda,
+  type RangoDeHoras,
   type RangoDeLaAgenda,
 } from './agenda.ts';
 

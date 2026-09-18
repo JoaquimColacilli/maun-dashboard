@@ -116,12 +116,46 @@ export interface FilaDeProyecto {
   version: number;
   presupuesto_centavos: number | null;
   sena_bp: number | null;
+  fecha_visita: string | null;
+  visita_hora: string | null;
+  entrega_estimada: string | null;
+  entrega_hora: string | null;
   fecha_entrega: string | null;
+  vencimiento_presupuesto: string | null;
+  costo_madera_centavos: number | null;
+  costo_herrajes_centavos: number | null;
+  costo_flete_centavos: number | null;
+  costo_ayudante_centavos: number | null;
+  presupuesto_cotizacion: boolean;
   visita_hecha: boolean;
   visita_importante: boolean;
   entrega_importante: boolean;
   presupuesto_importante: boolean;
 }
+
+const COLUMNAS_DEL_PROYECTO = [
+  'id',
+  'titulo',
+  'estado',
+  'version',
+  'presupuesto_centavos',
+  'sena_bp',
+  'fecha_visita',
+  'visita_hora',
+  'entrega_estimada',
+  'entrega_hora',
+  'fecha_entrega',
+  'vencimiento_presupuesto',
+  'costo_madera_centavos',
+  'costo_herrajes_centavos',
+  'costo_flete_centavos',
+  'costo_ayudante_centavos',
+  'presupuesto_cotizacion',
+  'visita_hecha',
+  'visita_importante',
+  'entrega_importante',
+  'presupuesto_importante',
+].join(',');
 
 export async function descongelarProyectos({
   entorno,
@@ -358,7 +392,7 @@ export async function leerProyecto(
 ): Promise<FilaDeProyecto | undefined> {
   const filas = (await pedir(
     entorno,
-    `/rest/v1/proyectos?select=id,titulo,estado,version,presupuesto_centavos,sena_bp,fecha_entrega,visita_hecha,visita_importante,entrega_importante,presupuesto_importante&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
+    `/rest/v1/proyectos?select=${COLUMNAS_DEL_PROYECTO}&deleted_at=is.null&titulo=eq.${encodeURIComponent(titulo)}`,
     { accessToken },
   )) as FilaDeProyecto[];
   return filas[0];
@@ -552,6 +586,7 @@ export async function guardarProyectoPorRpc(
     pagos: unknown[];
     gastos: unknown[];
     opciones?: unknown[];
+    necesidades?: unknown[];
   },
 ): Promise<unknown> {
   return pedir(entorno, '/rest/v1/rpc/guardar_proyecto', {
@@ -562,8 +597,28 @@ export async function guardarProyectoPorRpc(
       p_pagos: pedido.pagos,
       p_gastos: pedido.gastos,
       p_opciones: pedido.opciones ?? null,
+      p_necesidades: pedido.necesidades ?? null,
     }),
   });
+}
+
+export interface FilaDeNecesidad {
+  id: string;
+  tipo: string;
+  nombre: string;
+  cantidad: number | null;
+  listo: boolean;
+}
+
+export async function necesidadesDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDeNecesidad[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/necesidades?select=id,tipo,nombre,cantidad,listo&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as FilaDeNecesidad[];
 }
 
 export interface FilaDeOpcion {

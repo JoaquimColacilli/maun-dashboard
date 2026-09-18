@@ -143,7 +143,13 @@ describe('el pasaje de un contacto con opciones', () => {
       { id: 'b', descripcion: 'Opción b', monto_centavos: LOS_DOS, aprobada: true },
     ]);
     expect(pedido).toMatchObject({ id: 'p', version: 4, pagos: [], gastos: [] });
-    expect(previos).toEqual({ proyecto: CONTACTO, pagos: [], gastos: [], opciones });
+    expect(previos).toEqual({
+      proyecto: CONTACTO,
+      pagos: [],
+      gastos: [],
+      opciones,
+      necesidades: [],
+    });
   });
 
   it('si ninguna estaba aprobada, aprueba la elegida al pasar', () => {

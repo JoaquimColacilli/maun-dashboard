@@ -199,6 +199,8 @@ export const COLUMNAS_DE_PROYECTO = [
   'vencimiento_presupuesto',
   'visita_hecha',
   'sena_bp',
+  'entrega_hora',
+  'visita_hora',
 ] as const;
 
 export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];
@@ -233,6 +235,17 @@ export type OpcionParaGuardar =
     }
   | BajaDeFilaHija;
 
+export type NecesidadParaGuardar =
+  | {
+      id: string;
+      tipo: FilaDe<'necesidades'>['tipo'];
+      nombre: string;
+      cantidad: number | null;
+      listo: boolean;
+      borrado?: false;
+    }
+  | BajaDeFilaHija;
+
 export interface ProyectoParaGuardar {
   id: string;
   version: number | null;
@@ -240,6 +253,7 @@ export interface ProyectoParaGuardar {
   pagos: readonly PagoParaGuardar[];
   gastos: readonly GastoParaGuardar[];
   opciones?: readonly OpcionParaGuardar[];
+  necesidades?: readonly NecesidadParaGuardar[];
 }
 
 export interface ProyectoGuardado {
@@ -247,9 +261,10 @@ export interface ProyectoGuardado {
   pagos: readonly FilaDe<'pagos'>[];
   gastos: readonly FilaDe<'gastos'>[];
   opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
+  necesidades: readonly FilaDe<'necesidades'>[];
 }
 
-function filasDelAgregado<T extends 'pagos' | 'gastos' | 'opciones_de_presupuesto'>(
+function filasDelAgregado<T extends 'pagos' | 'gastos' | 'opciones_de_presupuesto' | 'necesidades'>(
   valor: unknown,
   tabla: T,
 ): FilaDe<T>[] {
@@ -286,6 +301,7 @@ export function leerProyectoGuardado(valor: unknown): ProyectoGuardado {
     pagos: filasDelAgregado(cuerpo.pagos, 'pagos'),
     gastos: filasDelAgregado(cuerpo.gastos, 'gastos'),
     opciones: filasDelAgregado(cuerpo.opciones_de_presupuesto, 'opciones_de_presupuesto'),
+    necesidades: filasDelAgregado(cuerpo.necesidades, 'necesidades'),
   };
 }
 
@@ -298,6 +314,7 @@ export async function guardarProyecto(
     p_pagos: pedido.pagos as unknown as Json,
     p_gastos: pedido.gastos as unknown as Json,
     p_opciones: (pedido.opciones ?? null) as unknown as Json,
+    p_necesidades: (pedido.necesidades ?? null) as unknown as Json,
   });
   if (error) throw error;
   return leerProyectoGuardado(data);
@@ -333,6 +350,34 @@ export async function guardarTareasDelPresupuesto(
   cliente: ClienteMaun,
   id: string,
   cambios: CambiosDeTareas,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export const COLUMNAS_DE_COSTOS = [
+  'costo_madera_centavos',
+  'costo_herrajes_centavos',
+  'costo_flete_centavos',
+  'costo_ayudante_centavos',
+] as const;
+
+export type ColumnaDeCosto = (typeof COLUMNAS_DE_COSTOS)[number];
+
+export type CambiosDeCostos = Partial<Pick<FilaDe<'proyectos'>, ColumnaDeCosto>>;
+
+// Los costos estimados no entran por guardar_proyecto: son un update de sus columnas solas, como las
+// marcas de la agenda. Así guardar el agregado no los pisa y ellos no pisan el agregado (ADR 0045).
+export async function guardarCostosEstimados(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeCostos,
 ): Promise<FilaDe<'proyectos'>> {
   const { data, error } = await cliente
     .from('proyectos')

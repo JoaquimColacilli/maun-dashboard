@@ -32,6 +32,7 @@ function derivado(cambios: Partial<EventoDerivado> = {}): EventoDerivado {
     id: 'entrega:p1',
     categoria: 'entrega',
     fecha: '2026-09-16',
+    hora: null,
     proyectoId: 'p1',
     clienteId: 'c1',
     titulo: 'Mesada y alacena',
