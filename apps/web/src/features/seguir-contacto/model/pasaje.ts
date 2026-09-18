@@ -72,7 +72,7 @@ export function guardadoDelPasaje(
   if (elegida === undefined || elegida.id === opcionAprobada(opciones)?.id) {
     return {
       pedido: { id: proyecto.id, version: proyecto.version, datos, pagos: [], gastos: [] },
-      previos: { proyecto, pagos: [], gastos: [], opciones: [] },
+      previos: { proyecto, pagos: [], gastos: [], opciones: [], necesidades: [] },
     };
   }
 

@@ -127,7 +127,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       };
       guardar.mutate({
         pedido: pedidoDelPago,
-        previos: { proyecto, pagos: [], gastos: [], opciones: [] },
+        previos: { proyecto, pagos: [], gastos: [], opciones: [], necesidades: [] },
       });
     }
 

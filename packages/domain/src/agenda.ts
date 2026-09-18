@@ -19,8 +19,10 @@ export interface ProyectoDeLaAgenda {
   titulo: string;
   estado: EstadoProyecto;
   fechaVisita: string | null;
+  visitaHora: string | null;
   visitaHecha: boolean;
   entregaEstimada: string | null;
+  entregaHora: string | null;
   vencimientoPresupuesto: string | null;
   direccionEntrega: string;
   importante: Readonly<Record<CategoriaDerivada, boolean>>;
@@ -59,6 +61,7 @@ export interface EventoDerivado {
   id: string;
   categoria: CategoriaDerivada;
   fecha: string;
+  hora: string | null;
   proyectoId: string;
   clienteId: string;
   titulo: string;
@@ -119,6 +122,7 @@ function derivadosDelProyecto(
       id: `entrega:${proyecto.id}`,
       categoria: 'entrega',
       fecha: proyecto.entregaEstimada,
+      hora: proyecto.entregaHora,
       lugar: proyecto.direccionEntrega.trim() === '' ? zona : proyecto.direccionEntrega,
       hecha: entregada,
       importante: proyecto.importante.entrega,
@@ -130,6 +134,7 @@ function derivadosDelProyecto(
       id: `visita:${proyecto.id}`,
       categoria: 'visita',
       fecha: proyecto.fechaVisita,
+      hora: proyecto.visitaHora,
       lugar: zona,
       hecha: proyecto.visitaHecha,
       importante: proyecto.importante.visita,
@@ -146,6 +151,7 @@ function derivadosDelProyecto(
       id: `presupuesto:${proyecto.id}`,
       categoria: 'presupuesto',
       fecha: proyecto.vencimientoPresupuesto,
+      hora: null,
       lugar: zona,
       hecha: false,
       importante: proyecto.importante.presupuesto,
@@ -172,10 +178,6 @@ function propioDeLaAnotacion(
   };
 }
 
-function horaDe(evento: EventoDeLaAgenda): string | null {
-  return evento.clase === 'propia' ? evento.hora : null;
-}
-
 function textoDe(evento: EventoDeLaAgenda): string {
   return evento.clase === 'propia' ? evento.texto : evento.titulo;
 }
@@ -183,8 +185,8 @@ function textoDe(evento: EventoDeLaAgenda): string {
 function compararEventos(uno: EventoDeLaAgenda, otro: EventoDeLaAgenda): number {
   if (uno.fecha !== otro.fecha) return uno.fecha < otro.fecha ? -1 : 1;
 
-  const horaUno = horaDe(uno) ?? '';
-  const horaOtro = horaDe(otro) ?? '';
+  const horaUno = uno.hora ?? '';
+  const horaOtro = otro.hora ?? '';
   if (horaUno !== horaOtro) {
     if (horaUno === '') return 1;
     if (horaOtro === '') return -1;
@@ -228,6 +230,75 @@ export function eventosDeLaAgenda(
   }
 
   return eventos.sort(compararEventos);
+}
+
+export interface RangoDeHoras {
+  desde: number;
+  hasta: number;
+}
+
+export const HORARIO_DEL_TALLER: RangoDeHoras = { desde: 7, hasta: 20 };
+
+export const TODO_EL_RELOJ: RangoDeHoras = { desde: 0, hasta: 23 };
+
+export interface FranjaDelDia {
+  hora: number;
+  desde: string;
+  eventos: EventoDeLaAgenda[];
+}
+
+export interface DiaPorHoras {
+  todoElDia: EventoDeLaAgenda[];
+  franjas: FranjaDelDia[];
+  rango: RangoDeHoras;
+}
+
+const HORA = /^(\d{2}):(\d{2})/;
+
+export function horaDelEvento(evento: EventoDeLaAgenda): number | null {
+  const partes = evento.hora === null ? null : HORA.exec(evento.hora);
+  if (partes === null) return null;
+  const hora = Number(partes[1]);
+  return hora >= 0 && hora <= 23 ? hora : null;
+}
+
+export function rangoQueEntra(
+  eventos: readonly EventoDeLaAgenda[],
+  rango: RangoDeHoras = HORARIO_DEL_TALLER,
+): RangoDeHoras {
+  let { desde, hasta } = rango;
+  for (const evento of eventos) {
+    const hora = horaDelEvento(evento);
+    if (hora === null) continue;
+    if (hora < desde) desde = hora;
+    if (hora > hasta) hasta = hora;
+  }
+  return { desde, hasta };
+}
+
+export function diaPorHoras(
+  eventos: readonly EventoDeLaAgenda[],
+  rango: RangoDeHoras = HORARIO_DEL_TALLER,
+): DiaPorHoras {
+  const conHoras = rangoQueEntra(eventos, rango);
+  const franjas: FranjaDelDia[] = [];
+  for (let hora = conHoras.desde; hora <= conHoras.hasta; hora += 1) {
+    franjas.push({ hora, desde: `${String(hora).padStart(2, '0')}:00`, eventos: [] });
+  }
+
+  const todoElDia: EventoDeLaAgenda[] = [];
+  for (const evento of eventos) {
+    const hora = horaDelEvento(evento);
+    const franja = hora === null ? undefined : franjas[hora - conHoras.desde];
+    if (franja === undefined) todoElDia.push(evento);
+    else franja.eventos.push(evento);
+  }
+
+  return { todoElDia, franjas, rango: conHoras };
+}
+
+export function puedeArrastrarse(evento: EventoDeLaAgenda): boolean {
+  return !evento.hecha;
 }
 
 export const AVISOS_DE_LA_AGENDA = ['entregas', 'visitas', 'presupuestos', 'anotaciones'] as const;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  COLUMNA_DE_LA_FECHA,
   COLUMNA_DE_LA_MARCA,
   COLUMNAS_DE_MARCAS,
   datosDeLaAgenda,
@@ -25,8 +26,10 @@ const PROYECTO = {
   titulo: 'Mesada y alacena',
   estado: 'a_presupuestar',
   fecha_visita: '2026-09-07',
+  visita_hora: '15:30:00',
   visita_hecha: true,
   entrega_estimada: null,
+  entrega_hora: null,
   vencimiento_presupuesto: '2026-09-10',
   direccion_entrega: 'Sarmiento 2310',
   presupuesto_importante: false,
@@ -69,8 +72,10 @@ describe('datosDeLaAgenda', () => {
           titulo: 'Mesada y alacena',
           estado: 'a_presupuestar',
           fechaVisita: '2026-09-07',
+          visitaHora: '15:30',
           visitaHecha: true,
           entregaEstimada: null,
+          entregaHora: null,
           vencimientoPresupuesto: '2026-09-10',
           direccionEntrega: 'Sarmiento 2310',
           importante: { presupuesto: false, visita: true, entrega: false },
@@ -129,5 +134,28 @@ describe('datosDeLaAgenda', () => {
 
   it('cada evento derivado tiene su columna de marca, y son las tres de la base', () => {
     expect(Object.values(COLUMNA_DE_LA_MARCA)).toEqual([...COLUMNAS_DE_MARCAS]);
+  });
+});
+
+describe('las columnas de las que sale cada evento derivado', () => {
+  it('cada categoría derivada tiene una sola columna donde vive su fecha', () => {
+    expect(COLUMNA_DE_LA_FECHA).toEqual({
+      presupuesto: 'vencimiento_presupuesto',
+      visita: 'fecha_visita',
+      entrega: 'entrega_estimada',
+    });
+  });
+
+  it('una fila guardada antes de las horas no trae hora, y no rompe', () => {
+    const sinHoras = { ...PROYECTO } as unknown as Record<string, unknown>;
+    delete sinHoras.visita_hora;
+    delete sinHoras.entrega_hora;
+    const datos = datosDeLaAgenda({
+      proyectos: [sinHoras as unknown as FilaDe<'proyectos'>],
+      clientes: [CLIENTE],
+      anotaciones: [],
+    });
+    expect(datos.proyectos[0]?.visitaHora).toBeNull();
+    expect(datos.proyectos[0]?.entregaHora).toBeNull();
   });
 });

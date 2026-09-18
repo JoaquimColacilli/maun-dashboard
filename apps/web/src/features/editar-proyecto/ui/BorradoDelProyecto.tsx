@@ -21,7 +21,7 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
     }),
   });
   const [confirmando, setConfirmando] = useState(false);
-  const { pagos, gastos, opciones } = hijosDelProyecto(replica, proyecto.id);
+  const { pagos, gastos, opciones, necesidades } = hijosDelProyecto(replica, proyecto.id);
 
   return (
     <>
@@ -69,7 +69,7 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
                     borrar.mutate({
                       id: proyecto.id,
                       borradoEn: new Date().toISOString(),
-                      previos: { proyecto, pagos, gastos, opciones },
+                      previos: { proyecto, pagos, gastos, opciones, necesidades },
                     });
                     setConfirmando(false);
                     alBorrar();

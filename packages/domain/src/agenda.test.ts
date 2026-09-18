@@ -3,9 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   AVISO_DE_LA_CATEGORIA,
   CATEGORIAS_DE_AGENDA,
+  diaPorHoras,
   eventosDeLaAgenda,
   eventosParaAvisar,
+  horaDelEvento,
+  HORARIO_DEL_TALLER,
   PREFERENCIAS_INICIALES,
+  puedeArrastrarse,
+  rangoQueEntra,
+  TODO_EL_RELOJ,
   type AnotacionDeLaAgenda,
   type DatosDeLaAgenda,
   type EventoDeLaAgenda,
@@ -25,8 +31,10 @@ function proyecto(cambios: Partial<ProyectoDeLaAgenda> = {}): ProyectoDeLaAgenda
     titulo: 'Cocina en L',
     estado: 'en_curso',
     fechaVisita: null,
+    visitaHora: null,
     visitaHecha: false,
     entregaEstimada: null,
+    entregaHora: null,
     vencimientoPresupuesto: null,
     direccionEntrega: '',
     importante: SIN_MARCAS,
@@ -85,6 +93,7 @@ describe('eventosDeLaAgenda', () => {
         id: 'entrega:p1',
         categoria: 'entrega',
         fecha: '2026-09-16',
+        hora: null,
         proyectoId: 'p1',
         clienteId: 'c1',
         titulo: 'Cocina en L',
@@ -118,6 +127,7 @@ describe('eventosDeLaAgenda', () => {
         id: 'visita:p2',
         categoria: 'visita',
         fecha: '2026-09-11',
+        hora: null,
         proyectoId: 'p2',
         clienteId: 'c2',
         titulo: 'Relevamiento UTN',
@@ -632,5 +642,164 @@ describe('eventosParaAvisar', () => {
       presupuestos: { activo: true, anticipacion: 1 },
       anotaciones: { activo: false, anticipacion: 0 },
     });
+  });
+});
+
+const UN_DIA = { desde: '2026-09-21', hasta: '2026-09-21' };
+
+function elDia(cambios: Partial<DatosDeLaAgenda> = {}): EventoDeLaAgenda[] {
+  return eventosDeLaAgenda(datos(cambios), UN_DIA);
+}
+
+function textos(eventos: readonly EventoDeLaAgenda[]): string[] {
+  return eventos.map((evento) => evento.id);
+}
+
+describe('la hora de un evento', () => {
+  it('la entrega y la visita la llevan, y el vencimiento del presupuesto no', () => {
+    const eventos = eventosDeLaAgenda(
+      datos({
+        proyectos: [
+          proyecto({ entregaEstimada: '2026-09-21', entregaHora: '10:00' }),
+          proyecto({
+            id: 'p2',
+            estado: 'relevamiento',
+            fechaVisita: '2026-09-21',
+            visitaHora: '15:30',
+            vencimientoPresupuesto: '2026-09-21',
+          }),
+        ],
+      }),
+      UN_DIA,
+    );
+    const porId = new Map(eventos.map((evento) => [evento.id, evento.hora]));
+    expect(porId.get('entrega:p1')).toBe('10:00');
+    expect(porId.get('visita:p2')).toBe('15:30');
+    expect(porId.get('presupuesto:p2')).toBeNull();
+  });
+
+  it('lo que tiene hora va primero y en orden, y lo que no va después', () => {
+    const eventos = elDia({
+      proyectos: [proyecto({ entregaEstimada: '2026-09-21', entregaHora: '15:00' })],
+      anotaciones: [
+        anotacion({ id: 'sin-hora', fecha: '2026-09-21', texto: 'Comprar tornillos' }),
+        anotacion({ id: 'temprano', fecha: '2026-09-21', hora: '08:00', texto: 'Abrir' }),
+      ],
+    });
+    expect(textos(eventos)).toEqual(['temprano', 'entrega:p1', 'sin-hora']);
+  });
+
+  it('lee la hora como número, y descarta lo que no es una hora', () => {
+    const conHora = anotacion({ hora: '07:45' });
+    expect(horaDelEvento(propia(conHora))).toBe(7);
+    expect(horaDelEvento(propia(anotacion({ hora: null })))).toBeNull();
+    expect(horaDelEvento(propia(anotacion({ hora: '99:00' })))).toBeNull();
+    expect(horaDelEvento(propia(anotacion({ hora: 'a la tarde' })))).toBeNull();
+  });
+});
+
+function propia(fila: AnotacionDeLaAgenda): EventoDeLaAgenda {
+  const [evento] = eventosDeLaAgenda(datos({ anotaciones: [fila] }), SEPTIEMBRE);
+  if (evento === undefined) throw new Error('la anotación tiene que caer en el rango');
+  return evento;
+}
+
+describe('el rango de horas', () => {
+  it('sin nada con hora, es el horario del taller', () => {
+    expect(rangoQueEntra([])).toEqual(HORARIO_DEL_TALLER);
+  });
+
+  it('se estira para abajo y para arriba antes que esconder algo', () => {
+    const eventos = elDia({
+      anotaciones: [
+        anotacion({ id: 'madrugada', fecha: '2026-09-21', hora: '05:00' }),
+        anotacion({ id: 'noche', fecha: '2026-09-21', hora: '23:00' }),
+      ],
+    });
+    expect(rangoQueEntra(eventos)).toEqual({ desde: 5, hasta: 23 });
+  });
+
+  it('no se achica cuando le dan el reloj entero', () => {
+    const eventos = elDia({
+      anotaciones: [anotacion({ fecha: '2026-09-21', hora: '10:00' })],
+    });
+    expect(rangoQueEntra(eventos, TODO_EL_RELOJ)).toEqual(TODO_EL_RELOJ);
+  });
+
+  it('lo que no tiene hora no mueve el rango', () => {
+    expect(rangoQueEntra(elDia({ anotaciones: [anotacion({ fecha: '2026-09-21' })] }))).toEqual(
+      HORARIO_DEL_TALLER,
+    );
+  });
+});
+
+describe('el día por horas', () => {
+  it('lo que no tiene hora va a la franja de todo el día, y la grilla igual se dibuja entera', () => {
+    const dia = diaPorHoras(
+      elDia({
+        proyectos: [proyecto({ entregaEstimada: '2026-09-21' })],
+        anotaciones: [anotacion({ id: 'suelta', fecha: '2026-09-21' })],
+      }),
+    );
+    expect(textos(dia.todoElDia)).toEqual(['entrega:p1', 'suelta']);
+    expect(dia.franjas).toHaveLength(14);
+    expect(dia.franjas[0]?.desde).toBe('07:00');
+    expect(dia.franjas[13]?.desde).toBe('20:00');
+    expect(dia.franjas.every((franja) => franja.eventos.length === 0)).toBe(true);
+  });
+
+  it('lo que tiene hora cae en su renglón', () => {
+    const dia = diaPorHoras(
+      elDia({
+        proyectos: [proyecto({ entregaEstimada: '2026-09-21', entregaHora: '10:00' })],
+        anotaciones: [anotacion({ id: 'tarde', fecha: '2026-09-21', hora: '15:30' })],
+      }),
+    );
+    expect(dia.todoElDia).toEqual([]);
+    expect(textos(dia.franjas[3]?.eventos ?? [])).toEqual(['entrega:p1']);
+    expect(textos(dia.franjas[8]?.eventos ?? [])).toEqual(['tarde']);
+  });
+
+  it('dos cosas a la misma hora comparten renglón, en el orden de la agenda', () => {
+    const dia = diaPorHoras(
+      elDia({
+        anotaciones: [
+          anotacion({ id: 'b', fecha: '2026-09-21', hora: '10:30', texto: 'Zeta' }),
+          anotacion({ id: 'a', fecha: '2026-09-21', hora: '10:00', texto: 'Alfa' }),
+        ],
+      }),
+    );
+    expect(textos(dia.franjas[3]?.eventos ?? [])).toEqual(['a', 'b']);
+  });
+
+  it('algo fuera del horario del taller estira la grilla en vez de desaparecer', () => {
+    const dia = diaPorHoras(
+      elDia({ anotaciones: [anotacion({ id: 'temprano', fecha: '2026-09-21', hora: '05:00' })] }),
+    );
+    expect(dia.rango).toEqual({ desde: 5, hasta: 20 });
+    expect(dia.franjas[0]?.desde).toBe('05:00');
+    expect(textos(dia.franjas[0]?.eventos ?? [])).toEqual(['temprano']);
+  });
+
+  it('con el reloj entero son veinticuatro renglones', () => {
+    expect(diaPorHoras([], TODO_EL_RELOJ).franjas).toHaveLength(24);
+  });
+});
+
+describe('qué se puede arrastrar', () => {
+  it('lo pendiente sí, sea propio o salga de un trabajo', () => {
+    const eventos = elDia({
+      proyectos: [proyecto({ entregaEstimada: '2026-09-21' })],
+      anotaciones: [anotacion({ fecha: '2026-09-21' })],
+    });
+    expect(eventos.map(puedeArrastrarse)).toEqual([true, true]);
+  });
+
+  it('lo hecho no: moverlo sería reescribir lo que pasó', () => {
+    const eventos = elDia({
+      proyectos: [proyecto({ estado: 'entregado', entregaEstimada: '2026-09-21' })],
+      anotaciones: [anotacion({ fecha: '2026-09-21', hecha: true })],
+    });
+    expect(eventos.map(puedeArrastrarse)).toEqual([false, false]);
   });
 });
