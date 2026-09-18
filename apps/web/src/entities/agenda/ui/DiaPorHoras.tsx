@@ -26,14 +26,15 @@ function minutosDeAhora(ahora: Date): number {
 export function DiaPorHoras({ fecha, hoy, eventos, acciones, ahora }: DiaPorHorasProps) {
   const [todoElReloj, setTodoElReloj] = useState(false);
   const idDeLaFranja = useId();
-  const idDeLasHoras = useId();
+  const idDeLoHecho = useId();
   const grilla = useRef<HTMLDivElement>(null);
-  const primeraConAlgo = useRef<HTMLLIElement>(null);
+  const primeraConAlgo = useRef<HTMLDivElement>(null);
 
   const dia = diaPorHoras(eventos, todoElReloj ? TODO_EL_RELOJ : HORARIO_DEL_TALLER);
   const pendientes = dia.todoElDia.filter((evento) => !estaHecha(evento));
   const hechas = dia.todoElDia.filter(estaHecha);
   const conAlgo = dia.franjas.find((franja) => franja.eventos.length > 0);
+  const quedaAlgoPendiente = eventos.some((evento) => !estaHecha(evento));
 
   useEffect(() => {
     const destino = primeraConAlgo.current;
@@ -44,8 +45,7 @@ export function DiaPorHoras({ fecha, hoy, eventos, acciones, ahora }: DiaPorHora
     contenedor.scrollTop = Math.max(0, contenedor.scrollTop + caja.top - marco.top - 8);
   }, [fecha]);
 
-  const esHoy = fecha === hoy;
-  const minutos = esHoy && ahora !== undefined ? minutosDeAhora(ahora) : null;
+  const minutos = fecha === hoy && ahora !== undefined ? minutosDeAhora(ahora) : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -53,63 +53,82 @@ export function DiaPorHoras({ fecha, hoy, eventos, acciones, ahora }: DiaPorHora
         <p id={idDeLaFranja} className="text-meta font-semibold text-text-3">
           Todo el día
         </p>
-        {dia.todoElDia.length === 0 ? (
-          <p className="border-t border-hairline-soft py-2.5 text-label text-text-2">
-            Nada sin hora para este día.
+        {!quedaAlgoPendiente && (
+          <p className="border-t border-hairline-soft py-2.5 text-body text-text-2">
+            No queda nada pendiente para este día.
           </p>
-        ) : (
-          <ul aria-label={`Sin hora, el ${diaEnPalabras(fecha)}`}>
-            {[...pendientes, ...hechas].map((evento) => (
+        )}
+        {pendientes.length > 0 && (
+          <ul aria-label={`Lo pendiente del ${diaEnPalabras(fecha)}`}>
+            {pendientes.map((evento) => (
               <FilaDeEvento key={evento.id} evento={evento} hoy={hoy} acciones={acciones} enElDia />
             ))}
           </ul>
         )}
+        {hechas.length > 0 && (
+          <div className="pt-2">
+            <p id={idDeLoHecho} className="pb-1.5 text-meta font-semibold text-text-3">
+              Hecho
+            </p>
+            <ul aria-labelledby={idDeLoHecho}>
+              {hechas.map((evento) => (
+                <FilaDeEvento
+                  key={evento.id}
+                  evento={evento}
+                  hoy={hoy}
+                  acciones={acciones}
+                  enElDia
+                />
+              ))}
+            </ul>
+          </div>
+        )}
+        {dia.todoElDia.length === 0 && quedaAlgoPendiente && (
+          <p className="border-t border-hairline-soft py-2.5 text-label text-text-2">
+            Nada sin hora para este día.
+          </p>
+        )}
       </section>
 
       <div ref={grilla} className="min-h-0 flex-1 overflow-y-auto pt-3">
-        <p id={idDeLasHoras} className="sr-only">
-          Hora por hora del {diaEnPalabras(fecha)}
-        </p>
-        <ol aria-labelledby={idDeLasHoras} className="relative list-none">
-          {dia.franjas.map((franja) => {
-            const vacia = franja.eventos.length === 0;
-            const laDeAhora =
-              minutos !== null && minutos >= franja.hora * 60 && minutos < (franja.hora + 1) * 60;
-            return (
-              <li
-                key={franja.hora}
-                ref={franja.hora === conAlgo?.hora ? primeraConAlgo : undefined}
-                data-hora={franja.desde}
-                data-vacia={String(vacia)}
-                className="grid grid-cols-[3rem_1fr] items-start gap-2 border-t border-hairline-soft"
+        {dia.franjas.map((franja) => {
+          const vacia = franja.eventos.length === 0;
+          const laDeAhora =
+            minutos !== null && minutos >= franja.hora * 60 && minutos < (franja.hora + 1) * 60;
+          return (
+            <div
+              key={franja.hora}
+              ref={franja.hora === conAlgo?.hora ? primeraConAlgo : undefined}
+              data-hora={franja.desde}
+              data-vacia={String(vacia)}
+              className="grid grid-cols-[3rem_1fr] items-start gap-2 border-t border-hairline-soft"
+            >
+              <span
+                className={`py-2 text-meta tabular-nums ${
+                  laDeAhora ? 'font-semibold text-alerta' : 'text-text-3'
+                }`}
               >
-                <span
-                  className={`py-2 text-meta tabular-nums ${
-                    laDeAhora ? 'font-semibold text-alerta' : 'text-text-3'
-                  }`}
-                >
-                  {franja.desde}
-                </span>
-                {vacia ? (
-                  <span className="min-h-9" />
-                ) : (
-                  <ul className="min-w-0">
-                    {conLoHechoAlFinal(franja.eventos).map((evento) => (
-                      <FilaDeEvento
-                        key={evento.id}
-                        evento={evento}
-                        hoy={hoy}
-                        acciones={acciones}
-                        enElDia
-                        sinBorde
-                      />
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+                {franja.desde}
+              </span>
+              {vacia ? (
+                <span className="min-h-9" />
+              ) : (
+                <ul className="min-w-0">
+                  {conLoHechoAlFinal(franja.eventos).map((evento) => (
+                    <FilaDeEvento
+                      key={evento.id}
+                      evento={evento}
+                      hoy={hoy}
+                      acciones={acciones}
+                      enElDia
+                      sinBorde
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
 
         <button
           type="button"

@@ -195,8 +195,11 @@ test('una entrega no se borra desde la agenda: explica de dónde sale y abre el 
 
   const detalle = await abrirElDiaDeHoy(page, isMobile, '2 cosas');
   const entrega = detalle.getByRole('listitem').filter({ hasText: 'E2E Mesada y alacena' });
+  // Donde hay grilla, el texto nombra también el arrastre (ADR 0045).
   await expect(entrega).toContainText(
-    'Sale de la entrega estimada del proyecto. Para moverla, cambiá la fecha ahí.',
+    isMobile
+      ? 'Sale de la entrega estimada del proyecto. Para moverla, cambiá la fecha ahí.'
+      : 'Sale de la entrega estimada del proyecto. Arrastrala en el mes para moverla, o cambiá la fecha ahí.',
   );
   await expect(entrega.getByRole('button', { name: /Borrar/ })).toHaveCount(0);
   await expect(entrega.getByRole('checkbox')).toHaveCount(0);
@@ -554,6 +557,24 @@ function diaVecino(): string {
   return delMes(dia === 1 ? 2 : dia - 1);
 }
 
+// El día es alto desde que muestra la grilla de horas (ADR 0045), así que la hoja del celular entra
+// deslizándose una distancia larga. Medir una fila antes de que termine da un valor de otro cuadro.
+async function esperarQueSeAsiente(elemento: Locator): Promise<void> {
+  let previa = '';
+  await expect
+    .poll(
+      async () => {
+        const caja = await elemento.boundingBox();
+        const ahora = caja === null ? '' : `${String(caja.y)}×${String(caja.height)}`;
+        const quieta = ahora !== '' && ahora === previa;
+        previa = ahora;
+        return quieta;
+      },
+      { timeout: 5_000, intervals: [100] },
+    )
+    .toBe(true);
+}
+
 async function abrirElDia(page: Page, isMobile: boolean, fecha: string): Promise<Locator> {
   if (isMobile) {
     await page
@@ -561,10 +582,14 @@ async function abrirElDia(page: Page, isMobile: boolean, fecha: string): Promise
       .getByRole('button', { name: new RegExp(`^${diaEnPalabras(fecha)}`) })
       .click();
     await page.getByRole('button', { name: `Ver el ${diaEnPalabras(fecha)}` }).click();
-    return page.getByRole('dialog', { name: diaEnPalabras(fecha) });
+    const hoja = page.getByRole('dialog', { name: diaEnPalabras(fecha) });
+    await esperarQueSeAsiente(hoja);
+    return hoja;
   }
   await page.getByRole('button', { name: new RegExp(`^${diaEnPalabras(fecha)}(, hoy)?:`) }).click();
-  return page.getByRole('complementary', { name: `El ${diaEnPalabras(fecha)}` });
+  const capa = page.getByRole('complementary', { name: `El ${diaEnPalabras(fecha)}` });
+  await esperarQueSeAsiente(capa);
+  return capa;
 }
 
 function filaDe(detalle: Locator, texto: string): Locator {
@@ -975,9 +1000,15 @@ async function laCapaSeAnclaAlDia(
     }
     if (caso.fila === 'última') {
       expect(cajaDeLaCapa.y).toBeLessThan(cajaDeLaCelda.y);
-      expect(
-        Math.abs(cajaDeLaCapa.y + cajaDeLaCapa.height - (cajaDeLaCelda.y + cajaDeLaCelda.height)),
-      ).toBeLessThan(1);
+      // Con la grilla de horas adentro, la capa puede ser más alta que el espacio que hay arriba del
+      // día: ahí no puede pegar su borde de abajo al de la celda y toma el alto de la ventana, sin
+      // salirse (ADR 0045). Cuando entra, se sigue pegando.
+      const pegadaAlDia = Math.abs(
+        cajaDeLaCapa.y + cajaDeLaCapa.height - (cajaDeLaCelda.y + cajaDeLaCelda.height),
+      );
+      const tomaLaVentana =
+        cajaDeLaCapa.y <= 16.5 && cajaDeLaCapa.y + cajaDeLaCapa.height >= vista.height - 16.5;
+      expect(pegadaAlDia < 1 || tomaLaVentana).toBe(true);
     }
 
     await page.keyboard.press('Escape');
