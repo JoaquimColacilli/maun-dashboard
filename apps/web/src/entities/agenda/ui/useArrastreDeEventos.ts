@@ -13,6 +13,7 @@ import { diaEnPalabras, nombreDelEvento } from '../model/calendario';
 export const ESPERA_DEL_DEDO_MS = 350;
 export const MOVIMIENTO_QUE_ARRASTRA_PX = 4;
 export const MOVIMIENTO_QUE_CANCELA_LA_ESPERA_PX = 10;
+const CUADROS_PARA_DEVOLVER_EL_FOCO = 30;
 
 export type ConQue = 'puntero' | 'teclado';
 
@@ -57,6 +58,28 @@ function fechaBajoElPuntero(x: number, y: number): string | undefined {
   return celda?.dataset.fecha;
 }
 
+// El chip se desmonta de su celda y se monta en la de destino, así que el foco se cae al body y el
+// que va con teclado pierde el lugar. Se lo devolvemos cuando aparece del otro lado, y solo si
+// nadie más se lo llevó mientras tanto (ADR 0045).
+function devolverElFoco(id: string, destino: string): void {
+  const antes = document.activeElement;
+  let cuadros = 0;
+  const probar = (): void => {
+    const ahora = document.activeElement;
+    if (ahora !== null && ahora !== document.body && ahora !== antes) return;
+    const chip = document.querySelector<HTMLElement>(
+      `[data-fecha="${destino}"] [data-evento="${id}"]`,
+    );
+    if (chip !== null) {
+      chip.focus();
+      return;
+    }
+    cuadros += 1;
+    if (cuadros < CUADROS_PARA_DEVOLVER_EL_FOCO) requestAnimationFrame(probar);
+  };
+  requestAnimationFrame(probar);
+}
+
 export function useArrastreDeEventos({ fechas, alMover }: UsoDelArrastre): AccionesDelArrastre {
   const [arrastre, setArrastre] = useState<ArrastreEnCurso | null>(null);
   const [anuncio, setAnuncio] = useState('');
@@ -98,6 +121,7 @@ export function useArrastreDeEventos({ fechas, alMover }: UsoDelArrastre): Accio
         `Moviste ${nombreDelEvento(arrastrado.evento)} al ${diaEnPalabras(arrastrado.destino)}. El aviso tiene Deshacer.`,
       );
       alMover(arrastrado.evento, arrastrado.destino);
+      devolverElFoco(arrastrado.evento.id, arrastrado.destino);
     },
     [alMover, soltar],
   );

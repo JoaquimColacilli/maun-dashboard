@@ -135,6 +135,7 @@ export function GrillaDelMes({
                   <button
                     key={evento.id}
                     type="button"
+                    data-evento={evento.id}
                     title={nombreDelEvento(evento)}
                     aria-describedby={propiasDelArrastre === undefined ? undefined : idDeLaAyuda}
                     {...(evento.clase === 'propia' ? abreLaCapa : {})}

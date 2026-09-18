@@ -234,6 +234,11 @@ alcanzable. La barra espaciadora no tenía uso en estos botones.
   destino se sale del mes.
 - La ayuda del gesto está una sola vez en la grilla y cada chip arrastrable la referencia con
   `aria-describedby`.
+- **Al soltar, el foco sigue al chip hasta su día nuevo.** El chip se desmonta de la celda vieja y se
+  monta en la de destino, así que el foco se caía al `body` y el que va con teclado quedaba obligado a
+  tabular de nuevo desde arriba de la página. `devolverElFoco` lo busca por `data-evento` dentro de la
+  celda de destino en los cuadros siguientes y se lo devuelve, y se abstiene si para entonces el foco
+  está en otra cosa, para no robárselo a nadie. Escape ya lo dejaba bien; era solo el camino de Enter.
 
 ### La accesibilidad, y por qué sale barata
 

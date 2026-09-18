@@ -453,9 +453,11 @@ test.describe('arrastrar en la agenda', () => {
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
     await expect(anuncio).toContainText('Moviste E2E Con teclado', CARGA);
-    await expect(
-      page.locator(`[data-fecha="${diaDelMes(11)}"] button[title="E2E Con teclado"]`),
-    ).toBeVisible(CARGA);
+    const movido = page.locator(`[data-fecha="${diaDelMes(11)}"] button[title="E2E Con teclado"]`);
+    await expect(movido).toBeVisible(CARGA);
+    // El foco sigue al chip hasta su día nuevo: si se cayera al body habría que tabular de nuevo
+    // desde arriba de la página.
+    await expect(movido).toBeFocused();
 
     await page.screenshot({ path: testInfo.outputPath('agenda-arrastre-teclado.png') });
   });
