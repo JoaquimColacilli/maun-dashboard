@@ -318,6 +318,13 @@ horas (todas dentro de la ventana, dentro de la grilla y sin tapar su celda):
 | Primera fila, martes 1 | derecha    | 603 | 463   |
 | Última fila, miérc. 30 | der/arriba | 761 | 463   |
 
+**Lo que cambió en la última fila, y hay que decirlo.** Antes, con una capa corta, el borde de abajo se
+pegaba al de la celda. Con la grilla de horas la capa es más alta que el espacio que queda arriba del
+día, así que no puede pegarse: toma el alto de la ventana (de y = 16 a 900 a 1440 × 900) y sigue sin
+salirse, sin tapar la celda y con la punta apuntando al día. El test de la capa pasó a aceptar las dos
+cosas —pegada al día cuando entra, o el alto de la ventana cuando no— en vez de exigir solo la
+primera.
+
 ## Decidido por mi cuenta
 
 - **Un `BloquePlegable` en `shared/ui`**, hecho con `<details>/<summary>` nativo. La ficha ya era larga
@@ -452,6 +459,14 @@ horas (todas dentro de la ventana, dentro de la grilla y sin tapar su celda):
     nada. Se arregló de dos lados (un `stateReducer` que conserva lo escrito al salir del campo, y un
     `preventDefault` en el `mousedown` del botón, que además deja el cursor adentro para el ítem
     siguiente). Apareció en el proyecto `celular` después de pasar en `escritorio`.
+  - **El día por horas se había llevado puestas las listas «Lo pendiente» y «Hecho»** del panel del
+    día, que el ADR 0034 y el 0042 fijan. Lo encontró la suite entera, no el spec nuevo: doce tests de
+    `agenda.spec.ts` y de `hecho-y-marcado.spec.ts` en rojo. Las dos listas volvieron adentro de la
+    franja de todo el día, con sus nombres de siempre.
+  - **La hoja del día del celular pasó a ser alta**, y su entrada deslizándose hacia arriba tardaba lo
+    suficiente como para que dos medidas seguidas de un test cayeran en cuadros distintos, con una fila
+    aparentemente arriba de otra. `abrirElDia` ahora espera a que la hoja se quede quieta antes de
+    devolverla. No era un problema de orden en el DOM: el árbol de accesibilidad estaba bien.
   - **El Enter del teclado del arrastre dejaba colgada la marca que suprime el click.** El teclado no
     genera un click, así que la marca se quedaba puesta y se tragaba el toque siguiente: después de
     mover algo con el teclado, el primer click en un chip no abría el día. Se arregló poniendo la marca
