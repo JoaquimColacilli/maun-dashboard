@@ -37,6 +37,9 @@ comment on type public.rol_household is 'Rol de un usuario dentro de su househol
 create type public.tesoro as enum ('hogar', 'maun', 'diezmo', 'cocos');
 comment on type public.tesoro is 'Las cuatro cajas: hogar (la familia), maun (el taller), diezmo (lo apartado para el diezmo) y cocos (el ahorro invertido).';
 
+create type public.tipo_de_necesidad as enum ('herraje', 'herramienta');
+comment on type public.tipo_de_necesidad is 'Si lo que hace falta es un herraje (bisagras, pistones, tiradores, tarugos) o una herramienta (sierra circular, lijadora de banda, multitool). El dueño las nombró como dos listas distintas, pero las dos son «lo que necesito para este trabajo» y se repiten entre trabajos: una sola tabla con el tipo adentro (ADR 0045).';
+
 create type public.tipo_movimiento as enum ('ingreso', 'gasto', 'transferencia', 'pago_diezmo', 'aporte_cocos', 'ajuste');
 comment on type public.tipo_movimiento is 'Tipo de un movimiento cargado a mano. Cada tipo fija qué lados (origen, destino) lleva: ver el check movimientos_forma_segun_tipo.';
 
@@ -383,6 +386,50 @@ grant delete, insert, maintain, references, select, trigger, truncate, update on
 grant insert (id, fecha, tipo, tesoro_origen, tesoro_destino, monto_centavos, categoria, descripcion, proyecto_id, deleted_at) on public.movimientos to authenticated;
 grant update (id, fecha, tipo, tesoro_origen, tesoro_destino, monto_centavos, categoria, descripcion, proyecto_id, deleted_at) on public.movimientos to authenticated;
 
+create table public.necesidades (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  proyecto_id uuid not null,
+  tipo tipo_de_necesidad not null,
+  nombre text not null,
+  cantidad integer,
+  listo boolean not null default false,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint necesidades_cantidad_valida CHECK (cantidad IS NULL OR cantidad > 0),
+  constraint necesidades_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint necesidades_nombre_valido CHECK (btrim(nombre) <> ''::text AND char_length(nombre) <= 120),
+  constraint necesidades_pkey PRIMARY KEY (id),
+  constraint necesidades_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id)
+);
+comment on table public.necesidades is 'Los herrajes y las herramientas que hacen falta para un trabajo. Hasta ahora el dueño las escribía a mano en las notas del trabajo, en dos listas. El catálogo de nombres no es otra tabla: son los nombres distintos que ya usó, que salen de estas mismas filas (ADR 0045).';
+comment on column public.necesidades.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.necesidades.tipo is 'Herraje o herramienta. El autocompletado sugiere solo nombres del mismo tipo.';
+comment on column public.necesidades.nombre is 'Cómo lo llama él: «Bisagras», «Sierra Circular». Es también la clave del catálogo derivado.';
+comment on column public.necesidades.cantidad is 'Cuántos, si lleva número. Null es «hace falta y no conté»: una herramienta, o los tarugos.';
+comment on column public.necesidades.listo is 'Ya lo pedió, lo compró o lo tiene separado. Se queda en la lista, tachado, como una anotación tildada de la agenda.';
+comment on column public.necesidades.deleted_at is 'Borrado lógico, como en todo el household.';
+CREATE INDEX necesidades_household_actualizado ON public.necesidades USING btree (household_id, updated_at);
+CREATE INDEX necesidades_household_proyecto ON public.necesidades USING btree (household_id, proyecto_id);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON necesidades FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.necesidades enable row level security;
+create policy necesidades_alta on public.necesidades as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy necesidades_edicion on public.necesidades as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy necesidades_lectura on public.necesidades as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.necesidades to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.necesidades to service_role;
+grant insert (id, proyecto_id, tipo, nombre, cantidad, listo, deleted_at) on public.necesidades to authenticated;
+grant update (id, proyecto_id, tipo, nombre, cantidad, listo, deleted_at) on public.necesidades to authenticated;
+
 create table public.opciones_de_presupuesto (
   id uuid not null default private.uuidv7(),
   household_id uuid not null default private.household_actual(),
@@ -519,8 +566,18 @@ create table public.proyectos (
   entrega_importante boolean not null default false,
   presupuesto_importante boolean not null default false,
   sena_bp integer,
+  costo_madera_centavos bigint,
+  costo_herrajes_centavos bigint,
+  costo_flete_centavos bigint,
+  costo_ayudante_centavos bigint,
+  entrega_hora time without time zone,
+  visita_hora time without time zone,
   constraint presupuesto_aprobado TRIGGER DEFERRABLE INITIALLY DEFERRED,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
+  constraint proyectos_costo_ayudante_no_negativo CHECK (costo_ayudante_centavos IS NULL OR costo_ayudante_centavos >= 0),
+  constraint proyectos_costo_flete_no_negativo CHECK (costo_flete_centavos IS NULL OR costo_flete_centavos >= 0),
+  constraint proyectos_costo_herrajes_no_negativo CHECK (costo_herrajes_centavos IS NULL OR costo_herrajes_centavos >= 0),
+  constraint proyectos_costo_madera_no_negativo CHECK (costo_madera_centavos IS NULL OR costo_madera_centavos >= 0),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint proyectos_household_id_key UNIQUE (household_id, id),
@@ -575,6 +632,12 @@ comment on column public.proyectos.visita_importante is 'Marca de importante de 
 comment on column public.proyectos.entrega_importante is 'Marca de importante de la entrega en la agenda. La entrega entregada la conserva.';
 comment on column public.proyectos.presupuesto_importante is 'Marca de importante del vencimiento del presupuesto en la agenda.';
 comment on column public.proyectos.sena_bp is 'La seña de este trabajo, en puntos básicos, cuando no es la del taller. Null es "la de ajustes". El dueño dijo que la seña normal es la mitad pero puede ser otra.';
+comment on column public.proyectos.costo_madera_centavos is 'Lo que el dueño calcula que va a gastar en madera para este trabajo, en centavos. Null es «todavía no lo estimé», que no es lo mismo que cero. No es un gasto real ni alimenta el presupuesto: el presupuesto incluye su ganancia y la decide él (ADR 0045).';
+comment on column public.proyectos.costo_herrajes_centavos is 'Lo estimado en herrajes, en centavos. Null es «todavía no lo estimé».';
+comment on column public.proyectos.costo_flete_centavos is 'Lo estimado en flete, en centavos. Null es «todavía no lo estimé».';
+comment on column public.proyectos.costo_ayudante_centavos is 'Lo estimado en ayudante, en centavos. Null es «todavía no lo estimé».';
+comment on column public.proyectos.entrega_hora is 'A qué hora es la entrega, si tiene hora. Null es «en algún momento de ese día», como en una anotación. La agenda pone lo que tiene hora en su renglón y lo demás en la franja de todo el día (ADR 0045).';
+comment on column public.proyectos.visita_hora is 'A qué hora es la visita de relevamiento, si tiene hora. Null es «en algún momento de ese día».';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -595,8 +658,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora) on public.proyectos to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -777,6 +840,9 @@ AS $function$
     'opciones_de_presupuesto', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.opciones_de_presupuesto t where t.deleted_at is null
     ),
+    'necesidades', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.necesidades t where t.deleted_at is null
+    ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.deleted_at is null
     ),
@@ -885,6 +951,9 @@ begin
     'opciones_de_presupuesto', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.opciones_de_presupuesto t where t.updated_at >= v_desde
     ),
+    'necesidades', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.necesidades t where t.updated_at >= v_desde
+    ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.updated_at >= v_desde
     ),
@@ -921,7 +990,7 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function guardar_preferencias_de_avisos(text,time without time zone,jsonb) is 'Cambia la zona horaria, la hora y qué avisa.';
 
-CREATE OR REPLACE FUNCTION public.guardar_proyecto(p_proyecto jsonb, p_pagos jsonb, p_gastos jsonb, p_opciones jsonb DEFAULT NULL::jsonb)
+CREATE OR REPLACE FUNCTION public.guardar_proyecto(p_proyecto jsonb, p_pagos jsonb, p_gastos jsonb, p_opciones jsonb DEFAULT NULL::jsonb, p_necesidades jsonb DEFAULT NULL::jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
  SET search_path TO ''
@@ -935,6 +1004,8 @@ declare
   v_vencimiento date;
   v_visita_hecha boolean;
   v_sena_bp integer;
+  v_entrega_hora time;
+  v_visita_hora time;
   v_household_id uuid;
   v_cuantas integer;
   v_aprobadas integer;
@@ -955,6 +1026,13 @@ begin
     raise exception 'Las opciones de presupuesto van en un array jsonb' using errcode = '22023';
   end if;
 
+  if p_necesidades is not null and jsonb_typeof(p_necesidades) <> 'array' then
+    raise exception 'Los herrajes y las herramientas van en un array jsonb' using errcode = '22023';
+  end if;
+
+  -- Las horas se leen como texto por la misma razón que las fechas: un <input type="time"> vacío
+  -- manda "" y un cast directo cortaría la llamada entera con 22007, un rechazo definitivo sin
+  -- mensaje que tapa la cola (ADR 0015).
   select * into v_p from jsonb_to_record(p_proyecto) as x (
     id uuid,
     version integer,
@@ -974,7 +1052,9 @@ begin
     notas text,
     vencimiento_presupuesto text,
     visita_hecha boolean,
-    sena_bp integer
+    sena_bp integer,
+    entrega_hora text,
+    visita_hora text
   );
 
   if v_p.id is null or v_p.cliente_id is null or v_p.titulo is null or v_p.estado is null then
@@ -1011,6 +1091,24 @@ begin
     raise exception 'Cada opción de presupuesto necesita id y monto' using errcode = '22004';
   end if;
 
+  -- El tipo se lee como texto y se valida contra sus dos valores: castearlo de una cortaría con un
+  -- 22P02 crudo, que es definitivo y no tiene traducción.
+  if exists (
+    select 1
+    from jsonb_to_recordset(coalesce(p_necesidades, '[]'::jsonb))
+      as r (id uuid, tipo text, nombre text, borrado boolean)
+    where r.id is null
+       or (
+         not coalesce(r.borrado, false)
+         and (
+           coalesce(r.tipo, '') not in ('herraje', 'herramienta')
+           or btrim(coalesce(r.nombre, '')) = ''
+         )
+       )
+  ) then
+    raise exception 'Cada herraje o herramienta necesita id, tipo y nombre' using errcode = '22004';
+  end if;
+
   -- Primer lock: el proyecto, con for update, la misma disciplina que private.liquidar. La guarda
   -- de pagos y gastos toma for share sobre esta misma fila, así que un cobro que llega en el mismo
   -- instante se serializa con este guardado: o la liquidación espera y suma los pagos nuevos, o
@@ -1032,6 +1130,16 @@ begin
   v_sena_bp := case
     when p_proyecto ? 'sena_bp' then v_p.sena_bp
     else v_actual.sena_bp
+  end;
+
+  v_entrega_hora := case
+    when p_proyecto ? 'entrega_hora' then nullif(v_p.entrega_hora, '')::time
+    else v_actual.entrega_hora
+  end;
+
+  v_visita_hora := case
+    when p_proyecto ? 'visita_hora' then nullif(v_p.visita_hora, '')::time
+    else v_actual.visita_hora
   end;
 
   v_household_id := coalesce(v_actual.household_id, private.household_actual());
@@ -1090,13 +1198,15 @@ begin
       v_actual.presupuesto_centavos, v_actual.forma_pago, v_actual.comprobante,
       v_actual.fecha_visita, v_actual.ultimo_contacto, v_actual.fecha_inicio,
       v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas,
-      v_actual.vencimiento_presupuesto, v_actual.visita_hecha, v_actual.sena_bp
+      v_actual.vencimiento_presupuesto, v_actual.visita_hecha, v_actual.sena_bp,
+      v_actual.entrega_hora, v_actual.visita_hora
     ) is not distinct from (
       v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
       v_presupuesto, v_p.forma_pago, v_p.comprobante,
       v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio,
       v_p.entrega_estimada, v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''),
-      coalesce(v_p.notas, ''), v_vencimiento, v_visita_hecha, v_sena_bp
+      coalesce(v_p.notas, ''), v_vencimiento, v_visita_hecha, v_sena_bp,
+      v_entrega_hora, v_visita_hora
     );
 
     -- Un guardado hecho sin señal sobre una versión vieja no pisa en silencio lo que hay. La
@@ -1122,7 +1232,8 @@ begin
   --
   -- La edición manda la fila entera y no solo las columnas que cambiaron, al revés que el resto de
   -- las mutaciones (ADR 0010): acá el chequeo de versión es la garantía más fuerte, porque si el
-  -- servidor cambió algo el guardado se rechaza en vez de pisarlo en silencio.
+  -- servidor cambió algo el guardado se rechaza en vez de pisarlo en silencio. Los cuatro costos
+  -- estimados quedan afuera a propósito: van por su propio update, como las marcas de la agenda.
   if v_existia then
     update public.proyectos set
       cliente_id = v_p.cliente_id,
@@ -1141,7 +1252,9 @@ begin
       notas = coalesce(v_p.notas, ''),
       vencimiento_presupuesto = v_vencimiento,
       visita_hecha = v_visita_hecha,
-      sena_bp = v_sena_bp
+      sena_bp = v_sena_bp,
+      entrega_hora = v_entrega_hora,
+      visita_hora = v_visita_hora
     where id = v_p.id
     returning * into v_fila;
   else
@@ -1149,13 +1262,14 @@ begin
       insert into public.proyectos (
         id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
         fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega,
-        direccion_entrega, notas, vencimiento_presupuesto, visita_hecha, sena_bp
+        direccion_entrega, notas, vencimiento_presupuesto, visita_hecha, sena_bp,
+        entrega_hora, visita_hora
       ) values (
         v_p.id, v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
         v_presupuesto, v_p.forma_pago, v_p.comprobante,
         v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio, v_p.entrega_estimada,
         v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
-        v_vencimiento, v_visita_hecha, v_sena_bp
+        v_vencimiento, v_visita_hecha, v_sena_bp, v_entrega_hora, v_visita_hora
       )
       returning * into v_fila;
     exception
@@ -1218,6 +1332,24 @@ begin
       aprobada = excluded.aprobada;
   end if;
 
+  -- Lo mismo con lo que hace falta: sin la clave no se toca. No hay índice único parcial acá, así que
+  -- el upsert va de una y el orden entre filas no importa.
+  if p_necesidades is not null then
+    insert into public.necesidades (id, proyecto_id, tipo, nombre, cantidad, listo)
+    select r.id, v_fila.id, r.tipo::public.tipo_de_necesidad, btrim(r.nombre), r.cantidad,
+           coalesce(r.listo, false)
+    from jsonb_to_recordset(p_necesidades) as r (
+      id uuid, tipo text, nombre text, cantidad integer, listo boolean, borrado boolean
+    )
+    where not coalesce(r.borrado, false)
+    on conflict (id) do update set
+      proyecto_id = excluded.proyecto_id,
+      tipo = excluded.tipo,
+      nombre = excluded.nombre,
+      cantidad = excluded.cantidad,
+      listo = excluded.listo;
+  end if;
+
   -- La baja de una fila hija es la que el cliente vio y sacó del formulario, marcada en el mismo
   -- array. Nunca es "todo lo que no vino en el pedido": la version del proyecto no se mueve cuando
   -- solo cambian sus hijos, así que un guardado viejo borraría en silencio un pago cargado desde
@@ -1245,6 +1377,14 @@ begin
     and coalesce(r.borrado, false)
     and o.proyecto_id = v_fila.id
     and o.deleted_at is null;
+
+  update public.necesidades n
+  set deleted_at = now()
+  from jsonb_to_recordset(coalesce(p_necesidades, '[]'::jsonb)) as r (id uuid, borrado boolean)
+  where n.id = r.id
+    and coalesce(r.borrado, false)
+    and n.proyecto_id = v_fila.id
+    and n.deleted_at is null;
 
   -- Vuelve el agregado entero: las filas vivas más las que este guardado dio de baja, para que el
   -- cliente las saque de su réplica sin esperar al próximo delta.
@@ -1281,12 +1421,24 @@ begin
             select (r ->> 'id')::uuid from jsonb_array_elements(coalesce(p_opciones, '[]'::jsonb)) as r
           )
         )
+    ),
+    'necesidades', (
+      select coalesce(jsonb_agg(to_jsonb(n)), '[]'::jsonb)
+      from public.necesidades n
+      where n.household_id = v_fila.household_id
+        and n.proyecto_id = v_fila.id
+        and (
+          n.deleted_at is null
+          or n.id in (
+            select (r ->> 'id')::uuid from jsonb_array_elements(coalesce(p_necesidades, '[]'::jsonb)) as r
+          )
+        )
     )
   );
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos y sus opciones de presupuesto en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. p_opciones en null quiere decir "no toques las opciones", para que un bundle viejo no las borre.';
+comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto y lo que hace falta para el trabajo en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. p_opciones y p_necesidades en null quieren decir "no toques eso", para que un bundle viejo no lo borre. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
 
 CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
  RETURNS boolean
@@ -1440,6 +1592,12 @@ begin
     and deleted_at is null;
 
   update public.opciones_de_presupuesto
+  set deleted_at = new.deleted_at
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and deleted_at is null;
+
+  update public.necesidades
   set deleted_at = new.deleted_at
   where household_id = new.household_id
     and proyecto_id = new.id
