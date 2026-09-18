@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`) y la agenda con lo que se avisa (`agenda.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034 y las de la seña en el 0043.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`) y la agenda con lo que se avisa (`agenda.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043 y las de los costos, lo que hace falta y el día por horas en el 0045.
 
 ## Pureza (la aplican las herramientas)
 
@@ -40,6 +40,11 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 **No tiene gemela en SQL y no la necesita**, como `resumenDelMes` y `sueldoDelMes`: nada en la base consume la seña. La base sí guarda los dos porcentajes, con su `check` de rango.
 
+## El margen y lo que hace falta (ADR 0045)
+
+- `calcularMargen` es la otra resta que pidió el dueño: el presupuesto menos lo que calcula gastar. Las cuatro categorías son fijas (`CATEGORIAS_DE_COSTO`: madera, herrajes, flete, ayudante) y **null no es cero**: null es «todavía no lo estimé» y cero es «este trabajo no lleva flete». Devuelve una unión de tres situaciones, no números sueltos, y **el margen puede ser negativo**: eso es justamente lo que hay que ver. **No hay ninguna función que vaya del costo al presupuesto**, y no la agregues: el presupuesto incluye la ganancia, que la decide él.
+- `catalogoDeNecesidades` arma el catálogo de nombres desde las filas que ya existen: no hay tabla de catálogo. Ordena por lo más usado, después por lo más reciente y después alfabético, para que la lista no baile. `claveDelNombre` compara sin acentos ni mayúsculas, y `sugerenciasDeNecesidad` pone adelante lo que **empieza** con lo escrito y descarta lo que ya está escrito igual.
+
 ## El CUIT
 
 `revisarCuit` **avisa, no bloquea** (ADR 0014). Devuelve cuatro estados y no un booleano, porque el caso del módulo 11 que da 10 no tiene una convención única: `verificadorDeCuit` devuelve `null` ahí en vez de elegir entre "inválido" y "mapearlo a 9", y `revisarCuit` lo llama `ambiguo`. El prefijo y el verificador que no cierra también son advertencias. Lo único que la app frena es el largo, y no por el checksum: es el `check` de formato de la base, y un rechazo definitivo tapa la cola.
@@ -70,6 +75,9 @@ destino); un asiento es un lado (ADR 0018).
 
 - **`eventosDeLaAgenda(datos, rango)` calcula lo que sale de los trabajos; nada de eso se guarda.** Entrega con `entregaEstimada`: pendiente si la obra está `en_curso`, hecha si está `entregado` o `cobrado`. Visita con `fechaVisita`: pendiente mientras el trabajo está en seguimiento, hecha con `visitaHecha`, en cualquier estado. Presupuesto si está en seguimiento, ni en `presupuesto_enviado` ni en `presupuesto_estimativo` (los dos esperan al cliente), con `vencimientoPresupuesto`. Suma las anotaciones del rango y ordena por fecha, lo que tiene hora primero, la hora, el peso de la categoría y el texto.
 - **Todo evento lleva `hecha` e `importante`, propio o derivado** (ADR 0042). **`hecha` sale de un hecho, nunca de la posición en el embudo**: la entrega, del estado, porque entregar y volver al taller mueven el estado de verdad; la visita, de `visitaHecha`, que cambiar de etapa no toca. Si agregás un derivado, decidí primero de qué hecho sale su `hecha`.
+- **Todo evento lleva `hora`, propio o derivado** (ADR 0045). La entrega y la visita salen de `proyectos.entrega_hora` y `proyectos.visita_hora`; el vencimiento del presupuesto es un plazo y nunca lleva. El orden ya ponía lo que tiene hora antes de lo que no.
+- **`diaPorHoras(eventos, rango)` parte un día en la franja de todo el día y los renglones por hora.** El rango por defecto es `HORARIO_DEL_TALLER` (07 a 20) y **se estira solo para que nada quede escondido**: si hay algo a las cinco, la grilla empieza a las cinco. `TODO_EL_RELOJ` es el reloj entero.
+- **`puedeArrastrarse(evento)` es `!evento.hecha`.** Lo hecho figura en el día en que estaba prometido y moverlo sería reescribir lo que pasó.
 - **`eventosParaAvisar(datos, hoy, preferencias)` usa la misma función.** La anticipación es una ventana, de hoy a N días, no un día exacto. Salen lo inactivo y lo hecho.
 - `vencimientoDelPresupuesto` son `DIAS_HABILES_PARA_PRESUPUESTAR` (5, una semana de trabajo) días hábiles (ADR 0038). `sumarDias` y `diasEntre` cuentan en UTC sobre fechas `AAAA-MM-DD`: sin librería de fechas y sin `Temporal`.
 - **No tiene gemela en SQL: la base no calcula eventos.** La función de borde de los avisos importa este código fuente con Deno, que es otra razón para los imports relativos con `.ts`.
