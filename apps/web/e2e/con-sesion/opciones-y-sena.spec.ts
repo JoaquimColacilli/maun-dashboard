@@ -241,6 +241,8 @@ test('sin opciones, el pasaje sigue pidiendo el importe: sin escribirlo no pasa 
   await expect(campo).toBeInViewport();
 
   await campo.fill(String(CON_BACHA / 100));
+  // Sin cargar seña ahora, el saldo es el presupuesto menos lo que ya había cobrado.
+  await page.getByLabel('Seña que cobrás ahora').fill('');
   await expect(saldo).toHaveText('$ 444.200');
   await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
 
@@ -290,6 +292,7 @@ test('al pasar a Proyectos con opciones no hay presupuesto para escribir: se eli
   await lasOpcionesDelPasaje(page)
     .getByRole('radio', { name: /Los 2 escritorios/ })
     .check();
+  await page.getByLabel('Seña que cobrás ahora').fill('');
   const cuentas = page.locator('dl').first();
   await expect(cuentas).toContainText('$ 2.300.000');
   await expect(cuentas).toContainText('$ 2.150.000');

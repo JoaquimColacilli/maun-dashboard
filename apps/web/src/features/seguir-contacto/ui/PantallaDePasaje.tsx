@@ -1,4 +1,4 @@
-import { entregaEstimada } from '@maun/domain';
+import { entregaEstimada, porcentajeDeLaSena } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -14,16 +14,26 @@ import {
   opcionAprobada,
   rutaDeEdicion,
   rutaDelProyecto,
+  senaDelProyecto,
+  senaDelTaller,
   type Comprobante,
   type FormaDePago,
   type OpcionDePresupuesto,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
-import { mensajeDeSincronizacion } from '@/shared/api';
-import { formatearPesos, hoyLocal } from '@/shared/lib';
+import { useReplicaDelTaller } from '@/entities/replica';
+import { ajustesDe, mensajeDeSincronizacion } from '@/shared/api';
+import { formatearPesos, formatearPorcentaje, hoyLocal, uuidv7 } from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
-import { errorDelPasaje, guardadoDelPasaje, presupuestoDelPasaje } from '../model/pasaje';
+import {
+  errorDelPasaje,
+  guardadoDelPasaje,
+  presupuestoDelPasaje,
+  resumenDelPasaje,
+  senaDelPasaje,
+  senaSugerida,
+} from '../model/pasaje';
 
 export interface PantallaDePasajeProps {
   resumen: ResumenDeProyecto;
@@ -33,6 +43,7 @@ export interface PantallaDePasajeProps {
 export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const navegar = useNavigate();
   const idCampos = useId();
+  const replica = useReplicaDelTaller();
   const { proyecto, cliente } = resumen;
   const hoy = hoyLocal();
 
@@ -63,7 +74,38 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
 
   const hayOpciones = opciones.length > 0;
   const aprobado = presupuestoDelPasaje(opciones, { presupuesto, opcion });
-  const saldo = aprobado === null ? null : Math.max(0, aprobado - resumen.cobrado);
+
+  const porcentaje = porcentajeDeLaSena(
+    senaDelProyecto(proyecto),
+    senaDelTaller(ajustesDe(replica)),
+  );
+  const esperada = senaDelPasaje(
+    aprobado,
+    resumen.cobrado,
+    senaDelTaller(ajustesDe(replica)),
+    senaDelProyecto(proyecto),
+  );
+  const [sena, setSena] = useState<number | null>(() => senaSugerida(esperada));
+  const [senaAMano, setSenaAMano] = useState(false);
+  const cuenta = resumenDelPasaje(aprobado, resumen.cobrado, sena);
+  const [idDelPago] = useState(uuidv7);
+
+  function elegirOpcion(id: string): void {
+    setOpcion(id);
+    setFalta(undefined);
+    if (senaAMano) return;
+    const otra = opciones.find((una) => una.id === id);
+    setSena(
+      senaSugerida(
+        senaDelPasaje(
+          otra?.monto_centavos ?? null,
+          resumen.cobrado,
+          senaDelTaller(ajustesDe(replica)),
+          senaDelProyecto(proyecto),
+        ),
+      ),
+    );
+  }
 
   useEffect(() => {
     if (guardar.isPaused) {
@@ -88,8 +130,9 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
       guardadoDelPasaje(
         proyecto,
         opciones,
-        { presupuesto, opcion, forma, comprobante, inicio, entrega, direccion },
+        { presupuesto, opcion, sena, forma, comprobante, inicio, entrega, direccion },
         hoy,
+        idDelPago,
       ),
       {
         onSuccess: () => {
@@ -163,8 +206,7 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
                     value={una.id}
                     checked={opcion === una.id}
                     onChange={() => {
-                      setOpcion(una.id);
-                      setFalta(undefined);
+                      elegirOpcion(una.id);
                     }}
                     className="size-5 flex-none accent-ink"
                   />
@@ -220,6 +262,18 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
                 onChange={(centavos) => {
                   setPresupuesto(centavos);
                   setFalta(undefined);
+                  if (!senaAMano) {
+                    setSena(
+                      senaSugerida(
+                        senaDelPasaje(
+                          centavos,
+                          resumen.cobrado,
+                          senaDelTaller(ajustesDe(replica)),
+                          senaDelProyecto(proyecto),
+                        ),
+                      ),
+                    );
+                  }
                 }}
                 className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
               />
@@ -236,6 +290,39 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
           </div>
         )}
 
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor={`${idCampos}-sena`}
+            className="flex items-baseline justify-between gap-2 text-label text-text-2"
+          >
+            Seña que cobrás ahora
+            <span className="text-meta text-text-3">
+              {formatearPorcentaje(porcentaje)}% del presupuesto
+            </span>
+          </label>
+          <div className="flex h-15 items-center gap-1.5 rounded-field border border-border px-3.5">
+            <span aria-hidden className="text-money-lg text-text-3">
+              $
+            </span>
+            <MoneyInput
+              id={`${idCampos}-sena`}
+              placeholder="0"
+              value={sena}
+              aria-describedby={`${idCampos}-sena-ayuda`}
+              onChange={(centavos) => {
+                setSena(centavos);
+                setSenaAMano(true);
+              }}
+              className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+            />
+          </div>
+          <p id={`${idCampos}-sena-ayuda`} className="text-meta leading-normal text-text-3">
+            {esperada.situacion === 'cubierta'
+              ? `Con lo que ya cobraste la seña está cubierta. Dejalo en blanco si hoy no cobrás nada más.`
+              : `Entra como un pago del trabajo, con la fecha de inicio y la forma de pago de acá. Si todavía no cobraste, dejalo en blanco.`}
+          </p>
+        </div>
+
         <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-field bg-surface px-3.5 py-3 text-body tabular-nums">
           {hayOpciones && (
             <>
@@ -245,11 +332,23 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
               </dd>
             </>
           )}
-          <dt className="text-text-2">Seña ya cobrada</dt>
-          <dd className="text-right font-medium text-hogar">{formatearPesos(resumen.cobrado)}</dd>
+          {cuenta.antes > 0 && (
+            <>
+              <dt className="text-text-2">Ya cobrado antes</dt>
+              <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.antes)}</dd>
+            </>
+          )}
+          {cuenta.ahora > 0 && (
+            <>
+              <dt className="text-text-2">Seña que cobrás ahora</dt>
+              <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.ahora)}</dd>
+            </>
+          )}
+          <dt className="text-text-2">Cobrado en total</dt>
+          <dd className="text-right font-semibold text-hogar">{formatearPesos(cuenta.cobrado)}</dd>
           <dt className="text-text-2">Saldo a cobrar</dt>
           <dd className="text-right font-semibold">
-            {saldo === null ? '—' : formatearPesos(saldo)}
+            {cuenta.saldo === null ? '—' : formatearPesos(cuenta.saldo)}
           </dd>
           {resumen.gastos > 0 && (
             <>
