@@ -149,6 +149,7 @@ create table public.archivos (
   updated_at timestamp with time zone not null default now(),
   deleted_at timestamp with time zone,
   version integer not null default 1,
+  visible_para_cliente boolean not null default false,
   constraint archivos_bytes_validos CHECK (bytes > 0 AND bytes <= 20971520),
   constraint archivos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint archivos_medidas_validas CHECK ((ancho IS NULL) = (alto IS NULL) AND (ancho IS NULL OR ancho > 0 AND alto > 0)),
@@ -165,6 +166,7 @@ comment on column public.archivos.bytes is 'Lo que ocupa en el bucket: el archiv
 comment on column public.archivos.ancho is 'Ancho en píxeles de una imagen, para reservarle el lugar antes de que cargue. Null en un PDF.';
 comment on column public.archivos.alto is 'Alto en píxeles de una imagen. Null en un PDF.';
 comment on column public.archivos.deleted_at is 'Borrado lógico, como en todo el household. La app quita el binario del bucket cuando vence el deshacer.';
+comment on column public.archivos.visible_para_cliente is 'Si este archivo se ve en la vista del cliente. Apagado por defecto, siempre: un archivo nuevo es privado hasta que el dueño decide lo contrario, nunca al revés (ADR 0046).';
 CREATE INDEX archivos_household_actualizado ON public.archivos USING btree (household_id, updated_at);
 CREATE INDEX archivos_household_proyecto ON public.archivos USING btree (household_id, proyecto_id);
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON archivos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
@@ -182,7 +184,37 @@ create policy archivos_lectura on public.archivos as permissive
 grant select on public.archivos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.archivos to service_role;
 grant insert (id, proyecto_id, nombre, tipo, bytes, ancho, alto, deleted_at) on public.archivos to authenticated;
-grant update (id, proyecto_id, nombre, tipo, bytes, ancho, alto, deleted_at) on public.archivos to authenticated;
+grant update (id, proyecto_id, nombre, tipo, bytes, ancho, alto, deleted_at, visible_para_cliente) on public.archivos to authenticated;
+
+create table public.cambios_de_estado (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null,
+  proyecto_id uuid not null,
+  desde estado_proyecto,
+  hacia estado_proyecto not null,
+  ocurrio_el date not null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint cambios_de_estado_cambia CHECK (desde IS DISTINCT FROM hacia),
+  constraint cambios_de_estado_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint cambios_de_estado_pkey PRIMARY KEY (id),
+  constraint cambios_de_estado_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id)
+);
+comment on table public.cambios_de_estado is 'Cuándo el trabajo pasó de una etapa a otra. Lo escribe un trigger sobre proyectos y nadie más: no hay grant de insert ni de update para la app. Hoy no lo muestra ninguna pantalla; se guarda desde ahora porque la línea de tiempo que el cliente va a ver necesita fechas que no se pueden reconstruir después (ADR 0046).';
+comment on column public.cambios_de_estado.desde is 'La etapa de la que salió. Null en el alta del trabajo.';
+comment on column public.cambios_de_estado.ocurrio_el is 'El día del cambio, en la hora del taller. El taller está en Argentina y un cambio guardado a las diez de la noche no puede quedar anotado al día siguiente.';
+comment on column public.cambios_de_estado.deleted_at is 'Sin uso: el registro no se borra. La columna está porque toda tabla del household la tiene.';
+CREATE INDEX cambios_de_estado_household_actualizado ON public.cambios_de_estado USING btree (household_id, updated_at);
+CREATE INDEX cambios_de_estado_household_proyecto ON public.cambios_de_estado USING btree (household_id, proyecto_id, ocurrio_el);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON cambios_de_estado FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.cambios_de_estado enable row level security;
+create policy cambios_de_estado_lectura on public.cambios_de_estado as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.cambios_de_estado to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.cambios_de_estado to service_role;
 
 create table public.clientes (
   id uuid not null default private.uuidv7(),
@@ -235,6 +267,52 @@ grant select on public.clientes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.clientes to service_role;
 grant insert (id, nombre, zona, telefono, email, direccion, origen_contacto, origen_detalle, condicion_fiscal, cuit, razon_social, domicilio_fiscal, notas, deleted_at) on public.clientes to authenticated;
 grant update (id, nombre, zona, telefono, email, direccion, origen_contacto, origen_detalle, condicion_fiscal, cuit, razon_social, domicilio_fiscal, notas, deleted_at) on public.clientes to authenticated;
+
+create table public.enlaces_publicos (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  proyecto_id uuid not null,
+  token_hash text not null,
+  revocado_at timestamp with time zone,
+  visitas integer not null default 0,
+  ultima_visita_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint enlaces_publicos_hash_valido CHECK (token_hash ~ '^[0-9a-f]{64}$'::text),
+  constraint enlaces_publicos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint enlaces_publicos_pkey PRIMARY KEY (id),
+  constraint enlaces_publicos_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint enlaces_publicos_visitas_no_negativas CHECK (visitas >= 0)
+);
+comment on table public.enlaces_publicos is 'El link sin sesión de un trabajo. Lo que se guarda es el sha256 del token, nunca el token: con lo que hay acá no se puede fabricar un link. El token se muestra una sola vez, cuando se crea (ADR 0046).';
+comment on column public.enlaces_publicos.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.enlaces_publicos.token_hash is 'sha256 del token en hexadecimal. El token es aleatorio y no es el id del trabajo: el id codifica el momento en que se creó y no sirve como secreto.';
+comment on column public.enlaces_publicos.revocado_at is 'Cuándo se dio de baja. Null es activo. No hay caducidad automática: el uso es compartirlo al empezar una obra que dura meses, y un link que se vence a la mitad solo hace que el cliente llame (ADR 0046).';
+comment on column public.enlaces_publicos.visitas is 'Cuántas veces se abrió. Lo cuenta public.vista_compartida().';
+comment on column public.enlaces_publicos.ultima_visita_at is 'La última vez que se abrió.';
+comment on column public.enlaces_publicos.deleted_at is 'Borrado lógico, como en todo el household. Borrar el trabajo se lleva su link.';
+CREATE INDEX enlaces_publicos_household_actualizado ON public.enlaces_publicos USING btree (household_id, updated_at);
+CREATE INDEX enlaces_publicos_household_proyecto ON public.enlaces_publicos USING btree (household_id, proyecto_id);
+CREATE UNIQUE INDEX enlaces_publicos_token ON public.enlaces_publicos USING btree (token_hash);
+CREATE UNIQUE INDEX enlaces_publicos_uno_vivo_por_trabajo ON public.enlaces_publicos USING btree (household_id, proyecto_id) WHERE ((revocado_at IS NULL) AND (deleted_at IS NULL));
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON enlaces_publicos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.enlaces_publicos enable row level security;
+create policy enlaces_publicos_alta on public.enlaces_publicos as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy enlaces_publicos_edicion on public.enlaces_publicos as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy enlaces_publicos_lectura on public.enlaces_publicos as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.enlaces_publicos to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.enlaces_publicos to service_role;
+grant insert (id, proyecto_id, token_hash, revocado_at, deleted_at) on public.enlaces_publicos to authenticated;
+grant update (id, proyecto_id, token_hash, revocado_at, deleted_at) on public.enlaces_publicos to authenticated;
 
 create table public.gastos (
   id uuid not null default private.uuidv7(),
@@ -641,6 +719,7 @@ comment on column public.proyectos.visita_hora is 'A qué hora es la visita de r
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
+CREATE TRIGGER anotar_el_cambio_de_estado AFTER INSERT OR UPDATE OF estado ON proyectos FOR EACH ROW EXECUTE FUNCTION private.anotar_el_cambio_de_estado();
 CREATE TRIGGER borrar_hijos AFTER UPDATE OF deleted_at ON proyectos FOR EACH ROW WHEN (new.deleted_at IS NOT NULL AND old.deleted_at IS NULL) EXECUTE FUNCTION private.borrar_hijos_de_proyecto();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE CONSTRAINT TRIGGER presupuesto_aprobado AFTER INSERT OR UPDATE ON proyectos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.validar_presupuesto_aprobado();
@@ -851,6 +930,9 @@ AS $function$
     ),
     'archivos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.archivos t where t.deleted_at is null
+    ),
+    'enlaces_publicos', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.enlaces_publicos t where t.deleted_at is null
     )
   )
 $function$;
@@ -962,6 +1044,9 @@ begin
     ),
     'archivos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.archivos t where t.updated_at >= v_desde
+    ),
+    'enlaces_publicos', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.enlaces_publicos t where t.updated_at >= v_desde
     )
   );
 end;
@@ -1457,6 +1542,32 @@ $function$;
 -- execute: service_role:EXECUTE
 comment on function private.anotar_aviso(uuid,date,boolean) is 'Anota que el día ya se miró para ese dispositivo, y si además salió un aviso, cuándo. Un día sin nada que avisar también se anota: si no, se volvería a mirar en cada vuelta del trabajo.';
 
+CREATE OR REPLACE FUNCTION private.anotar_el_cambio_de_estado()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if tg_op = 'UPDATE' and new.estado is not distinct from old.estado then
+    return null;
+  end if;
+
+  insert into public.cambios_de_estado (household_id, proyecto_id, desde, hacia, ocurrio_el)
+  values (
+    new.household_id,
+    new.id,
+    case when tg_op = 'UPDATE' then old.estado end,
+    new.estado,
+    (now() at time zone 'America/Argentina/Buenos_Aires')::date
+  );
+
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.anotar_el_cambio_de_estado() is 'Anota en public.cambios_de_estado cada vez que un trabajo cambia de etapa, venga de donde venga (el agregado, el cobro, la reapertura). Es security definer porque la app no tiene grant de insert sobre esa tabla: la historia no la escribe el cliente.';
+
 CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -1598,6 +1709,13 @@ begin
     and deleted_at is null;
 
   update public.necesidades
+  set deleted_at = new.deleted_at
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and deleted_at is null;
+
+  -- Lo que agrega esta migración: un trabajo borrado no puede seguir abriéndose desde afuera.
+  update public.enlaces_publicos
   set deleted_at = new.deleted_at
   where household_id = new.household_id
     and proyecto_id = new.id
@@ -2400,6 +2518,27 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.revertir_liquidacion(uuid,integer,estado_proyecto,estado_proyecto) is 'Descongela la distribución de un proyecto liquidado: reabre un cobrado a entregado guardando la foto del cobro, o reactiva un perdido a un estado de seguimiento sin foto. Los demás proyectos del mes no se recalculan. Rechaza con MN006 si el proyecto cambió. Reconoce el reenvío idéntico.';
 
+CREATE OR REPLACE FUNCTION private.ruta_del_archivo(p_household_id uuid, p_proyecto_id uuid, p_archivo_id uuid, p_tipo text, p_miniatura boolean)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select p_household_id::text || '/' || p_proyecto_id::text || '/' || p_archivo_id::text
+    || case
+         when p_miniatura and p_tipo in ('image/webp', 'image/jpeg') then '.mini'
+         else ''
+       end
+    || case p_tipo
+         when 'image/webp' then '.webp'
+         when 'image/jpeg' then '.jpg'
+         when 'application/pdf' then '.pdf'
+         else '.bin'
+       end
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.ruta_del_archivo(uuid,uuid,uuid,text,boolean) is 'La ruta del binario en el bucket archivos, la misma que arma la app (ADR 0039). La vista del cliente la manda ya armada para que el navegador del cliente no tenga que conocer la convención.';
+
 CREATE OR REPLACE FUNCTION private.suscripciones_para_probar(p_usuario uuid, p_endpoint text)
  RETURNS jsonb
  LANGUAGE sql
@@ -2841,3 +2980,153 @@ AS $function$
 $function$;
 -- execute: service_role:EXECUTE
 comment on function suscripciones_para_probar(uuid,text) is 'Solo para la función de borde de los avisos (service_role).';
+
+CREATE OR REPLACE FUNCTION public.vista_compartida(p_token text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_enlace public.enlaces_publicos;
+begin
+  -- Un token que no tiene la forma de un token no llega ni a consultarse.
+  if p_token is null or p_token !~ '^[A-Za-z0-9_-]{16,128}$' then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  select * into v_enlace
+  from public.enlaces_publicos e
+  where e.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+    and e.revocado_at is null
+    and e.deleted_at is null;
+
+  -- Inexistente, revocado y de un trabajo borrado contestan exactamente lo mismo: el que tiene el
+  -- link no se entera de si alguna vez existió, ni de quién es, ni de nada.
+  if not found then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  update public.enlaces_publicos
+  set visitas = visitas + 1, ultima_visita_at = now()
+  where id = v_enlace.id;
+
+  return public.vista_del_cliente(v_enlace.proyecto_id);
+exception
+  -- La vista rechaza con 42501 lo que no existe, lo que no es del household y lo que se dio por
+  -- perdido. Desde afuera todo eso es la misma frase: el link no funciona.
+  when insufficient_privilege then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+end;
+$function$;
+-- execute: anon:EXECUTE, authenticated:EXECUTE, service_role:EXECUTE
+comment on function vista_compartida(text) is 'La vista del cliente entrando por el link, sin sesión. Es la única función de la base que el rol anónimo puede ejecutar y la única security definer de public: anon no tiene permiso sobre ninguna tabla, así que sin elevar no llega a nada. Resuelve el token contra el hash guardado —el token en claro no está en la base— y delega en public.vista_del_cliente(), que es la lista blanca. Un token inválido, revocado o inexistente contestan lo mismo (ADR 0046).';
+
+CREATE OR REPLACE FUNCTION public.vista_del_cliente(p_proyecto_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO ''
+AS $function$
+declare
+  v_p public.proyectos;
+  v_taller text;
+  v_cliente text;
+begin
+  select * into v_p from public.proyectos p where p.id = p_proyecto_id and p.deleted_at is null;
+
+  -- Lo mismo que si no existiera. Con la RLS puesta, un trabajo de otro household no se ve, y esta
+  -- respuesta no distingue «no existe» de «no es tuyo».
+  if not found then
+    raise exception 'El trabajo no existe o no es tuyo' using errcode = '42501';
+  end if;
+
+  -- Un trabajo dado por perdido no tiene nada que contarle al cliente, y decirle que se perdió
+  -- sería contarle una decisión del taller. El link se comporta como si no sirviera.
+  if v_p.estado = 'perdido' then
+    raise exception 'El trabajo no existe o no es tuyo' using errcode = '42501';
+  end if;
+
+  select h.nombre into v_taller from public.households h where h.id = v_p.household_id;
+  select c.nombre into v_cliente from public.clientes c where c.id = v_p.cliente_id;
+
+  -- Los campos van enumerados uno por uno, a propósito. Si esto fuera to_jsonb(v_p) con la pantalla
+  -- filtrando, el día que alguien le agregue una columna a proyectos esa columna quedaría expuesta
+  -- sin que nadie lo decida: lo que el cliente ve se decide acá, no en el navegador. La suite lo
+  -- controla con supabase/tests/25_vista_del_cliente.sql, que falla apenas aparece una columna
+  -- nueva en proyectos hasta que alguien la clasifica como pública o privada.
+  return jsonb_build_object(
+    'taller', jsonb_build_object('nombre', v_taller),
+    'cliente', jsonb_build_object('nombre', v_cliente),
+    'trabajo', v_p.titulo,
+    'direccion', v_p.direccion_entrega,
+    'estado', v_p.estado,
+    'precio_centavos', v_p.presupuesto_centavos,
+    'fechas', jsonb_build_object(
+      'presupuesto', (
+        select min(c.ocurrio_el)
+        from public.cambios_de_estado c
+        where c.household_id = v_p.household_id
+          and c.proyecto_id = v_p.id
+          and c.hacia = 'presupuesto_enviado'
+      ),
+      'aprobado', (
+        select min(c.ocurrio_el)
+        from public.cambios_de_estado c
+        where c.household_id = v_p.household_id
+          and c.proyecto_id = v_p.id
+          and c.hacia = 'en_curso'
+      ),
+      'inicio', v_p.fecha_inicio,
+      'entrega_pautada', v_p.entrega_estimada,
+      'entregado', v_p.fecha_entrega,
+      'cobro', case when v_p.estado = 'cobrado' then v_p.fecha_cobro end
+    ),
+    'pagos', (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', g.id,
+            'fecha', g.fecha,
+            'concepto', g.concepto,
+            'monto_centavos', g.monto_centavos
+          )
+          order by g.fecha, g.id
+        ),
+        '[]'::jsonb
+      )
+      from public.pagos g
+      where g.household_id = v_p.household_id
+        and g.proyecto_id = v_p.id
+        and g.deleted_at is null
+    ),
+    'archivos', (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', a.id,
+            'nombre', a.nombre,
+            'tipo', a.tipo,
+            'ancho', a.ancho,
+            'alto', a.alto,
+            'fecha', a.created_at,
+            -- La ruta en el bucket, que es pública y se sirve por el CDN. Sale del id, como en la
+            -- app: private.ruta_del_archivo() es el único lugar donde se arma.
+            'ruta', private.ruta_del_archivo(a.household_id, a.proyecto_id, a.id, a.tipo, false),
+            'ruta_mini', private.ruta_del_archivo(a.household_id, a.proyecto_id, a.id, a.tipo, true)
+          )
+          order by a.created_at desc, a.id desc
+        ),
+        '[]'::jsonb
+      )
+      from public.archivos a
+      where a.household_id = v_p.household_id
+        and a.proyecto_id = v_p.id
+        and a.deleted_at is null
+        and a.visible_para_cliente
+    )
+  );
+end;
+$function$;
+-- execute: authenticated:EXECUTE, service_role:EXECUTE
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega y los archivos que el dueño marcó. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046).';
