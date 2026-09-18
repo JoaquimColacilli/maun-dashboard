@@ -198,6 +198,7 @@ export {
   rutaDelProyecto,
 } from './model/rutas';
 export { BloqueDeLaSena, type BloqueDeLaSenaProps } from './ui/BloqueDeLaSena';
+export { CostosDeCotizar, type CostosDeCotizarProps } from './ui/CostosDeCotizar';
 export { DistribucionDespiece, type DistribucionDespieceProps } from './ui/DistribucionDespiece';
 export { EntregaRelativa, type EntregaRelativaProps } from './ui/EntregaRelativa';
 export { EstadoBadge } from './ui/EstadoBadge';

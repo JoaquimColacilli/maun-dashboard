@@ -13,7 +13,11 @@ export type Necesidad = FilaDe<'necesidades'>;
 export interface TipoDeLaLista {
   tipo: TipoDeNecesidad;
   titulo: string;
-  singular: string;
+  agregar: string;
+  campo: string;
+  cuantos: string;
+  listo: string;
+  listos: string;
   placeholder: string;
   ayuda: string;
   conCantidad: boolean;
@@ -23,7 +27,11 @@ export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
   {
     tipo: 'herraje',
     titulo: 'Herrajes necesarios',
-    singular: 'herraje',
+    agregar: 'Agregar el herraje',
+    campo: 'Qué herraje hace falta',
+    cuantos: 'Cuántos herrajes',
+    listo: 'Listo',
+    listos: 'listos',
     placeholder: 'Bisagras, pistones, tiradores…',
     ayuda: 'Lo que hay que pedir para este trabajo. La cantidad es opcional.',
     conCantidad: true,
@@ -31,7 +39,11 @@ export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
   {
     tipo: 'herramienta',
     titulo: 'Herramientas necesarias',
-    singular: 'herramienta',
+    agregar: 'Agregar la herramienta',
+    campo: 'Qué herramienta hace falta',
+    cuantos: 'Cuántas herramientas',
+    listo: 'Lista',
+    listos: 'listas',
     placeholder: 'Sierra circular, lijadora de banda…',
     ayuda: 'Lo que hay que tener a mano el día que lo hagas.',
     conCantidad: false,

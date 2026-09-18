@@ -50,6 +50,15 @@ describe('las dos listas del trabajo', () => {
     ]);
     expect(LISTAS_DEL_TRABAJO.map((lista) => lista.conCantidad)).toEqual([true, false]);
   });
+
+  it('cada una habla en su género: no dice «agregar el herramienta»', () => {
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.agregar)).toEqual([
+      'Agregar el herraje',
+      'Agregar la herramienta',
+    ]);
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.listo)).toEqual(['Listo', 'Lista']);
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.listos)).toEqual(['listos', 'listas']);
+  });
 });
 
 describe('lo que hace falta para un trabajo', () => {

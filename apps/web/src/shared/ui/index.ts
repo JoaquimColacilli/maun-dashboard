@@ -1,5 +1,6 @@
 export * from '@maun/ui';
 export { Aviso } from './Aviso';
+export { BloquePlegable, type BloquePlegableProps } from './BloquePlegable';
 export { Cargando } from './Cargando';
 export {
   ComparacionMensual,
@@ -7,6 +8,7 @@ export {
   type ComparacionMensualProps,
 } from './ComparacionMensual';
 export { EnConstruccion } from './EnConstruccion';
+export { EstadoDeGuardado, type EstadoDeGuardadoProps } from './EstadoDeGuardado';
 export { ConSalida, Hoja, type ConSalidaProps, type HojaProps } from './Hoja';
 export { MailEnviado, type MailEnviadoProps } from './MailEnviado';
 export { PanelDeAvisos, type PanelDeAvisosProps } from './PanelDeAvisos';

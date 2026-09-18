@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { AccionesDeContacto, rutaDelCliente } from '@/entities/cliente';
 import {
   BloqueDeLaSena,
+  CostosDeCotizar,
   EstadoBadge,
   gastosDelProyecto,
   opcionesDelProyecto,
@@ -23,6 +24,7 @@ import { useReplicaDelTaller } from '@/entities/replica';
 import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import {
   BorradoDelProyecto,
+  LoQueHaceFalta,
   NotasDelProyecto,
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
@@ -160,6 +162,8 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             propia={senaDelProyecto(proyecto) !== null}
           />
 
+          {etapa !== 'a_presupuestar' && <CostosDeCotizar proyecto={proyecto} />}
+
           <section aria-label="Datos del contacto">
             <dl>
               <Dato
@@ -235,6 +239,8 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">
+          <LoQueHaceFalta proyecto={proyecto} />
+
           <NotasDelProyecto
             proyecto={proyecto}
             titulo="Notas"
