@@ -434,6 +434,7 @@ export function AgendaPage() {
                 hoy={hoy}
                 eventos={eventosDelDia(eventos, fecha)}
                 acciones={accionesDelDia}
+                ahora={new Date()}
                 conEncabezado={false}
                 aviso={avisoDelDia}
                 alDescartarElAviso={() => {
@@ -623,6 +624,7 @@ export function AgendaPage() {
                 hoy={hoy}
                 eventos={eventosDelDia(visibles, diaAbierto)}
                 acciones={accionesDelDia}
+                ahora={new Date()}
                 aviso={avisoDelDia}
                 alDescartarElAviso={() => {
                   setAvisoDelDia(null);

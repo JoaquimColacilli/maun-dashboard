@@ -21,6 +21,7 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     clienteId: 'c',
     titulo: 'Placard',
     visita: '',
+    visitaHora: '',
     visitaHecha: false,
     sena: null,
     notas: '',

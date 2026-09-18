@@ -217,6 +217,17 @@ export function HojaDeContacto({
                 }
               />
 
+              <Campo
+                etiqueta="Hora de la visita"
+                name="visita_hora"
+                type="time"
+                value={valores.visitaHora}
+                onChange={(evento) => {
+                  cambiar('visitaHora', evento.target.value);
+                }}
+                ayuda="Opcional. Con hora, la visita cae en su renglón del día en la agenda."
+              />
+
               {pagos.length > 1 ? (
                 <div className="flex flex-col gap-1.5">
                   <span className="text-label text-text-2">Seña cobrada</span>

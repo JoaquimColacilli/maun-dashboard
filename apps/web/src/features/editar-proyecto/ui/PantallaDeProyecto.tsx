@@ -391,6 +391,13 @@ export function PantallaDeProyecto({
                 ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
                 contenedor={FECHA_ALINEADA}
               />
+              <Campo
+                {...register('entrega_hora')}
+                etiqueta="Hora de la entrega"
+                type="time"
+                ayuda="Opcional. Con hora, la entrega cae en su renglón del día en la agenda."
+                contenedor={FECHA_ALINEADA}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

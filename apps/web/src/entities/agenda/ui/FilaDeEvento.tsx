@@ -25,6 +25,7 @@ export interface FilaDeEventoProps {
   hoy: string;
   acciones: AccionesDeLaAgenda;
   enElDia?: boolean;
+  sinBorde?: boolean;
   alAbrirElDia?: (fecha: string) => void;
 }
 
@@ -72,7 +73,7 @@ function Contenido({
   return (
     <>
       <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        {evento.clase === 'propia' && evento.hora !== null && (
+        {evento.hora !== null && (
           <span className="text-label font-semibold text-text-2 tabular-nums">{evento.hora}</span>
         )}
         {evento.clase === 'derivada' && (
@@ -154,11 +155,13 @@ function FilaDerivada({
   hoy,
   acciones,
   enElDia,
+  sinBorde,
 }: {
   evento: EventoDerivado;
   hoy: string;
   acciones: AccionesDeLaAgenda;
   enElDia: boolean;
+  sinBorde: boolean;
 }) {
   const derivada = DERIVADA[evento.categoria];
   const abrir = () => {
@@ -169,7 +172,7 @@ function FilaDerivada({
     <li
       data-derivada={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >
@@ -226,17 +229,26 @@ export function FilaDeEvento({
   hoy,
   acciones,
   enElDia = false,
+  sinBorde = false,
   alAbrirElDia,
 }: FilaDeEventoProps) {
   if (evento.clase === 'derivada') {
-    return <FilaDerivada evento={evento} hoy={hoy} acciones={acciones} enElDia={enElDia} />;
+    return (
+      <FilaDerivada
+        evento={evento}
+        hoy={hoy}
+        acciones={acciones}
+        enElDia={enElDia}
+        sinBorde={sinBorde}
+      />
+    );
   }
 
   return (
     <li
       data-anotacion={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >

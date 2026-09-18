@@ -50,6 +50,7 @@ export {
   type FormaDeLaMarca,
 } from './model/categorias';
 export { CaminosALosTrabajos, type CaminosALosTrabajosProps } from './ui/CaminosALosTrabajos';
+export { DiaPorHoras, type DiaPorHorasProps } from './ui/DiaPorHoras';
 export { DetalleDelDia, type AvisoDelDia, type DetalleDelDiaProps } from './ui/DetalleDelDia';
 export { FilaDeEvento, type AccionesDeLaAgenda, type FilaDeEventoProps } from './ui/FilaDeEvento';
 export { GrillaDelMes, type GrillaDelMesProps } from './ui/GrillaDelMes';

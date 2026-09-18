@@ -948,8 +948,13 @@ async function laCapaSeAnclaAlDia(
     expect(cajaDeLaCapa.x + cajaDeLaCapa.width).toBeLessThanOrEqual(vista.width);
     expect(cajaDeLaCapa.y + cajaDeLaCapa.height).toBeLessThanOrEqual(vista.height);
 
-    expect(cajaDeLaCapa.width).toBeLessThan(400);
-    expect(cajaDeLaCapa.height).toBeLessThan(cajaDeLaGrilla.height);
+    // Tres columnas y nada más: es lo que necesita la grilla de horas y lo que deja la capa adentro
+    // de la grilla, sin pisar el margen de la pantalla (ADR 0045).
+    expect(cajaDeLaCapa.width).toBeLessThanOrEqual((cajaDeLaGrilla.width * 3) / 7);
+    expect(cajaDeLaCapa.x).toBeGreaterThanOrEqual(cajaDeLaGrilla.x - 0.5);
+    expect(cajaDeLaCapa.x + cajaDeLaCapa.width).toBeLessThanOrEqual(
+      cajaDeLaGrilla.x + cajaDeLaGrilla.width + 0.5,
+    );
 
     if (columna <= 3) {
       expect(cajaDeLaCapa.x).toBeGreaterThanOrEqual(cajaDeLaCelda.x + cajaDeLaCelda.width);

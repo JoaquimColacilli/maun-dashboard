@@ -11,6 +11,7 @@ import {
   type Proyecto,
 } from '@/entities/proyecto';
 import {
+  horaDeLaVisita,
   visitaHecha,
   type DatosDeProyecto,
   type PagoParaGuardar,
@@ -24,6 +25,7 @@ export interface ValoresDelContacto {
   clienteId: string;
   titulo: string;
   visita: string;
+  visitaHora: string;
   visitaHecha: boolean;
   sena: number | null;
   notas: string;
@@ -50,6 +52,7 @@ export function valoresDelContacto(
     clienteId: proyecto?.cliente_id ?? '',
     titulo: proyecto?.titulo ?? '',
     visita: proyecto?.fecha_visita ?? visitaInicial,
+    visitaHora: proyecto === undefined ? '' : (horaDeLaVisita(proyecto) ?? ''),
     visitaHecha: proyecto === undefined ? false : visitaHecha(proyecto),
     sena: sena === undefined ? null : sena.monto_centavos,
     notas: proyecto?.notas ?? '',
@@ -244,6 +247,8 @@ export function pedidoDelContacto({
       titulo: valores.titulo.trim(),
       estado,
       fecha_visita: visita === '' ? null : visita,
+      // Una hora sin su día no quiere decir nada: si se borra la visita, se va con ella.
+      visita_hora: visita === '' || valores.visitaHora.trim() === '' ? null : valores.visitaHora,
       visita_hecha: visitaHechaAlGuardar(proyecto, estado, valores, hoy),
       ultimo_contacto: ultimoContactoAlGuardar(proyecto, estado, hoy, visita === '' ? hoy : visita),
       notas: valores.notas.trim(),

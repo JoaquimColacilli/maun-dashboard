@@ -24,7 +24,7 @@
   .capa-del-dia {
     inset: 0;
     margin: auto;
-    width: 20rem;
+    width: 22rem;
     max-height: calc(100dvh - 16px);
   }
 
@@ -52,7 +52,7 @@
       margin: 0 0 0 12px;
       justify-self: start;
       align-self: start;
-      width: max(20rem, calc(anchor-size(--grilla-del-mes width) * 2 / 7 + 1rem));
+      width: max(22rem, calc(anchor-size(--grilla-del-mes width) * 3 / 7 - 12px));
       position-try-fallbacks:
         flip-block,
         flip-inline,
