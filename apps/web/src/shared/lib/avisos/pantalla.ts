@@ -126,6 +126,11 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Borrado anotado sin señal: se hace solo cuando vuelva.',
     error: 'No se borró el archivo.',
   },
+  eventoMovido: {
+    hecho: 'Movido en la agenda.',
+    enCola: 'Movido sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo mover.',
+  },
   costosEstimados: {
     hecho: 'Costos estimados guardados.',
     enCola: 'Costos estimados anotados sin señal: se guardan solos cuando vuelva.',

@@ -60,6 +60,7 @@ export interface DatosDeLaDerivada {
   accion: string;
   corta: string;
   origen: string;
+  queCambia: string;
   abrir: string;
   hecha: string;
 }
@@ -69,6 +70,7 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
     accion: 'Entregar',
     corta: 'Entrega',
     origen: 'Sale de la entrega estimada del proyecto',
+    queCambia: 'la entrega estimada del proyecto',
     abrir: 'Abrir el proyecto',
     hecha: 'entregada',
   },
@@ -76,6 +78,7 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
     accion: 'Relevamiento',
     corta: 'Relevamiento',
     origen: 'Sale de la fecha de visita del contacto',
+    queCambia: 'el día de la visita',
     abrir: 'Abrir el contacto',
     hecha: 'ya fuiste',
   },
@@ -83,6 +86,7 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
     accion: 'Entregar presupuesto',
     corta: 'Presupuesto',
     origen: 'Sale de la fecha límite del presupuesto del contacto',
+    queCambia: 'el plazo del presupuesto',
     abrir: 'Abrir el contacto',
     hecha: 'enviado',
   },

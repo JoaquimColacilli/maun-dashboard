@@ -24,6 +24,7 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   contactoAvanzado: 'proyecto',
   tareaDelPresupuesto: 'proyecto',
   marcaDeLaAgenda: 'proyecto',
+  eventoMovido: 'proyecto',
   costosEstimados: 'proyecto',
   loQueHaceFalta: 'proyecto',
   contactoBorrado: 'baja-de-proyecto',

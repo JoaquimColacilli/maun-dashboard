@@ -1,4 +1,4 @@
-export { anotar, borrar, marcar, tildar, type Avisador } from './model/acciones';
+export { anotar, borrar, marcar, mover, tildar, type Avisador } from './model/acciones';
 export {
   anotacionNueva,
   erroresDeLaAnotacion,
@@ -13,3 +13,4 @@ export {
 } from './model/anotacion';
 export { HojaDeAnotacion, type HojaDeAnotacionProps } from './ui/HojaDeAnotacion';
 export { useAccionesDeLaAgenda } from './ui/useAccionesDeLaAgenda';
+export { useMoverEnLaAgenda } from './ui/useMoverEnLaAgenda';
