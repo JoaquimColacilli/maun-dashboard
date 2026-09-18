@@ -403,6 +403,28 @@ test.describe('arrastrar en la agenda', () => {
     expect((await leerProyecto(sesion, 'E2E Entregado'))?.entrega_estimada).toBe(desde);
   });
 
+  test('un relevamiento pendiente cambia de día y sigue pendiente', async ({ page }) => {
+    const desde = diaDelMes(12);
+    const hasta = diaDelMes(19);
+    await trabajo('E2E Relevamiento que se mueve', { estado: 'relevamiento', visita: desde });
+
+    await page.goto('/agenda');
+    await expect(page.getByRole('heading', { level: 1, name: 'Agenda' })).toBeVisible(CARGA);
+    const chip = page.locator(
+      `[data-fecha="${desde}"] button[title="Relevamiento: E2E Relevamiento que se mueve"]`,
+    );
+    await expect(chip).toBeVisible(CARGA);
+    await arrastrarConElMouse(page, chip, hasta);
+
+    await expect
+      .poll(
+        async () => (await leerProyecto(sesion, 'E2E Relevamiento que se mueve'))?.fecha_visita,
+        CARGA,
+      )
+      .toBe(hasta);
+    expect((await leerProyecto(sesion, 'E2E Relevamiento que se mueve'))?.visita_hecha).toBe(false);
+  });
+
   test('con el teclado: la barra agarra, las flechas mueven y Enter suelta', async ({
     page,
   }, testInfo: TestInfo) => {

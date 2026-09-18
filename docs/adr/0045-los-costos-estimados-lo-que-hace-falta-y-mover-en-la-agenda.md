@@ -188,7 +188,8 @@ cualquier otra escritura de la agenda.
   todavía no llegó apaga `visita_hecha`») solo puede dispararse sobre una visita ya hecha, y **lo hecho
   no se arrastra**, así que el choque no existe. Igual el arrastre manda `visita_hecha` explícito
   (`visitaHecha(proyecto) && fecha <= hoy`) para que el invariante no dependa de eso: si algún día algo
-  hecho se pudiera mover, seguiría valiendo.
+  hecho se pudiera mover, seguiría valiendo. El e2e arrastra un relevamiento pendiente y comprueba
+  que la visita cambia de día y sigue pendiente.
 - **Lo que ya está hecho no se arrastra.** `puedeArrastrarse(evento)` es `!evento.hecha`, en el
   dominio. Una entrega entregada figura en el día en que estaba prometida (0042) y moverla sería
   reescribir historia; si la fecha estaba mal, se corrige desde el trabajo.
