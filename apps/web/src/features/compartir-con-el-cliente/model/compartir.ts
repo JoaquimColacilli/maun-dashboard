@@ -29,6 +29,15 @@ export function enlaceDeWhatsapp(telefono: string, mensaje: string): string {
   return numero === '' ? `https://wa.me/?text=${texto}` : `https://wa.me/${numero}?text=${texto}`;
 }
 
+// Lo mismo que arma la función de borde para la vista previa. Si divergen, el dueño ve una cosa
+// acá y su cliente otra en el chat (ADR 0049).
+export function comoSeVeEnWhatsapp(trabajo: string, taller: string): string {
+  const limpio = trabajo.trim();
+  const delTaller = taller.trim();
+  if (limpio === '') return delTaller === '' ? 'MAUN' : delTaller;
+  return delTaller === '' ? limpio : `${limpio} · ${delTaller}`;
+}
+
 export function cuantosVeElCliente(archivos: readonly Archivo[]): string {
   const { compartidos, total } = loQueVeElCliente(archivos);
   return `${String(compartidos)} de ${String(total)} compartidos`;

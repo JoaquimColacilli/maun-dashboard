@@ -12,7 +12,7 @@ import {
 import { rutaDelProyecto, type ResumenDeProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { AyudaDeLaVista } from '@/entities/vista-cliente';
-import { filasDe, mensajeDeSincronizacion } from '@/shared/api';
+import { filasDe, householdDe, mensajeDeSincronizacion } from '@/shared/api';
 import {
   fechaLarga,
   hashDelToken,
@@ -27,7 +27,12 @@ import {
 } from '@/shared/lib';
 import { Button, ConSalida, FilaDeAcciones, Hoja, Icono, Pagina } from '@/shared/ui';
 
-import { comoSeVeElEnlace, enlaceDeWhatsapp, mensajeParaElCliente } from '../model/compartir';
+import {
+  comoSeVeElEnlace,
+  comoSeVeEnWhatsapp,
+  enlaceDeWhatsapp,
+  mensajeParaElCliente,
+} from '../model/compartir';
 import { ArchivosQueVeElCliente } from './ArchivosQueVeElCliente';
 
 export interface PantallaDeCompartirProps {
@@ -61,6 +66,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
     (enlace) => enlace.proyecto_id === proyecto.id,
   );
   const vista = comoSeVeElEnlace(activo, huboAlguno);
+  const household = householdDe(replica);
   const archivos = archivosDelProyecto(replica, proyecto.id);
   const vistos = loQueVeElCliente(archivos);
   const trabajando = generar.isPending || darDeBaja.isPending;
@@ -220,6 +226,13 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                   {copiado ? 'Copiado' : 'Copiar'}
                 </Button>
               </div>
+
+              <p className="flex flex-wrap items-baseline gap-x-2 text-label leading-normal text-text-3">
+                <span>En WhatsApp va a decir:</span>
+                <span className="font-semibold text-text-2">
+                  {comoSeVeEnWhatsapp(proyecto.titulo, household?.nombre ?? '')}
+                </span>
+              </p>
 
               <a
                 href={enlaceDeWhatsapp(

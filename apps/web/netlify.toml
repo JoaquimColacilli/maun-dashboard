@@ -7,6 +7,10 @@
 [build]
   command = "pnpm turbo run build --filter=@maun/web"
   publish = "apps/web/dist"
+  # Las rutas del netlify.toml son absolutas contra el base directory, y el base directory de este
+  # sitio es la raíz del repo (el que está en apps/web es el package directory). Sin esta línea,
+  # Netlify busca las funciones de borde en <raíz>/netlify/edge-functions y no las encuentra.
+  edge_functions = "apps/web/netlify/edge-functions"
   ignore = 'if [ -z "$CACHED_COMMIT_REF" ] || [ "$CACHED_COMMIT_REF" = "$COMMIT_REF" ]; then exit 1; fi; git diff --quiet "$CACHED_COMMIT_REF" "$COMMIT_REF" -- apps/web packages package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .nvmrc'
 
 [build.environment]
@@ -14,6 +18,8 @@
   HUSKY = "0"
   TURBO_TELEMETRY_DISABLED = "1"
 
+# La ruta y el manejo de errores de la función de borde van adentro del archivo, en su export
+# config: onError no es una clave válida acá, y la configuración inline es la que manda.
 [[redirects]]
   from = "/*"
   to = "/index.html"
