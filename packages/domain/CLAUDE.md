@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`) y la agenda con lo que se avisa (`agenda.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043 y las de los costos, lo que hace falta y el día por horas en el 0045.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), la agenda con lo que se avisa (`agenda.ts`) y la vista del cliente (`vistaCliente.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, y las de la vista del cliente en el 0046.
 
 ## Pureza (la aplican las herramientas)
 
@@ -44,6 +44,22 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 - `calcularMargen` es la otra resta que pidió el dueño: el presupuesto menos lo que calcula gastar. Las cuatro categorías son fijas (`CATEGORIAS_DE_COSTO`: madera, herrajes, flete, ayudante) y **null no es cero**: null es «todavía no lo estimé» y cero es «este trabajo no lleva flete». Devuelve una unión de tres situaciones, no números sueltos, y **el margen puede ser negativo**: eso es justamente lo que hay que ver. **No hay ninguna función que vaya del costo al presupuesto**, y no la agregues: el presupuesto incluye la ganancia, que la decide él.
 - `catalogoDeNecesidades` arma el catálogo de nombres desde las filas que ya existen: no hay tabla de catálogo. Ordena por lo más usado, después por lo más reciente y después alfabético, para que la lista no baile. `claveDelNombre` compara sin acentos ni mayúsculas, y `sugerenciasDeNecesidad` pone adelante lo que **empieza** con lo escrito y descarta lo que ya está escrito igual.
+
+## La vista del cliente (ADR 0046)
+
+`vistaDelCliente(trabajo, hoy)` es el único cálculo de la pantalla que ve el cliente: el camino de
+cinco hitos, la línea de tiempo curada, hace cuánto que está en esta etapa, qué sigue, y **qué se lee
+primero**. Recibe el payload que armó la base y no puede filtrar nada, porque lo que no puede ver no
+le llega.
+
+- **El foco se invierte solo y no es configurable**: hasta la entrega manda la etapa y el saldo va
+  completo en la fila de abajo; desde la entrega con saldo pendiente, manda el saldo. Es
+  `foco: 'saldo' | 'estado'` y sale de `hitoIndex >= entregado && saldo > 0`.
+- **Los hitos que faltan no llevan fecha**: prometer un día de «pagado» sería inventarlo.
+- **Los eventos no llevan el importe adentro del texto**: va en `monto`, y el formateo no vive acá.
+- **Sin porcentajes de avance**: nadie sabe si un mueble está al 60%.
+- A los `DIAS_SIN_NOVEDADES` (5) sin nada nuevo, `quietoTexto` lo nombra en vez de disimularlo.
+- **No tiene gemela en SQL**, como `calcularSena`: la base arma el payload, no la presentación.
 
 ## El CUIT
 

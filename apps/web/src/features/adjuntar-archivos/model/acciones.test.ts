@@ -17,6 +17,7 @@ const ARCHIVO: Archivo = {
   household_id: 'h',
   proyecto_id: 'p',
   nombre: 'despiece.pdf',
+  visible_para_cliente: false,
   tipo: 'application/pdf',
   bytes: 800_000,
   ancho: null,

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { entornoDePrueba, type EntornoDePrueba } from './entorno';
 
 export interface SesionDePrueba {
@@ -685,5 +687,114 @@ export async function guardarPreferenciasDeAvisosPorRpc(
       p_hora: preferencias.hora,
       p_avisos: preferencias.avisos,
     }),
+  });
+}
+
+export interface FilaDeEnlace {
+  id: string;
+  proyecto_id: string;
+  token_hash: string;
+  revocado_at: string | null;
+  visitas: number;
+}
+
+export function hashDeToken(token: string): string {
+  return createHash('sha256').update(token, 'utf8').digest('hex');
+}
+
+export async function enlacePorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+  token: string,
+): Promise<FilaDeEnlace> {
+  const filas = (await pedir(entorno, '/rest/v1/enlaces_publicos', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({
+      id: crypto.randomUUID(),
+      proyecto_id: proyectoId,
+      token_hash: hashDeToken(token),
+    }),
+  })) as FilaDeEnlace[];
+  const fila = filas[0];
+  if (fila === undefined) throw new Error('el alta del enlace no devolvió la fila');
+  return fila;
+}
+
+export async function enlacesDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDeEnlace[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/enlaces_publicos?select=id,proyecto_id,token_hash,revocado_at,visitas&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as FilaDeEnlace[];
+}
+
+export async function revocarEnlacePorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  id: string,
+): Promise<void> {
+  await pedir(entorno, `/rest/v1/enlaces_publicos?id=eq.${id}`, {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ revocado_at: new Date().toISOString() }),
+  });
+}
+
+export async function archivoPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  datos: { proyectoId: string; nombre: string; tipo?: string; visible?: boolean },
+): Promise<FilaDeArchivo> {
+  const { proyectoId, nombre, tipo = 'application/pdf', visible = false } = datos;
+  const filas = (await pedir(entorno, '/rest/v1/archivos', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({
+      id: crypto.randomUUID(),
+      proyecto_id: proyectoId,
+      nombre,
+      tipo,
+      bytes: 1_000,
+      ancho: tipo === 'application/pdf' ? null : 800,
+      alto: tipo === 'application/pdf' ? null : 600,
+    }),
+  })) as FilaDeArchivo[];
+  const fila = filas[0];
+  if (fila === undefined) throw new Error('el alta del archivo no devolvió la fila');
+  if (visible) {
+    await pedir(entorno, `/rest/v1/archivos?id=eq.${fila.id}`, {
+      method: 'PATCH',
+      accessToken,
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ visible_para_cliente: true }),
+    });
+  }
+  return fila;
+}
+
+export async function visibilidadDelArchivo(
+  { entorno, accessToken }: SesionDePrueba,
+  id: string,
+): Promise<boolean | undefined> {
+  const filas = (await pedir(entorno, `/rest/v1/archivos?select=visible_para_cliente&id=eq.${id}`, {
+    accessToken,
+  })) as { visible_para_cliente: boolean }[];
+  return filas[0]?.visible_para_cliente;
+}
+
+export async function borrarProyectoPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  id: string,
+): Promise<void> {
+  await pedir(entorno, `/rest/v1/proyectos?id=eq.${id}`, {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ deleted_at: new Date().toISOString() }),
   });
 }

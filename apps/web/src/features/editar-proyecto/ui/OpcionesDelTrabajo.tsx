@@ -41,7 +41,7 @@ export function OpcionesDelTrabajo({
   if (opciones.length === 0) {
     if (!ofreceCargarLaPrimera) return null;
     return (
-      <section aria-label="Opciones de presupuesto" className="mt-5">
+      <section aria-label="Opciones de presupuesto">
         <h2 className="text-section font-semibold">Opciones de presupuesto</h2>
         <p className="mt-1.5 text-meta leading-normal text-text-3">
           Si le presentás más de una variante, cargá cada una con su importe. Cuando elija, tildás
@@ -89,7 +89,7 @@ export function OpcionesDelTrabajo({
   }
 
   return (
-    <section aria-label="Opciones de presupuesto" className="mt-5">
+    <section aria-label="Opciones de presupuesto">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <h2 className="text-section font-semibold">Opciones de presupuesto</h2>
         <span className="text-label text-text-2 tabular-nums">

@@ -144,6 +144,7 @@ export type Database = {
           tipo: string;
           updated_at: string;
           version: number;
+          visible_para_cliente: boolean;
         };
         Insert: {
           alto?: number | null;
@@ -158,6 +159,7 @@ export type Database = {
           tipo: string;
           updated_at?: string;
           version?: number;
+          visible_para_cliente?: boolean;
         };
         Update: {
           alto?: number | null;
@@ -172,6 +174,7 @@ export type Database = {
           tipo?: string;
           updated_at?: string;
           version?: number;
+          visible_para_cliente?: boolean;
         };
         Relationships: [
           {
@@ -183,6 +186,60 @@ export type Database = {
           },
           {
             foreignKeyName: 'archivos_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
+      cambios_de_estado: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          desde: Database['public']['Enums']['estado_proyecto'] | null;
+          hacia: Database['public']['Enums']['estado_proyecto'];
+          household_id: string;
+          id: string;
+          ocurrio_el: string;
+          proyecto_id: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          desde?: Database['public']['Enums']['estado_proyecto'] | null;
+          hacia: Database['public']['Enums']['estado_proyecto'];
+          household_id: string;
+          id?: string;
+          ocurrio_el: string;
+          proyecto_id: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          desde?: Database['public']['Enums']['estado_proyecto'] | null;
+          hacia?: Database['public']['Enums']['estado_proyecto'];
+          household_id?: string;
+          id?: string;
+          ocurrio_el?: string;
+          proyecto_id?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'cambios_de_estado_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'cambios_de_estado_proyecto_fk';
             columns: ['household_id', 'proyecto_id'];
             isOneToOne: false;
             referencedRelation: 'proyectos';
@@ -258,6 +315,63 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'households';
             referencedColumns: ['id'];
+          },
+        ];
+      };
+      enlaces_publicos: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          proyecto_id: string;
+          revocado_at: string | null;
+          token_hash: string;
+          ultima_visita_at: string | null;
+          updated_at: string;
+          version: number;
+          visitas: number;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          proyecto_id: string;
+          revocado_at?: string | null;
+          token_hash: string;
+          ultima_visita_at?: string | null;
+          updated_at?: string;
+          version?: number;
+          visitas?: number;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          proyecto_id?: string;
+          revocado_at?: string | null;
+          token_hash?: string;
+          ultima_visita_at?: string | null;
+          updated_at?: string;
+          version?: number;
+          visitas?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'enlaces_publicos_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'enlaces_publicos_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
           },
         ];
       };
@@ -1170,6 +1284,8 @@ export type Database = {
         Args: { p_endpoint?: string; p_usuario: string };
         Returns: Json;
       };
+      vista_compartida: { Args: { p_token: string }; Returns: Json };
+      vista_del_cliente: { Args: { p_proyecto_id: string }; Returns: Json };
     };
     Enums: {
       categoria_anotacion: 'materiales' | 'taller';

@@ -82,6 +82,22 @@ export {
 } from './sena.ts';
 
 export {
+  DIAS_SIN_NOVEDADES,
+  HITOS,
+  vistaDelCliente,
+  type ArchivoDelCliente,
+  type EstadoDelHito,
+  type EventoDelCliente,
+  type FechasDelTrabajo,
+  type FocoDeLaVista,
+  type HitoDelTrabajo,
+  type HitoDeLaVista,
+  type PagoDelCliente,
+  type TrabajoDelCliente,
+  type VistaDelCliente,
+} from './vistaCliente.ts';
+
+export {
   ESTADOS,
   ESTADOS_DE_SEGUIMIENTO,
   esEstado,

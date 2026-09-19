@@ -1,0 +1,4 @@
+# Nada de esta app se indexa. Adentro está el taller, y en /v/ está lo que el dueño le comparte a
+# un cliente: su nombre, su mueble y cuánto le falta pagar (ADR 0046).
+User-agent: *
+Disallow: /

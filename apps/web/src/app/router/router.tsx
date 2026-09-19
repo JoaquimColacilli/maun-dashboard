@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AccesoPage } from '@/pages/acceso';
+import { VistaPublicaPage } from '@/pages/vista-cliente';
+import { RUTA_DE_LA_VISTA_PUBLICA } from '@/shared/lib';
 
 import { Marco } from '../layout/Marco';
 import { Shell } from '../layout/Shell';
@@ -9,6 +11,7 @@ import { CrearCuentaPage, NuevaContrasenaPage, RecuperarPage } from './paginas';
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from './rutas';
 
 export const router = createBrowserRouter([
+  { path: RUTA_DE_LA_VISTA_PUBLICA, element: <VistaPublicaPage /> },
   {
     element: <Shell />,
     children: [

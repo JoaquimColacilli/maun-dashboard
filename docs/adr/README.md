@@ -49,3 +49,5 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0043](0043-las-opciones-de-presupuesto-y-la-sena.md)                       | Las opciones de presupuesto y la seña como porcentaje        | Aceptada             |
 | [0044](0044-la-validacion-tardia-no-reabre-la-sesion.md)                    | La validación que llega tarde no reabre la sesión            | Aceptada             |
 | [0045](0045-los-costos-estimados-lo-que-hace-falta-y-mover-en-la-agenda.md) | Costos estimados, lo que hace falta y mover en la agenda     | Aceptada             |
+| [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md)            | La vista del cliente: una lista blanca en la base            | Aceptada             |
+| [0047](0047-la-sena-se-carga-al-aprobar.md)                                 | La seña se carga al aprobar, en el mismo guardado            | Aceptada             |

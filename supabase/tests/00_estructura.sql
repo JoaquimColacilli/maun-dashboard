@@ -6,7 +6,7 @@ select plan(18);
 
 select tables_are(
   'public',
-  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos'],
+  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado'],
   'public tiene exactamente las tablas esperadas: una tabla nueva obliga a revisar esta suite'
 );
 
@@ -23,7 +23,8 @@ select set_eq(
   array[
     'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
     'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos',
-    'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida', 'avisos_por_mandar'
+    'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida', 'avisos_por_mandar',
+    'vista_del_cliente', 'vista_compartida'
   ],
   'public expone exactamente las funciones esperadas'
 );
@@ -85,17 +86,24 @@ select is_empty(
   'authenticated no borra físicamente ni trunca: los borrados son lógicos'
 );
 
-select is_empty(
+-- La única puerta del rol anónimo, enumerada. Es la vista del cliente entrando por el link, y no
+-- puede haber ninguna otra: en esta plataforma Postgres le da execute a public y Supabase se lo da
+-- además a anon por default privileges, así que una función nueva que se olvide el revoke le queda
+-- alcanzable a cualquiera sin sesión (ADR 0046).
+select set_eq(
   $$
     select p.oid::regprocedure::text
     from pg_proc p
     where p.pronamespace in ('public'::regnamespace, 'private'::regnamespace)
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   $$,
-  'anon no ejecuta ninguna función de public ni de private, tampoco las de la plataforma'
+  array['vista_compartida(text)'],
+  'anon ejecuta exactamente una función de la base: la del link del cliente'
 );
 
-select is_empty(
+-- Y es la única que corre elevada. Sin security definer no llegaría a ninguna tabla, porque anon no
+-- tiene ni un grant; con security definer, lo que devuelve lo decide su lista blanca.
+select set_eq(
   $$
     select p.oid::regprocedure::text
     from pg_proc p
@@ -103,7 +111,8 @@ select is_empty(
       and p.prorettype <> 'event_trigger'::regtype
       and p.prosecdef
   $$,
-  'ninguna función expuesta por la API es security definer'
+  array['vista_compartida(text)'],
+  'la única función security definer de public es la del link del cliente'
 );
 
 select is_empty(

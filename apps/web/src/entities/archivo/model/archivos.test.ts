@@ -19,6 +19,7 @@ function archivo(id: string, extra: Partial<Archivo> = {}): Archivo {
     household_id: 'h',
     proyecto_id: 'p',
     nombre: `${id}.jpg`,
+    visible_para_cliente: false,
     tipo: 'image/webp',
     bytes: 200_000,
     ancho: 2000,

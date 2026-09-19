@@ -14,6 +14,13 @@ export {
 } from './archivos';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
+  compartirElArchivo,
+  generarElEnlace,
+  revocarElEnlace,
+  vistaCompartida,
+  vistaDelCliente,
+} from './vista-cliente';
+export {
   codigoDeAcceso,
   errorDelEnlace,
   esFalloDeRed,
@@ -100,6 +107,7 @@ export {
   householdDe,
   quitarFilaLocal,
   rechazoDeLaBase,
+  SIN_PERMISO,
   TABLAS_REPLICADAS,
   TESOROS,
   tieneAcceso,
@@ -149,4 +157,5 @@ export {
   type Tesoro,
   type TipoMovimiento,
   type TotalesDelProyecto,
+  type EnlaceNuevo,
 } from '@maun/db';

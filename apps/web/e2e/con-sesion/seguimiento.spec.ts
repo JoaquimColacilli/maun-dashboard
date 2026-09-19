@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { indicadorDeSync, listoParaCortar, saldosEnInicio } from '../apoyo/pantalla';
 import {
+  ajustarTaller,
   contactoPorRpc,
   crearCliente,
   distribucionDe,
@@ -88,6 +89,7 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
   page,
 }) => {
   const titulo = 'Placard con escritorio';
+  await ajustarTaller(sesion, { sena_bp: 5000 });
   const antes = await saldosEnInicio(page);
 
   await abrir(page, '/seguimiento');
@@ -140,7 +142,10 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
   await page.getByRole('button', { name: 'Lo aprobó: pasar a Proyectos' }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/aprobar$`));
   await expect(page.getByLabel('Presupuesto aprobado')).toHaveValue('1.200.000');
-  await expect(page.getByText('Seña ya cobrada')).toBeVisible();
+  await expect(page.getByText('Ya cobrado antes')).toBeVisible();
+  // La seña viene sugerida con lo que falta para la mitad: 600.000 menos los 150.000 de la visita.
+  await expect(page.getByLabel('Seña que cobrás ahora')).toHaveValue('450.000');
+  await page.getByLabel('Seña que cobrás ahora').fill('');
   await expect(page.locator('dl').first()).toContainText('$ 150.000');
   await expect(page.locator('dl').first()).toContainText('$ 1.050.000');
   await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
@@ -170,6 +175,45 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
 
   const despues = await saldosEnInicio(page);
   expect(despues.maun - antes.maun).toBe(150_000);
+});
+
+test('aprobar con la seña cargada ahí mismo: un pago más, y lo de la visita no se cuenta dos veces', async ({
+  page,
+}) => {
+  await ajustarTaller(sesion, { sena_bp: 5000 });
+  const { id, titulo } = await contactoPorRpc(sesion, {
+    titulo: 'Biblioteca de pared',
+    estado: 'presupuesto_enviado',
+    sena: 20_000_000,
+  });
+
+  await abrir(page, `/proyectos/${id}/aprobar`);
+  await page.getByLabel('Presupuesto aprobado').fill('1.000.000');
+
+  // Sugerida: la mitad de 1.000.000 son 500.000, y ya cobró 200.000 en la visita.
+  await expect(page.getByLabel('Seña que cobrás ahora')).toHaveValue('300.000');
+  const cuenta = page.locator('dl').first();
+  await expect(cuenta).toContainText('$ 200.000');
+  await expect(cuenta).toContainText('$ 300.000');
+  await expect(cuenta).toContainText('$ 500.000');
+
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`), CARGA);
+  await esperarEstado(titulo, 'en_curso');
+
+  await expect.poll(async () => (await pagosDe(sesion, id)).length, { timeout: 30_000 }).toBe(2);
+  const pagos = await pagosDe(sesion, id);
+  expect(pagos.map((pago) => pago.monto_centavos).sort((uno, otro) => uno - otro)).toEqual([
+    20_000_000, 30_000_000,
+  ]);
+
+  const ficha = page.getByRole('region', { name: 'Pagos recibidos' });
+  await expect(ficha).toContainText('Seña');
+  await expect(ficha).toContainText('$ 300.000');
+  await expect(ficha).toContainText('$ 200.000');
+  await expect(page.getByRole('region', { name: 'Seña para confirmar' })).toContainText(
+    'La seña ya está cubierta',
+  );
 });
 
 test('un contacto en cualquier etapa previa no aparece en Activos', async ({ page }) => {
@@ -213,6 +257,7 @@ test('hoy los gastos de un contacto salen de la caja al cargarse, y aprobarlo no
   );
   await page.getByRole('button', { name: 'Ya lo aprobó' }).click();
   await page.getByLabel('Presupuesto aprobado').fill('900.000');
+  await page.getByLabel('Seña que cobrás ahora').fill('');
   await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`), { timeout: 30_000 });
   await esperarEstado(titulo, 'en_curso');
@@ -593,7 +638,12 @@ test('el camino con estimativo, de punta a punta: consulta, estimativo, visita c
 
   await panel.getByRole('button', { name: 'Lo aprobó: pasar a Proyectos' }).click();
   await expect(page.getByLabel('Presupuesto aprobado')).toHaveValue('950.000');
-  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  await page.getByLabel('Seña que cobrás ahora').fill('');
+  // Con Enter y no con un toque: en el celular el formulario del pasaje es largo y el botón puede
+  // quedar pegado al borde de abajo, debajo de la barra que flota ahí (ADR 0025). El toque de
+  // Playwright cae en la barra y el click nunca llega al botón; el camino del teclado no depende
+  // de dónde quedó parada la pantalla.
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).press('Enter');
   await esperarEstado(titulo, 'en_curso');
 });
 

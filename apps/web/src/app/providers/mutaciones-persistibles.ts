@@ -9,11 +9,19 @@ import {
   MUTACION_DE_BAJA_DE_ANOTACION,
 } from '@/entities/agenda';
 import {
+  CLAVE_DE_ARCHIVO_COMPARTIDO,
   CLAVE_DE_ARCHIVO_NUEVO,
   CLAVE_DE_BAJA_DE_ARCHIVO,
+  MUTACION_DE_ARCHIVO_COMPARTIDO,
   MUTACION_DE_ARCHIVO_NUEVO,
   MUTACION_DE_BAJA_DE_ARCHIVO,
 } from '@/entities/archivo';
+import {
+  CLAVE_DE_BAJA_DE_ENLACE,
+  CLAVE_DE_ENLACE,
+  MUTACION_DE_BAJA_DE_ENLACE,
+  MUTACION_DE_ENLACE,
+} from '@/entities/enlace';
 import {
   CLAVE_DE_BAJA_DE_CLIENTE,
   CLAVE_DE_CLIENTE,
@@ -121,6 +129,15 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ARCHIVO, MUTACION_DE_BAJA_DE_ARCHIVO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_ARCHIVO_COMPARTIDO, MUTACION_DE_ARCHIVO_COMPARTIDO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_ENLACE, MUTACION_DE_ENLACE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ENLACE, MUTACION_DE_BAJA_DE_ENLACE);
   },
 ];
 

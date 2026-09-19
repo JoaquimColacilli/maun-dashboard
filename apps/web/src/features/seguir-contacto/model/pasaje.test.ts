@@ -1,3 +1,4 @@
+import { puntosBasicos } from '@maun/domain';
 import { describe, expect, it } from 'vitest';
 
 import type { OpcionDePresupuesto, Proyecto } from '@/entities/proyecto';
@@ -6,10 +7,15 @@ import {
   errorDelPasaje,
   guardadoDelPasaje,
   presupuestoDelPasaje,
+  resumenDelPasaje,
+  senaDelPasaje,
+  senaSugerida,
   type ValoresDelPasaje,
 } from './pasaje';
 
 const HOY = '2026-09-16';
+const PAGO = 'pago-nuevo';
+const LA_MITAD = puntosBasicos(5_000);
 const SOLO_ALAN = 124_800_000;
 const LOS_DOS = 230_000_000;
 
@@ -54,6 +60,7 @@ function valores(extra: Partial<ValoresDelPasaje> = {}): ValoresDelPasaje {
   return {
     presupuesto: null,
     opcion: null,
+    sena: null,
     forma: 'transferencia',
     comprobante: 'sin_comprobante',
     inicio: HOY,
@@ -70,6 +77,7 @@ describe('el pasaje de un contacto sin opciones', () => {
       [],
       valores({ presupuesto: 120_000_000 }),
       HOY,
+      PAGO,
     );
 
     expect(pedido.datos).toMatchObject({
@@ -120,6 +128,7 @@ describe('el pasaje de un contacto con opciones', () => {
       opciones,
       valores({ opcion: 'a' }),
       HOY,
+      PAGO,
     );
 
     expect(pedido.datos).toMatchObject({ estado: 'en_curso', presupuesto_centavos: SOLO_ALAN });
@@ -135,6 +144,7 @@ describe('el pasaje de un contacto con opciones', () => {
       opciones,
       valores({ opcion: 'b' }),
       HOY,
+      PAGO,
     );
 
     expect(pedido.datos).toMatchObject({ estado: 'en_curso', presupuesto_centavos: LOS_DOS });
@@ -155,12 +165,119 @@ describe('el pasaje de un contacto con opciones', () => {
   it('si ninguna estaba aprobada, aprueba la elegida al pasar', () => {
     const opciones = [opcion('a', SOLO_ALAN), opcion('b', LOS_DOS)];
 
-    const { pedido } = guardadoDelPasaje(CONTACTO, opciones, valores({ opcion: 'a' }), HOY);
+    const { pedido } = guardadoDelPasaje(CONTACTO, opciones, valores({ opcion: 'a' }), HOY, PAGO);
 
     expect(pedido.datos.presupuesto_centavos).toBe(SOLO_ALAN);
     expect(pedido.opciones).toEqual([
       { id: 'a', descripcion: 'Opción a', monto_centavos: SOLO_ALAN, aprobada: true },
       { id: 'b', descripcion: 'Opción b', monto_centavos: LOS_DOS, aprobada: false },
     ]);
+  });
+});
+
+describe('la seña que se carga al aprobar', () => {
+  it('sugiere lo que falta para llegar al porcentaje del taller, sin contar dos veces lo ya cobrado', () => {
+    const esperada = senaDelPasaje(LOS_DOS, 30_000_000, LA_MITAD, null);
+
+    expect(esperada).toMatchObject({ situacion: 'falta', esperada: 115_000_000 });
+    expect(senaSugerida(esperada)).toBe(85_000_000);
+  });
+
+  it('el porcentaje propio del trabajo pisa al del taller', () => {
+    expect(senaDelPasaje(LOS_DOS, 0, LA_MITAD, puntosBasicos(3_000))).toMatchObject({
+      porcentaje: 3_000,
+      esperada: 69_000_000,
+    });
+  });
+
+  it('si lo que ya cobró cubre la seña, no sugiere nada', () => {
+    const esperada = senaDelPasaje(LOS_DOS, 200_000_000, LA_MITAD, null);
+
+    expect(esperada.situacion).toBe('cubierta');
+    expect(senaSugerida(esperada)).toBeNull();
+  });
+
+  it('sin presupuesto elegido todavía no hay seña que sugerir', () => {
+    expect(senaSugerida(senaDelPasaje(null, 0, LA_MITAD, null))).toBeNull();
+  });
+
+  it('el resumen suma lo de antes con lo de ahora una sola vez', () => {
+    expect(resumenDelPasaje(LOS_DOS, 30_000_000, 85_000_000)).toEqual({
+      antes: 30_000_000,
+      ahora: 85_000_000,
+      cobrado: 115_000_000,
+      saldo: 115_000_000,
+    });
+  });
+
+  it('sin cargar nada, el resumen es el de siempre', () => {
+    expect(resumenDelPasaje(LOS_DOS, 30_000_000, null)).toEqual({
+      antes: 30_000_000,
+      ahora: 0,
+      cobrado: 30_000_000,
+      saldo: 200_000_000,
+    });
+  });
+
+  it('cobrar de más no deja un saldo negativo, y sin presupuesto no hay saldo', () => {
+    expect(resumenDelPasaje(LOS_DOS, 0, 300_000_000).saldo).toBe(0);
+    expect(resumenDelPasaje(null, 0, 300_000_000).saldo).toBeNull();
+  });
+
+  it('el pago entra en el mismo guardado que la aprobación, con la fecha de inicio', () => {
+    const { pedido } = guardadoDelPasaje(
+      CONTACTO,
+      [],
+      valores({ presupuesto: LOS_DOS, sena: 115_000_000, inicio: '2026-09-20' }),
+      HOY,
+      PAGO,
+    );
+
+    expect(pedido.pagos).toEqual([
+      { id: PAGO, fecha: '2026-09-20', concepto: 'Seña', monto_centavos: 115_000_000 },
+    ]);
+    expect(pedido.datos).toMatchObject({ estado: 'en_curso', fecha_inicio: '2026-09-20' });
+  });
+
+  it('con opciones, el pago viaja junto con la opción que se aprueba', () => {
+    const opciones = [opcion('a', SOLO_ALAN), opcion('b', LOS_DOS)];
+
+    const { pedido } = guardadoDelPasaje(
+      CONTACTO,
+      opciones,
+      valores({ opcion: 'b', sena: 1_000 }),
+      HOY,
+      PAGO,
+    );
+
+    expect(pedido.pagos).toEqual([
+      { id: PAGO, fecha: HOY, concepto: 'Seña', monto_centavos: 1_000 },
+    ]);
+    expect(pedido.opciones).toEqual([
+      { id: 'a', descripcion: 'Opción a', monto_centavos: SOLO_ALAN, aprobada: false },
+      { id: 'b', descripcion: 'Opción b', monto_centavos: LOS_DOS, aprobada: true },
+    ]);
+  });
+
+  it('sin seña sigue pasando sin pagos, como hasta ahora', () => {
+    expect(
+      guardadoDelPasaje(CONTACTO, [], valores({ presupuesto: 1 }), HOY, PAGO).pedido.pagos,
+    ).toEqual([]);
+    expect(
+      guardadoDelPasaje(CONTACTO, [], valores({ presupuesto: 1, sena: 0 }), HOY, PAGO).pedido.pagos,
+    ).toEqual([]);
+  });
+
+  it('sin fecha de inicio, el pago queda con el día de hoy', () => {
+    const { pedido } = guardadoDelPasaje(
+      CONTACTO,
+      [],
+      valores({ presupuesto: 1, sena: 500, inicio: '' }),
+      HOY,
+      PAGO,
+    );
+
+    expect(pedido.pagos).toEqual([{ id: PAGO, fecha: HOY, concepto: 'Seña', monto_centavos: 500 }]);
+    expect(pedido.datos.fecha_inicio).toBeNull();
   });
 });
