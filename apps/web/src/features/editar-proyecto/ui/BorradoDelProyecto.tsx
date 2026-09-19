@@ -28,12 +28,13 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
       <Button
         variant="secundario"
         size="chico"
+        aria-label="Borrar"
         onClick={() => {
           setConfirmando(true);
         }}
       >
         <Icono nombre="trash-2" tamano={16} />
-        Borrar
+        <span className="hidden sm:inline">Borrar</span>
       </Button>
 
       <ConSalida valor={confirmando}>

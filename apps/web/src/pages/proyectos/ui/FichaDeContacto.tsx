@@ -21,6 +21,7 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { AyudaDeLaVista } from '@/entities/vista-cliente';
 import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import {
   BorradoDelProyecto,
@@ -99,6 +100,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
           Seguimiento
         </Link>
         <div className="flex flex-none gap-2">
+          <AyudaDeLaVista />
           <Button
             variant="secundario"
             size="chico"
@@ -120,12 +122,13 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
           <Button
             variant="secundario"
             size="chico"
+            aria-label="Editar"
             onClick={() => {
               setEditando('contacto');
             }}
           >
             <Icono nombre="pencil" tamano={16} />
-            Editar
+            <span className="hidden sm:inline">Editar</span>
           </Button>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
 } from '@/entities/enlace';
 import { rutaDelProyecto, type ResumenDeProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { AyudaDeLaVista } from '@/entities/vista-cliente';
 import { filasDe, mensajeDeSincronizacion } from '@/shared/api';
 import {
   fechaLarga,
@@ -151,6 +152,9 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
           Ve el precio, lo que pagó, lo que falta y en qué anda el mueble. No ve tus costos, tu
           ganancia, el diezmo ni el despiece.
         </p>
+        <div className="mt-1.5">
+          <AyudaDeLaVista conTexto />
+        </div>
       </header>
 
       {vista.como === 'sin_enlace' && (

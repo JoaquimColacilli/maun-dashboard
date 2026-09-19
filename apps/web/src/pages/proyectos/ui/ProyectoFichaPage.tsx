@@ -25,6 +25,7 @@ import {
   useLiquidacionEnVuelo,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { AyudaDeLaVista } from '@/entities/vista-cliente';
 import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
 import {
   AvanceDeLaObra,
@@ -158,6 +159,7 @@ export function ProyectoFichaPage() {
           Proyectos
         </Link>
         <div className="flex flex-none gap-2">
+          <AyudaDeLaVista />
           <Button
             variant="secundario"
             size="chico"
@@ -179,12 +181,13 @@ export function ProyectoFichaPage() {
           <Button
             variant="secundario"
             size="chico"
+            aria-label="Editar"
             onClick={() => {
               void navegar(rutaDeEdicion(proyecto.id));
             }}
           >
             <Icono nombre="pencil" tamano={16} />
-            Editar
+            <span className="hidden sm:inline">Editar</span>
           </Button>
         </div>
       </div>
