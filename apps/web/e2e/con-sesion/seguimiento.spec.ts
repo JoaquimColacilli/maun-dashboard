@@ -639,7 +639,11 @@ test('el camino con estimativo, de punta a punta: consulta, estimativo, visita c
   await panel.getByRole('button', { name: 'Lo aprobó: pasar a Proyectos' }).click();
   await expect(page.getByLabel('Presupuesto aprobado')).toHaveValue('950.000');
   await page.getByLabel('Seña que cobrás ahora').fill('');
-  await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
+  // Con Enter y no con un toque: en el celular el formulario del pasaje es largo y el botón puede
+  // quedar pegado al borde de abajo, debajo de la barra que flota ahí (ADR 0025). El toque de
+  // Playwright cae en la barra y el click nunca llega al botón; el camino del teclado no depende
+  // de dónde quedó parada la pantalla.
+  await page.getByRole('button', { name: 'Pasar a Proyectos' }).press('Enter');
   await esperarEstado(titulo, 'en_curso');
 });
 

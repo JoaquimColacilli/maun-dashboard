@@ -332,18 +332,10 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
               </dd>
             </>
           )}
-          {cuenta.antes > 0 && (
-            <>
-              <dt className="text-text-2">Ya cobrado antes</dt>
-              <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.antes)}</dd>
-            </>
-          )}
-          {cuenta.ahora > 0 && (
-            <>
-              <dt className="text-text-2">Seña que cobrás ahora</dt>
-              <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.ahora)}</dd>
-            </>
-          )}
+          <dt className="text-text-2">Ya cobrado antes</dt>
+          <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.antes)}</dd>
+          <dt className="text-text-2">Seña que cobrás ahora</dt>
+          <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.ahora)}</dd>
           <dt className="text-text-2">Cobrado en total</dt>
           <dd className="text-right font-semibold text-hogar">{formatearPesos(cuenta.cobrado)}</dd>
           <dt className="text-text-2">Saldo a cobrar</dt>
