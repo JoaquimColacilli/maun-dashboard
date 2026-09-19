@@ -18,7 +18,7 @@ import { useSesionActiva } from '@/entities/sesion';
 import { AjusteDeHuella } from '@/features/activar-huella';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
-import { FormularioDeConfiguracion } from '@/features/configurar-taller';
+import { FormularioDeCobro, FormularioDeConfiguracion } from '@/features/configurar-taller';
 import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
 import { VersionDeLaApp } from '@/features/ver-novedades';
@@ -242,6 +242,19 @@ export function AjustesPage() {
                 Reparto y metas
               </h2>
               <FormularioDeConfiguracion household={household} ajustes={ajustes} />
+            </section>
+          )}
+
+          {ajustes && (
+            <section aria-labelledby="titulo-cobro" className={SECCION}>
+              <h2 id="titulo-cobro" className="text-section font-semibold">
+                Cómo te transfieren
+              </h2>
+              <p className="text-body leading-relaxed text-text-2">
+                Se cargan una vez y aparecen en la página que le compartís a cada cliente, al lado
+                de lo que falta pagar. Todos son opcionales: lo que dejes vacío, no se muestra.
+              </p>
+              <FormularioDeCobro ajustes={ajustes} />
             </section>
           )}
 
