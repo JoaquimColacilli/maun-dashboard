@@ -5,6 +5,7 @@ import {
   DIAS_SIN_NOVEDADES,
   HITOS,
   vistaDelCliente,
+  hayComoTransferir,
   type PagoDelCliente,
   type TrabajoDelCliente,
 } from './vistaCliente.ts';
@@ -31,6 +32,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
+    cobro: { alias: null, cbu: null, titular: null, cuit: null },
     pagos: [],
     archivos: [],
     ...cambios,
@@ -439,5 +441,33 @@ describe('los importes son centavos enteros con marca', () => {
       HOY,
     ).pagado;
     expect(total).toBe(3);
+  });
+});
+
+describe('si hay cómo transferirle al taller', () => {
+  it('alcanza con el alias o con el CBU: eso es lo que el cliente pega en su banco', () => {
+    expect(hayComoTransferir({ alias: 'maun.muebles', cbu: null, titular: null, cuit: null })).toBe(
+      true,
+    );
+    expect(
+      hayComoTransferir({
+        alias: null,
+        cbu: '0110001312345678901233',
+        titular: null,
+        cuit: null,
+      }),
+    ).toBe(true);
+  });
+
+  it('el titular y el CUIT solos no alcanzan: con eso no se transfiere', () => {
+    expect(
+      hayComoTransferir({
+        alias: null,
+        cbu: null,
+        titular: 'Ana Gutiérrez',
+        cuit: '27-30123456-4',
+      }),
+    ).toBe(false);
+    expect(hayComoTransferir({ alias: null, cbu: null, titular: null, cuit: null })).toBe(false);
   });
 });

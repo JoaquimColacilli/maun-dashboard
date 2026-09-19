@@ -1,4 +1,5 @@
 import type {
+  CobroDelTaller,
   ArchivoDelCliente,
   EstadoProyecto,
   FechasDelTrabajo,
@@ -74,6 +75,25 @@ function archivos(valor: unknown): ArchivoDelCliente[] {
   });
 }
 
+function textoONada(valor: unknown, que: string): string | null {
+  if (valor === null || valor === undefined) return null;
+  const leido = texto(valor, que).trim();
+  return leido === '' ? null : leido;
+}
+
+function cobro(valor: unknown): CobroDelTaller {
+  if (valor === null || valor === undefined) {
+    return { alias: null, cbu: null, titular: null, cuit: null };
+  }
+  const crudo = objeto(valor, 'los datos para transferir');
+  return {
+    alias: textoONada(crudo.alias, 'el alias del taller'),
+    cbu: textoONada(crudo.cbu, 'el CBU del taller'),
+    titular: textoONada(crudo.titular, 'el titular de la cuenta'),
+    cuit: textoONada(crudo.cuit, 'el CUIT del titular'),
+  };
+}
+
 function fechas(valor: unknown): FechasDelTrabajo {
   const crudas = objeto(valor, 'las fechas');
   return {
@@ -99,6 +119,7 @@ export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
       return precio === null ? null : dinero(precio);
     })(),
     fechas: fechas(cuerpo.fechas),
+    cobro: cobro(cuerpo.cobro),
     pagos: pagos(cuerpo.pagos),
     archivos: archivos(cuerpo.archivos),
   };

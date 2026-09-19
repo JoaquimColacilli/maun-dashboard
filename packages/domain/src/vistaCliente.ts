@@ -35,6 +35,13 @@ export interface FechasDelTrabajo {
   cobro: string | null;
 }
 
+export interface CobroDelTaller {
+  alias: string | null;
+  cbu: string | null;
+  titular: string | null;
+  cuit: string | null;
+}
+
 export interface TrabajoDelCliente {
   taller: string;
   cliente: string;
@@ -43,8 +50,13 @@ export interface TrabajoDelCliente {
   estado: EstadoProyecto;
   precio: Money | null;
   fechas: FechasDelTrabajo;
+  cobro: CobroDelTaller;
   pagos: readonly PagoDelCliente[];
   archivos: readonly ArchivoDelCliente[];
+}
+
+export function hayComoTransferir(cobro: CobroDelTaller): boolean {
+  return cobro.alias !== null || cobro.cbu !== null;
 }
 
 export interface HitoDeLaVista {

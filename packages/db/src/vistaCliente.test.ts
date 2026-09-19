@@ -19,6 +19,12 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       entregado: null,
       cobro: null,
     },
+    cobro: {
+      alias: 'maun.muebles',
+      cbu: '0110001312345678901233',
+      titular: 'Ana Gutiérrez',
+      cuit: '27-30123456-4',
+    },
     pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto_centavos: 40_000_000 }],
     archivos: [
       {
@@ -52,6 +58,12 @@ describe('leer la vista del cliente', () => {
         entregaPautada: '2026-10-02',
         entregado: null,
         cobro: null,
+      },
+      cobro: {
+        alias: 'maun.muebles',
+        cbu: '0110001312345678901233',
+        titular: 'Ana Gutiérrez',
+        cuit: '27-30123456-4',
       },
       pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: 40_000_000 }],
       archivos: [
@@ -129,5 +141,39 @@ describe('leer la vista del cliente', () => {
     ]) {
       expect(() => leerVistaDelCliente(rota)).toThrow(RespuestaInvalidaError);
     }
+  });
+});
+
+describe('los datos para transferir', () => {
+  it('lo que el dueño no cargó llega en null y se queda en null', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ cobro: { alias: null, cbu: null, titular: null, cuit: null } }),
+    );
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+  });
+
+  it('una cadena vacía o con espacios se lee como que no hay dato', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ cobro: { alias: '', cbu: '  ', titular: null, cuit: '' } }),
+    );
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+  });
+
+  it('una respuesta vieja, sin la clave, no rompe la vista', () => {
+    const leido = leerVistaDelCliente(respuesta({ cobro: undefined }));
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+  });
+
+  it('y lo que vino con algo adentro se lee recortado', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ cobro: { alias: '  maun.muebles ', cbu: null, titular: null, cuit: null } }),
+    );
+    expect(leido.cobro.alias).toBe('maun.muebles');
+  });
+
+  it('un dato que no es texto no se cree', () => {
+    expect(() => leerVistaDelCliente(respuesta({ cobro: { alias: 42 } }))).toThrow(
+      RespuestaInvalidaError,
+    );
   });
 });

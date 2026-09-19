@@ -40,6 +40,26 @@ export {
 } from './necesidades.ts';
 
 export {
+  claveBancariaDe,
+  digitosDeCbu,
+  esClaveVirtual,
+  formatearCbu,
+  LARGO_DE_CBU,
+  LARGO_MAXIMO_DE_ALIAS,
+  LARGO_MINIMO_DE_ALIAS,
+  normalizarAlias,
+  revisarAlias,
+  revisarCbu,
+  verificadorDelBloque,
+  type AvisoDeAlias,
+  type ClaveBancaria,
+  type MotivoDeAlias,
+  type MotivoDeCbu,
+  type RevisionDeAlias,
+  type RevisionDeCbu,
+} from './cobro.ts';
+
+export {
   digitosDeCuit,
   formatearCuit,
   LARGO_DE_CUIT,
@@ -83,9 +103,11 @@ export {
 
 export {
   DIAS_SIN_NOVEDADES,
+  hayComoTransferir,
   HITOS,
   vistaDelCliente,
   type ArchivoDelCliente,
+  type CobroDelTaller,
   type EstadoDelHito,
   type EventoDelCliente,
   type FechasDelTrabajo,

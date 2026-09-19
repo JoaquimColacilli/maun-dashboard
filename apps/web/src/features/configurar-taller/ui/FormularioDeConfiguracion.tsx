@@ -33,10 +33,11 @@ function diferencias(
   const cambios: CambiosDeAjustes = {};
   const previos: CambiosDeAjustes = {};
   for (const columna of COLUMNAS_DE_AJUSTES) {
-    if (nuevos[columna] !== ajustes[columna]) {
-      cambios[columna] = nuevos[columna];
-      previos[columna] = ajustes[columna];
-    }
+    const nuevo = nuevos[columna];
+    const previo = ajustes[columna];
+    if (nuevo === previo) continue;
+    Object.assign(cambios, { [columna]: nuevo });
+    Object.assign(previos, { [columna]: previo });
   }
   return { cambios, previos };
 }
