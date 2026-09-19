@@ -5,7 +5,6 @@ import { Icono } from '@/shared/ui';
 
 export interface CaminoDeHitosProps {
   hitos: readonly HitoDeLaVista[];
-  desdeTexto: string;
   hoy: string;
 }
 
@@ -20,7 +19,7 @@ function linea(activa: boolean, oculta: boolean): string {
   return activa ? 'border-solid border-hogar' : 'border-dashed border-border';
 }
 
-export function CaminoDeHitos({ hitos, desdeTexto, hoy }: CaminoDeHitosProps) {
+export function CaminoDeHitos({ hitos, hoy }: CaminoDeHitosProps) {
   const actual = hitos.findIndex((hito) => hito.estado === 'actual');
 
   return (
@@ -62,9 +61,6 @@ export function CaminoDeHitos({ hitos, desdeTexto, hoy }: CaminoDeHitosProps) {
               <span className="text-label text-text-3 tabular-nums">
                 {fechaLarga(hito.fecha, hoy)}
               </span>
-            )}
-            {hito.estado === 'actual' && desdeTexto !== '' && (
-              <span className="text-label text-text-2">{desdeTexto}</span>
             )}
           </div>
         </li>

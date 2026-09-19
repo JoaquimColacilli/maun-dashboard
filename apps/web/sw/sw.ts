@@ -114,6 +114,10 @@ self.addEventListener('notificationclick', (evento) => {
   evento.waitUntil(abrirLaApp(urlDeLaApp(evento.notification.data)));
 });
 
+const VISTA_PUBLICA = /^\/v\//;
+
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [VISTA_PUBLICA] }),
+);

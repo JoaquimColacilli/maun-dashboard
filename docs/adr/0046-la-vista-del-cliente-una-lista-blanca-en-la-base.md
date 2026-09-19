@@ -1,6 +1,6 @@
 # 0046. La vista del cliente: una lista blanca en la base, no una pantalla que esconde
 
-Estado: aceptada, 2026-09-18.
+Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), y la lista blanca suma los datos para transferirle al taller (ADR 0048).
 
 ## Contexto
 
@@ -64,6 +64,16 @@ No hay dos implementaciones del payload. Si las hubiera, tarde o temprano él mu
 teléfono y el cliente ve otra. Los derivados de presentación —el camino de hitos, qué va en cifra
 grande, la línea de tiempo— viven una sola vez en `@maun/domain` (`vistaDelCliente`), que es puro y
 no puede filtrar nada que no le hayan pasado.
+
+**Corregido el 2026-09-19.** Una cosa no puede ser la misma en las dos pantallas: cuánto hace que
+pasó algo. La app del dueño lo dice en todos lados —«Presupuesto enviado hace 9 días, sin
+respuesta»— y ahí sirve, porque es su lista de pendientes. En la pantalla del cliente, «Hace 9 días
+que no hay novedades» lo pone a contar contra el taller, y en una obra de muebles pasan semanas de
+producción sin un hito que se vea. Peor: el cliente saca una captura y la reenvía, y al otro día el
+número miente. El cliente ve **fechas absolutas y qué sigue**; los «hace N días» se quedan del lado
+del dueño. Lo que se sacó: `quietoTexto`, `desdeTexto` y los relativos de la línea de tiempo y de la
+entrega pautada. `vistaDelCliente` no devuelve ningún texto con un número de días, y el test lo
+exige sobre el JSON entero.
 
 ### El enlace: token propio, guardado hasheado, sin caducidad
 

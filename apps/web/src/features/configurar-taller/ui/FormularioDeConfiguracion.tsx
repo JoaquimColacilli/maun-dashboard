@@ -1,12 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 
-import {
-  COLUMNAS_DE_AJUSTES,
-  mensajeDeSincronizacion,
-  type CambiosDeAjustes,
-  type FilaDe,
-} from '@/shared/api';
+import { mensajeDeSincronizacion, type CambiosDeAjustes, type FilaDe } from '@/shared/api';
 import {
   formatearPorcentaje,
   parsearPorcentaje,
@@ -16,6 +11,7 @@ import {
 import { Button, Campo, MoneyInput } from '@/shared/ui';
 
 import { MUTACION_DE_AJUSTES, MUTACION_DEL_NOMBRE } from '../api/mutacion';
+import { diferencias } from '../model/cambios';
 
 const LARGO_DEL_NOMBRE = 120;
 
@@ -24,21 +20,6 @@ type CampoDelFormulario = 'nombre' | 'sueldo' | 'fijos' | 'meta' | 'tasa' | 'sen
 interface ErrorDelFormulario {
   campo: CampoDelFormulario;
   mensaje: string;
-}
-
-function diferencias(
-  ajustes: FilaDe<'ajustes'>,
-  nuevos: Required<CambiosDeAjustes>,
-): { cambios: CambiosDeAjustes; previos: CambiosDeAjustes } {
-  const cambios: CambiosDeAjustes = {};
-  const previos: CambiosDeAjustes = {};
-  for (const columna of COLUMNAS_DE_AJUSTES) {
-    if (nuevos[columna] !== ajustes[columna]) {
-      cambios[columna] = nuevos[columna];
-      previos[columna] = ajustes[columna];
-    }
-  }
-  return { cambios, previos };
 }
 
 export function FormularioDeConfiguracion({
@@ -111,7 +92,7 @@ export function FormularioDeConfiguracion({
     }
 
     setError(undefined);
-    const { cambios, previos } = diferencias(ajustes, valores as Required<CambiosDeAjustes>);
+    const { cambios, previos } = diferencias(ajustes, valores as CambiosDeAjustes);
 
     if (Object.keys(cambios).length > 0) {
       mutacionDeAjustes.mutate({ id: ajustes.id, cambios, previos });

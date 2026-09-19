@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-19',
+    lineas: [
+      'La página que le compartís al cliente ahora se puede bajar hasta el final desde el celular. Antes quedaba clavada en la primera pantalla y las fotos no llegaban a verse.',
+      'En Ajustes cargás una vez tu alias, tu CBU o CVU, el titular y el CUIT. Tu cliente los ve al lado de lo que le falta pagar, con un botón para copiar cada uno.',
+      'En la ficha de cada trabajo ves cuántos archivos le estás mostrando, y te avisa cuando tenés archivos y no le compartiste ninguno.',
+      'Al pegar el enlace en WhatsApp ahora aparece el nombre del trabajo en vez del nombre de la app, y la pantalla de compartir te muestra antes cómo se va a ver.',
+    ],
+  },
+  {
     version: '2026-09-18.2',
     lineas: [
       'Desde la ficha de un trabajo podés mostrarle al cliente cuánto vale, cuánto pagó, cuánto falta y en qué anda. No ve tus costos, tu ganancia, el diezmo ni el despiece.',

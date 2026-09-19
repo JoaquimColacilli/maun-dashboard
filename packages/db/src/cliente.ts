@@ -23,3 +23,13 @@ export function crearClienteMaun({ url, publishableKey }: OpcionesCliente): Clie
     },
   });
 }
+
+export function crearClienteAnonimo({ url, publishableKey }: OpcionesCliente): ClienteMaun {
+  return createClient<Database>(url, publishableKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}

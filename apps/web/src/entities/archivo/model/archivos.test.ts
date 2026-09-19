@@ -6,6 +6,7 @@ import {
   archivosDelProyecto,
   esImagen,
   espacioUsado,
+  loQueVeElCliente,
   pesoLegible,
   rutaDeLaMiniatura,
   rutaDelArchivo,
@@ -91,5 +92,47 @@ describe('pesoLegible', () => {
     expect(pesoLegible(240_000)).toBe('234 KB');
     expect(pesoLegible(3_400_000)).toBe('3,2 MB');
     expect(pesoLegible(1024 ** 3 * 1.5)).toBe('1,5 GB');
+  });
+});
+
+describe('lo que ve el cliente de los archivos de un trabajo', () => {
+  it('cuenta los compartidos sobre el total', () => {
+    const algunos = [
+      archivo('a', { visible_para_cliente: true }),
+      archivo('b'),
+      archivo('c', { visible_para_cliente: true }),
+    ];
+    expect(loQueVeElCliente(algunos)).toEqual({
+      compartidos: 2,
+      total: 3,
+      ninguno: false,
+      todos: false,
+    });
+  });
+
+  it('avisa cuando hay archivos y el cliente no ve ninguno', () => {
+    expect(loQueVeElCliente([archivo('a'), archivo('b')])).toMatchObject({
+      compartidos: 0,
+      total: 2,
+      ninguno: true,
+      todos: false,
+    });
+  });
+
+  it('sin archivos no hay nada que avisar: ninguno es falso', () => {
+    expect(loQueVeElCliente([])).toEqual({
+      compartidos: 0,
+      total: 0,
+      ninguno: false,
+      todos: false,
+    });
+  });
+
+  it('con todos compartidos lo dice', () => {
+    const todos = [
+      archivo('a', { visible_para_cliente: true }),
+      archivo('b', { visible_para_cliente: true }),
+    ];
+    expect(loQueVeElCliente(todos)).toMatchObject({ compartidos: 2, total: 2, todos: true });
   });
 });

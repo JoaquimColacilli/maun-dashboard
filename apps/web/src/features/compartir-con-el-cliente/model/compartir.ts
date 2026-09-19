@@ -1,4 +1,4 @@
-import type { Archivo } from '@/entities/archivo';
+import { loQueVeElCliente, type Archivo } from '@/entities/archivo';
 import type { Enlace } from '@/entities/enlace';
 import { enlaceDelCliente, tokenDelEnlace } from '@/shared/lib';
 
@@ -29,7 +29,16 @@ export function enlaceDeWhatsapp(telefono: string, mensaje: string): string {
   return numero === '' ? `https://wa.me/?text=${texto}` : `https://wa.me/${numero}?text=${texto}`;
 }
 
+// Lo mismo que arma la función de borde para la vista previa. Si divergen, el dueño ve una cosa
+// acá y su cliente otra en el chat (ADR 0049).
+export function comoSeVeEnWhatsapp(trabajo: string, taller: string): string {
+  const limpio = trabajo.trim();
+  const delTaller = taller.trim();
+  if (limpio === '') return delTaller === '' ? 'MAUN' : delTaller;
+  return delTaller === '' ? limpio : `${limpio} · ${delTaller}`;
+}
+
 export function cuantosVeElCliente(archivos: readonly Archivo[]): string {
-  const visibles = archivos.filter((archivo) => archivo.visible_para_cliente).length;
-  return `${String(visibles)} de ${String(archivos.length)} compartidos`;
+  const { compartidos, total } = loQueVeElCliente(archivos);
+  return `${String(compartidos)} de ${String(total)} compartidos`;
 }

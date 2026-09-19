@@ -48,9 +48,9 @@ const LAMINAS: readonly Lamina[] = [
       {
         clave: 'silencio',
         icono: 'clock',
-        titulo: 'Cinco días en silencio',
+        titulo: 'Fechas, no cuentas',
         texto:
-          'Si no cargás nada por cinco días, la pantalla le avisa que es normal: un mueble a medida lleva semanas.',
+          'Le muestra el día de cada paso y qué sigue. Nunca cuánto hace que no pasa nada: eso lo pone a contar contra vos, y una obra lleva semanas sin nada que se vea.',
       },
     ],
   },
@@ -133,6 +133,13 @@ const LAMINAS: readonly Lamina[] = [
         titulo: 'Primero sale del taller',
         texto:
           'Aunque te pague todo antes, el paso 5 no se marca hasta que el mueble esté entregado.',
+      },
+      {
+        clave: 'transferir',
+        icono: 'copy',
+        titulo: 'Cómo te transfiere',
+        texto:
+          'Si cargaste tus datos en Ajustes, los ve al lado del saldo, con un botón para copiar cada uno. Deja de verlos cuando queda todo pagado.',
       },
     ],
   },

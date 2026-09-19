@@ -10,6 +10,10 @@ export type Database = {
     Tables: {
       ajustes: {
         Row: {
+          cobro_alias: string;
+          cobro_cbu: string;
+          cobro_cuit: string;
+          cobro_titular: string;
           costos_fijos_centavos: number;
           created_at: string;
           deleted_at: string | null;
@@ -26,6 +30,10 @@ export type Database = {
           version: number;
         };
         Insert: {
+          cobro_alias?: string;
+          cobro_cbu?: string;
+          cobro_cuit?: string;
+          cobro_titular?: string;
           costos_fijos_centavos?: number;
           created_at?: string;
           deleted_at?: string | null;
@@ -42,6 +50,10 @@ export type Database = {
           version?: number;
         };
         Update: {
+          cobro_alias?: string;
+          cobro_cbu?: string;
+          cobro_cuit?: string;
+          cobro_titular?: string;
           costos_fijos_centavos?: number;
           created_at?: string;
           deleted_at?: string | null;
@@ -1284,6 +1296,7 @@ export type Database = {
         Args: { p_endpoint?: string; p_usuario: string };
         Returns: Json;
       };
+      titulo_compartido: { Args: { p_token: string }; Returns: Json };
       vista_compartida: { Args: { p_token: string }; Returns: Json };
       vista_del_cliente: { Args: { p_proyecto_id: string }; Returns: Json };
     };

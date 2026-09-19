@@ -35,6 +35,10 @@ export const COLUMNAS_DE_AJUSTES = [
   'meta_cocos_centavos',
   'tasa_cocos_anual_bp',
   'sena_bp',
+  'cobro_alias',
+  'cobro_cbu',
+  'cobro_titular',
+  'cobro_cuit',
 ] as const;
 
 export type ColumnaDeAjustes = (typeof COLUMNAS_DE_AJUSTES)[number];

@@ -111,4 +111,10 @@ export function rutaDeLaVistaDelCliente(id: string): string {
   return `/proyectos/${id}/vista-cliente`;
 }
 
-export const RUTA_DE_LA_VISTA_PUBLICA = '/v/:token';
+export const PREFIJO_DE_LA_VISTA_PUBLICA = '/v/';
+
+export const RUTA_DE_LA_VISTA_PUBLICA = `${PREFIJO_DE_LA_VISTA_PUBLICA}:token`;
+
+export function esLaVistaPublica(ruta: string): boolean {
+  return ruta.startsWith(PREFIJO_DE_LA_VISTA_PUBLICA);
+}

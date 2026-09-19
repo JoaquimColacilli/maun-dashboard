@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  ajustarCobroDelTaller,
   archivoPorRest,
   borrarProyectoPorRest,
   contactoPorRpc,
@@ -217,21 +218,40 @@ test('borrar el trabajo se lleva su enlace', async ({ page }) => {
   );
 });
 
-test('la vista del cliente se ve en claro y en oscuro', async ({ page }, testInfo) => {
+const COBRO_CARGADO = {
+  alias: 'maun.muebles',
+  cbu: '0110001312345678901233',
+  titular: 'Ana Gutiérrez',
+  cuit: '27-30123456-4',
+};
+
+const SIN_COBRO = { alias: '', cbu: '', titular: '', cuit: '' };
+
+test('la vista del cliente se ve en claro y en oscuro, con y sin datos para transferir', async ({
+  page,
+}, testInfo) => {
   const token = tokenDePrueba();
   await obraConEnlace(token);
 
-  for (const tema of ['light', 'dark'] as const) {
-    await page.addInitScript((elegido) => {
-      localStorage.setItem('maun:tema', elegido);
-    }, tema);
-    await page.goto(`/v/${token}`);
-    await expect(laVista(page)).toBeVisible(CARGA);
-    await page.screenshot({
-      path: testInfo.outputPath(`vista-cliente-${tema}-${testInfo.project.name}.png`),
-      fullPage: true,
-    });
+  for (const conCobro of [false, true]) {
+    await ajustarCobroDelTaller(sesion, conCobro ? COBRO_CARGADO : SIN_COBRO);
+
+    for (const tema of ['light', 'dark'] as const) {
+      await page.addInitScript((elegido) => {
+        localStorage.setItem('maun:tema', elegido);
+      }, tema);
+      await page.goto(`/v/${token}`);
+      await expect(laVista(page)).toBeVisible(CARGA);
+      await page.screenshot({
+        path: testInfo.outputPath(
+          `vista-cliente-${tema}-${conCobro ? 'con-cobro' : 'sin-cobro'}-${testInfo.project.name}.png`,
+        ),
+        fullPage: true,
+      });
+    }
   }
+
+  await ajustarCobroDelTaller(sesion, SIN_COBRO);
 });
 
 test('la vista del cliente se recorre con el teclado y se anuncia sin depender del color', async ({

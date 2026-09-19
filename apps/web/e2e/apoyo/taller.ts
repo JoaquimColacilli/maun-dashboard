@@ -581,6 +581,30 @@ export async function ajustarTaller(
   });
 }
 
+export interface CobroDelTallerDePrueba {
+  alias: string;
+  cbu: string;
+  titular: string;
+  cuit: string;
+}
+
+export async function ajustarCobroDelTaller(
+  { entorno, accessToken }: SesionDePrueba,
+  cobro: CobroDelTallerDePrueba,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/ajustes?deleted_at=is.null', {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      cobro_alias: cobro.alias,
+      cobro_cbu: cobro.cbu,
+      cobro_titular: cobro.titular,
+      cobro_cuit: cobro.cuit,
+    }),
+  });
+}
+
 export async function guardarProyectoPorRpc(
   { entorno, accessToken }: SesionDePrueba,
   pedido: {

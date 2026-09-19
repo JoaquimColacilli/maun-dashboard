@@ -23,8 +23,9 @@ supabase/.temp/
 supabase/.env
 supabase/.env.*
 
-# netlify CLI
+# netlify CLI: estado local y el lock que arma el empaquetador de las funciones de borde
 .netlify/
+apps/web/deno.lock
 
 # material de consulta local, no es código del proyecto
 design-reference/

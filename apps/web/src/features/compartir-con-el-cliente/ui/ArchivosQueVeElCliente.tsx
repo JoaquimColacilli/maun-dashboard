@@ -4,6 +4,7 @@ import {
   esImagen,
   MUTACION_DE_ARCHIVO_COMPARTIDO,
   pesoLegible,
+  loQueVeElCliente,
   type Archivo,
 } from '@/entities/archivo';
 import { fechaLarga, hoyLocal } from '@/shared/lib';
@@ -17,6 +18,7 @@ export interface ArchivosQueVeElClienteProps {
 
 export function ArchivosQueVeElCliente({ archivos }: ArchivosQueVeElClienteProps) {
   const compartir = useMutation(MUTACION_DE_ARCHIVO_COMPARTIDO);
+  const vistos = loQueVeElCliente(archivos);
   const hoy = hoyLocal();
 
   return (
@@ -28,6 +30,23 @@ export function ArchivosQueVeElCliente({ archivos }: ArchivosQueVeElClienteProps
       <p className="mt-1.5 mb-2.5 text-body leading-normal text-text-2">
         Marcá uno por uno. Lo que no marques, no existe para él.
       </p>
+
+      {vistos.ninguno && (
+        <p
+          role="alert"
+          className="mb-2.5 flex items-baseline gap-2 rounded-panel bg-surface px-3.5 py-3 text-body leading-normal"
+        >
+          <Icono nombre="eye-off" tamano={16} className="flex-none translate-y-0.5 text-text-2" />
+          <span>
+            <span className="font-semibold">
+              {vistos.total === 1
+                ? 'Tenés un archivo y el cliente no lo ve.'
+                : `Tenés ${String(vistos.total)} archivos y el cliente no ve ninguno.`}
+            </span>{' '}
+            Prendé abajo los que quieras mostrarle.
+          </span>
+        </p>
+      )}
 
       {archivos.length === 0 ? (
         <p className="border-t border-hairline py-3.5 text-body text-text-2">

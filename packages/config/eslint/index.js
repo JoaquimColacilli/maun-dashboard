@@ -139,7 +139,12 @@ const ACCESO_A_DATOS = {
 
 export function web(dir) {
   return defineConfig(
-    base(dir, ['tsconfig.app.json', 'tsconfig.node.json', 'tsconfig.sw.json']),
+    base(dir, [
+      'tsconfig.app.json',
+      'tsconfig.node.json',
+      'tsconfig.sw.json',
+      'tsconfig.netlify.json',
+    ]),
     react,
     {
       files: ['sw/**/*.ts'],

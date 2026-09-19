@@ -1,10 +1,16 @@
-import type { ArchivoDelCliente, VistaDelCliente as Vista } from '@maun/domain';
+import {
+  hayComoTransferir,
+  type ArchivoDelCliente,
+  type VistaDelCliente as Vista,
+} from '@maun/domain';
 
 import { urlDelArchivo } from '@/shared/api';
-import { fechaLarga, formatearPesos, relativa } from '@/shared/lib';
+import { fechaLarga, formatearPesos } from '@/shared/lib';
 import { Icono, Pagina } from '@/shared/ui';
 
+import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
+import { ComoTransferir } from './ComoTransferir';
 
 export interface VistaDelClienteProps {
   vista: Vista;
@@ -84,6 +90,10 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
   const visuales = trabajo.archivos.filter(esImagen);
   const documentos = trabajo.archivos.filter((archivo) => !esImagen(archivo));
 
+  const hayDatosParaTransferir = hayComoTransferir(trabajo.cobro);
+  const textoSinPagos = sinPagosTodavia(vista);
+  const textoDelPie = pieDeLosPagos(vista, hayDatosParaTransferir);
+
   return (
     <Pagina>
       <header className="flex items-center justify-between gap-3 border-b border-hairline pb-3.5">
@@ -152,17 +162,15 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             )}
           </section>
 
+          {hayComoTransferir(trabajo.cobro) && !vista.saldado && (
+            <ComoTransferir cobro={trabajo.cobro} />
+          )}
+
           <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
-            <CaminoDeHitos hitos={vista.hitos} desdeTexto={vista.desdeTexto} hoy={hoy} />
-            {vista.quietoTexto !== '' ? (
-              <p className="mt-4 border-l-2 border-border py-3 pl-3.5 text-body leading-relaxed text-text-2">
-                {vista.quietoTexto} <span className="text-ink">{vista.sigue}</span>
-              </p>
-            ) : (
-              vista.sigue !== '' && (
-                <p className="mt-3.5 text-body leading-relaxed text-text-2">{vista.sigue}</p>
-              )
+            <CaminoDeHitos hitos={vista.hitos} hoy={hoy} />
+            {vista.sigue !== '' && (
+              <p className="mt-3.5 text-body leading-relaxed text-text-2">{vista.sigue}</p>
             )}
           </section>
 
@@ -188,7 +196,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                         {evento.texto}
                       </span>
                       <span className="mt-0.5 block text-label text-text-3 tabular-nums">
-                        {fechaLarga(evento.fecha, hoy)} · {relativa(evento.fecha, hoy)}
+                        {fechaLarga(evento.fecha, hoy)}
                       </span>
                     </span>
                     <span className="py-3 text-body font-semibold whitespace-nowrap text-hogar tabular-nums">
@@ -203,9 +211,11 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
           <section aria-label="Lo que pagaste" className="mt-7">
             <h2 className="mb-1.5 text-section font-semibold">Lo que pagaste</h2>
             {trabajo.pagos.length === 0 ? (
-              <p className="border-t border-hairline py-3.5 text-body leading-normal text-text-2">
-                Todavía no registramos ningún pago tuyo. Cuando entre la seña, la vas a ver acá.
-              </p>
+              textoSinPagos !== '' && (
+                <p className="border-t border-hairline py-3.5 text-body leading-normal text-text-2">
+                  {textoSinPagos}
+                </p>
+              )
             ) : (
               <ul className="list-none">
                 {trabajo.pagos.map((pago) => (
@@ -232,11 +242,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               <span>{etiquetaDelSaldo}</span>
               <span className={`tabular-nums ${tonoDelSaldo}`}>{textoDelSaldo}</span>
             </div>
-            <p className="mt-2.5 text-label leading-normal text-text-3">
-              {saldado && vista.saldo !== null
-                ? 'Gracias. No queda nada pendiente.'
-                : 'El saldo se abona al taller cuando ustedes lo arreglen. Esta página no cobra nada.'}
-            </p>
+            <p className="mt-2.5 text-label leading-normal text-text-3">{textoDelPie}</p>
           </section>
         </div>
 
@@ -257,8 +263,8 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               <div className="flex flex-col gap-2 rounded-panel border border-dashed border-border px-4 py-5">
                 <span className="text-body font-medium">Todavía no hay fotos</span>
                 <span className="text-body leading-normal text-text-2">
-                  Cuando el mueble esté armado vas a ver acá las fotos, los planos y los renders que
-                  el taller comparta.
+                  Acá van a aparecer los planos, los renders y las fotos que el taller comparta, del
+                  diseño a la entrega.
                 </span>
               </div>
             ) : (
@@ -344,7 +350,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                   trabajo.fechas.entregado !== null
                     ? fechaLarga(trabajo.fechas.entregado, hoy)
                     : trabajo.fechas.entregaPautada !== null
-                      ? `${fechaLarga(trabajo.fechas.entregaPautada, hoy)} · ${relativa(trabajo.fechas.entregaPautada, hoy)}`
+                      ? fechaLarga(trabajo.fechas.entregaPautada, hoy)
                       : 'A confirmar'
                 }
                 fuerte
@@ -360,7 +366,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             </dl>
           </section>
 
-          <p className="mt-4 text-label leading-relaxed text-text-3">
+          <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
             Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
             trabajo. Si algo no coincide, escribile al taller.
           </p>

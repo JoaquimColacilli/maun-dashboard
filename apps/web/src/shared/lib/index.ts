@@ -10,6 +10,7 @@ export {
   type OpcionesDeLaCeremonia,
 } from './ceremonia';
 export { limpiarDatosLocales } from './cache/limpieza';
+export { copiar, seleccionarEnPantalla, type ComoQuedo } from './copiar';
 export {
   diaDelMes,
   diasDelMes,
@@ -100,7 +101,9 @@ export {
   tokenNuevo,
 } from './enlaces';
 export {
+  esLaVistaPublica,
   PARAMETRO_DE_TESORO,
+  PREFIJO_DE_LA_VISTA_PUBLICA,
   rutaDeAprobacion,
   rutaDeCompartir,
   rutaDeLaVistaDelCliente,

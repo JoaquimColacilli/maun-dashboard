@@ -9,14 +9,14 @@ import {
 } from '@maun/db';
 import type { TrabajoDelCliente } from '@maun/domain';
 
-import { clienteMaun } from './cliente';
+import { clienteAnonimo, clienteMaun } from './cliente';
 
 export function vistaDelCliente(proyectoId: string): Promise<TrabajoDelCliente> {
   return traerVistaDelCliente(clienteMaun(), proyectoId);
 }
 
 export function vistaCompartida(token: string): Promise<TrabajoDelCliente> {
-  return traerVistaCompartida(clienteMaun(), token);
+  return traerVistaCompartida(clienteAnonimo(), token);
 }
 
 export function generarElEnlace(
