@@ -49,7 +49,7 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
   }
 
   return (
-    <div className="mt-4 max-w-[520px]">
+    <div>
       <PanelDePaso
         titulo="Qué falta"
         paso={situacion.proximoPaso}

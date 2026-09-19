@@ -98,7 +98,18 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
           <Icono nombre="chevron-left" tamano={20} />
           Seguimiento
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-none gap-2">
+          <Button
+            variant="secundario"
+            size="chico"
+            aria-label="Mostrarle al cliente"
+            onClick={() => {
+              void navegar(rutaDeCompartir(proyecto.id));
+            }}
+          >
+            <Icono nombre="eye" tamano={16} />
+            <span className="hidden sm:inline">Mostrarle al cliente</span>
+          </Button>
           <BorradoDelProyecto
             proyecto={proyecto}
             sustantivo="contacto"
@@ -131,7 +142,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             <Icono nombre="chevron-right" tamano={14} />
           </Link>
         )}
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
             {proyecto.titulo}
           </h1>
@@ -145,12 +156,12 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       )}
 
-      <section aria-label={`Contactar a ${nombre}`} className="mt-4 max-w-[520px]">
-        <AccionesDeContacto nombre={nombre} telefono={cliente?.telefono ?? ''} amplias />
-      </section>
-
-      <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:gap-x-11">
+      <div className="mt-4 grid items-start gap-5 lg:grid-cols-2 lg:gap-x-11">
         <div className="flex min-w-0 flex-col gap-5">
+          <section aria-label={`Contactar a ${nombre}`}>
+            <AccionesDeContacto nombre={nombre} telefono={cliente?.telefono ?? ''} amplias />
+          </section>
+
           <AvanceDelContacto
             proyecto={proyecto}
             etapa={etapa}
@@ -161,19 +172,6 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
               setEditando('visita');
             }}
           />
-
-          <div>
-            <Button
-              variant="secundario"
-              className="w-full sm:w-auto"
-              onClick={() => {
-                void navegar(rutaDeCompartir(proyecto.id));
-              }}
-            >
-              <Icono nombre="eye" tamano={18} />
-              Mostrarle al cliente
-            </Button>
-          </div>
 
           <OpcionesDelTrabajo proyecto={proyecto} ofreceCargarLaPrimera />
 

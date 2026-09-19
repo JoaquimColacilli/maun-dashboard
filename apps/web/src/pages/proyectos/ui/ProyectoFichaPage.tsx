@@ -107,6 +107,8 @@ export function ProyectoFichaPage() {
   const gastos = gastosDelProyecto(replica, proyecto.id);
   const despiece = despieceDelProyecto(replica, proyecto, hoy);
   const liquidado = estaLiquidado(proyecto.estado);
+  const hayAcciones =
+    puedeCobrar(proyecto.estado) || puedeCerrarPerdido(proyecto.estado) || liquidado;
 
   const direccionDistinta =
     cliente !== undefined &&
@@ -155,7 +157,18 @@ export function ProyectoFichaPage() {
           <Icono nombre="chevron-left" tamano={20} />
           Proyectos
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-none gap-2">
+          <Button
+            variant="secundario"
+            size="chico"
+            aria-label="Mostrarle al cliente"
+            onClick={() => {
+              void navegar(rutaDeCompartir(proyecto.id));
+            }}
+          >
+            <Icono nombre="eye" tamano={16} />
+            <span className="hidden sm:inline">Mostrarle al cliente</span>
+          </Button>
           <BorradoDelProyecto
             proyecto={proyecto}
             sustantivo="proyecto"
@@ -188,7 +201,7 @@ export function ProyectoFichaPage() {
             <Icono nombre="chevron-right" tamano={14} />
           </Link>
         )}
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
             {proyecto.titulo}
           </h1>
@@ -256,122 +269,51 @@ export function ProyectoFichaPage() {
         </dl>
       </div>
 
-      <div className="mt-3.5">
-        <Button
-          variant="secundario"
-          className="w-full sm:w-auto"
-          onClick={() => {
-            void navegar(rutaDeCompartir(proyecto.id));
-          }}
-        >
-          <Icono nombre="eye" tamano={18} />
-          Mostrarle al cliente
-        </Button>
-      </div>
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2 lg:gap-x-11">
+        <div className="flex min-w-0 flex-col gap-5">
+          <BloqueDeLaSena
+            sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
+            propia={senaDelProyecto(proyecto) !== null}
+          />
 
-      <div className="mt-4 grid items-start gap-4 lg:grid-cols-2 lg:gap-x-11">
-        <BloqueDeLaSena
-          sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
-          propia={senaDelProyecto(proyecto) !== null}
-        />
-        <CostosDeCotizar proyecto={proyecto} abiertoAlPrincipio={!liquidado} />
-      </div>
+          <AvanceDeLaObra resumen={resumen} hoy={hoy} />
 
-      <OpcionesDelTrabajo proyecto={proyecto} />
+          {hayAcciones && (
+            <div className="flex flex-wrap gap-2.5">
+              {puedeCobrar(proyecto.estado) && (
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void navegar(rutaDeCobro(proyecto.id));
+                  }}
+                >
+                  <Icono nombre="hand-coins" tamano={18} />
+                  {resumen.saldo !== null && resumen.saldo > 0
+                    ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
+                    : 'Cobrar y repartir'}
+                </Button>
+              )}
 
-      <AvanceDeLaObra resumen={resumen} hoy={hoy} />
+              {puedeCerrarPerdido(proyecto.estado) && (
+                <Button
+                  variant="secundario"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void navegar(rutaDeCierre(proyecto.id));
+                  }}
+                >
+                  <Icono nombre="x" tamano={16} />
+                  Dar por perdido
+                </Button>
+              )}
 
-      <div className="mt-4 max-w-[520px]">
-        {puedeCobrar(proyecto.estado) && (
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => {
-              void navegar(rutaDeCobro(proyecto.id));
-            }}
-          >
-            <Icono nombre="hand-coins" tamano={18} />
-            {resumen.saldo !== null && resumen.saldo > 0
-              ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
-              : 'Cobrar y repartir'}
-          </Button>
-        )}
+              {liquidado && <BotonDeReversion proyecto={proyecto} />}
+            </div>
+          )}
 
-        {puedeCerrarPerdido(proyecto.estado) && (
-          <Button
-            variant="secundario"
-            className="w-full sm:w-auto"
-            onClick={() => {
-              void navegar(rutaDeCierre(proyecto.id));
-            }}
-          >
-            <Icono nombre="x" tamano={16} />
-            Dar por perdido
-          </Button>
-        )}
+          <OpcionesDelTrabajo proyecto={proyecto} />
 
-        {liquidado && <BotonDeReversion proyecto={proyecto} />}
-      </div>
-
-      <div className="grid gap-0 lg:grid-cols-2 lg:gap-x-11">
-        <div className="min-w-0 lg:order-2">
-          <div className="mt-5">
-            <LoQueHaceFalta proyecto={proyecto} />
-          </div>
-
-          <div className="mt-5 rounded-panel border border-hairline px-4 pt-4 pb-3.5">
-            <DistribucionDespiece
-              despiece={despiece}
-              animar={recienLiquidado}
-              provisoria={enVuelo !== undefined && despiece.modo === 'real'}
-            />
-          </div>
-
-          <section aria-label="Entrega y comprobante" className="mt-5 flex flex-col">
-            <Dato
-              clave="Dirección de entrega"
-              valor={
-                proyecto.direccion_entrega.trim() === ''
-                  ? 'Sin dirección'
-                  : proyecto.direccion_entrega
-              }
-              extra={direccionDistinta ? 'Distinta del domicilio del cliente' : undefined}
-            />
-            {proyecto.direccion_entrega.trim() !== '' && (
-              <a
-                href={enlaceDeMapa(proyecto.direccion_entrega, '') ?? '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 mb-4 flex min-h-tap items-center gap-2 self-start rounded-field border border-border px-3 text-label font-medium hover:bg-surface"
-              >
-                <Icono nombre="map-pin" tamano={16} />
-                Abrir en el mapa
-              </a>
-            )}
-            <Dato clave="Comprobante a emitir" valor={COMPROBANTE[proyecto.comprobante]} />
-            <Dato
-              clave="Forma de pago"
-              valor={
-                proyecto.forma_pago === null ? 'Sin definir' : FORMA_DE_PAGO[proyecto.forma_pago]
-              }
-            />
-          </section>
-
-          <div className="mt-5">
-            <NotasDelProyecto
-              key={proyecto.id}
-              proyecto={proyecto}
-              titulo="Notas de obra"
-              placeholder="Medidas, qué falta, qué hablar con el cliente…"
-            />
-          </div>
-
-          <div className="mt-6">
-            <ArchivosDelTrabajo proyectoId={proyecto.id} />
-          </div>
-        </div>
-
-        <div className="min-w-0 lg:order-1">
-          <section aria-label="Pagos recibidos" className="mt-5">
+          <section aria-label="Pagos recibidos">
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
               <h2 className="text-section font-semibold">Pagos recibidos</h2>
               <span className="text-label text-text-2 tabular-nums">
@@ -413,7 +355,7 @@ export function ProyectoFichaPage() {
             )}
           </section>
 
-          <section aria-label="Gastos e insumos" className="mt-6">
+          <section aria-label="Gastos e insumos">
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
               <h2 className="text-section font-semibold">Gastos e insumos</h2>
               <span className="text-label text-text-2 tabular-nums">
@@ -455,23 +397,79 @@ export function ProyectoFichaPage() {
             )}
           </section>
 
-          <Button
-            variant="secundario"
-            className="mt-4 w-full"
-            disabled={liquidado}
-            onClick={() => {
-              void navegar(rutaDeEdicion(proyecto.id));
-            }}
-          >
-            <Icono nombre="plus" tamano={16} />
-            Cargar pagos y gastos
-          </Button>
-          {liquidado && (
-            <p className="mt-1.5 text-meta leading-snug text-text-3">
-              Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()}: sus pagos y sus
-              gastos quedaron congelados con la distribución.
-            </p>
-          )}
+          <div>
+            <Button
+              variant="secundario"
+              className="w-full"
+              disabled={liquidado}
+              onClick={() => {
+                void navegar(rutaDeEdicion(proyecto.id));
+              }}
+            >
+              <Icono nombre="plus" tamano={16} />
+              Cargar pagos y gastos
+            </Button>
+            {liquidado && (
+              <p className="mt-1.5 text-meta leading-snug text-text-3">
+                Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()}: sus pagos y sus
+                gastos quedaron congelados con la distribución.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-panel border border-hairline px-4 pt-4 pb-3.5">
+            <DistribucionDespiece
+              despiece={despiece}
+              animar={recienLiquidado}
+              provisoria={enVuelo !== undefined && despiece.modo === 'real'}
+            />
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <CostosDeCotizar proyecto={proyecto} abiertoAlPrincipio={!liquidado} />
+
+          <LoQueHaceFalta proyecto={proyecto} />
+
+          <section aria-label="Entrega y comprobante" className="flex flex-col">
+            <h2 className="mb-1.5 text-section font-semibold">Entrega y comprobante</h2>
+            <Dato
+              clave="Dirección de entrega"
+              valor={
+                proyecto.direccion_entrega.trim() === ''
+                  ? 'Sin dirección'
+                  : proyecto.direccion_entrega
+              }
+              extra={direccionDistinta ? 'Distinta del domicilio del cliente' : undefined}
+            />
+            {proyecto.direccion_entrega.trim() !== '' && (
+              <a
+                href={enlaceDeMapa(proyecto.direccion_entrega, '') ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 mb-3 flex min-h-tap items-center gap-2 self-start rounded-field border border-border px-3 text-label font-medium hover:bg-surface"
+              >
+                <Icono nombre="map-pin" tamano={16} />
+                Abrir en el mapa
+              </a>
+            )}
+            <Dato clave="Comprobante a emitir" valor={COMPROBANTE[proyecto.comprobante]} />
+            <Dato
+              clave="Forma de pago"
+              valor={
+                proyecto.forma_pago === null ? 'Sin definir' : FORMA_DE_PAGO[proyecto.forma_pago]
+              }
+            />
+          </section>
+
+          <NotasDelProyecto
+            key={proyecto.id}
+            proyecto={proyecto}
+            titulo="Notas de obra"
+            placeholder="Medidas, qué falta, qué hablar con el cliente…"
+          />
+
+          <ArchivosDelTrabajo proyectoId={proyecto.id} />
         </div>
       </div>
     </Pagina>
