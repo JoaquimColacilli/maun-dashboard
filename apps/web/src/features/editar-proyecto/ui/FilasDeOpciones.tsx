@@ -89,19 +89,32 @@ export function FilasDeOpciones({
       className="@container/opciones flex flex-col gap-2"
       ref={contenedor}
     >
-      <div className="flex flex-col gap-0.5 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-section font-semibold">Opciones que le presentaste</h2>
-          <span role="status" className="text-label text-text-2 tabular-nums">
-            {aprobada === undefined || aprobada.monto === null
-              ? ''
-              : `Aprobada: ${formatearPesos(aprobada.monto)}`}
-          </span>
+      <div className="flex flex-col gap-2 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2.5">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-section font-semibold">Opciones que le presentaste</h2>
+            <span role="status" className="text-label text-text-2 tabular-nums">
+              {aprobada === undefined || aprobada.monto === null
+                ? ''
+                : `Aprobada: ${formatearPesos(aprobada.monto)}`}
+            </span>
+          </div>
+          <p className="text-meta leading-normal text-text-3">
+            Los presupuestos que le presentaste. Tildá el que te aprobó y ese pasa a ser el
+            presupuesto del trabajo.
+          </p>
         </div>
-        <p className="text-meta leading-normal text-text-3">
-          Los presupuestos que le presentaste. Tildá el que te aprobó y ese pasa a ser el
-          presupuesto del trabajo.
-        </p>
+        <Button
+          type="button"
+          variant="secundario"
+          size="chico"
+          onClick={agregar}
+          disabled={bloqueado}
+          className="w-full border-dashed md:w-auto md:self-start"
+        >
+          <Icono nombre="plus" tamano={16} />
+          Agregar una opción
+        </Button>
       </div>
 
       {campos.fields.length === 0 && (
@@ -216,17 +229,6 @@ export function FilasDeOpciones({
           </button>
         </div>
       )}
-
-      <Button
-        type="button"
-        variant="secundario"
-        onClick={agregar}
-        disabled={bloqueado}
-        className="w-full border-dashed"
-      >
-        <Icono nombre="plus" tamano={16} />
-        Agregar una opción
-      </Button>
     </section>
   );
 }

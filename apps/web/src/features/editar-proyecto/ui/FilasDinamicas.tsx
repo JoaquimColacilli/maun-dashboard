@@ -92,14 +92,27 @@ export function FilasDinamicas({
 
   return (
     <section aria-label={titulo} className="@container/filas flex flex-col gap-2" ref={contenedor}>
-      <div className="flex flex-col gap-0.5 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-section font-semibold">{titulo}</h2>
-          <span role="status" className="text-label text-text-2 tabular-nums">
-            {total > 0 ? formatearPesos(total) : ''}
-          </span>
+      <div className="flex flex-col gap-2 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2.5">
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-section font-semibold">{titulo}</h2>
+            <span role="status" className="text-label text-text-2 tabular-nums">
+              {total > 0 ? formatearPesos(total) : ''}
+            </span>
+          </div>
+          <p className="text-meta leading-normal text-text-3">{ayuda}</p>
         </div>
-        <p className="text-meta leading-normal text-text-3">{ayuda}</p>
+        <Button
+          type="button"
+          variant="secundario"
+          size="chico"
+          onClick={agregar}
+          disabled={bloqueado}
+          className="w-full border-dashed md:w-auto md:self-start"
+        >
+          <Icono nombre="plus" tamano={16} />
+          {textoDeAgregar}
+        </Button>
       </div>
 
       {campos.fields.length === 0 && <p className="text-label text-text-2">{vacio}</p>}
@@ -197,17 +210,6 @@ export function FilasDinamicas({
           </button>
         </div>
       )}
-
-      <Button
-        type="button"
-        variant="secundario"
-        onClick={agregar}
-        disabled={bloqueado}
-        className="w-full border-dashed"
-      >
-        <Icono nombre="plus" tamano={16} />
-        {textoDeAgregar}
-      </Button>
     </section>
   );
 }
