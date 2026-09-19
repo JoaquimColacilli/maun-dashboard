@@ -306,3 +306,45 @@ test('la página del cliente no le dice nunca cuánto hace que no pasa nada', as
 async function seccionDePagos(page: Page): Promise<string> {
   return page.getByRole('region', { name: 'Lo que pagaste' }).innerText();
 }
+
+test('los datos para transferir se recorren con el teclado y se copian con Enter', async ({
+  page,
+}, testInfo) => {
+  await ajustarCobroDelTaller(sesion, { alias: ALIAS, cbu: CBU, titular: TITULAR, cuit: CUIT });
+  const token = tokenDePrueba();
+  await trabajoConEnlace(token, { estado: 'en_curso', presupuesto: 90_000_000 });
+
+  await page.goto(`/v/${token}`);
+  const bloque = elBloque(page);
+  await expect(bloque).toBeVisible(CARGA);
+
+  console.log(
+    `\n=== ${testInfo.project.name}: árbol del bloque para transferir ===\n${await bloque.ariaSnapshot()}`,
+  );
+
+  const recorrido: string[] = [];
+  for (let paso = 0; paso < 4; paso += 1) {
+    await page.keyboard.press('Tab');
+    const foco = await page.evaluate(() => {
+      const activo = document.activeElement;
+      if (!activo || activo === document.body) return '';
+      const nombre = activo.getAttribute('aria-label') ?? activo.textContent.trim();
+      return `${activo.tagName.toLowerCase()}: ${nombre.slice(0, 40)}`;
+    });
+    if (foco !== '') recorrido.push(foco);
+  }
+  console.log(`\n=== ${testInfo.project.name}: recorrido con Tab ===\n${recorrido.join('\n')}`);
+
+  expect(recorrido).toEqual([
+    'button: Copiar el alias',
+    'button: Copiar el CBU',
+    'button: Copiar el titular',
+    'button: Copiar el CUIT',
+  ]);
+
+  // Con el foco en un botón, Enter copia: el camino del teclado es el mismo que el del dedo.
+  await bloque.getByRole('button', { name: 'Copiar el alias' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(bloque.getByRole('button', { name: 'Copiar el alias' })).toContainText('Copiado');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(ALIAS);
+});

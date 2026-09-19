@@ -277,3 +277,23 @@ test('la ayuda explica los cinco pasos y se recorre de punta a punta', async ({ 
   await ayuda.getByRole('button', { name: 'Listo' }).click();
   await expect(ayuda).toBeHidden(CARGA);
 });
+
+test('la pantalla de compartir muestra antes cómo se va a ver en WhatsApp', async ({
+  page,
+}, testInfo) => {
+  const { id } = await obra();
+
+  await abrir(page, `/proyectos/${id}/compartir`);
+  await page.getByRole('button', { name: 'Crear el enlace' }).click();
+  const enlace = page.getByRole('region', { name: 'El enlace' });
+  await expect(enlace).toBeVisible(CARGA);
+
+  await expect(enlace).toContainText('En WhatsApp va a decir:');
+  await expect(enlace).toContainText(TITULO);
+
+  // La captura es de la sección: la raíz de la app está anclada y una de página entera se corta
+  // en la ventana (ADR 0013 y 0050).
+  await enlace.screenshot({
+    path: testInfo.outputPath(`compartir-con-whatsapp-${testInfo.project.name}.png`),
+  });
+});

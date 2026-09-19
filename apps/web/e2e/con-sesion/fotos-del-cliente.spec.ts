@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { listoParaCortar } from '../apoyo/pantalla';
 import {
+  ajustarCobroDelTaller,
   contactoPorRpc,
   enlacePorRest,
   guardarProyectoPorRpc,
@@ -177,10 +178,8 @@ test('las fotos compartidas se piden y se dibujan, con sesión y sin sesión', a
   // Lo que ve el dueño con cero compartidos: el aviso y el camino para marcarlas.
   await expect(seccion).toContainText('2 archivos · el cliente ve 0');
   await expect(seccion).toContainText('El cliente no ve ninguno');
-  await page.screenshot({
-    path: testInfo.outputPath('ficha-cero-compartidos.png'),
-    fullPage: true,
-  });
+  await seccion.scrollIntoViewIfNeeded();
+  await seccion.screenshot({ path: testInfo.outputPath('ficha-cero-compartidos.png') });
 
   await seccion.getByRole('link', { name: 'Elegir cuáles ve' }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/compartir$`));
@@ -190,10 +189,8 @@ test('las fotos compartidas se piden y se dibujan, con sesión y sin sesión', a
   await expect(queVe.getByRole('alert')).toContainText(
     'Tenés 2 archivos y el cliente no ve ninguno.',
   );
-  await page.screenshot({
-    path: testInfo.outputPath('compartir-cero-compartidos.png'),
-    fullPage: true,
-  });
+  await queVe.scrollIntoViewIfNeeded();
+  await queVe.screenshot({ path: testInfo.outputPath('compartir-cero-compartidos.png') });
 
   await queVe.getByRole('switch', { name: 'Compartir Frente terminado.png' }).click();
   await expect(queVe).toContainText('1 de 2 compartidos');
@@ -321,4 +318,41 @@ test('el cliente nunca se entera de que hay archivos que no le compartieron', as
   expect(texto).not.toContain('Despiece interno');
   expect(texto).not.toContain('1 archivo');
   expect(texto).not.toMatch(/priv|oculto|no compartid/i);
+});
+
+test('ajustes tiene dónde cargar los datos para transferir', async ({
+  page,
+  isMobile,
+}, testInfo) => {
+  test.skip(isMobile, 'una sola vez por corrida');
+
+  await page.goto('/ajustes');
+  await listoParaCortar(page);
+
+  const seccion = page.getByRole('region', { name: 'Cómo te transfieren' });
+  await expect(seccion).toBeVisible(CARGA);
+  await seccion.getByLabel('Alias').fill('plata_del_taller');
+  await seccion.getByRole('button', { name: 'Guardar los datos' }).click();
+  await expect(seccion).toContainText('ni guion bajo');
+  await seccion.scrollIntoViewIfNeeded();
+  await seccion.screenshot({ path: testInfo.outputPath('ajustes-cobro-alias-invalido.png') });
+
+  await seccion.getByLabel('Alias').fill('maun.muebles');
+  await seccion.getByLabel('CBU o CVU').fill('0110001412345678901233');
+  await seccion.getByRole('button', { name: 'Guardar los datos' }).click();
+  await expect(seccion).toContainText('los primeros ocho');
+
+  await seccion.getByLabel('CBU o CVU').fill('0110001312345678901233');
+  await seccion.getByLabel('Titular de la cuenta').fill('Ana Gutiérrez');
+  await seccion.getByLabel('CUIT del titular').fill('27301234564');
+  await seccion.getByRole('button', { name: 'Guardar los datos' }).click();
+  await expect(seccion).toContainText('Guardado.', CARGA);
+  await expect(seccion.getByLabel('CBU o CVU')).toHaveValue('0110 0013 1234 5678 9012 33');
+
+  await seccion.scrollIntoViewIfNeeded();
+  await seccion.screenshot({ path: testInfo.outputPath('ajustes-cobro.png') });
+
+  console.log(`\n=== árbol de la sección de Ajustes ===\n${await seccion.ariaSnapshot()}`);
+
+  await ajustarCobroDelTaller(sesion, { alias: '', cbu: '', titular: '', cuit: '' });
 });
