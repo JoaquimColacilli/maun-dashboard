@@ -29,7 +29,14 @@ import {
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
 import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
-import { fechaLarga, formatearPesos, hoyLocal, relativa, useAvisosDelProyecto } from '@/shared/lib';
+import {
+  fechaLarga,
+  formatearPesos,
+  hoyLocal,
+  relativa,
+  rutaDeCompartir,
+  useAvisosDelProyecto,
+} from '@/shared/lib';
 import { Button, ConSalida, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 function Dato({
@@ -99,6 +106,16 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
               void navegar(RUTA_DE_SEGUIMIENTO);
             }}
           />
+          <Button
+            variant="secundario"
+            size="chico"
+            onClick={() => {
+              void navegar(rutaDeCompartir(proyecto.id));
+            }}
+          >
+            <Icono nombre="eye" tamano={16} />
+            Mostrarle al cliente
+          </Button>
           <Button
             variant="secundario"
             size="chico"

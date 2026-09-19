@@ -13,6 +13,7 @@ export const TABLAS_REPLICADAS = [
   'movimientos',
   'anotaciones',
   'archivos',
+  'enlaces_publicos',
 ] as const;
 
 export type TablaReplicada = (typeof TABLAS_REPLICADAS)[number];

@@ -1,0 +1,243 @@
+import { expect, test, type Page } from '@playwright/test';
+
+import { listoParaCortar } from '../apoyo/pantalla';
+import {
+  archivoPorRest,
+  contactoPorRpc,
+  enlacesDe,
+  guardarProyectoPorRpc,
+  iniciarSesionDePrueba,
+  leerProyecto,
+  vaciarTaller,
+  visibilidadDelArchivo,
+  type SesionDePrueba,
+} from '../apoyo/taller';
+
+const CARGA = { timeout: 30_000 };
+
+const TITULO = 'Vestidor de dos cuerpos';
+
+let sesion: SesionDePrueba;
+
+test.beforeEach(async ({ context }) => {
+  sesion = await iniciarSesionDePrueba();
+  await vaciarTaller(sesion);
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+});
+
+async function obra(): Promise<{
+  id: string;
+  clienteId: string;
+  visible: string;
+  privado: string;
+}> {
+  const { id, clienteId } = await contactoPorRpc(sesion, {
+    titulo: TITULO,
+    estado: 'presupuesto_enviado',
+  });
+  const proyecto = await leerProyecto(sesion, TITULO);
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id,
+      version: proyecto?.version ?? null,
+      cliente_id: clienteId,
+      titulo: TITULO,
+      estado: 'en_curso',
+      presupuesto_centavos: 90_000_000,
+      comprobante: 'sin_comprobante',
+      direccion_entrega: 'Sarmiento 2310, Morón',
+      fecha_inicio: hoy,
+      entrega_estimada: hoy,
+    },
+    pagos: [{ id: crypto.randomUUID(), fecha: hoy, concepto: 'Seña', monto_centavos: 30_000_000 }],
+    gastos: [],
+  });
+
+  const visible = await archivoPorRest(sesion, {
+    proyectoId: id,
+    nombre: 'Render de la propuesta',
+  });
+  const privado = await archivoPorRest(sesion, { proyectoId: id, nombre: 'Despiece de corte' });
+  return { id, clienteId, visible: visible.id, privado: privado.id };
+}
+
+async function abrir(page: Page, ruta: string): Promise<void> {
+  await page.goto(ruta);
+  await listoParaCortar(page);
+}
+
+test('desde la ficha se crea el enlace, se copia, y el cliente pasa a ver solo lo marcado', async ({
+  page,
+}, testInfo) => {
+  const { id, visible, privado } = await obra();
+
+  await abrir(page, `/proyectos/${id}`);
+  await page.getByRole('button', { name: 'Mostrarle al cliente' }).click();
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/compartir$`));
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Compartir con el cliente');
+
+  await expect(page.getByText('Todavía no compartiste este trabajo')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Qué archivos ve' })).toContainText(
+    '0 de 2 compartidos',
+  );
+
+  await page.getByRole('button', { name: 'Crear el enlace' }).click();
+  const enlace = page.getByRole('region', { name: 'El enlace' });
+  await expect(enlace).toBeVisible(CARGA);
+  await expect(enlace).toContainText('Enlace activo');
+  await expect(enlace).toContainText('no vence');
+
+  await expect.poll(async () => (await enlacesDe(sesion, id)).length, CARGA).toBe(1);
+  const [fila] = await enlacesDe(sesion, id);
+  expect(fila?.revocado_at).toBeNull();
+  expect(fila?.token_hash).toMatch(/^[0-9a-f]{64}$/);
+
+  const url = (await enlace.locator('.font-mono').innerText()).trim();
+  expect(url).toMatch(/\/v\/[A-Za-z0-9_-]{32}$/);
+  // Lo que se guarda no es el enlace: el token en claro no puede estar en la base.
+  expect(fila?.token_hash).not.toContain(url.split('/v/')[1] ?? 'x');
+
+  await enlace.getByRole('button', { name: 'Copiar' }).click();
+  await expect(enlace.getByRole('button', { name: 'Copiado' })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
+
+  const archivos = page.getByRole('region', { name: 'Qué archivos ve' });
+  await archivos.getByRole('switch', { name: 'Compartir Render de la propuesta' }).click();
+  await expect(archivos).toContainText('1 de 2 compartidos');
+  await expect.poll(() => visibilidadDelArchivo(sesion, visible), CARGA).toBe(true);
+  expect(await visibilidadDelArchivo(sesion, privado)).toBe(false);
+
+  await page.screenshot({
+    path: testInfo.outputPath(`compartir-${testInfo.project.name}.png`),
+    fullPage: true,
+  });
+
+  await page.getByRole('button', { name: 'Ver cómo lo ve él' }).click();
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${id}/vista-cliente$`));
+  const vista = page.getByRole('region', { name: 'Tu mueble' });
+  await expect(vista).toBeVisible(CARGA);
+  await expect(vista).toContainText('$ 900.000');
+  await expect(vista).toContainText('$ 600.000');
+
+  const galeria = page.getByRole('region', { name: 'Fotos y planos' });
+  await expect(galeria).toContainText('Render de la propuesta');
+  await expect(galeria).not.toContainText('Despiece de corte');
+
+  await page.screenshot({
+    path: testInfo.outputPath(`vista-desde-la-app-${testInfo.project.name}.png`),
+    fullPage: true,
+  });
+});
+
+test('la vista de adentro de la app y la del enlace muestran lo mismo', async ({
+  page,
+  browser,
+}) => {
+  const { id, visible } = await obra();
+
+  await abrir(page, `/proyectos/${id}/compartir`);
+  await page.getByRole('button', { name: 'Crear el enlace' }).click();
+  const enlace = page.getByRole('region', { name: 'El enlace' });
+  await expect(enlace).toBeVisible(CARGA);
+  const url = (await enlace.locator('.font-mono').innerText()).trim();
+
+  await page
+    .getByRole('region', { name: 'Qué archivos ve' })
+    .getByRole('switch', { name: 'Compartir Render de la propuesta' })
+    .click();
+  await expect.poll(() => visibilidadDelArchivo(sesion, visible), CARGA).toBe(true);
+
+  await page.goto(`/proyectos/${id}/vista-cliente`);
+  await expect(page.getByRole('region', { name: 'Tu mueble' })).toBeVisible(CARGA);
+  const desdeLaApp = await page.getByRole('region', { name: 'Tu mueble' }).innerText();
+  const caminoDesdeLaApp = await page.getByRole('region', { name: 'En qué anda' }).innerText();
+
+  const sinSesion = await browser.newContext();
+  const otra = await sinSesion.newPage();
+  await otra.goto(new URL(url).pathname);
+  await expect(otra.getByRole('region', { name: 'Tu mueble' })).toBeVisible(CARGA);
+  const desdeElEnlace = await otra.getByRole('region', { name: 'Tu mueble' }).innerText();
+  const caminoDesdeElEnlace = await otra.getByRole('region', { name: 'En qué anda' }).innerText();
+  await sinSesion.close();
+
+  expect(desdeElEnlace).toBe(desdeLaApp);
+  expect(caminoDesdeElEnlace).toBe(caminoDesdeLaApp);
+});
+
+test('dar de baja el enlace lo mata, y el que se crea después es otro', async ({ page }) => {
+  const { id } = await obra();
+
+  await abrir(page, `/proyectos/${id}/compartir`);
+  await page.getByRole('button', { name: 'Crear el enlace' }).click();
+  const enlace = page.getByRole('region', { name: 'El enlace' });
+  await expect(enlace).toBeVisible(CARGA);
+  const primero = (await enlace.locator('.font-mono').innerText()).trim();
+
+  await page.getByRole('button', { name: 'Dar de baja' }).click();
+  const confirmacion = page.getByRole('alertdialog', { name: '¿Damos de baja el enlace?' });
+  await expect(confirmacion).toBeVisible();
+  await confirmacion.getByRole('button', { name: 'Darlo de baja' }).click();
+
+  await expect(page.getByText('El enlace está dado de baja')).toBeVisible(CARGA);
+  await expect
+    .poll(
+      async () => (await enlacesDe(sesion, id)).filter((fila) => fila.revocado_at === null).length,
+      CARGA,
+    )
+    .toBe(0);
+
+  await page.getByRole('button', { name: 'Crear un enlace nuevo' }).click();
+  await expect(enlace).toBeVisible(CARGA);
+  const segundo = (await enlace.locator('.font-mono').innerText()).trim();
+  expect(segundo).not.toBe(primero);
+});
+
+test('el foco se invierte solo: antes de la entrega manda la etapa, desde la entrega manda el saldo', async ({
+  page,
+}, testInfo) => {
+  const { id, clienteId } = await obra();
+
+  await abrir(page, `/proyectos/${id}/vista-cliente`);
+  const vista = page.getByRole('region', { name: 'Tu mueble' });
+  await expect(vista).toBeVisible(CARGA);
+  const antes = await vista.innerText();
+  expect(antes).toContain('Lo estamos fabricando');
+  await page.screenshot({
+    path: testInfo.outputPath(`foco-etapa-${testInfo.project.name}.png`),
+  });
+
+  const proyecto = await leerProyecto(sesion, TITULO);
+  const hoy = new Date().toISOString().slice(0, 10);
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id,
+      version: proyecto?.version ?? null,
+      cliente_id: clienteId,
+      titulo: TITULO,
+      estado: 'entregado',
+      presupuesto_centavos: 90_000_000,
+      comprobante: 'sin_comprobante',
+      direccion_entrega: 'Sarmiento 2310, Morón',
+      fecha_inicio: hoy,
+      entrega_estimada: hoy,
+      fecha_entrega: hoy,
+    },
+    pagos: [],
+    gastos: [],
+  });
+
+  await page.goto(`/proyectos/${id}/vista-cliente`);
+  await page.reload();
+  await expect(vista).toBeVisible(CARGA);
+  await expect(vista).toContainText('Ya está instalado en tu casa');
+  await expect(vista).toContainText('Te falta pagar');
+  await page.screenshot({
+    path: testInfo.outputPath(`foco-saldo-${testInfo.project.name}.png`),
+  });
+
+  const despues = await vista.innerText();
+  expect(despues.indexOf('Te falta pagar')).toBeLessThan(despues.indexOf('Ya está instalado'));
+  expect(antes.indexOf('Lo estamos fabricando')).toBeLessThan(antes.indexOf('Te falta pagar'));
+});

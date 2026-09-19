@@ -34,7 +34,13 @@ import {
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
-import { fechaLarga, formatearPesos, hoyLocal, useAvisosDelProyecto } from '@/shared/lib';
+import {
+  fechaLarga,
+  formatearPesos,
+  hoyLocal,
+  rutaDeCompartir,
+  useAvisosDelProyecto,
+} from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
@@ -157,6 +163,16 @@ export function ProyectoFichaPage() {
               void navegar(RUTA_DE_PROYECTOS);
             }}
           />
+          <Button
+            variant="secundario"
+            size="chico"
+            onClick={() => {
+              void navegar(rutaDeCompartir(proyecto.id));
+            }}
+          >
+            <Icono nombre="eye" tamano={16} />
+            Mostrarle al cliente
+          </Button>
           <Button
             variant="secundario"
             size="chico"

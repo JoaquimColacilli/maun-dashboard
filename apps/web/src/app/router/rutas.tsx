@@ -9,12 +9,14 @@ import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/page
 import { InicioPage } from '@/pages/inicio';
 import {
   ContactoNuevoPage,
+  ProyectoCompartirPage,
   ProyectoEdicionPage,
   ProyectoFichaPage,
   ProyectoLiquidacionPage,
   ProyectoNuevoPage,
   ProyectoPasajePage,
   ProyectosPage,
+  ProyectoVistaClientePage,
 } from '@/pages/proyectos';
 import { HOJAS_POR_RUTA, type PatronDeHoja } from '@/shared/lib';
 
@@ -27,6 +29,8 @@ export const RUTAS_DE_PANTALLA: RouteObject[] = [
   { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
   { path: '/proyectos/:id/editar', element: <ProyectoEdicionPage /> },
   { path: '/proyectos/:id/aprobar', element: <ProyectoPasajePage /> },
+  { path: '/proyectos/:id/compartir', element: <ProyectoCompartirPage /> },
+  { path: '/proyectos/:id/vista-cliente', element: <ProyectoVistaClientePage /> },
   { path: '/proyectos/:id/cobrar', element: <ProyectoLiquidacionPage destino="cobrado" /> },
   { path: '/proyectos/:id/cerrar', element: <ProyectoLiquidacionPage destino="perdido" /> },
   { path: '/clientes', element: <ClientesPage /> },

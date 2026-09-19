@@ -548,6 +548,60 @@ export async function borrarArchivo(
   return data;
 }
 
+// Una columna sola, como las marcas de la agenda: compartir un archivo no toca nada más de la fila.
+export async function marcarArchivoParaElCliente(
+  cliente: ClienteMaun,
+  id: string,
+  visible: boolean,
+): Promise<FilaDe<'archivos'>> {
+  const { data, error } = await cliente
+    .from('archivos')
+    .update({ visible_para_cliente: visible })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export interface EnlaceNuevo {
+  id: string;
+  proyecto_id: string;
+  token_hash: string;
+}
+
+// Generar un link revoca el anterior antes de insertar el nuevo: el índice único parcial de «uno
+// vivo por trabajo» se evalúa fila por fila y no se puede diferir (ADR 0043). Son dos llamadas
+// seguidas y no una transacción: si la segunda falla, el trabajo queda sin link y se vuelve a
+// intentar, que es el estado del que se venía.
+export async function generarEnlacePublico(
+  cliente: ClienteMaun,
+  nuevo: EnlaceNuevo,
+  revocar: { id: string; revocadoEn: string } | null,
+): Promise<FilaDe<'enlaces_publicos'>[]> {
+  const revocado =
+    revocar === null ? [] : [await revocarEnlacePublico(cliente, revocar.id, revocar.revocadoEn)];
+
+  const { data, error } = await cliente.from('enlaces_publicos').insert(nuevo).select().single();
+  if (error) throw error;
+  return [...revocado, data];
+}
+
+export async function revocarEnlacePublico(
+  cliente: ClienteMaun,
+  id: string,
+  revocadoEn: string,
+): Promise<FilaDe<'enlaces_publicos'>> {
+  const { data, error } = await cliente
+    .from('enlaces_publicos')
+    .update({ revocado_at: revocadoEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export interface PedidoDeLiquidacion {
   proyectoId: string;
   version: number;

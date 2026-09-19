@@ -141,6 +141,26 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
     error: 'No se guardó lo que hace falta.',
   },
+  enlaceDelCliente: {
+    hecho: 'Enlace creado.',
+    enCola: 'Para crear el enlace hace falta señal.',
+    error: 'No se creó el enlace.',
+  },
+  bajaDelEnlace: {
+    hecho: 'El enlace ya no funciona.',
+    enCola: 'Para darlo de baja hace falta señal.',
+    error: 'No se dio de baja el enlace.',
+  },
+  archivoCompartido: {
+    hecho: 'Listo: ya lo ve tu cliente.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo cambiar qué ve tu cliente.',
+  },
+  archivoNoCompartido: {
+    hecho: 'Listo: ya no lo ve tu cliente.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo cambiar qué ve tu cliente.',
+  },
 } as const satisfies Record<string, TextosDeAviso>;
 
 export type QueSeGuarda = keyof typeof TEXTOS_DE_AVISO;

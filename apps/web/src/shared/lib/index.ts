@@ -90,8 +90,21 @@ export {
   type DatosDeLaSuscripcion,
 } from './push';
 export {
+  CLAVE_DE_LOS_ENLACES,
+  enlaceDelCliente,
+  hashDelToken,
+  olvidarLosTokens,
+  olvidarToken,
+  recordarToken,
+  tokenDelEnlace,
+  tokenNuevo,
+} from './enlaces';
+export {
   PARAMETRO_DE_TESORO,
   rutaDeAprobacion,
+  rutaDeCompartir,
+  rutaDeLaVistaDelCliente,
+  RUTA_DE_LA_VISTA_PUBLICA,
   rutaDeCierre,
   rutaDeCobro,
   rutaDeEdicion,

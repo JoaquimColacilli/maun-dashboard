@@ -1,4 +1,8 @@
-import { useIsRestoring, type QueryClient } from '@tanstack/react-query';
+import {
+  defaultShouldDehydrateQuery,
+  useIsRestoring,
+  type QueryClient,
+} from '@tanstack/react-query';
 import {
   PersistQueryClientProvider,
   type PersistedQueryClientSaveOptions,
@@ -7,6 +11,7 @@ import {
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { claveDeTodaReplica } from '@/entities/replica';
+import { RAIZ_DE_LA_VISTA } from '@/entities/vista-cliente';
 import { escucharSesion } from '@/shared/api';
 import {
   crearPersisterIndexedDb,
@@ -21,8 +26,14 @@ import { Cargando } from '@/shared/ui';
 import { avisarDesdeLaCola } from './avisos-de-la-cola';
 import { crearQueryClient, DURACION_CACHE_MS, VERSION_CACHE } from './query-client';
 
+function esVistaDeUnEnlace(clave: readonly unknown[]): boolean {
+  return clave[0] === RAIZ_DE_LA_VISTA && clave[1] === 'enlace';
+}
+
 const OPCIONES_DE_DESHIDRATACION: PersistedQueryClientSaveOptions['dehydrateOptions'] = {
   shouldDehydrateMutation: (mutacion) => esPersistible(mutacion.state),
+  shouldDehydrateQuery: (query) =>
+    !esVistaDeUnEnlace(query.queryKey) && defaultShouldDehydrateQuery(query),
 };
 
 function hayDatosDeOtroUsuario(queryClient: QueryClient, usuarioId: string): boolean {

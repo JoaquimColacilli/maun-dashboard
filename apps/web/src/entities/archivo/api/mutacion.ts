@@ -2,9 +2,11 @@ import type { MutationOptions, QueryClient } from '@tanstack/react-query';
 
 import {
   aplicarFilaLocal,
+  compartirElArchivo,
   crearArchivo,
   darDeBajaArchivo,
   debeReintentarse,
+  filaPorId,
   householdDe,
   quitarFilaLocal,
   type ArchivoNuevo,
@@ -16,6 +18,7 @@ import type { Archivo } from '../model/archivos';
 
 export const CLAVE_DE_ARCHIVO_NUEVO = ['archivos', 'crear'] as const;
 export const CLAVE_DE_BAJA_DE_ARCHIVO = ['archivos', 'borrar'] as const;
+export const CLAVE_DE_ARCHIVO_COMPARTIDO = ['archivos', 'compartir'] as const;
 
 const REINTENTOS = 5;
 
@@ -50,6 +53,7 @@ function conElArchivo(replica: Replica, { nuevo, previo }: AltaDeArchivo): Repli
     updated_at: ahora,
     deleted_at: null,
     version: previo === null ? 1 : previo.version + 1,
+    visible_para_cliente: previo?.visible_para_cliente ?? false,
   } satisfies Archivo;
 
   return aplicarFilaLocal(replica, 'archivos', fila);
@@ -94,3 +98,40 @@ export const MUTACION_DE_BAJA_DE_ARCHIVO: MutationOptions<Archivo, unknown, Baja
     cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'archivos', previo));
   },
 };
+
+export interface ArchivoCompartido {
+  id: string;
+  visible: boolean;
+}
+
+function conLaVisibilidad(replica: Replica, { id, visible }: ArchivoCompartido): Replica {
+  const actual = filaPorId(replica, 'archivos', id);
+  if (!actual) return replica;
+  if (actual.visible_para_cliente === visible) return replica;
+  return aplicarFilaLocal(replica, 'archivos', {
+    ...actual,
+    visible_para_cliente: visible,
+    updated_at: new Date().toISOString(),
+    version: actual.version + 1,
+  });
+}
+
+export const MUTACION_DE_ARCHIVO_COMPARTIDO: MutationOptions<Archivo, unknown, ArchivoCompartido> =
+  {
+    mutationKey: CLAVE_DE_ARCHIVO_COMPARTIDO,
+    mutationFn: ({ id, visible }) => compartirElArchivo(id, visible),
+    scope: COLA_DE_SALIDA,
+    gcTime: DURACION_DEL_RECHAZO_MS,
+    retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+    onMutate: async (cambio, { client }) => {
+      await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+      cambiarReplicas(client, (replica) => conLaVisibilidad(replica, cambio));
+      await guardarCacheAhora();
+    },
+    onSuccess: (fila, _cambio, _contexto, { client }) => {
+      cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'archivos', fila));
+    },
+    onError: (_error, { id, visible }, _contexto, { client }) => {
+      cambiarReplicas(client, (replica) => conLaVisibilidad(replica, { id, visible: !visible }));
+    },
+  };

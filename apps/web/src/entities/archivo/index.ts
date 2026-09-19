@@ -1,9 +1,12 @@
 export {
+  CLAVE_DE_ARCHIVO_COMPARTIDO,
   CLAVE_DE_ARCHIVO_NUEVO,
   CLAVE_DE_BAJA_DE_ARCHIVO,
+  MUTACION_DE_ARCHIVO_COMPARTIDO,
   MUTACION_DE_ARCHIVO_NUEVO,
   MUTACION_DE_BAJA_DE_ARCHIVO,
   type AltaDeArchivo,
+  type ArchivoCompartido,
   type BajaDeArchivo,
 } from './api/mutacion';
 export {

@@ -102,3 +102,13 @@ export function rutaDeAnotar(fecha?: string): string {
     ? RUTA_DE_ANOTAR
     : `${RUTA_DE_ANOTAR}?${new URLSearchParams({ fecha }).toString()}`;
 }
+
+export function rutaDeCompartir(id: string): string {
+  return `/proyectos/${id}/compartir`;
+}
+
+export function rutaDeLaVistaDelCliente(id: string): string {
+  return `/proyectos/${id}/vista-cliente`;
+}
+
+export const RUTA_DE_LA_VISTA_PUBLICA = '/v/:token';

@@ -119,12 +119,16 @@ export {
   guardarNombreDelTaller,
   guardarProyecto,
   guardarTareasDelPresupuesto,
+  generarEnlacePublico,
   leerProyectoGuardado,
   liquidarProyecto,
+  marcarArchivoParaElCliente,
+  revocarEnlacePublico,
   revertirLiquidacion,
   traerBootstrap,
   traerDelta,
   type AnotacionNueva,
+  type EnlaceNuevo,
   type CambiosDeAjustes,
   type CambiosDeAnotacion,
   type CambiosDeCliente,
@@ -156,3 +160,5 @@ export {
   type ProyectoGuardado,
   type ProyectoParaGuardar,
 } from './sincronizacion.ts';
+
+export { leerVistaDelCliente, traerVistaCompartida, traerVistaDelCliente } from './vistaCliente.ts';

@@ -1,7 +1,9 @@
 export { ContactoNuevoPage } from './ui/ContactoNuevoPage';
+export { ProyectoCompartirPage } from './ui/ProyectoCompartirPage';
 export { ProyectoEdicionPage } from './ui/ProyectoEdicionPage';
 export { ProyectoFichaPage } from './ui/ProyectoFichaPage';
 export { ProyectoLiquidacionPage } from './ui/ProyectoLiquidacionPage';
 export { ProyectoNuevoPage } from './ui/ProyectoNuevoPage';
 export { ProyectoPasajePage } from './ui/ProyectoPasajePage';
 export { ProyectosPage } from './ui/ProyectosPage';
+export { ProyectoVistaClientePage } from './ui/ProyectoVistaClientePage';
