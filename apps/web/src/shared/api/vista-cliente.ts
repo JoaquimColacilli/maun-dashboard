@@ -1,5 +1,6 @@
 import {
   generarEnlacePublico,
+  guardarElTokenDelEnlace,
   marcarArchivoParaElCliente,
   revocarEnlacePublico,
   traerVistaCompartida,
@@ -24,6 +25,13 @@ export function generarElEnlace(
   revocar: { id: string; revocadoEn: string } | null,
 ): Promise<FilaDe<'enlaces_publicos'>[]> {
   return generarEnlacePublico(clienteMaun(), nuevo, revocar);
+}
+
+export function guardarElToken(
+  id: string,
+  token: string,
+): Promise<FilaDe<'enlaces_publicos'> | null> {
+  return guardarElTokenDelEnlace(clienteMaun(), id, token);
 }
 
 export function revocarElEnlace(

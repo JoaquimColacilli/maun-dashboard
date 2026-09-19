@@ -121,6 +121,7 @@ export {
   guardarProyecto,
   guardarTareasDelPresupuesto,
   generarEnlacePublico,
+  guardarElTokenDelEnlace,
   leerProyectoGuardado,
   liquidarProyecto,
   marcarArchivoParaElCliente,

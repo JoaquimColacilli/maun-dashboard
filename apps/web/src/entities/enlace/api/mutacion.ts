@@ -3,7 +3,9 @@ import type { MutationOptions, QueryClient } from '@tanstack/react-query';
 import {
   aplicarFilaLocal,
   debeReintentarse,
+  filasDe,
   generarElEnlace,
+  guardarElToken,
   householdDe,
   quitarFilaLocal,
   revocarElEnlace,
@@ -16,6 +18,7 @@ import type { Enlace } from '../model/enlaces';
 
 export const CLAVE_DE_ENLACE = ['enlaces', 'generar'] as const;
 export const CLAVE_DE_BAJA_DE_ENLACE = ['enlaces', 'dar-de-baja'] as const;
+export const CLAVE_DE_TOKEN_DE_ENLACE = ['enlaces', 'guardar-token'] as const;
 
 const REINTENTOS = 3;
 
@@ -30,6 +33,11 @@ export interface GeneracionDeEnlace {
 export interface BajaDeEnlace {
   enlace: Enlace;
   momento: string;
+}
+
+export interface TokenDeEnlace {
+  id: string;
+  token: string;
 }
 
 function cambiarReplicas(cliente: QueryClient, cambio: (replica: Replica) => Replica): void {
@@ -90,6 +98,26 @@ export const MUTACION_DE_ENLACE: MutationOptions<Enlace[], unknown, GeneracionDe
         ? sinElNuevo
         : aplicarFilaLocal(sinElNuevo, 'enlaces_publicos', revocar);
     });
+  },
+};
+
+// El relleno solo sabe de la dirección: toma esa columna de lo que contestó la base y deja el resto
+// de la fila como está. Pisar la fila entera podría devolverle la vida a un enlace que se dio de
+// baja mientras el relleno viajaba (ADR 0052).
+function conLaDireccion(replica: Replica, fila: Enlace): Replica {
+  const local = filasDe(replica, 'enlaces_publicos').find((enlace) => enlace.id === fila.id);
+  if (local === undefined) return replica;
+  return aplicarFilaLocal(replica, 'enlaces_publicos', { ...local, token: fila.token });
+}
+
+export const MUTACION_DE_TOKEN_DE_ENLACE: MutationOptions<Enlace | null, unknown, TokenDeEnlace> = {
+  mutationKey: CLAVE_DE_TOKEN_DE_ENLACE,
+  mutationFn: ({ id, token }) => guardarElToken(id, token),
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onSuccess: (fila, _token, _contexto, { client }) => {
+    if (fila === null) return;
+    cambiarReplicas(client, (replica) => conLaDireccion(replica, fila));
   },
 };
 

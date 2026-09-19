@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { archivosDelProyecto, loQueVeElCliente } from '@/entities/archivo';
@@ -7,6 +7,7 @@ import {
   enlaceActivo,
   MUTACION_DE_BAJA_DE_ENLACE,
   MUTACION_DE_ENLACE,
+  MUTACION_DE_TOKEN_DE_ENLACE,
   vecesQueLoAbrio,
 } from '@/entities/enlace';
 import { rutaDelProyecto, type ResumenDeProyecto } from '@/entities/proyecto';
@@ -57,6 +58,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
     ...MUTACION_DE_BAJA_DE_ENLACE,
     meta: metaDeAvisos('bajaDelEnlace', { errorEnPantalla: true }),
   });
+  const { mutate: subirElToken } = useMutation(MUTACION_DE_TOKEN_DE_ENLACE);
   const [rechazo, setRechazo] = useState<unknown>(null);
   const [copiado, setCopiado] = useState(false);
   const [preguntandoLaBaja, setPreguntandoLaBaja] = useState(false);
@@ -71,11 +73,22 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   const vistos = loQueVeElCliente(archivos);
   const trabajando = generar.isPending || darDeBaja.isPending;
 
+  const aRellenar = vista.como === 'activo' ? vista.aRellenar : null;
+  const idDelEnlace = activo?.id ?? null;
+  const rellenado = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (idDelEnlace === null || aRellenar === null) return;
+    if (rellenado.current === idDelEnlace) return;
+    rellenado.current = idDelEnlace;
+    subirElToken({ id: idDelEnlace, token: aRellenar });
+  }, [idDelEnlace, aRellenar, subirElToken]);
+
   async function generarElEnlace(): Promise<void> {
     setRechazo(null);
     const token = tokenNuevo();
     const id = uuidv7();
-    const nuevo = { id, proyecto_id: proyecto.id, token_hash: await hashDelToken(token) };
+    const nuevo = { id, proyecto_id: proyecto.id, token_hash: await hashDelToken(token), token };
     recordarToken(id, token);
     generar.mutate(
       { nuevo, revocar: activo ?? null, momento: new Date().toISOString() },
@@ -263,9 +276,10 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
           ) : (
             <>
               <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-                La dirección del enlace queda solo en el dispositivo donde lo creaste: de este lado
-                se guarda una huella suya y no el enlace, así que nadie puede fabricarlo de vuelta.
-                Si lo necesitás de nuevo, creá uno y el anterior deja de andar.
+                Este enlace se creó antes de que la dirección se guardara en tu taller, así que
+                todavía vive en el aparato donde lo hiciste. Abrí este trabajo una vez desde ahí y
+                la dirección te aparece acá sola, sin tocar el que tu cliente ya tiene. Si no llegás
+                a ese aparato, creá uno nuevo: el anterior deja de andar.
               </p>
               <FilaDeAcciones>
                 {botonDeCrear('Crear uno nuevo')}

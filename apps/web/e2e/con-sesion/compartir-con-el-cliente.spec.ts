@@ -4,6 +4,7 @@ import { listoParaCortar } from '../apoyo/pantalla';
 import {
   archivoPorRest,
   contactoPorRpc,
+  enlacePorRest,
   enlacesDe,
   guardarProyectoPorRpc,
   iniciarSesionDePrueba,
@@ -105,8 +106,11 @@ test('desde la ficha se crea el enlace, se copia, y el cliente pasa a ver solo l
 
   const url = (await enlace.locator('.font-mono').innerText()).trim();
   expect(url).toMatch(/\/v\/[A-Za-z0-9_-]{32}$/);
-  // Lo que se guarda no es el enlace: el token en claro no puede estar en la base.
-  expect(fila?.token_hash).not.toContain(url.split('/v/')[1] ?? 'x');
+  const token = url.split('/v/')[1] ?? '';
+  // La huella sigue siendo una huella; la dirección va aparte, para que se vea desde cualquier
+  // aparato del dueño (ADR 0052).
+  expect(fila?.token_hash).not.toContain(token);
+  expect(fila?.token).toBe(token);
 
   await enlace.getByRole('button', { name: 'Copiar' }).click();
   await expect(enlace.getByRole('button', { name: 'Copiado' })).toBeVisible();
@@ -173,6 +177,80 @@ test('la vista de adentro de la app y la del enlace muestran lo mismo', async ({
 
   expect(desdeElEnlace).toBe(desdeLaApp);
   expect(caminoDesdeElEnlace).toBe(caminoDesdeLaApp);
+});
+
+// Lo que reportó el dueño: el enlace creado en la computadora no aparecía en el teléfono, y lo
+// único que le ofrecía la pantalla era crear otro, que le revoca al cliente el que ya tiene.
+test('el enlace creado en un aparato se ve igual en el otro, sin tener que crear uno nuevo', async ({
+  page,
+}, testInfo) => {
+  const { id } = await obra();
+
+  await abrir(page, `/proyectos/${id}/compartir`);
+  await page.getByRole('button', { name: 'Crear el enlace' }).click();
+  const enlace = page.getByRole('region', { name: 'El enlace' });
+  await expect(enlace).toBeVisible(CARGA);
+  const url = (await enlace.locator('.font-mono').innerText()).trim();
+  expect(url).toMatch(/\/v\/[A-Za-z0-9_-]{32}$/);
+
+  await expect
+    .poll(async () => (await enlacesDe(sesion, id))[0]?.token, CARGA)
+    .toBe(url.split('/v/')[1]);
+
+  // El otro aparato: la misma cuenta, sin nada guardado de este lado.
+  await page.evaluate(() => {
+    localStorage.removeItem('maun:enlaces');
+  });
+  await abrir(page, `/proyectos/${id}/compartir`);
+
+  const otroAparato = page.getByRole('region', { name: 'El enlace' });
+  await expect(otroAparato).toBeVisible(CARGA);
+  await expect(otroAparato.locator('.font-mono')).toHaveText(url);
+  await expect(page.getByText('todavía vive en el aparato donde lo hiciste')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Crear uno nuevo' })).toBeHidden();
+
+  await otroAparato.getByRole('button', { name: 'Copiar' }).click();
+  await expect(otroAparato.getByRole('button', { name: 'Copiado' })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
+
+  await page.screenshot({
+    path: testInfo.outputPath(`enlace-en-el-otro-aparato-${testInfo.project.name}.png`),
+    fullPage: true,
+  });
+});
+
+test('un enlace de los de antes se rellena solo desde el aparato que lo tiene guardado', async ({
+  page,
+}) => {
+  const { id } = await obra();
+  const token = `e2e${crypto.randomUUID().replaceAll('-', '')}`;
+
+  // Como quedaron los que ya existían: con la huella y sin la dirección.
+  const fila = await enlacePorRest(sesion, id, token, { conLaDireccion: false });
+  expect(fila.token).toBeNull();
+
+  // Sin el token guardado de este lado, la pantalla lo dice y no muestra una dirección inventada.
+  await abrir(page, `/proyectos/${id}/compartir`);
+  await expect(page.getByRole('region', { name: 'El enlace' })).toContainText(
+    'todavía vive en el aparato donde lo hiciste',
+    CARGA,
+  );
+  await expect(page.getByRole('region', { name: 'El enlace' }).locator('.font-mono')).toHaveCount(
+    0,
+  );
+
+  // El aparato que sí lo tiene guardado lo sube con solo abrir el trabajo.
+  await page.evaluate(
+    ([enlaceId, guardado]) => {
+      localStorage.setItem('maun:enlaces', JSON.stringify({ [enlaceId ?? '']: guardado }));
+    },
+    [fila.id, token],
+  );
+  await abrir(page, `/proyectos/${id}/compartir`);
+
+  const enlace = page.getByRole('region', { name: 'El enlace' });
+  await expect(enlace.locator('.font-mono')).toContainText(`/v/${token}`, CARGA);
+  await expect.poll(async () => (await enlacesDe(sesion, id))[0]?.token, CARGA).toBe(token);
 });
 
 test('dar de baja el enlace lo mata, y el que se crea después es otro', async ({ page }) => {

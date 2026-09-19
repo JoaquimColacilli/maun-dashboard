@@ -5,6 +5,14 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-19.2',
+    lineas: [
+      'El enlace de un trabajo ahora te aparece en todos tus aparatos, no solo en el que lo creaste. Si lo generaste en la computadora, lo copiás igual desde el celular.',
+      'Ya no tenés que crear uno nuevo para poder verlo, que era lo que le rompía a tu cliente el que ya tenía.',
+      'Los enlaces que creaste antes de esta versión aparecen en los demás aparatos apenas abrís ese trabajo una vez desde la computadora donde lo hiciste.',
+    ],
+  },
+  {
     version: '2026-09-19',
     lineas: [
       'La página que le compartís al cliente ahora se puede bajar hasta el final desde el celular. Antes quedaba clavada en la primera pantalla y las fotos no llegaban a verse.',

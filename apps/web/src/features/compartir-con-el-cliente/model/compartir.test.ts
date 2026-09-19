@@ -11,12 +11,13 @@ import {
   mensajeParaElCliente,
 } from './compartir';
 
-function enlace(id: string): Enlace {
+function enlace(id: string, token: string | null = null): Enlace {
   return {
     id,
     household_id: 'h',
     proyecto_id: 'p',
     token_hash: 'a'.repeat(64),
+    token,
     revocado_at: null,
     visitas: 0,
     ultima_visita_at: null,
@@ -58,16 +59,34 @@ describe('cómo se ve el enlace del lado del dueño', () => {
     expect(comoSeVeElEnlace(undefined, true)).toEqual({ como: 'de_baja' });
   });
 
-  it('con el token guardado en este dispositivo, arma la dirección', () => {
+  it('con la dirección en la fila, la muestra en cualquier aparato sin nada guardado de este lado', () => {
+    expect(comoSeVeElEnlace(enlace('e1', 'el-token'), true)).toEqual({
+      como: 'activo',
+      url: `${globalThis.location.origin}/v/el-token`,
+      aRellenar: null,
+    });
+  });
+
+  it('la fila manda por encima de lo que haya quedado guardado en este aparato', () => {
+    recordarToken('e1', 'el-viejo');
+    expect(comoSeVeElEnlace(enlace('e1', 'el-de-la-fila'), true)).toEqual({
+      como: 'activo',
+      url: `${globalThis.location.origin}/v/el-de-la-fila`,
+      aRellenar: null,
+    });
+  });
+
+  it('un enlace de los de antes se arma con lo guardado acá, y pide que se rellene la fila', () => {
     recordarToken('e1', 'el-token');
     expect(comoSeVeElEnlace(enlace('e1'), true)).toEqual({
       como: 'activo',
       url: `${globalThis.location.origin}/v/el-token`,
+      aRellenar: 'el-token',
     });
   });
 
-  it('desde otro dispositivo el enlace sigue activo, pero la dirección no está: solo se guardó su huella', () => {
-    expect(comoSeVeElEnlace(enlace('e1'), true)).toEqual({ como: 'activo_en_otro_dispositivo' });
+  it('un enlace de los de antes, desde otro aparato, sigue activo pero sin dirección', () => {
+    expect(comoSeVeElEnlace(enlace('e1'), true)).toEqual({ como: 'activo_sin_la_direccion' });
   });
 });
 
