@@ -66,6 +66,23 @@ export function archivosDelProyecto(replica: Replica, proyectoId: string): Archi
     .sort(masNuevoPrimero);
 }
 
+export interface LoQueVeElCliente {
+  compartidos: number;
+  total: number;
+  ninguno: boolean;
+  todos: boolean;
+}
+
+export function loQueVeElCliente(archivos: readonly Archivo[]): LoQueVeElCliente {
+  const compartidos = archivos.filter((archivo) => archivo.visible_para_cliente).length;
+  return {
+    compartidos,
+    total: archivos.length,
+    ninguno: archivos.length > 0 && compartidos === 0,
+    todos: archivos.length > 0 && compartidos === archivos.length,
+  };
+}
+
 export function espacioUsado(replica: Replica): number {
   return filasDe(replica, 'archivos').reduce((suma, archivo) => suma + archivo.bytes, 0);
 }

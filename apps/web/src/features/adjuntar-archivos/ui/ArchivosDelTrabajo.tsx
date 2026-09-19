@@ -1,9 +1,11 @@
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useId, useRef, useState, type ChangeEvent } from 'react';
+import { Link } from 'react-router';
 
 import {
   archivosDelProyecto,
   esImagen,
+  loQueVeElCliente,
   pesoLegible,
   rutaDeLaMiniatura,
   rutaDelArchivo,
@@ -17,7 +19,13 @@ import {
   subirAlBucketDeArchivos,
   urlDelArchivo,
 } from '@/shared/api';
-import { avisarEnPantalla, decodificarImagen, ImagenIlegible, uuidv7 } from '@/shared/lib';
+import {
+  avisarEnPantalla,
+  decodificarImagen,
+  ImagenIlegible,
+  rutaDeCompartir,
+  uuidv7,
+} from '@/shared/lib';
 import { Button, ConSalida, Icono } from '@/shared/ui';
 
 import { anotarArchivo, borrarArchivo, mandarALaCola, opcionesDelBorrado } from '../model/acciones';
@@ -65,6 +73,7 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
   const archivos = archivosDelProyecto(replica, proyectoId);
   const imagenes = archivos.filter(esImagen);
   const documentos = archivos.filter((archivo) => !esImagen(archivo));
+  const vistos = loQueVeElCliente(archivos);
   const household = householdDe(replica);
   const subiendo = subida.fase === 'subiendo';
 
@@ -142,15 +151,29 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
         <h2 id={idTitulo} className="text-section font-semibold">
           Archivos
         </h2>
-        {archivos.length > 0 && (
+        {vistos.total > 0 && (
           <span className="text-label text-text-2 tabular-nums">
-            {archivos.length === 1 ? '1 archivo' : `${String(archivos.length)} archivos`}
+            {vistos.total === 1 ? '1 archivo' : `${String(vistos.total)} archivos`} · el cliente ve{' '}
+            {vistos.todos ? 'todos' : String(vistos.compartidos)}
           </span>
         )}
       </div>
       <p className="text-meta leading-relaxed text-text-3">
         Fotos, capturas y PDF. Las fotos se achican antes de subirse. Los videos no entran.
       </p>
+
+      {vistos.ninguno && (
+        <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-hairline py-3 text-label leading-relaxed text-text-2">
+          <Icono nombre="eye-off" tamano={15} className="flex-none translate-y-0.5 text-text-3" />
+          <span>El cliente no ve ninguno: un archivo sube privado y se comparte de a uno.</span>
+          <Link
+            to={rutaDeCompartir(proyectoId)}
+            className="font-medium text-ink underline decoration-hairline underline-offset-3 hover:decoration-ink"
+          >
+            Elegir cuáles ve
+          </Link>
+        </p>
+      )}
 
       {archivos.length === 0 && (
         <p className="mt-2 border-t border-hairline py-3 text-label text-text-2">

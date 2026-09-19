@@ -1,4 +1,4 @@
-import type { Archivo } from '@/entities/archivo';
+import { loQueVeElCliente, type Archivo } from '@/entities/archivo';
 import type { Enlace } from '@/entities/enlace';
 import { enlaceDelCliente, tokenDelEnlace } from '@/shared/lib';
 
@@ -30,6 +30,6 @@ export function enlaceDeWhatsapp(telefono: string, mensaje: string): string {
 }
 
 export function cuantosVeElCliente(archivos: readonly Archivo[]): string {
-  const visibles = archivos.filter((archivo) => archivo.visible_para_cliente).length;
-  return `${String(visibles)} de ${String(archivos.length)} compartidos`;
+  const { compartidos, total } = loQueVeElCliente(archivos);
+  return `${String(compartidos)} de ${String(total)} compartidos`;
 }
