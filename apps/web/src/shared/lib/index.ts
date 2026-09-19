@@ -10,6 +10,7 @@ export {
   type OpcionesDeLaCeremonia,
 } from './ceremonia';
 export { limpiarDatosLocales } from './cache/limpieza';
+export { copiar, seleccionarEnPantalla, type ComoQuedo } from './copiar';
 export {
   diaDelMes,
   diasDelMes,

@@ -2,6 +2,7 @@ import { centavos, vistaDelCliente, type TrabajoDelCliente } from '@maun/domain'
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { SIN_PAGOS_APROBADO } from '../model/textos';
 import { VistaDelCliente } from './VistaDelCliente';
 
 vi.mock('@/shared/api', () => ({
@@ -9,6 +10,8 @@ vi.mock('@/shared/api', () => ({
 }));
 
 const HOY = '2026-09-18';
+
+const HACE_TANTOS_DIAS = /[Hh]ace \d/;
 
 function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
   return {
@@ -96,8 +99,8 @@ describe('la vista del cliente', () => {
     ).toBeInTheDocument();
   });
 
-  it('cuando hace días que no pasa nada, lo dice', () => {
-    dibujar(
+  it('cuando hace días que no pasa nada, no se lo cuenta: dice qué sigue', () => {
+    const dibujada = dibujar(
       trabajo({
         pagos: [],
         fechas: {
@@ -111,7 +114,8 @@ describe('la vista del cliente', () => {
       }),
     );
 
-    expect(screen.getByText(/Hace 17 días que no hay novedades/)).toBeInTheDocument();
+    expect(screen.getByText('Lo próximo que vas a ver acá es la entrega.')).toBeInTheDocument();
+    expect(dibujada.container).not.toHaveTextContent(HACE_TANTOS_DIAS);
   });
 
   it('lista los pagos con su concepto y su día', () => {
@@ -123,10 +127,18 @@ describe('la vista del cliente', () => {
     expect(pagos).toHaveTextContent('$ 400.000');
   });
 
-  it('sin pagos dice qué va a aparecer ahí', () => {
+  it('aprobado y sin pagos, dice que lo primero es la seña', () => {
     dibujar(trabajo({ pagos: [] }));
 
-    expect(screen.getByText(/Todavía no registramos ningún pago tuyo/)).toBeInTheDocument();
+    expect(screen.getByText(SIN_PAGOS_APROBADO)).toBeInTheDocument();
+  });
+
+  it('antes de aprobar no dice nada de pagos: no tenerlos es lo normal', () => {
+    dibujar(trabajo({ estado: 'presupuesto_enviado', pagos: [] }));
+
+    const pagos = screen.getByRole('region', { name: 'Lo que pagaste' });
+    expect(pagos).not.toHaveTextContent(SIN_PAGOS_APROBADO);
+    expect(pagos).not.toHaveTextContent(/registramos/);
   });
 
   it('muestra los archivos que llegaron, con su enlace al bucket', () => {

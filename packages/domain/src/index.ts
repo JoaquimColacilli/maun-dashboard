@@ -102,7 +102,6 @@ export {
 } from './sena.ts';
 
 export {
-  DIAS_SIN_NOVEDADES,
   hayComoTransferir,
   HITOS,
   vistaDelCliente,

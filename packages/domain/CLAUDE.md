@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), la agenda con lo que se avisa (`agenda.ts`) y la vista del cliente (`vistaCliente.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, y las de la vista del cliente en el 0046.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`) y la vista del cliente (`vistaCliente.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046 y las de los datos para transferir en el 0048.
 
 ## Pureza (la aplican las herramientas)
 
@@ -58,7 +58,8 @@ le llega.
 - **Los hitos que faltan no llevan fecha**: prometer un día de «pagado» sería inventarlo.
 - **Los eventos no llevan el importe adentro del texto**: va en `monto`, y el formateo no vive acá.
 - **Sin porcentajes de avance**: nadie sabe si un mueble está al 60%.
-- A los `DIAS_SIN_NOVEDADES` (5) sin nada nuevo, `quietoTexto` lo nombra en vez de disimularlo.
+- **La vista del cliente no dice nunca cuánto hace que pasó algo** (corrección del ADR 0046). Ni «Hace N días», ni «hace N días que no hay novedades»: el cliente ve la fecha y qué sigue. Los «hace N días» son de la app del dueño, que los usa para su lista de pendientes. `vistaCliente.test.ts` lo exige sobre el JSON entero de `vistaDelCliente`.
+- **`cobro` son los datos para transferirle al taller** (alias, CBU o CVU, titular y CUIT, ADR 0048): llegan del payload, y `hayComoTransferir` dice si alcanza para mostrar el bloque. El titular y el CUIT solos no alcanzan: con eso no se transfiere.
 - **No tiene gemela en SQL**, como `calcularSena`: la base arma el payload, no la presentación.
 
 ## El CUIT
@@ -101,3 +102,13 @@ destino); un asiento es un lado (ADR 0018).
 ## Tests
 
 Vitest, al lado del archivo (`*.test.ts`), con **cobertura del 100%** exigida por `vitest.config.ts`: código sin test rompe `pnpm verify`. Para propiedades sobre muchas entradas se usa un generador determinístico con semilla fija dentro del test (no hay dependencias de testing más allá de Vitest).
+
+## Los datos para transferir (ADR 0048)
+
+`cobro.ts` revisa lo que el dueño carga en Ajustes para que su cliente le transfiera.
+
+- **`revisarCbu` valida los dos dígitos verificadores**, con el algoritmo del BCRA («clave 10 con el ponderador 9713», t.o. SNP): el primero sobre las siete posiciones del banco y la sucursal, el segundo sobre las trece de la cuenta. El `(10 - resto) % 10` del final importa: cuando el resto da cero el verificador es **0, no 10**, y hay un caso de test que lo ejercita.
+- **Un CVU se valida igual que un CBU**: la norma dice que tiene el mismo formato. Lo que cambia es el prefijo, `000`, que es lo único que los distingue (`esClaveVirtual`).
+- **Los verificadores no dicen que la cuenta exista**: una entidad inventada como `999` pasa el algoritmo. Lo que agarran es el error de tipeo, que es para lo que están.
+- **`revisarAlias` es la lista del BCRA y nada más**: 6 a 20 caracteres, letras, números, punto y guion medio. El guion bajo **no** entra, aunque medio internet diga que sí. Lo que la norma no dice —si puede empezar con un separador, si admite dos seguidos— sale como `aviso`, no como error: acá no se frena por una regla que no está escrita.
+- **Los números de los tests son sintéticos**, construidos aplicando el algoritmo. Ninguno es la cuenta de nadie.

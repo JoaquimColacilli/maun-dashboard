@@ -85,8 +85,6 @@ export interface VistaDelCliente {
   hitos: readonly HitoDeLaVista[];
   eventos: readonly EventoDelCliente[];
   sigue: string;
-  quietoTexto: string;
-  desdeTexto: string;
   foco: FocoDeLaVista;
 }
 
@@ -117,8 +115,6 @@ const SIGUE: Readonly<Record<HitoDelTrabajo, string>> = {
   entregado: 'Lo próximo que vas a ver acá es el pago del saldo.',
   pagado: '',
 };
-
-export const DIAS_SIN_NOVEDADES = 5;
 
 function indiceDelHito(hito: HitoDelTrabajo): number {
   return HITOS.findIndex((uno) => uno.id === hito);
@@ -231,25 +227,6 @@ function eventosDelTrabajo(
     }));
 }
 
-function diasDesde(fecha: string, hoy: string): number {
-  return Math.max(0, diasEntre(fecha, hoy));
-}
-
-function textoDeLoQuieto(eventos: readonly EventoDelCliente[], hoy: string): string {
-  const ultimo = eventos[0];
-  if (ultimo === undefined) return '';
-  const dias = diasDesde(ultimo.fecha, hoy);
-  if (dias < DIAS_SIN_NOVEDADES) return '';
-  return `Hace ${String(dias)} días que no hay novedades. Es normal: un mueble a medida lleva semanas y no todos los días pasa algo que se vea.`;
-}
-
-function textoDeHaceCuanto(fecha: string | null, hoy: string): string {
-  if (fecha === null) return '';
-  const dias = diasDesde(fecha, hoy);
-  if (dias === 0) return 'Desde hoy';
-  return `Hace ${String(dias)} ${dias === 1 ? 'día' : 'días'}`;
-}
-
 export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaDelCliente {
   const pagado = sumarTodos(trabajo.pagos.map((pago) => pago.monto));
   const saldo = trabajo.precio === null ? null : restar(trabajo.precio, pagado);
@@ -280,8 +257,6 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
     hitos,
     eventos,
     sigue: SIGUE[hitoActual],
-    quietoTexto: textoDeLoQuieto(eventos, hoy),
-    desdeTexto: textoDeHaceCuanto(fechaDe[hitoActual], hoy),
     foco:
       hitoIndex >= indiceDelHito('entregado') && saldo !== null && saldo > 0 ? 'saldo' : 'estado',
   };

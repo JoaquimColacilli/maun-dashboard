@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { centavos, type Money } from './money.ts';
 import {
-  DIAS_SIN_NOVEDADES,
   HITOS,
   vistaDelCliente,
   hayComoTransferir,
@@ -11,6 +10,10 @@ import {
 } from './vistaCliente.ts';
 
 const HOY = '2026-09-18';
+
+// El cliente ya no ve cuánto hace que no pasa nada: lo pone a echar cuentas contra el taller y en
+// una obra de muebles pasan semanas sin un hito. Lo que ve son fechas y qué sigue (ADR 0046).
+const HACE_TANTOS_DIAS = new RegExp(String.raw`[Hh]ace \d`);
 
 function pago(id: string, fecha: string, monto: number, concepto = 'Pago'): PagoDelCliente {
   return { id, fecha, concepto, monto: centavos(monto) };
@@ -293,31 +296,27 @@ describe('lo que fue pasando', () => {
   });
 });
 
-describe('el silencio se nombra', () => {
-  it('a los cinco días sin novedades lo dice y explica qué sigue', () => {
+describe('la vista no le cuenta al cliente cuánto hace que no pasa nada', () => {
+  it('de un trabajo quieto hace días sale lo que sigue, no el silencio', () => {
     const vista = vistaDelCliente(
       trabajo({
         estado: 'en_curso',
-        fechas: { ...trabajo().fechas, inicio: '2026-09-13' },
+        fechas: { ...trabajo().fechas, inicio: '2026-08-01' },
       }),
       HOY,
     );
-    expect(vista.quietoTexto).toContain(
-      `Hace ${String(DIAS_SIN_NOVEDADES)} días que no hay novedades`,
-    );
     expect(vista.sigue).toBe('Lo próximo que vas a ver acá es la entrega.');
+    expect(JSON.stringify(vista)).not.toMatch(HACE_TANTOS_DIAS);
   });
 
-  it('con algo reciente no dice nada', () => {
-    const vista = vistaDelCliente(
-      trabajo({ estado: 'en_curso', fechas: { ...trabajo().fechas, inicio: '2026-09-17' } }),
-      HOY,
-    );
-    expect(vista.quietoTexto).toBe('');
-  });
-
-  it('sin ningún evento tampoco', () => {
-    expect(vistaDelCliente(trabajo({ estado: 'contacto' }), HOY).quietoTexto).toBe('');
+  it('ni de uno recién arrancado, ni de uno sin nada cargado', () => {
+    for (const cambios of [
+      { estado: 'en_curso' as const, fechas: { ...trabajo().fechas, inicio: '2026-09-17' } },
+      { estado: 'contacto' as const },
+      { estado: 'entregado' as const, fechas: { ...trabajo().fechas, entregado: HOY } },
+    ]) {
+      expect(JSON.stringify(vistaDelCliente(trabajo(cambios), HOY))).not.toMatch(HACE_TANTOS_DIAS);
+    }
   });
 
   it('saldado no promete nada más', () => {
@@ -326,43 +325,6 @@ describe('el silencio se nombra', () => {
       HOY,
     );
     expect(vista.sigue).toBe('');
-  });
-});
-
-describe('hace cuánto que está en esta etapa', () => {
-  it('cuenta los días desde la fecha del hito actual', () => {
-    const vista = vistaDelCliente(
-      trabajo({ estado: 'en_curso', fechas: { ...trabajo().fechas, inicio: '2026-09-17' } }),
-      HOY,
-    );
-    expect(vista.desdeTexto).toBe('Hace 1 día');
-  });
-
-  it('el mismo día dice «Desde hoy», y una fecha futura no cuenta hacia atrás', () => {
-    expect(
-      vistaDelCliente(
-        trabajo({ estado: 'entregado', fechas: { ...trabajo().fechas, entregado: HOY } }),
-        HOY,
-      ).desdeTexto,
-    ).toBe('Desde hoy');
-    expect(
-      vistaDelCliente(
-        trabajo({ estado: 'entregado', fechas: { ...trabajo().fechas, entregado: '2026-09-25' } }),
-        HOY,
-      ).desdeTexto,
-    ).toBe('Desde hoy');
-  });
-
-  it('varios días van en plural', () => {
-    const vista = vistaDelCliente(
-      trabajo({ estado: 'en_curso', fechas: { ...trabajo().fechas, inicio: '2026-09-10' } }),
-      HOY,
-    );
-    expect(vista.desdeTexto).toBe('Hace 8 días');
-  });
-
-  it('sin fecha del hito actual no dice nada', () => {
-    expect(vistaDelCliente(trabajo({ estado: 'contacto' }), HOY).desdeTexto).toBe('');
   });
 });
 
