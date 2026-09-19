@@ -55,3 +55,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0049](0049-la-vista-previa-del-enlace.md)                                  | La vista previa del enlace la arma una función de borde      | Aceptada             |
 | [0050](0050-la-vista-publica-no-depende-del-armazon-de-la-app.md)           | La vista pública no depende del armazón de la app            | Aceptada             |
 | [0051](0051-cobrar-con-mercado-pago.md)                                     | Cobrar con Mercado Pago: por ahora, el alias                 | Aceptada             |
+| [0052](0052-el-enlace-se-guarda-entero.md)                                  | El enlace se guarda entero, no solo su huella                | Aceptada             |

@@ -1,6 +1,6 @@
 # 0046. La vista del cliente: una lista blanca en la base, no una pantalla que esconde
 
-Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), y la lista blanca suma los datos para transferirle al taller (ADR 0048).
+Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md).
 
 ## Contexto
 
@@ -77,6 +77,11 @@ exige sobre el JSON entero.
 
 ### El enlace: token propio, guardado hasheado, sin caducidad
 
+> **Corregido el 2026-09-19 por el [ADR 0052](0052-el-enlace-se-guarda-entero.md):** la tabla ahora
+> guarda **también** el token en claro, en una columna aparte. El `token_hash` y todo lo demás de
+> esta sección —cómo se genera el token, la falta de caducidad, un solo enlace vivo por trabajo, las
+> cuatro respuestas idénticas— sigue igual.
+
 `public.enlaces_publicos` guarda el **sha256 del token**, nunca el token. El token son 24 bytes
 aleatorios en base64url (32 caracteres, 192 bits) generados en el navegador; el id del trabajo no
 sirve como secreto porque es un UUIDv7 y codifica el momento en que se creó.
@@ -97,6 +102,11 @@ trabajo «se perdió» es contarle una decisión del taller.
 
 ### El token se muestra una sola vez
 
+> **Corregido el 2026-09-19 por el [ADR 0052](0052-el-enlace-se-guarda-entero.md).** Esta sección
+> quedó revertida: la base ahora guarda también el token en claro, en una columna aparte, y la
+> dirección del enlace aparece en todos los aparatos del dueño. Lo que sigue es lo que se decidió
+> acá, y por qué no aguantó el uso.
+
 La base guarda la huella, así que la app no puede reconstruir la dirección del enlace. El token en
 claro queda en **el dispositivo donde se creó** (`localStorage`, `maun:enlaces`), como el tema y la
 marca del bloqueo: es estado del dispositivo, no va a la réplica ni a la cola, y `limpiarDatosLocales`
@@ -106,6 +116,11 @@ la dirección quedó en el que lo creó, y ofrece generar uno nuevo.
 Es una divergencia deliberada del diseño, que mostraba la dirección siempre. La alternativa —guardar
 el token en claro— tira abajo la única propiedad que importa: que con lo que hay en la base no se
 puedan fabricar enlaces.
+
+**Lo que no se vio acá** es que «ofrece generar uno nuevo» era el único camino, y que ese camino le
+revoca al cliente el enlace que ya tiene. La propiedad que se estaba cuidando protegía contra un
+atacante que, para llegar a esta tabla, ya tenía acceso a `proyectos` entera; el costo, en cambio,
+lo pagaba el dueño cada vez que abría el trabajo desde el teléfono. El 0052 lo mide y lo da vuelta.
 
 ### Los archivos se marcan de a uno, y nacen privados
 
