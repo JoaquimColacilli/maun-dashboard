@@ -718,6 +718,7 @@ export interface FilaDeEnlace {
   id: string;
   proyecto_id: string;
   token_hash: string;
+  token: string | null;
   revocado_at: string | null;
   visitas: number;
 }
@@ -730,6 +731,7 @@ export async function enlacePorRest(
   { entorno, accessToken }: SesionDePrueba,
   proyectoId: string,
   token: string,
+  { conLaDireccion = true } = {},
 ): Promise<FilaDeEnlace> {
   const filas = (await pedir(entorno, '/rest/v1/enlaces_publicos', {
     method: 'POST',
@@ -739,6 +741,7 @@ export async function enlacePorRest(
       id: crypto.randomUUID(),
       proyecto_id: proyectoId,
       token_hash: hashDeToken(token),
+      ...(conLaDireccion ? { token } : {}),
     }),
   })) as FilaDeEnlace[];
   const fila = filas[0];
@@ -752,7 +755,7 @@ export async function enlacesDe(
 ): Promise<FilaDeEnlace[]> {
   return (await pedir(
     entorno,
-    `/rest/v1/enlaces_publicos?select=id,proyecto_id,token_hash,revocado_at,visitas&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
+    `/rest/v1/enlaces_publicos?select=id,proyecto_id,token_hash,token,revocado_at,visitas&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
     { accessToken },
   )) as FilaDeEnlace[];
 }

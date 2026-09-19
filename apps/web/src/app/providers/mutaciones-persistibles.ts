@@ -19,8 +19,10 @@ import {
 import {
   CLAVE_DE_BAJA_DE_ENLACE,
   CLAVE_DE_ENLACE,
+  CLAVE_DE_TOKEN_DE_ENLACE,
   MUTACION_DE_BAJA_DE_ENLACE,
   MUTACION_DE_ENLACE,
+  MUTACION_DE_TOKEN_DE_ENLACE,
 } from '@/entities/enlace';
 import {
   CLAVE_DE_BAJA_DE_CLIENTE,
@@ -138,6 +140,9 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ENLACE, MUTACION_DE_BAJA_DE_ENLACE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_TOKEN_DE_ENLACE, MUTACION_DE_TOKEN_DE_ENLACE);
   },
 ];
 

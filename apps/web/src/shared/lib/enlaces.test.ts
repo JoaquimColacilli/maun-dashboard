@@ -18,7 +18,7 @@ describe('el token del enlace', () => {
     expect(uno).not.toBe(tokenNuevo());
   });
 
-  it('lo que se guarda es su sha256, no el token', async () => {
+  it('el sha256 es determinista y no deja ver el token', async () => {
     const hash = await hashDelToken('el-token-de-marcela');
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
     expect(hash).not.toContain('marcela');

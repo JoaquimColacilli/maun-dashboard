@@ -16,6 +16,7 @@ export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   compartirElArchivo,
   generarElEnlace,
+  guardarElToken,
   revocarElEnlace,
   vistaCompartida,
   vistaDelCliente,

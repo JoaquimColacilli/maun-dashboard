@@ -5,17 +5,20 @@ import { enlaceDelCliente, tokenDelEnlace } from '@/shared/lib';
 export type ComoSeVeElEnlace =
   | { como: 'sin_enlace' }
   | { como: 'de_baja' }
-  | { como: 'activo'; url: string }
-  | { como: 'activo_en_otro_dispositivo' };
+  | { como: 'activo'; url: string; aRellenar: string | null }
+  | { como: 'activo_sin_la_direccion' };
 
 export function comoSeVeElEnlace(
   enlace: Enlace | undefined,
   huboAlguno: boolean,
 ): ComoSeVeElEnlace {
   if (enlace === undefined) return huboAlguno ? { como: 'de_baja' } : { como: 'sin_enlace' };
-  const token = tokenDelEnlace(enlace.id);
-  if (token === undefined) return { como: 'activo_en_otro_dispositivo' };
-  return { como: 'activo', url: enlaceDelCliente(token) };
+  if (enlace.token !== null) {
+    return { como: 'activo', url: enlaceDelCliente(enlace.token), aRellenar: null };
+  }
+  const guardado = tokenDelEnlace(enlace.id);
+  if (guardado === undefined) return { como: 'activo_sin_la_direccion' };
+  return { como: 'activo', url: enlaceDelCliente(guardado), aRellenar: guardado };
 }
 
 export function mensajeParaElCliente(cliente: string, trabajo: string, url: string): string {

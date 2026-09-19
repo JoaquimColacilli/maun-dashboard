@@ -1,10 +1,13 @@
 export {
   CLAVE_DE_BAJA_DE_ENLACE,
   CLAVE_DE_ENLACE,
+  CLAVE_DE_TOKEN_DE_ENLACE,
   MUTACION_DE_BAJA_DE_ENLACE,
   MUTACION_DE_ENLACE,
+  MUTACION_DE_TOKEN_DE_ENLACE,
   type BajaDeEnlace,
   type GeneracionDeEnlace,
+  type TokenDeEnlace,
 } from './api/mutacion';
 export {
   enlaceActivo,
