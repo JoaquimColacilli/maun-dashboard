@@ -8,7 +8,7 @@ export const NOVEDADES: readonly Novedad[] = [
     version: '2026-09-18.2',
     lineas: [
       'Desde la ficha de un trabajo podés mostrarle al cliente cuánto vale, cuánto pagó, cuánto falta y en qué anda. No ve tus costos, tu ganancia, el diezmo ni el despiece.',
-      'Si querés que lo abra él, le pasás un enlace que anda sin cuenta ni contraseña. No vence, y lo das de baja cuando quieras: el que estaba deja de funcionar al instante.',
+      'Si querés que lo abra él, le pasás un enlace que anda sin cuenta ni contraseña. No vence y lo das de baja cuando quieras. El signo de pregunta de al lado te explica paso por paso cómo funciona.',
       'Decidís archivo por archivo cuál se ve. Los que subas nacen privados: el comprobante de lo que le pagaste al proveedor no se comparte porque te olvidaste de tildarlo.',
       'Al pasar un contacto a Proyectos ya podés cargar ahí mismo la seña que te dejó, con el porcentaje que tenés configurado. Lo que cobraste en la visita no se cuenta dos veces.',
     ],

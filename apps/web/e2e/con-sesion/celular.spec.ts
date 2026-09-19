@@ -179,9 +179,12 @@ test('quitar una fila con datos ofrece deshacer y la devuelve donde estaba', asy
   await pagos.getByLabel('Monto 1', { exact: true }).fill('250000');
 
   const borrar = pagos.getByRole('button', { name: 'Quitar concepto 1' });
-  const caja = await borrar.boundingBox();
-  expect(caja?.height ?? 0).toBeGreaterThanOrEqual(44);
-  expect(caja?.width ?? 0).toBeGreaterThanOrEqual(44);
+  // Se mide esperando: agregar la fila deja un scroll suave en curso, y la caja recién vale algo
+  // cuando el layout se asentó. Lo que importa es el área táctil quieta, no la del camino.
+  const lado = async (cual: 'height' | 'width'): Promise<number> =>
+    (await borrar.boundingBox())?.[cual] ?? 0;
+  await expect.poll(async () => lado('height')).toBeGreaterThanOrEqual(44);
+  await expect.poll(async () => lado('width')).toBeGreaterThanOrEqual(44);
 
   await borrar.click();
   await expect(pagos.getByRole('status').filter({ hasText: 'Quité' })).toContainText('Quité Seña');

@@ -250,3 +250,30 @@ test('el foco se invierte solo: antes de la entrega manda la etapa, desde la ent
   expect(despues.indexOf('Te falta pagar')).toBeLessThan(despues.indexOf('Ya está instalado'));
   expect(antes.indexOf('Lo estamos fabricando')).toBeLessThan(antes.indexOf('Te falta pagar'));
 });
+
+test('la ayuda explica los cinco pasos y se recorre de punta a punta', async ({ page }) => {
+  const { id } = await obra();
+
+  await abrir(page, `/proyectos/${id}`);
+  await page.getByRole('button', { name: 'Cómo lo ve tu cliente' }).click();
+
+  const ayuda = page.getByRole('dialog', { name: 'Cómo lo ve tu cliente' });
+  await expect(ayuda).toBeVisible(CARGA);
+  await expect(ayuda).toContainText('1 de 6', { useInnerText: true });
+  await expect(ayuda.getByRole('button', { name: 'Atrás' })).toBeDisabled();
+
+  // El alto no cambia de lámina en lámina: si cambiara, el modal saltaría abajo del dedo. Se mide
+  // con offsetHeight y no con la caja pintada, que durante la animación de apertura viene escalada.
+  const medir = async (): Promise<number> =>
+    ayuda.evaluate((nodo) => (nodo instanceof HTMLElement ? nodo.offsetHeight : 0));
+  const alto = await medir();
+  for (const numero of [2, 3, 4, 5, 6]) {
+    await ayuda.getByRole('button', { name: 'Siguiente' }).click();
+    await expect(ayuda).toContainText(`${String(numero)} de 6`, { useInnerText: true });
+    await expect(ayuda.getByRole('heading', { level: 3 })).toHaveCount(1);
+    expect(await medir()).toBe(alto);
+  }
+
+  await ayuda.getByRole('button', { name: 'Listo' }).click();
+  await expect(ayuda).toBeHidden(CARGA);
+});
