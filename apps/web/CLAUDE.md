@@ -324,6 +324,7 @@ src/
 - **Compartir un archivo sí es una mutación de la cola** (`MUTACION_DE_ARCHIVO_COMPARTIDO`, un update de `visible_para_cliente` sola, como las marcas de la agenda). **Un archivo nuevo nace privado**, también en la fila optimista.
 - **Nada de la app se indexa**: la etiqueta `robots` en `index.html`, `X-Robots-Tag` para todas las rutas en `netlify.toml` y `public/robots.txt`. Las tres, porque cada una tapa lo que la otra no.
 - **Ojo con los nombres de las regiones**: «Tu mueble» es subcadena de «El camino de tu mueble», que por eso se llama «En qué anda», como en el diseño. Es la misma trampa de `getByLabel` que ya documentaba «Contraseña».
+- **«Mostrarle al cliente» va en el cuerpo de la ficha, no en el encabezado.** Con tres botones, el encabezado no entra en 390 px y todo lo que empuja para abajo termina debajo de lo que flota abajo (ADR 0025): un toque en el botón de un formulario que quedó ahí lo recibe la barra, no el botón, y el click nunca llega. Lo mismo pasó con el formulario del pasaje, que con la seña quedó más largo: el e2e lo manda con Enter, que no depende de dónde quedó parada la pantalla.
 
 ## Agenda (ADR 0034)
 

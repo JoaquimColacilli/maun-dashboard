@@ -15,6 +15,15 @@ import {
 
 const CARGA = { timeout: 30_000 };
 
+// El día del taller, no el de UTC: la app arma sus fechas con la hora local y después de medianoche
+// en Londres los dos no coinciden.
+function hoyLocal(): string {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${String(ahora.getFullYear())}-${mes}-${dia}`;
+}
+
 const TITULO = 'Vestidor de dos cuerpos';
 
 let sesion: SesionDePrueba;
@@ -36,7 +45,7 @@ async function obra(): Promise<{
     estado: 'presupuesto_enviado',
   });
   const proyecto = await leerProyecto(sesion, TITULO);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyLocal();
 
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
@@ -209,7 +218,7 @@ test('el foco se invierte solo: antes de la entrega manda la etapa, desde la ent
   });
 
   const proyecto = await leerProyecto(sesion, TITULO);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyLocal();
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
       id,

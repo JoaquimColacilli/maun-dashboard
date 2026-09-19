@@ -167,16 +167,6 @@ export function ProyectoFichaPage() {
             variant="secundario"
             size="chico"
             onClick={() => {
-              void navegar(rutaDeCompartir(proyecto.id));
-            }}
-          >
-            <Icono nombre="eye" tamano={16} />
-            Mostrarle al cliente
-          </Button>
-          <Button
-            variant="secundario"
-            size="chico"
-            onClick={() => {
               void navegar(rutaDeEdicion(proyecto.id));
             }}
           >
@@ -264,6 +254,19 @@ export function ProyectoFichaPage() {
             </dd>
           </div>
         </dl>
+      </div>
+
+      <div className="mt-3.5">
+        <Button
+          variant="secundario"
+          className="w-full sm:w-auto"
+          onClick={() => {
+            void navegar(rutaDeCompartir(proyecto.id));
+          }}
+        >
+          <Icono nombre="eye" tamano={18} />
+          Mostrarle al cliente
+        </Button>
       </div>
 
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-2 lg:gap-x-11">

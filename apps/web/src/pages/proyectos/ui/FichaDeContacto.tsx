@@ -110,16 +110,6 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             variant="secundario"
             size="chico"
             onClick={() => {
-              void navegar(rutaDeCompartir(proyecto.id));
-            }}
-          >
-            <Icono nombre="eye" tamano={16} />
-            Mostrarle al cliente
-          </Button>
-          <Button
-            variant="secundario"
-            size="chico"
-            onClick={() => {
               setEditando('contacto');
             }}
           >
@@ -171,6 +161,19 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
               setEditando('visita');
             }}
           />
+
+          <div>
+            <Button
+              variant="secundario"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                void navegar(rutaDeCompartir(proyecto.id));
+              }}
+            >
+              <Icono nombre="eye" tamano={18} />
+              Mostrarle al cliente
+            </Button>
+          </div>
 
           <OpcionesDelTrabajo proyecto={proyecto} ofreceCargarLaPrimera />
 

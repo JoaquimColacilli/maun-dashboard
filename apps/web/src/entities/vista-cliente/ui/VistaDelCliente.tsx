@@ -21,11 +21,25 @@ function esImagen(archivo: ArchivoDelCliente): boolean {
   return archivo.tipo === 'image/webp' || archivo.tipo === 'image/jpeg';
 }
 
-function Cifra({ clave, valor, tono = '' }: { clave: string; valor: string; tono?: string }) {
+function Cifra({
+  clave,
+  valor,
+  grande = false,
+  tono = '',
+}: {
+  clave: string;
+  valor: string;
+  grande?: boolean;
+  tono?: string;
+}) {
   return (
     <span className="flex flex-col gap-px">
       <span className="text-label text-text-2">{clave}</span>
-      <span className={`text-money-lg font-semibold tabular-nums ${tono}`}>{valor}</span>
+      <span
+        className={`font-semibold tabular-nums ${grande ? 'text-money-lg' : 'text-body-lg'} ${tono}`}
+      >
+        {valor}
+      </span>
     </span>
   );
 }
@@ -116,13 +130,18 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             ) : (
               <>
                 <div className="mt-3 flex flex-col gap-1">
-                  <span className="text-h1 leading-tight font-semibold text-pretty lg:text-h1-lg">
+                  <span className="text-money-xl leading-tight font-semibold text-pretty">
                     {etapa?.texto}
                   </span>
                   {entrega !== '' && <span className="text-body text-text-2">{entrega}</span>}
                 </div>
-                <div className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-2 border-t border-hairline pt-3.5">
-                  <Cifra clave={etiquetaDelSaldo} valor={textoDelSaldo} tono={tonoDelSaldo} />
+                <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+                  <Cifra
+                    clave={etiquetaDelSaldo}
+                    valor={textoDelSaldo}
+                    grande
+                    tono={tonoDelSaldo}
+                  />
                   <Cifra
                     clave="Vale"
                     valor={trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}

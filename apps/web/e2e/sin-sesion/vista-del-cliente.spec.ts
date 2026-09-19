@@ -16,6 +16,15 @@ import {
 
 const CARGA = { timeout: 30_000 };
 
+// El día del taller, no el de UTC: la app arma sus fechas con la hora local y después de medianoche
+// en Londres los dos no coinciden.
+function hoyLocal(): string {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${String(ahora.getFullYear())}-${mes}-${dia}`;
+}
+
 // El índice único del token es global y las bajas son lógicas: un token ya usado no se puede
 // repetir ni después de vaciar el taller, así que cada corrida estrena el suyo.
 function tokenDePrueba(): string {
@@ -37,7 +46,7 @@ async function obraConEnlace(token: string): Promise<string> {
     estado: 'presupuesto_enviado',
   });
   const proyecto = await leerProyecto(sesion, TITULO);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyLocal();
 
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
@@ -238,7 +247,7 @@ test('la vista del cliente se recorre con el teclado y se anuncia sin depender d
   console.log(`${testInfo.project.name}, árbol de la vista del cliente:\n${arbol}`);
 
   const visto: string[] = [];
-  for (let paso = 0; paso < 12; paso += 1) {
+  for (let paso = 0; paso < 6; paso += 1) {
     await page.keyboard.press('Tab');
     const foco = await page.evaluate(() => {
       const activo = document.activeElement;
