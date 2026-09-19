@@ -11,6 +11,13 @@
       } catch (error) {
         document.documentElement.dataset.theme = 'system';
       }
+      if (location.pathname.indexOf('/v/') === 0) {
+        document.documentElement.dataset.vista = 'publica';
+        document.addEventListener('DOMContentLoaded', function () {
+          var manifiesto = document.querySelector('link[rel="manifest"]');
+          if (manifiesto) manifiesto.remove();
+        });
+      }
     </script>
     <meta name="theme-color" content="#141414" />
     <meta name="description" content="Finanzas y proyectos del taller MAUN." />

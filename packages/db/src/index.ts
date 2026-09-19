@@ -2,6 +2,7 @@ export type { Database, Json } from './database.types.ts';
 
 export {
   CLAVE_DE_SESION,
+  crearClienteAnonimo,
   crearClienteMaun,
   type ClienteMaun,
   type OpcionesCliente,

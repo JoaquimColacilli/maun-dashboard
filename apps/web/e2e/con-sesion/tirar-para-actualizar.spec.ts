@@ -1,4 +1,4 @@
-import { expect, test, type CDPSession, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import {
   activarBloqueoEnElDispositivo,
@@ -12,6 +12,7 @@ import {
   usuarioDeLaSesion,
   visibilidadControlable,
 } from '../apoyo/huella';
+import { apoyar, dedo, levantar, mover, tirarYSoltar } from '../apoyo/dedo';
 import { indicadorDeSync, listoParaCortar } from '../apoyo/pantalla';
 import {
   ajustarTaller,
@@ -45,32 +46,6 @@ interface Pedidos {
 
 function indicador(page: Page): Locator {
   return page.locator('[data-tirar-para-actualizar]');
-}
-
-function dedo(page: Page): Promise<CDPSession> {
-  return page.context().newCDPSession(page);
-}
-
-async function apoyar(cdp: CDPSession, y: number, x = 195): Promise<void> {
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-}
-
-async function mover(cdp: CDPSession, desde: number, hasta: number, x = 195): Promise<void> {
-  const pasos = Math.max(1, Math.ceil(Math.abs(hasta - desde) / 6));
-  for (let paso = 1; paso <= pasos; paso += 1) {
-    const y = desde + ((hasta - desde) * paso) / pasos;
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
-  }
-}
-
-async function levantar(cdp: CDPSession): Promise<void> {
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-}
-
-async function tirarYSoltar(cdp: CDPSession, desde: number, hasta: number, x?: number) {
-  await apoyar(cdp, desde, x);
-  await mover(cdp, desde, hasta, x);
-  await levantar(cdp);
 }
 
 function contarPedidos(page: Page): Pedidos {

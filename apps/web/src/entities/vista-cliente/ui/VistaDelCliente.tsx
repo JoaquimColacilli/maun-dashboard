@@ -360,7 +360,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             </dl>
           </section>
 
-          <p className="mt-4 text-label leading-relaxed text-text-3">
+          <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
             Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
             trabajo. Si algo no coincide, escribile al taller.
           </p>

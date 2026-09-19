@@ -36,3 +36,17 @@ export function crearQueryClient(): QueryClient {
   registrarMutacionesPersistibles(queryClient);
   return queryClient;
 }
+
+export function crearQueryClientPublico(): QueryClient {
+  sembrarEstadoDeConexion();
+
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        networkMode: 'offlineFirst',
+        gcTime: 0,
+        staleTime: 0,
+      },
+    },
+  });
+}

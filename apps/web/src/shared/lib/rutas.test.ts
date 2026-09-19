@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  esLaVistaPublica,
   fechaDelEnlace,
+  PREFIJO_DE_LA_VISTA_PUBLICA,
   PARAMETRO_DE_ENTREGA,
   PARAMETRO_DE_TESORO,
   PARAMETRO_DE_VISITA,
   rutaDeContactoNuevo,
+  RUTA_DE_LA_VISTA_PUBLICA,
   rutaDeFinanzasDelTesoro,
   rutaDelCliente,
   rutaDelProyecto,
@@ -61,5 +64,21 @@ describe('el día que viaja en el enlace a cargar un contacto o un proyecto', ()
     const proyecto = new URL(rutaDeProyectoNuevo('2026-10-01'), 'https://maun.test');
     expect(fechaDelEnlace(contacto.searchParams.get(PARAMETRO_DE_VISITA))).toBe('2026-09-15');
     expect(fechaDelEnlace(proyecto.searchParams.get(PARAMETRO_DE_ENTREGA))).toBe('2026-10-01');
+  });
+});
+
+describe('la vista pública del enlace', () => {
+  it('se reconoce por el prefijo de la ruta, no por el token', () => {
+    expect(esLaVistaPublica('/v/tZEFrYutatg5xhw1mcrUKIAFXk')).toBe(true);
+    expect(esLaVistaPublica('/v/')).toBe(true);
+    expect(esLaVistaPublica('/')).toBe(false);
+    expect(esLaVistaPublica('/proyectos/p1/vista-cliente')).toBe(false);
+    expect(esLaVistaPublica('/ver/p1')).toBe(false);
+    expect(esLaVistaPublica('/finanzas?tesoro=hogar')).toBe(false);
+  });
+
+  it('el patrón del router sale del mismo prefijo', () => {
+    expect(RUTA_DE_LA_VISTA_PUBLICA).toBe(`${PREFIJO_DE_LA_VISTA_PUBLICA}:token`);
+    expect(esLaVistaPublica(RUTA_DE_LA_VISTA_PUBLICA)).toBe(true);
   });
 });

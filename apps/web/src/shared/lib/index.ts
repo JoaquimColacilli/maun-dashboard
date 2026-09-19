@@ -100,7 +100,9 @@ export {
   tokenNuevo,
 } from './enlaces';
 export {
+  esLaVistaPublica,
   PARAMETRO_DE_TESORO,
+  PREFIJO_DE_LA_VISTA_PUBLICA,
   rutaDeAprobacion,
   rutaDeCompartir,
   rutaDeLaVistaDelCliente,

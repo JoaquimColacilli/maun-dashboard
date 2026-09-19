@@ -18,6 +18,19 @@
     flex-direction: column;
     overflow: hidden;
   }
+
+  html[data-vista='publica'],
+  html[data-vista='publica'] body {
+    overscroll-behavior-y: auto;
+  }
+
+  html[data-vista='publica'] #root {
+    position: static;
+    inset: auto;
+    height: auto;
+    display: block;
+    overflow: visible;
+  }
 }
 
 @layer components {
