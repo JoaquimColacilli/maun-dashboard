@@ -1,6 +1,6 @@
--- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su token hasheado, el
--- registro de los cambios de etapa, los datos para transferir (ADR 0048) y el título que alimenta
--- la vista previa del enlace (ADR 0049).
+-- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su huella y su dirección
+-- (ADR 0052), el registro de los cambios de etapa, los datos para transferir (ADR 0048) y el título
+-- que alimenta la vista previa del enlace (ADR 0049).
 --
 -- Los dos tests que importan son los primeros: toda columna de proyectos y toda columna de ajustes
 -- están clasificadas, y agregar una columna a cualquiera de las dos rompe este archivo hasta que
@@ -9,7 +9,7 @@
 -- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
 -- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(50);
+select plan(58);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -601,6 +601,118 @@ select is(
   public.titulo_compartido('el-token-de-la-mesada-xx'),
   null,
   'y su vista previa tampoco dice nada: el título de un perdido no se filtra por esa puerta'
+);
+
+
+-- La dirección del enlace, guardada entera (ADR 0052) ----------------------------------------------------------------
+
+-- El token en claro vive en la fila para que el dueño lo vea desde cualquiera de sus aparatos. Lo
+-- que esta sección cuida es que no se pueda guardar cualquier cosa ahí y que no salga por ninguna
+-- de las dos puertas públicas.
+
+select tests.salir();
+select tests.entrar_como(tests.id('ana'));
+
+insert into public.proyectos (id, cliente_id, titulo, estado)
+  values ('aaaaaaaa-0000-7000-8000-000000000030', 'aaaaaaaa-0000-7000-8000-000000000001', 'Biblioteca', 'en_curso');
+
+-- La huella es la de «corto», así que lo único que falla acá es la forma: los dos checks se prueban
+-- de a uno, porque Postgres corta en el primero que no pasa.
+select throws_ok(
+  $$
+    insert into public.enlaces_publicos (proyecto_id, token_hash, token)
+    values (
+      'aaaaaaaa-0000-7000-8000-000000000030',
+      encode(sha256(convert_to('corto', 'UTF8')), 'hex'),
+      'corto'
+    )
+  $$,
+  '23514',
+  'new row for relation "enlaces_publicos" violates check constraint "enlaces_publicos_token_formato"',
+  'un token con forma inválida no entra, aunque su huella sea la suya'
+);
+
+select throws_ok(
+  $$
+    insert into public.enlaces_publicos (proyecto_id, token_hash, token)
+    values (
+      'aaaaaaaa-0000-7000-8000-000000000030',
+      encode(sha256(convert_to('el-token-de-la-biblioteca', 'UTF8')), 'hex'),
+      'otro-token-que-no-es-el-de-esta-fila'
+    )
+  $$,
+  '23514',
+  'new row for relation "enlaces_publicos" violates check constraint "enlaces_publicos_token_coincide"',
+  'y un token que no es el de esta fila tampoco: la base no deja guardar una dirección que no abre este enlace'
+);
+
+insert into public.enlaces_publicos (id, proyecto_id, token_hash, token)
+  values (
+    'aaaaaaaa-0000-7000-8000-000000000303',
+    'aaaaaaaa-0000-7000-8000-000000000030',
+    encode(sha256(convert_to('el-token-de-la-biblioteca', 'UTF8')), 'hex'),
+    'el-token-de-la-biblioteca'
+  );
+
+select is(
+  (select token from public.enlaces_publicos where id = 'aaaaaaaa-0000-7000-8000-000000000303'),
+  'el-token-de-la-biblioteca',
+  'el token que coincide con la huella sí entra, y el dueño lo lee desde cualquier aparato'
+);
+
+-- El relleno de los enlaces de antes: el aparato que todavía lo tiene guardado lo sube. Va en su
+-- propio trabajo porque el índice parcial no deja dos enlaces vivos en el mismo (ADR 0043).
+insert into public.proyectos (id, cliente_id, titulo, estado)
+  values ('aaaaaaaa-0000-7000-8000-000000000031', 'aaaaaaaa-0000-7000-8000-000000000001', 'Vitrina', 'en_curso');
+
+insert into public.enlaces_publicos (id, proyecto_id, token_hash)
+  values (
+    'aaaaaaaa-0000-7000-8000-000000000304',
+    'aaaaaaaa-0000-7000-8000-000000000031',
+    encode(sha256(convert_to('el-token-de-los-de-antes', 'UTF8')), 'hex')
+  );
+
+update public.enlaces_publicos
+  set token = 'el-token-de-los-de-antes'
+  where id = 'aaaaaaaa-0000-7000-8000-000000000304' and token is null;
+
+select is(
+  (select token from public.enlaces_publicos where id = 'aaaaaaaa-0000-7000-8000-000000000304'),
+  'el-token-de-los-de-antes',
+  'un enlace de los de antes se rellena con update, que es el grant que tiene la app'
+);
+
+-- El mismo update, otra vez, con otra dirección: no tiene que pisar nada. Es lo que hace que dos
+-- aparatos rellenando a la vez no puedan romperse entre ellos.
+update public.enlaces_publicos
+  set token = 'el-token-de-otro-aparato'
+  where id = 'aaaaaaaa-0000-7000-8000-000000000304' and token is null;
+
+select is(
+  (select token from public.enlaces_publicos where id = 'aaaaaaaa-0000-7000-8000-000000000304'),
+  'el-token-de-los-de-antes',
+  'y el relleno nunca pisa una dirección ya guardada: el «where token is null» es el que lo garantiza'
+);
+
+-- Las dos puertas públicas no devuelven la dirección.
+select tests.entrar_como_anon();
+
+select is(
+  public.vista_compartida('el-token-de-la-biblioteca') ? 'token',
+  false,
+  'la vista del cliente no trae la clave token'
+);
+
+select is(
+  public.vista_compartida('el-token-de-la-biblioteca')::text like '%el-token-de-la-biblioteca%',
+  false,
+  'ni el token en ningún lado del payload: el cliente no recibe la llave de su propio enlace'
+);
+
+select is(
+  public.titulo_compartido('el-token-de-la-biblioteca')::text like '%el-token-de-la-biblioteca%',
+  false,
+  'y la vista previa del enlace tampoco lo devuelve'
 );
 
 

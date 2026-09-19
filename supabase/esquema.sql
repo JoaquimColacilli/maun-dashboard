@@ -292,19 +292,23 @@ create table public.enlaces_publicos (
   updated_at timestamp with time zone not null default now(),
   deleted_at timestamp with time zone,
   version integer not null default 1,
+  token text,
   constraint enlaces_publicos_hash_valido CHECK (token_hash ~ '^[0-9a-f]{64}$'::text),
   constraint enlaces_publicos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint enlaces_publicos_pkey PRIMARY KEY (id),
   constraint enlaces_publicos_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint enlaces_publicos_token_coincide CHECK (token IS NULL OR encode(sha256(convert_to(token, 'UTF8'::name)), 'hex'::text) = token_hash),
+  constraint enlaces_publicos_token_formato CHECK (token IS NULL OR token ~ '^[A-Za-z0-9_-]{16,128}$'::text),
   constraint enlaces_publicos_visitas_no_negativas CHECK (visitas >= 0)
 );
-comment on table public.enlaces_publicos is 'El link sin sesión de un trabajo. Lo que se guarda es el sha256 del token, nunca el token: con lo que hay acá no se puede fabricar un link. El token se muestra una sola vez, cuando se crea (ADR 0046).';
+comment on table public.enlaces_publicos is 'El link sin sesión de un trabajo. Guarda las dos cosas: token_hash, que es con lo que public.vista_compartida() resuelve el token que llega por la URL, y token, el token en claro, para que el dueño vea la dirección desde cualquiera de sus aparatos y no tenga que crear otro (ADR 0052). La consecuencia, escrita para que nadie la deduzca al revés: un volcado de esta tabla contiene enlaces que funcionan, y hay que tratarlo como tal. El rol anónimo no tiene ningún grant acá y ninguna función security definer devuelve la columna token.';
 comment on column public.enlaces_publicos.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
 comment on column public.enlaces_publicos.token_hash is 'sha256 del token en hexadecimal. El token es aleatorio y no es el id del trabajo: el id codifica el momento en que se creó y no sirve como secreto.';
 comment on column public.enlaces_publicos.revocado_at is 'Cuándo se dio de baja. Null es activo. No hay caducidad automática: el uso es compartirlo al empezar una obra que dura meses, y un link que se vence a la mitad solo hace que el cliente llame (ADR 0046).';
 comment on column public.enlaces_publicos.visitas is 'Cuántas veces se abrió. Lo cuenta public.vista_compartida().';
 comment on column public.enlaces_publicos.ultima_visita_at is 'La última vez que se abrió.';
 comment on column public.enlaces_publicos.deleted_at is 'Borrado lógico, como en todo el household. Borrar el trabajo se lleva su link.';
+comment on column public.enlaces_publicos.token is 'El token del enlace en claro, o null en los enlaces creados antes de que esto existiera. Viaja en la réplica para que el dueño vea la dirección desde cualquiera de sus aparatos y no tenga que crear otro, que le rompería al cliente el que ya tiene. El check enlaces_publicos_token_coincide obliga a que su sha256 sea token_hash: acá no se puede guardar un token que no sea el de esta fila. El rol anónimo no tiene ningún grant sobre esta tabla y ninguna función security definer devuelve esta columna (ADR 0052).';
 CREATE INDEX enlaces_publicos_household_actualizado ON public.enlaces_publicos USING btree (household_id, updated_at);
 CREATE INDEX enlaces_publicos_household_proyecto ON public.enlaces_publicos USING btree (household_id, proyecto_id);
 CREATE UNIQUE INDEX enlaces_publicos_token ON public.enlaces_publicos USING btree (token_hash);
@@ -323,8 +327,8 @@ create policy enlaces_publicos_lectura on public.enlaces_publicos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.enlaces_publicos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.enlaces_publicos to service_role;
-grant insert (id, proyecto_id, token_hash, revocado_at, deleted_at) on public.enlaces_publicos to authenticated;
-grant update (id, proyecto_id, token_hash, revocado_at, deleted_at) on public.enlaces_publicos to authenticated;
+grant insert (id, proyecto_id, token_hash, revocado_at, deleted_at, token) on public.enlaces_publicos to authenticated;
+grant update (id, proyecto_id, token_hash, revocado_at, deleted_at, token) on public.enlaces_publicos to authenticated;
 
 create table public.gastos (
   id uuid not null default private.uuidv7(),
@@ -3075,7 +3079,7 @@ exception
 end;
 $function$;
 -- execute: anon:EXECUTE, authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_compartida(text) is 'La vista del cliente entrando por el link, sin sesión. Es la única función de la base que el rol anónimo puede ejecutar y la única security definer de public: anon no tiene permiso sobre ninguna tabla, así que sin elevar no llega a nada. Resuelve el token contra el hash guardado —el token en claro no está en la base— y delega en public.vista_del_cliente(), que es la lista blanca. Un token inválido, revocado o inexistente contestan lo mismo (ADR 0046).';
+comment on function vista_compartida(text) is 'La puerta del link: resuelve el token contra token_hash, cuenta la visita y devuelve exactamente lo mismo que public.vista_del_cliente(). Es security definer porque quien la llama es el rol anónimo, que no puede leer ninguna de las tablas que ella toca. Un token inválido, uno dado de baja, uno de un trabajo borrado y uno de un trabajo perdido contestan los cuatro lo mismo, MN010, sin decir si el trabajo existe ni el nombre de nadie (ADR 0046). No devuelve la columna token: el cliente llega con su token en la mano y no necesita que se lo contesten (ADR 0052).';
 
 CREATE OR REPLACE FUNCTION public.vista_del_cliente(p_proyecto_id uuid)
  RETURNS jsonb

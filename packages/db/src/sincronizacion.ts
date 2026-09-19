@@ -572,6 +572,7 @@ export interface EnlaceNuevo {
   id: string;
   proyecto_id: string;
   token_hash: string;
+  token: string;
 }
 
 // Generar un link revoca el anterior antes de insertar el nuevo: el índice único parcial de «uno
@@ -589,6 +590,25 @@ export async function generarEnlacePublico(
   const { data, error } = await cliente.from('enlaces_publicos').insert(nuevo).select().single();
   if (error) throw error;
   return [...revocado, data];
+}
+
+// Rellena el token de un enlace de los de antes, desde el aparato que todavía lo tiene guardado.
+// El is('token', null) hace que no pise nunca uno ya guardado, así que repetirla no rompe nada y
+// dos aparatos a la vez tampoco (ADR 0052).
+export async function guardarElTokenDelEnlace(
+  cliente: ClienteMaun,
+  id: string,
+  token: string,
+): Promise<FilaDe<'enlaces_publicos'> | null> {
+  const { data, error } = await cliente
+    .from('enlaces_publicos')
+    .update({ token })
+    .eq('id', id)
+    .is('token', null)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function revocarEnlacePublico(
