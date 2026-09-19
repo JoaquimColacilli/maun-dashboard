@@ -61,6 +61,14 @@ create table public.ajustes (
   perdido_con_sueldo boolean not null default false,
   perdido_con_diezmo boolean not null default true,
   sena_bp integer not null default 5000,
+  cobro_alias text not null default ''::text,
+  cobro_cbu text not null default ''::text,
+  cobro_titular text not null default ''::text,
+  cobro_cuit text not null default ''::text,
+  constraint ajustes_cobro_alias_formato CHECK (cobro_alias = ''::text OR cobro_alias ~ '^[A-Za-z0-9.-]{6,20}$'::text),
+  constraint ajustes_cobro_cbu_formato CHECK (cobro_cbu = ''::text OR cobro_cbu ~ '^[0-9]{22}$'::text),
+  constraint ajustes_cobro_cuit_formato CHECK (cobro_cuit = ''::text OR cobro_cuit ~ '^[0-9]{2}-[0-9]{8}-[0-9]$'::text),
+  constraint ajustes_cobro_titular_largo CHECK (char_length(cobro_titular) <= 200),
   constraint ajustes_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint ajustes_household_key UNIQUE (household_id),
   constraint ajustes_importes_no_negativos CHECK (sueldo_mensual_centavos >= 0 AND costos_fijos_centavos >= 0 AND meta_cocos_centavos >= 0),
@@ -77,6 +85,10 @@ comment on column public.ajustes.sueldo_tope_mensual is 'false: cada cobro paga 
 comment on column public.ajustes.perdido_con_sueldo is 'Si cerrar un perdido con seña retenida paga sueldo. Por defecto no: un lead que no prosperó no es un trabajo. Se aplica como objetivo de sueldo en cero para esa liquidación, no con otra cascada.';
 comment on column public.ajustes.perdido_con_diezmo is 'Si la seña retenida de un perdido paga diezmo. Por defecto sí: es ingreso reconocido.';
 comment on column public.ajustes.sena_bp is 'La seña que se pide para confirmar un trabajo, en puntos básicos del presupuesto (5000 = 50%, que es lo habitual). Se puede pisar por trabajo en proyectos.sena_bp.';
+comment on column public.ajustes.cobro_alias is 'El alias del taller para recibir transferencias, o vacío. El check es el del BCRA: 6 a 20 caracteres, letras, números, punto y guion medio (t.o. SNP, Com. "A" 8114). Los dígitos verificadores no aplican a un alias, y la unicidad la resuelve la cámara, no esta base (ADR 0048).';
+comment on column public.ajustes.cobro_cbu is 'El CBU o el CVU del taller, 22 dígitos sin espacios ni guiones, o vacío. Se guarda limpio y se muestra agrupado. El check controla la forma; los dos dígitos verificadores los revisa el dominio, que es donde el dueño ve el aviso antes de guardar (ADR 0048).';
+comment on column public.ajustes.cobro_titular is 'A nombre de quién está la cuenta, o vacío. Está para que el cliente confirme contra lo que le muestra su banco antes de transferir.';
+comment on column public.ajustes.cobro_cuit is 'El CUIT del titular con guiones (NN-NNNNNNNN-N), o vacío. Mismo formato que public.clientes.cuit; el dígito verificador lo revisa la app.';
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
 create policy ajustes_edicion on public.ajustes as permissive
@@ -88,7 +100,7 @@ create policy ajustes_lectura on public.ajustes as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
-grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp) on public.ajustes to authenticated;
+grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit) on public.ajustes to authenticated;
 
 create table public.anotaciones (
   id uuid not null default private.uuidv7(),
@@ -2981,6 +2993,49 @@ $function$;
 -- execute: service_role:EXECUTE
 comment on function suscripciones_para_probar(uuid,text) is 'Solo para la función de borde de los avisos (service_role).';
 
+CREATE OR REPLACE FUNCTION public.titulo_compartido(p_token text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_enlace public.enlaces_publicos;
+  v_p public.proyectos;
+  v_taller text;
+begin
+  if p_token is null or p_token !~ '^[A-Za-z0-9_-]{16,128}$' then
+    return null;
+  end if;
+
+  select * into v_enlace
+  from public.enlaces_publicos e
+  where e.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+    and e.revocado_at is null
+    and e.deleted_at is null;
+
+  if not found then
+    return null;
+  end if;
+
+  select * into v_p
+  from public.proyectos p
+  where p.id = v_enlace.proyecto_id
+    and p.deleted_at is null
+    and p.estado <> 'perdido';
+
+  if not found then
+    return null;
+  end if;
+
+  select h.nombre into v_taller from public.households h where h.id = v_p.household_id;
+
+  return jsonb_build_object('trabajo', v_p.titulo, 'taller', v_taller);
+end;
+$function$;
+-- execute: anon:EXECUTE, authenticated:EXECUTE, service_role:EXECUTE
+comment on function titulo_compartido(text) is 'Devuelve solamente el título del trabajo y el nombre del taller, y no llama a public.vista_del_cliente(). Tiene que ser así por dos motivos. El primero es qué pide quien la llama: la vista previa que arma WhatsApp cuando se pega el enlace queda guardada en el chat, así que ahí no puede ir ni un importe, ni la etapa, ni el nombre ni la dirección del cliente, que son justamente las cosas que sí devuelve la vista. El segundo es quién la llama: la pide un rastreador, no una persona, y la vista cuenta cada lectura como una visita del cliente (public.vista_compartida incrementa visitas). Si la vista previa usara esa puerta, el contador que el dueño mira en la pantalla de compartir contaría robots. Es stable a propósito: no escribe nada. Un token inválido, uno dado de baja, uno inexistente y un trabajo perdido devuelven null, los cuatro iguales (ADR 0049).';
+
 CREATE OR REPLACE FUNCTION public.vista_compartida(p_token text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -3032,6 +3087,7 @@ declare
   v_p public.proyectos;
   v_taller text;
   v_cliente text;
+  v_ajustes public.ajustes;
 begin
   select * into v_p from public.proyectos p where p.id = p_proyecto_id and p.deleted_at is null;
 
@@ -3049,12 +3105,13 @@ begin
 
   select h.nombre into v_taller from public.households h where h.id = v_p.household_id;
   select c.nombre into v_cliente from public.clientes c where c.id = v_p.cliente_id;
+  select * into v_ajustes from public.ajustes a where a.household_id = v_p.household_id;
 
   -- Los campos van enumerados uno por uno, a propósito. Si esto fuera to_jsonb(v_p) con la pantalla
   -- filtrando, el día que alguien le agregue una columna a proyectos esa columna quedaría expuesta
   -- sin que nadie lo decida: lo que el cliente ve se decide acá, no en el navegador. La suite lo
   -- controla con supabase/tests/25_vista_del_cliente.sql, que falla apenas aparece una columna
-  -- nueva en proyectos hasta que alguien la clasifica como pública o privada.
+  -- nueva en proyectos o en ajustes hasta que alguien la clasifica como pública o privada.
   return jsonb_build_object(
     'taller', jsonb_build_object('nombre', v_taller),
     'cliente', jsonb_build_object('nombre', v_cliente),
@@ -3062,6 +3119,14 @@ begin
     'direccion', v_p.direccion_entrega,
     'estado', v_p.estado,
     'precio_centavos', v_p.presupuesto_centavos,
+    -- Lo único que se suma a lo que el cliente veía: cómo transferirle al taller. De ajustes no
+    -- viaja nada más: ni el sueldo, ni los costos fijos, ni la meta de Cocos, ni la seña.
+    'cobro', jsonb_build_object(
+      'alias', nullif(v_ajustes.cobro_alias, ''),
+      'cbu', nullif(v_ajustes.cobro_cbu, ''),
+      'titular', nullif(v_ajustes.cobro_titular, ''),
+      'cuit', nullif(v_ajustes.cobro_cuit, '')
+    ),
     'fechas', jsonb_build_object(
       'presupuesto', (
         select min(c.ocurrio_el)
@@ -3129,4 +3194,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega y los archivos que el dueño marcó. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó y los datos para transferirle al taller. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cuatro campos de cobro y ninguno más. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046 y 0048).';

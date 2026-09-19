@@ -24,7 +24,7 @@ select set_eq(
     'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
     'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos',
     'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida', 'avisos_por_mandar',
-    'vista_del_cliente', 'vista_compartida'
+    'vista_del_cliente', 'vista_compartida', 'titulo_compartido'
   ],
   'public expone exactamente las funciones esperadas'
 );
@@ -86,10 +86,10 @@ select is_empty(
   'authenticated no borra físicamente ni trunca: los borrados son lógicos'
 );
 
--- La única puerta del rol anónimo, enumerada. Es la vista del cliente entrando por el link, y no
--- puede haber ninguna otra: en esta plataforma Postgres le da execute a public y Supabase se lo da
--- además a anon por default privileges, así que una función nueva que se olvide el revoke le queda
--- alcanzable a cualquiera sin sesión (ADR 0046).
+-- Las puertas del rol anónimo, enumeradas. Son la vista del cliente entrando por el link y el
+-- título que alimenta su vista previa, y no puede haber ninguna otra: en esta plataforma Postgres
+-- le da execute a public y Supabase se lo da además a anon por default privileges, así que una
+-- función nueva que se olvide el revoke le queda alcanzable a cualquiera sin sesión (ADR 0046).
 select set_eq(
   $$
     select p.oid::regprocedure::text
@@ -97,12 +97,12 @@ select set_eq(
     where p.pronamespace in ('public'::regnamespace, 'private'::regnamespace)
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   $$,
-  array['vista_compartida(text)'],
-  'anon ejecuta exactamente una función de la base: la del link del cliente'
+  array['vista_compartida(text)', 'titulo_compartido(text)'],
+  'anon ejecuta exactamente dos funciones de la base: la del link del cliente y la del título que arma la vista previa'
 );
 
--- Y es la única que corre elevada. Sin security definer no llegaría a ninguna tabla, porque anon no
--- tiene ni un grant; con security definer, lo que devuelve lo decide su lista blanca.
+-- Y son las únicas que corren elevadas. Sin security definer no llegarían a ninguna tabla, porque
+-- anon no tiene ni un grant; con security definer, lo que devuelven lo decide su lista blanca.
 select set_eq(
   $$
     select p.oid::regprocedure::text
@@ -111,8 +111,8 @@ select set_eq(
       and p.prorettype <> 'event_trigger'::regtype
       and p.prosecdef
   $$,
-  array['vista_compartida(text)'],
-  'la única función security definer de public es la del link del cliente'
+  array['vista_compartida(text)', 'titulo_compartido(text)'],
+  'las únicas funciones security definer de public son las dos del link: sin elevar no llegan a ninguna tabla'
 );
 
 select is_empty(

@@ -1,12 +1,15 @@
--- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su token hasheado y el
--- registro de los cambios de etapa.
+-- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su token hasheado, el
+-- registro de los cambios de etapa, los datos para transferir (ADR 0048) y el título que alimenta
+-- la vista previa del enlace (ADR 0049).
 --
--- El test que importa es el primero: toda columna de proyectos está clasificada, y agregar una
--- columna rompe este archivo hasta que alguien decida si el cliente la puede ver. Sin eso la lista
--- blanca se pudre sola: la función sigue devolviendo lo de siempre y nadie se entera de que apareció
--- algo que habría que haber mirado.
+-- Los dos tests que importan son los primeros: toda columna de proyectos y toda columna de ajustes
+-- están clasificadas, y agregar una columna a cualquiera de las dos rompe este archivo hasta que
+-- alguien decida si el cliente la puede ver. Sin eso la lista blanca se pudre sola: la función
+-- sigue devolviendo lo de siempre y nadie se entera de que apareció algo que habría que haber
+-- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
+-- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(28);
+select plan(50);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -48,6 +51,31 @@ select set_eq(
     'costo_ayudante_centavos'
   ],
   'toda columna de proyectos está clasificada: una columna nueva rompe este test hasta que alguien decida si el cliente la ve'
+);
+
+
+-- Toda columna de ajustes está clasificada -------------------------------------------------------------------
+
+-- Los cuatro datos para transferir viajan, y nada más de esta tabla: el sueldo, los costos fijos,
+-- la meta de Cocos, su tasa, la seña y las tres preferencias de liquidación son parte de cómo se
+-- reparte la plata adentro del taller, y eso el cliente no lo ve ni de lejos. Ajustes está acá
+-- desde que uno de sus campos viaja: una columna nueva rompe este test igual que en proyectos.
+select set_eq(
+  $$
+    select a.attname::text
+    from pg_attribute a
+    where a.attrelid = 'public.ajustes'::regclass and a.attnum > 0 and not a.attisdropped
+  $$,
+  array[
+    -- Viajan
+    'cobro_alias', 'cobro_cbu', 'cobro_titular', 'cobro_cuit',
+    -- No viajan
+    'id', 'household_id', 'created_at', 'updated_at', 'deleted_at', 'version',
+    'sueldo_mensual_centavos', 'costos_fijos_centavos', 'meta_cocos_centavos',
+    'tasa_cocos_anual_bp', 'sueldo_tope_mensual', 'perdido_con_sueldo', 'perdido_con_diezmo',
+    'sena_bp'
+  ],
+  'toda columna de ajustes está clasificada: una columna nueva rompe este test hasta que alguien decida si el cliente la ve'
 );
 
 
@@ -100,13 +128,33 @@ insert into public.archivos (id, proyecto_id, nombre, tipo, bytes, ancho, alto) 
 update public.archivos set visible_para_cliente = true
   where id = 'aaaaaaaa-0000-7000-8000-000000000200';
 
+-- Los ajustes del taller: los cuatro de cobro viajan y los demás no. Los números están elegidos
+-- para reconocerse de un vistazo dentro del JSON entero, como los importes del trabajo.
+update public.ajustes set
+  sueldo_mensual_centavos = 777777,
+  costos_fijos_centavos = 888888,
+  meta_cocos_centavos = 999999,
+  tasa_cocos_anual_bp = 6543,
+  sena_bp = 1717,
+  cobro_alias = 'taller.maun.ok',
+  cobro_cbu = '0110001312345678901233',
+  cobro_titular = 'Ana Gutiérrez',
+  cobro_cuit = '27-30123456-4'
+where household_id = tests.id('household_a');
+
 
 -- Los campos que devuelve, uno por uno -------------------------------------------------------------------------
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')) $$,
-  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'fechas', 'pagos', 'archivos'],
+  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'cobro', 'fechas', 'pagos', 'archivos'],
   'la vista devuelve exactamente estos campos y ninguno más'
+);
+
+select set_eq(
+  $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'cobro') $$,
+  array['alias', 'cbu', 'titular', 'cuit'],
+  'de los datos para transferir viajan exactamente cuatro campos'
 );
 
 select set_eq(
@@ -150,14 +198,114 @@ select is_empty(
         '189000000', 'Con frentes laqueados',
         '11-5555-0001', 'Paga tarde',
         'factura_b', 'transferencia',
-        '2026-07-20', '4321'
+        '2026-07-20', '4321',
+        '777777', '888888', '999999', '6543', '1717'
       ]) as v (aguja)
       where %L like '%%' || v.aguja || '%%'
     $$,
     public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')::text
   ),
-  'en el JSON entero no aparece ni un costo, ni un gasto, ni un herraje, ni las notas, ni la opción que no aprobó, ni un dato del cliente que no sea su nombre'
+  'en el JSON entero no aparece ni un costo, ni un gasto, ni un herraje, ni las notas, ni la opción que no aprobó, ni un dato del cliente que no sea su nombre, ni nada de los ajustes que no sea el cobro'
 );
+
+
+-- Los datos para transferir (ADR 0048) --------------------------------------------------------------------
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') #>> '{cobro,alias}',
+  'taller.maun.ok',
+  'el alias del taller viaja'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') #>> '{cobro,cbu}',
+  '0110001312345678901233',
+  'el CBU viaja limpio, sin espacios: la pantalla lo agrupa para leerlo y lo copia así'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') #>> '{cobro,titular}',
+  'Ana Gutiérrez',
+  'y el titular, que es contra lo que el cliente confirma en su banco'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') #>> '{cobro,cuit}',
+  '27-30123456-4',
+  'y el CUIT del titular'
+);
+
+-- Un dato que el dueño no cargó no viaja como cadena vacía: viaja como null, y la pantalla no lo
+-- muestra. Si están los cuatro vacíos, el bloque entero no aparece.
+update public.ajustes set cobro_alias = '', cobro_cuit = ''
+  where household_id = tests.id('household_a');
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'cobro',
+  jsonb_build_object(
+    'alias', null,
+    'cbu', '0110001312345678901233',
+    'titular', 'Ana Gutiérrez',
+    'cuit', null
+  ),
+  'lo que el dueño dejó vacío viaja en null, no en cadena vacía'
+);
+
+select throws_ok(
+  format(
+    $$ update public.ajustes set cobro_alias = 'ab' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  '23514',
+  null,
+  'un alias más corto que el mínimo del BCRA lo frena la base'
+);
+
+select throws_ok(
+  format(
+    $$ update public.ajustes set cobro_alias = 'plata_del_taller' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  '23514',
+  null,
+  'y el guion bajo también: la lista de caracteres del BCRA es cerrada'
+);
+
+select throws_ok(
+  format(
+    $$ update public.ajustes set cobro_cbu = '0110 0013 1234 5678 9012 33' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  '23514',
+  null,
+  'el CBU se guarda en 22 dígitos pelados: con espacios lo frena la base'
+);
+
+select lives_ok(
+  format(
+    $$ update public.ajustes set cobro_cbu = '', cobro_titular = '' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  'vaciar cualquiera de los cuatro siempre se puede: son todos opcionales'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'cobro',
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null),
+  'con los cuatro vacíos no viaja ni un dato de cobro'
+);
+
+-- Los datos de cobro vuelven, y el sueldo y los fijos se dejan de nuevo en cero: más abajo hay un
+-- cerrar_perdido que manda los topes que vio la app, y con objetivos distintos de cero rebotaría
+-- con MN006 por un motivo que no tiene nada que ver con lo que este archivo prueba.
+update public.ajustes set
+  sueldo_mensual_centavos = 0,
+  costos_fijos_centavos = 0,
+  cobro_alias = 'taller.maun.ok',
+  cobro_cbu = '0110001312345678901233',
+  cobro_titular = 'Ana Gutiérrez',
+  cobro_cuit = '27-30123456-4'
+where household_id = tests.id('household_a');
 
 select is(
   public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'precio_centavos',
@@ -345,6 +493,80 @@ select is(
 );
 
 
+-- El título de la vista previa (ADR 0049) ------------------------------------------------------------------
+
+-- Cuántas visitas tenía el link antes de que pase el rastreador.
+select tests.salir();
+select tests.entrar_como(tests.id('ana'));
+select set_config(
+  'tests.visitas',
+  (select visitas::text from public.enlaces_publicos where id = 'aaaaaaaa-0000-7000-8000-000000000301'),
+  true
+);
+
+-- La vista previa la pide un rastreador sin sesión, como el cliente.
+select tests.entrar_como_anon();
+
+select set_eq(
+  $$ select jsonb_object_keys(public.titulo_compartido('el-token-nuevo-de-marcela')) $$,
+  array['trabajo', 'taller'],
+  'el título devuelve exactamente dos campos: ni un importe, ni la etapa, ni el nombre del cliente'
+);
+
+select is(
+  public.titulo_compartido('el-token-nuevo-de-marcela') ->> 'trabajo',
+  'Placard 3 puertas',
+  'el título del trabajo, tal como lo escribió el dueño'
+);
+
+select is(
+  public.titulo_compartido('el-token-nuevo-de-marcela') ->> 'taller',
+  'Taller de Ana',
+  'y el nombre del taller'
+);
+
+select is(
+  public.titulo_compartido('el-token-nuevo-de-marcela')::text,
+  public.titulo_compartido('el-token-nuevo-de-marcela')::text,
+  'leerlo dos veces devuelve lo mismo: no tiene efectos'
+);
+
+select tests.salir();
+select tests.entrar_como(tests.id('ana'));
+
+select is(
+  (select visitas from public.enlaces_publicos where id = 'aaaaaaaa-0000-7000-8000-000000000301'),
+  current_setting('tests.visitas')::int,
+  'cuatro lecturas del título y el contador no se movió: un rastreador no cuenta como una visita del cliente'
+);
+
+select tests.entrar_como_anon();
+
+select is(
+  public.titulo_compartido('el-token-de-marcela-2026'),
+  null,
+  'un enlace dado de baja no tiene título'
+);
+
+select is(
+  public.titulo_compartido('un-token-que-nunca-existio'),
+  null,
+  'uno inexistente tampoco'
+);
+
+select is(
+  public.titulo_compartido('no-sirve'),
+  null,
+  'y uno con forma inválida ni llega a consultarse'
+);
+
+select is(
+  public.titulo_compartido(null),
+  null,
+  'sin token, nada'
+);
+
+
 -- Un trabajo que se dio por perdido ---------------------------------------------------------------------------------
 
 select tests.salir();
@@ -373,6 +595,12 @@ select throws_ok(
   'MN010',
   'Este link no funciona',
   'un trabajo dado por perdido deja de contestar, y no dice que se perdió'
+);
+
+select is(
+  public.titulo_compartido('el-token-de-la-mesada-xx'),
+  null,
+  'y su vista previa tampoco dice nada: el título de un perdido no se filtra por esa puerta'
 );
 
 
