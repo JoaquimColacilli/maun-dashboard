@@ -1,6 +1,6 @@
 # @maun/web
 
-React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas**, **Diezmo**, la **Agenda** (ADR 0034) y los **Avisos** (ADR 0036). Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño; la agenda y los avisos son agregados nuestros.
+React 19, Vite 8 y Tailwind 4, empaquetada como PWA. Tiene el acceso (login, registro, recuperación y el bloqueo con huella), las guardas de ruta, la réplica del household con su cola de salida, el marco con su navegación por ancho de pantalla, Inicio, Ajustes, **Clientes**, **Proyectos** (Seguimiento, Activos e Historial, con el cobro y el pasaje), **Finanzas**, **Diezmo**, la **Agenda** (ADR 0034), los **Avisos** (ADR 0036) y la **vista del cliente** con su enlace sin sesión (ADR 0046). Con Seguimiento (ADR 0019) quedó construido todo lo que pidió el dueño; la agenda y los avisos son agregados nuestros.
 
 ## Novedades: parte de terminar un PR (ADR 0041)
 
@@ -260,10 +260,15 @@ src/
   `contactosEnOrden` ordena por ese día y después por la última actividad, y `situacionDelContacto`
   escribe la frase. Las visitas agendadas van al final. **Un paso nuevo que cambie la etapa tiene que
   pasar por `ultimoContactoAlGuardar`**, o la espera vuelve a mentir.
-- **El pasaje (`/proyectos/:id/aprobar`) manda `pagos: []`**: la seña no se toca, así que no viaja ni
-  se duplica. `ProyectoPasajePage` decide si deja entrar **al montarse**, con un `useState`: la fila
-  optimista pasa a `en_curso` antes de la respuesta, y una guarda por render desmontaría el formulario
-  antes de que un rechazo se viera.
+- **El pasaje (`/proyectos/:id/aprobar`) manda la seña que se carga ahí y nada más** (ADR 0047): lo
+  que ya estaba cobrado no viaja, así que no se duplica. El importe viene sugerido con
+  `calcularSena` —el porcentaje configurado menos lo ya cobrado— y es editable; vaciarlo aprueba sin
+  pago. El pago va en el mismo `guardar_proyecto` que la aprobación, con la fecha de inicio y la
+  forma de pago de esa pantalla, y su id se genera una sola vez al montar. El resumen de abajo separa
+  lo de antes, lo de ahora, el total y el saldo (`resumenDelPasaje`): **ninguna cuenta suma dos veces
+  la plata de la visita**. `ProyectoPasajePage` decide si deja entrar **al montarse**, con un
+  `useState`: la fila optimista pasa a `en_curso` antes de la respuesta, y una guarda por render
+  desmontaría el formulario antes de que un rechazo se viera.
 - **La fila optimista de un guardado y de las notas sube la `version` si cambia alguna columna**
   (`versionDelGuardado`). Sin eso, dos pasos seguidos sin señal rebotan con `MN006`. La respuesta se
   aplica salvo que la réplica tenga algo más nuevo que la versión que dejó esta mutación y que la que
@@ -307,6 +312,18 @@ src/
 - **Ajustes muestra el espacio usado** y avisa desde los 800 MB: pasarse del giga puede dejar la app entera respondiendo 402 (ADR 0039).
 - **Una tabla nueva en la réplica rompe la sincronización de un bundle nuevo contra una base sin migrar** (`leerLote` exige la clave). La migración se aplica antes de mergear.
 - `archivos.spec.ts` sube a Storage una vez por corrida, solo en `escritorio`, y `vaciarArchivos` quita del bucket lo que subió.
+
+## La vista del cliente y su enlace (ADR 0046)
+
+- **Lo que el cliente ve lo decide la base, no la pantalla.** `public.vista_del_cliente(uuid)` enumera los campos que devuelve; la app no filtra nada, porque lo que no puede ver no viaja. **No armes el payload desde la réplica**: serían dos listas blancas y la del navegador no protege de nada.
+- **Las dos entradas son la misma función.** «Mostrarle al cliente» de la ficha abre `/proyectos/:id/vista-cliente` (RPC con sesión, la RLS decide) y el enlace abre `/v/:token` (RPC de `anon`, que resuelve el token y llama a la misma). Las dos pintan `PantallaDeLaVista` de `entities/vista-cliente`. Una pantalla nueva que muestre datos del trabajo al cliente sale de ahí o no sale.
+- **`/v/:token` es la única ruta afuera de `Shell`**, sin sesión, sin `Marco` y con su propio `<main>`. Es la única pantalla del proyecto que ve alguien de afuera: lo que se toca ahí se mira dos veces.
+- **La consulta de la vista va con `staleTime: 0`**: cada vez que se abre, se trae de nuevo. Mostrarle un saldo viejo al cliente es peor que tardar medio segundo. La del token **no se persiste** (`shouldDehydrateQuery` en `QueryProvider`): en el navegador del cliente no queda nada guardado. La de adentro de la app sí se persiste, y cuando se muestra sin señal la pantalla avisa que puede no estar al día.
+- **El token se muestra una sola vez.** La base guarda su sha256; el token en claro vive en `localStorage` (`maun:enlaces`, `shared/lib/enlaces.ts`), es estado del dispositivo como el tema, y lo borra `limpiarDatosLocales`. Desde otro dispositivo la pantalla de compartir dice que el enlace está activo y que la dirección quedó en el que lo creó.
+- **Crear y dar de baja el enlace necesitan señal** y no van en `COLA_DE_SALIDA`: un enlace que todavía no está en la base no funciona, y mostrarlo sería mentir. Están registradas en `mutaciones-persistibles.ts` igual, para que una que quede pendiente al cerrar la app no rompa `reanudarCola`.
+- **Compartir un archivo sí es una mutación de la cola** (`MUTACION_DE_ARCHIVO_COMPARTIDO`, un update de `visible_para_cliente` sola, como las marcas de la agenda). **Un archivo nuevo nace privado**, también en la fila optimista.
+- **Nada de la app se indexa**: la etiqueta `robots` en `index.html`, `X-Robots-Tag` para todas las rutas en `netlify.toml` y `public/robots.txt`. Las tres, porque cada una tapa lo que la otra no.
+- **Ojo con los nombres de las regiones**: «Tu mueble» es subcadena de «El camino de tu mueble», que por eso se llama «En qué anda», como en el diseño. Es la misma trampa de `getByLabel` que ya documentaba «Contraseña».
 
 ## Agenda (ADR 0034)
 

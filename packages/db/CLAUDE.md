@@ -1,6 +1,6 @@
 # @maun/db
 
-Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, las llamadas de la agenda y los avisos, los tests de la función de borde `supabase/functions/avisos`, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed, el alta de households y la migración de una sola vez desde el sistema viejo (`db:migrar`).
+Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la factory del cliente de Supabase), la réplica del household que usa la app, las llamadas de la agenda, los avisos y la vista del cliente, los tests de la función de borde `supabase/functions/avisos`, y las herramientas de base en `scripts/`: el runner de pgTAP, el ensayo de migraciones, el snapshot del esquema, la generación de tipos, el seed, el alta de households y la migración de una sola vez desde el sistema viejo (`db:migrar`).
 
 ## El cliente
 
@@ -29,6 +29,15 @@ Tipos generados de Postgres (`src/database.types.ts`), `crearClienteMaun` (la fa
 - **Un índice único parcial no se puede diferir** (solo un constraint puede, y un único parcial no puede serlo): se evalúa fila por fila, apenas se escribe cada una. Si un `insert ... on conflict` mueve una marca única de una fila a otra en la misma sentencia, **el orden entre filas no está definido** y a veces hay dos prendidas a la vez: corta con `23505`, que es definitivo, no tiene traducción y tapa la cola. Lo que corresponde es **apagar antes, en su propia sentencia**, como hace `guardar_proyecto` con `aprobada` (ADR 0043).
 - **Un test verde sobre una sentencia con orden indefinido no prueba nada.** Ese `23505` pasó dos veces en pgTAP y una en el e2e de escritorio antes de aparecer en el de celular. El caso que lo cubre tiene que ser el que falla siempre, no el que falla a veces: mandar la fila nueva **sin** mandar la que hay que apagar.
 - `liquidarProyecto` y `revertirLiquidacion` son las cuatro operaciones que tocan la distribución congelada. **El pedido lleva el acumulado del mes que vio la app** (`sueldoPrevioCentavos` / `fijosPrevioCentavos`): si no es el de la base, la liquidación vuelve **ajustada** —congelada con el acumulado del servidor— en vez de rechazada con `MN006`. Se detecta comparando `dist_sueldo_previo_centavos` de la fila que vuelve contra lo que se mandó; la respuesta no trae marca (ADR 0016).
+
+## La vista del cliente (ADR 0046)
+
+- **`public.vista_del_cliente(uuid)` es la lista blanca**: enumera campo por campo lo que el cliente puede ver y **nunca devuelve la fila entera**. Si alguna vez se convierte en un `to_jsonb(proyecto)`, cada columna nueva de `proyectos` queda expuesta sin que nadie lo decida. Es **security invoker**: desde la app la llama el dueño y la RLS decide.
+- **`public.vista_compartida(text)` es la puerta del enlace y la única función de la base que `anon` puede ejecutar**, y la única `security definer` de `public`. Resuelve el token contra su sha256 y delega en la anterior. `00_estructura.sql` exige la lista exacta de las dos cosas: si aparece otra función alcanzable por `anon`, falla.
+- **`supabase/tests/25_vista_del_cliente.sql` se rompe apenas aparece una columna nueva en `proyectos`**: compara las columnas reales contra dos listas escritas a mano, las que viajan y las que no. No prueba que la función esté bien; prueba que alguien decidió.
+- **`public.enlaces_publicos` guarda el sha256 del token, nunca el token.** Un solo enlace vivo por trabajo (índice único parcial), y generar uno nuevo **apaga el anterior en su propia sentencia** antes de insertar, por lo del ADR 0043. Sin caducidad: se revoca con `revocado_at`. `visitas` y `ultima_visita_at` las escribe la función elevada y no tienen grant.
+- **`public.cambios_de_estado` la escribe un trigger `security definer` y nadie más**: `authenticated` solo tiene `select`. Guarda cada cambio de etapa venga de donde venga. **No está en la réplica** a propósito: todavía no hay pantalla que la lea y es la única tabla que crece sin techo. De ahí salen las dos fechas que la vista del cliente no podría reconstruir: cuándo se mandó el presupuesto y cuándo se aprobó.
+- **`archivos.visible_para_cliente` solo tiene grant de `update`**, no de `insert`: un archivo nace privado y se comparte después.
 
 ## La agenda y los avisos (ADR 0034 y 0036)
 
