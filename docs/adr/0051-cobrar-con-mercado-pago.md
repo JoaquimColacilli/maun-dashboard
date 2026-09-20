@@ -7,6 +7,13 @@ al cliente a pagar no es un QR de Mercado Pago**. Ver la sección «Lo que cuest
 más abajo, agregada en esa corrección. Solo decide el nivel 1, que es lo que entra en el
 [0048](0048-los-datos-para-transferir.md). Los niveles 2 y 3 quedan escritos, sin hacer.
 
+**Superado en parte.** El [ADR 0054](0054-el-link-de-cobro-de-mercado-pago.md) revierte, por
+pedido del dueño y con este costo sobre la mesa, la decisión de no ofrecer Mercado Pago: el dueño
+pega su propio link de cobro en Ajustes y la página del cliente lo muestra como QR y como botón.
+Sigue sin usarse ninguna API de Mercado Pago, así que los niveles 2 y 3 siguen sin hacer. Los
+porcentajes de la tabla del QR son los de Buenos Aires; el 0054 tiene los de la página general,
+que difieren en el débito y en el crédito porque cambian con los impuestos provinciales.
+
 ## Contexto
 
 El dueño preguntó, sobre la vista del cliente:
