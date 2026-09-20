@@ -39,6 +39,7 @@ export function cobroDelTaller(ajustes: FilaDe<'ajustes'> | undefined): CobroDel
     cbu: vacioEsNulo(ajustes?.cobro_cbu),
     titular: vacioEsNulo(ajustes?.cobro_titular),
     cuit: vacioEsNulo(ajustes?.cobro_cuit),
+    link: vacioEsNulo(ajustes?.cobro_link),
   };
 }
 

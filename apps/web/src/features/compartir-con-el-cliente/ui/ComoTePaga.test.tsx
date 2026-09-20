@@ -28,6 +28,7 @@ const AJUSTES: FilaDe<'ajustes'> = {
   cobro_cbu: '',
   cobro_titular: '',
   cobro_cuit: '',
+  cobro_link: '',
   created_at: AHORA,
   updated_at: AHORA,
   deleted_at: null,

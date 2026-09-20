@@ -39,6 +39,7 @@ export const COLUMNAS_DE_AJUSTES = [
   'cobro_cbu',
   'cobro_titular',
   'cobro_cuit',
+  'cobro_link',
 ] as const;
 
 export type ColumnaDeAjustes = (typeof COLUMNAS_DE_AJUSTES)[number];

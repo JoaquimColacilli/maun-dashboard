@@ -248,7 +248,7 @@ export function AjustesPage() {
           {ajustes && (
             <section aria-labelledby="titulo-cobro" className={SECCION}>
               <h2 id="titulo-cobro" className="text-section font-semibold">
-                Cómo te transfieren
+                Cómo te pagan
               </h2>
               <p className="text-body leading-relaxed text-text-2">
                 Es la cuenta a la que te transfiere tu cliente. Se cargan una vez y aparecen en la
@@ -257,6 +257,13 @@ export function AjustesPage() {
                 correcta: su banco le muestra a nombre de quién está antes de confirmar. Recibir una
                 transferencia no te cuesta comisión. Todos son opcionales: lo que dejes vacío, no se
                 muestra.
+              </p>
+              <p className="text-body leading-relaxed text-text-2">
+                El link de Mercado Pago es aparte y es opcional. Si lo cargás, tu cliente ve en su
+                página un código QR y un botón que le abren Mercado Pago para pagarte desde ahí, sin
+                copiar nada: el monto se lo decimos arriba del código y lo escribe él. Ese cobro sí
+                te descuenta comisión de Mercado Pago, así que cargalo solo si querés esa comodidad.
+                Mientras esté cargado, la página muestra el código en lugar de tu alias.
               </p>
               <FormularioDeCobro ajustes={ajustes} />
             </section>

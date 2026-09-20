@@ -21,6 +21,12 @@ import {
   type ErrorDeCobro,
 } from '../model/cobro';
 
+export const AYUDA_DEL_LINK =
+  'Opcional. Copialo de tu app de Mercado Pago, en Cobrar. Tu cliente lo va a ver como código QR y como botón.';
+
+export const LA_COMISION =
+  'Ojo: lo que te paguen por acá te descuenta comisión de Mercado Pago. Si te transfieren al alias, no.';
+
 export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
   const [datos, setDatos] = useState<DatosDeCobro>(() => cobroDeLosAjustes(ajustes));
   const [error, setError] = useState<ErrorDeCobro | undefined>(undefined);
@@ -103,6 +109,22 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
           cambiar('cuit', formatearCuit(evento.target.value));
         }}
       />
+      <Campo
+        etiqueta="Link de Mercado Pago"
+        inputMode="url"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        ayuda={AYUDA_DEL_LINK}
+        value={datos.link}
+        error={error?.campo === 'link' ? error.mensaje : undefined}
+        onChange={(evento) => {
+          cambiar('link', evento.target.value);
+        }}
+      />
+      {error?.campo !== 'link' && datos.link.trim() !== '' && (
+        <p className="-mt-1.5 text-label leading-normal text-atencion">{LA_COMISION}</p>
+      )}
 
       {guardar.isError && (
         <p role="alert" className="text-label font-medium text-alerta">

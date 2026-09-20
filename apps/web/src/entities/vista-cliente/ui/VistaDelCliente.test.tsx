@@ -35,7 +35,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       monto: centavos(44_000_000),
       siguiente: null,
     },
-    cobro: { alias: null, cbu: null, titular: null, cuit: null },
+    cobro: { alias: null, cbu: null, titular: null, cuit: null, link: null },
     pagos: [
       { id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: centavos(40_000_000) },
       { id: 'p2', fecha: '2026-09-16', concepto: 'Adelanto', monto: centavos(40_000_000) },

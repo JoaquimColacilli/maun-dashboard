@@ -121,6 +121,7 @@ function ajustes(extra: Partial<FilaDe<'ajustes'>> = {}): FilaDe<'ajustes'> {
     cobro_cbu: '',
     cobro_titular: '',
     cobro_cuit: '',
+    cobro_link: '',
     sueldo_tope_mensual: false,
     perdido_con_sueldo: false,
     perdido_con_diezmo: true,

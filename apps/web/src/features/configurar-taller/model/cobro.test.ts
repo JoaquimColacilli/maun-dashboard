@@ -32,6 +32,7 @@ function ajustes(extra: Partial<FilaDe<'ajustes'>> = {}): FilaDe<'ajustes'> {
     cobro_cbu: '',
     cobro_titular: '',
     cobro_cuit: '',
+    cobro_link: '',
     created_at: '2026-09-19T12:00:00Z',
     updated_at: '2026-09-19T12:00:00Z',
     deleted_at: null,
@@ -41,7 +42,7 @@ function ajustes(extra: Partial<FilaDe<'ajustes'>> = {}): FilaDe<'ajustes'> {
 }
 
 function datos(extra: Partial<DatosDeCobro> = {}): DatosDeCobro {
-  return { alias: '', cbu: '', titular: '', cuit: '', ...extra };
+  return { alias: '', cbu: '', titular: '', cuit: '', link: '', ...extra };
 }
 
 describe('lo que se carga y lo que se guarda', () => {
@@ -59,6 +60,7 @@ describe('lo que se carga y lo que se guarda', () => {
       cobro_cbu: '',
       cobro_titular: 'Ana',
       cobro_cuit: '27-30123456-4',
+      cobro_link: '',
     });
   });
 
@@ -148,5 +150,38 @@ describe('la etiqueta del campo', () => {
     expect(etiquetaDeLaClave(CVU)).toBe('CVU de la billetera');
     expect(etiquetaDeLaClave(CBU)).toBe('CBU o CVU');
     expect(etiquetaDeLaClave('')).toBe('CBU o CVU');
+  });
+});
+
+describe('el link de Mercado Pago', () => {
+  it('se carga y se guarda con la barra que espera la base', () => {
+    expect(cobroDeLosAjustes(ajustes({ cobro_link: 'https://mpago.la/2vXyZ1' })).link).toBe(
+      'https://mpago.la/2vXyZ1',
+    );
+    expect(cambiosDeCobro(datos({ link: '  https://mpago.la  ' })).cobro_link).toBe(
+      'https://mpago.la/',
+    );
+  });
+
+  it('vacío se guarda vacío: es opcional', () => {
+    expect(cambiosDeCobro(datos()).cobro_link).toBe('');
+    expect(errorDeCobro(datos())).toBeNull();
+  });
+
+  it('un link de otro sitio no se guarda y el aviso dice cuáles sí', () => {
+    const problema = errorDeCobro(datos({ link: 'https://pagame-aca.com/taller' }));
+    expect(problema?.campo).toBe('link');
+    expect(problema?.mensaje).toContain('mpago.la');
+  });
+
+  it('sin https tampoco', () => {
+    const problema = errorDeCobro(datos({ link: 'mpago.la/2vXyZ1' }));
+    expect(problema?.campo).toBe('link');
+    expect(problema?.mensaje).toContain('https://');
+  });
+
+  it('los otros campos se revisan antes: el link no tapa un CBU mal cargado', () => {
+    const problema = errorDeCobro(datos({ cbu: '123', link: 'https://pagame-aca.com/x' }));
+    expect(problema?.campo).toBe('cbu');
   });
 });

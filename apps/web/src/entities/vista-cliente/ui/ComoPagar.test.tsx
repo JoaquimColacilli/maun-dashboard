@@ -3,6 +3,7 @@ import {
   PASOS_PARA_TRANSFERIR,
   PEDILE_LOS_DATOS,
   vistaDelCliente,
+  type CobroDelTaller,
   type FormaDeCobro,
   type InstanciaDePago,
   type TrabajoDelCliente,
@@ -22,14 +23,15 @@ const HOY = '2026-09-18';
 const CBU = '0110001312345678901233';
 const CVU = '0000999109999999999990';
 
-const CON_TODO = {
+const CON_TODO: CobroDelTaller = {
   alias: 'maun.muebles',
   cbu: CBU,
   titular: 'Ana Gutiérrez',
   cuit: '27-30123456-4',
+  link: null,
 };
 
-const SIN_NADA = { alias: null, cbu: null, titular: null, cuit: null };
+const SIN_NADA: CobroDelTaller = { alias: null, cbu: null, titular: null, cuit: null, link: null };
 
 interface Pago {
   instancia?: InstanciaDePago | null;
@@ -152,7 +154,7 @@ describe('el bloque de cómo pagar, por transferencia', () => {
   it('lo que el dueño no cargó no aparece', () => {
     dibujar(
       trabajo(
-        { cobro: { alias: 'maun.muebles', cbu: null, titular: null, cuit: null } },
+        { cobro: { alias: 'maun.muebles', cbu: null, titular: null, cuit: null, link: null } },
         { formas: ['transferencia'] },
       ),
     );
