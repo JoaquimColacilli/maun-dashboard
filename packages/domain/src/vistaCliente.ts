@@ -149,14 +149,18 @@ const TAMBIEN_EFECTIVO: Readonly<Record<InstanciaDePago, string>> = {
 };
 
 export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
-  const { instancia, formas, monto } = trabajo.pago;
+  const pago = trabajo.pago as PagoPendiente | undefined;
+  const cobro = trabajo.cobro as CobroDelTaller | undefined;
+  if (pago === undefined || cobro === undefined) return null;
+
+  const { instancia, formas, monto } = pago;
   if (instancia === null) return null;
 
   const pideTransferencia = ofrece(formas, 'transferencia');
-  const transferencia = pideTransferencia && hayComoTransferir(trabajo.cobro);
+  const transferencia = pideTransferencia && hayComoTransferir(cobro);
   const efectivo = ofrece(formas, 'efectivo');
-  const link = transferencia ? trabajo.cobro.link : null;
-  const cuenta = transferencia ? trabajo.cobro.cbu : null;
+  const link = transferencia ? cobro.link : null;
+  const cuenta = transferencia ? cobro.cbu : null;
 
   return {
     instancia,
@@ -171,7 +175,7 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
     etiquetaDelImporte: ETIQUETA_DEL_IMPORTE[instancia],
     pasos: PASOS_PARA_TRANSFERIR,
     enEfectivo: transferencia ? TAMBIEN_EFECTIVO[instancia] : SOLO_EFECTIVO[instancia],
-    siguiente: elQueSigue(trabajo.pago.siguiente),
+    siguiente: elQueSigue(pago.siguiente),
   };
 }
 
