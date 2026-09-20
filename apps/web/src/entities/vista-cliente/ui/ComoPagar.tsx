@@ -55,7 +55,7 @@ export function ComoPagar({ trabajo }: ComoPagarProps) {
   return (
     <section
       aria-label="Cómo pagar"
-      className="mt-5 rounded-panel border border-hairline bg-surface px-4 py-3.5"
+      className="relative mt-5 rounded-panel border border-hairline bg-surface px-4 py-3.5"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-section font-semibold">{como.titulo}</h2>
