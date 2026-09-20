@@ -16,5 +16,7 @@ export {
   ArchivosQueVeElCliente,
   type ArchivosQueVeElClienteProps,
 } from './ui/ArchivosQueVeElCliente';
+export { BotonDelQr, MOSTRAR_EL_QR, type BotonDelQrProps } from './ui/BotonDelQr';
 export { ComoTePaga, type ComoTePagaProps } from './ui/ComoTePaga';
+export { ESCANEALO, ES_EL_MISMO_ENLACE, HojaDelQr, type HojaDelQrProps } from './ui/HojaDelQr';
 export { PantallaDeCompartir, type PantallaDeCompartirProps } from './ui/PantallaDeCompartir';

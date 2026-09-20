@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { resumenDeProyecto, rutaDelProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { PantallaDeLaVista, useVistaDelTrabajo } from '@/entities/vista-cliente';
+import { BotonDelQr } from '@/features/compartir-con-el-cliente';
 import { hoyLocal, useEstadoSync } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
@@ -17,13 +18,18 @@ export function ProyectoVistaClientePage() {
   return (
     <>
       <div className="mx-auto flex w-full max-w-content flex-col gap-2 px-(--page-pad-mobile) pt-3 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
-        <Link
-          to={rutaDelProyecto(id)}
-          className="flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
-        >
-          <Icono nombre="chevron-left" tamano={20} />
-          Volver {resumen === undefined ? 'al trabajo' : `a «${resumen.proyecto.titulo}»`}
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Link
+            to={rutaDelProyecto(id)}
+            className="flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+          >
+            <Icono nombre="chevron-left" tamano={20} />
+            Volver {resumen === undefined ? 'al trabajo' : `a «${resumen.proyecto.titulo}»`}
+          </Link>
+          {resumen !== undefined && (
+            <BotonDelQr proyectoId={id} trabajo={resumen.proyecto.titulo} />
+          )}
+        </div>
         {desactualizada && (
           <p
             role="status"

@@ -25,6 +25,7 @@
     "react-dom": "catalog:",
     "react-hook-form": "catalog:",
     "react-router": "catalog:",
+    "uqr": "catalog:",
     "workbox-window": "catalog:",
     "zod": "catalog:"
   },
@@ -42,6 +43,7 @@
     "eslint": "catalog:",
     "fake-indexeddb": "catalog:",
     "jsdom": "catalog:",
+    "jsqr": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
