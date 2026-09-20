@@ -178,7 +178,10 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                   >
                     <span aria-hidden className="flex h-full flex-col items-center">
                       <span
-                        className={`mt-4 size-2 flex-none rounded-pill ${indice === 0 ? 'bg-ink' : 'bg-border'}`}
+                        className={`h-4 w-px flex-none ${indice === 0 ? 'bg-transparent' : 'bg-hairline'}`}
+                      />
+                      <span
+                        className={`size-2 flex-none rounded-pill ${indice === 0 ? 'bg-ink' : 'bg-border'}`}
                       />
                       <span
                         className={`w-px flex-1 ${indice === vista.eventos.length - 1 ? 'bg-transparent' : 'bg-hairline'}`}
