@@ -22,7 +22,7 @@ import {
 } from '../model/cobro';
 
 export const AYUDA_DEL_LINK =
-  'Opcional. Copialo de tu app de Mercado Pago, en Cobrar. Tu cliente lo va a ver como código QR y como botón.';
+  'Opcional. En tu app de Mercado Pago: Cobrar, Link de pago, Link sin monto definido. Copialo y pegalo acá. Tu cliente lo ve como código QR y como botón.';
 
 export const LA_COMISION =
   'Ojo: lo que te paguen por acá te descuenta comisión de Mercado Pago. Si te transfieren al alias, no.';

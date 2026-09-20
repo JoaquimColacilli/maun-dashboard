@@ -259,11 +259,13 @@ export function AjustesPage() {
                 muestra.
               </p>
               <p className="text-body leading-relaxed text-text-2">
-                El link de Mercado Pago es aparte y es opcional. Si lo cargás, tu cliente ve en su
-                página un código QR y un botón que le abren Mercado Pago para pagarte desde ahí, sin
-                copiar nada: el monto se lo decimos arriba del código y lo escribe él. Ese cobro sí
-                te descuenta comisión de Mercado Pago, así que cargalo solo si querés esa comodidad.
-                Mientras esté cargado, la página muestra el código en lugar de tu alias.
+                El link de Mercado Pago es aparte y es opcional. Sacalo de tu app, en Cobrar → Link
+                de pago → Link sin monto definido: se crea una sola vez y sirve para todos tus
+                trabajos. Si lo cargás, tu cliente ve en su página un código QR y un botón que le
+                abren Mercado Pago para pagarte desde ahí, sin copiar nada: el monto se lo decimos
+                arriba del código y lo escribe él. Ese cobro sí te descuenta comisión de Mercado
+                Pago, así que cargalo solo si querés esa comodidad. Mientras esté cargado, la página
+                muestra el código en lugar de tu alias.
               </p>
               <FormularioDeCobro ajustes={ajustes} />
             </section>

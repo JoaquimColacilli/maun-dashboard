@@ -78,6 +78,12 @@ el importe arriba, en grande y con su botón de copiar, y debajo el link como **
 **botón**. El alias, el CVU, el titular y el CUIT dejan de mostrarse, que es lo que el dueño marcó.
 Cuando no está cargado, la página es exactamente la de antes.
 
+El link que hay que pegar es el **«Link sin monto definido»** de Mercado Pago: en la app, Cobrar →
+Link de pago → Link sin monto definido. Se crea una sola vez, es reutilizable y **el importe lo
+escribe el que paga**, que es literalmente el «monto 0 a rellenar» del pedido. Existe como producto
+de la app, sin API: está documentado en la ayuda de Mercado Pago Argentina (artículos 23993 y
+23995). Un link de pago con importe fijo también entraría, pero habría que crear uno por cobro.
+
 ### Por qué un campo que se pega y no algo derivado del alias
 
 Porque no hay de dónde derivarlo. Las tres alternativas que quedaban:
@@ -168,6 +174,8 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
 - Mercado Pago Argentina, «Cobrar con código QR», costos por medio de pago. Consultada el
   2026-09-20.
 - Mercado Pago Argentina, «Link de pago». Consultada el 2026-09-20.
+- Mercado Pago Argentina, ayuda 23993 «¿Qué es Link sin monto definido?» y 23995 «¿Cómo cobrar con
+  Link sin monto definido?»: se crea una vez, es reutilizable y el importe lo pone el que paga.
 - BCRA, «Transferencias 3.0 · Pago con transferencia · Interoperabilidad entre los esquemas»:
   estándar EMVCo, campo 51 para CBU/CVU/alias y el rol de los administradores de esquema.
 - BCRA, texto ordenado de Transferencias, punto 6.3.1.2: arancel al comercio entre 0,6 % y 0,8 %.
