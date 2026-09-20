@@ -92,3 +92,42 @@ export function revisarAlias(texto: string): RevisionDeAlias {
   if (!CARACTERES_DEL_ALIAS.test(alias)) return { estado: 'invalido', motivo: 'caracteres' };
   return { estado: 'valido', aviso: avisoDelAlias(alias) };
 }
+
+export const LARGO_MAXIMO_DEL_LINK = 300;
+
+export const HOSTS_DE_MERCADO_PAGO = [
+  'www.mercadopago.com.ar',
+  'mercadopago.com.ar',
+  'link.mercadopago.com.ar',
+  'mpago.la',
+  'mpago.li',
+] as const;
+
+const LINK_DE_MERCADO_PAGO =
+  /^https:\/\/(?:www\.mercadopago\.com\.ar|mercadopago\.com\.ar|link\.mercadopago\.com\.ar|mpago\.la|mpago\.li)\/\S*$/;
+
+const SOLO_EL_HOST =
+  /^https:\/\/(?:www\.mercadopago\.com\.ar|mercadopago\.com\.ar|link\.mercadopago\.com\.ar|mpago\.la|mpago\.li)$/;
+
+export type MotivoDelLink = 'largo' | 'sin-https' | 'otro-sitio';
+
+export type RevisionDelLink =
+  { estado: 'vacio' } | { estado: 'valido' } | { estado: 'invalido'; motivo: MotivoDelLink };
+
+export function normalizarLinkDeCobro(texto: string): string {
+  const link = texto.trim();
+  return SOLO_EL_HOST.test(link) ? `${link}/` : link;
+}
+
+export function esLinkDeMercadoPago(texto: string): boolean {
+  return texto.length <= LARGO_MAXIMO_DEL_LINK && LINK_DE_MERCADO_PAGO.test(texto);
+}
+
+export function revisarLinkDeCobro(texto: string): RevisionDelLink {
+  const link = normalizarLinkDeCobro(texto);
+  if (link === '') return { estado: 'vacio' };
+  if (link.length > LARGO_MAXIMO_DEL_LINK) return { estado: 'invalido', motivo: 'largo' };
+  if (!link.startsWith('https://')) return { estado: 'invalido', motivo: 'sin-https' };
+  if (!LINK_DE_MERCADO_PAGO.test(link)) return { estado: 'invalido', motivo: 'otro-sitio' };
+  return { estado: 'valido' };
+}

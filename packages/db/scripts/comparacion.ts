@@ -7,6 +7,7 @@ import {
   ESTADOS,
   esEstado,
   estaLiquidado,
+  esLinkDeMercadoPago,
   formasDeCobro,
   pagosPorDelante,
   puedeCambiarEstado,
@@ -330,6 +331,62 @@ export async function compararFormasDeCobro(cliente: pg.Client): Promise<string[
     const ts = JSON.stringify(formasDeCobro(caso[0], caso[1]));
     const sql = JSON.stringify(fila.formas);
     return ts === sql ? [] : [`formas de cobro ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+const LINKS_A_PROBAR: readonly string[] = [
+  '',
+  'https://mpago.la/2vXyZ1',
+  'https://mpago.li/2vXyZ1',
+  'https://link.mercadopago.com.ar/tallermaun',
+  'https://www.mercadopago.com.ar/cobrar/qr/1234',
+  'https://mercadopago.com.ar/cobrar',
+  'https://mpago.la/',
+  'https://mpago.la',
+  'http://mpago.la/2vXyZ1',
+  'mpago.la/2vXyZ1',
+  'https://MPAGO.LA/2vXyZ1',
+  'https://pagame-aca.com/taller',
+  'https://mercadopago.com.ar.pagame.net/x',
+  'https://mpago.la.otro.com/x',
+  'https://mpago.la/con espacio',
+  'https://mpago.la/con\ttab',
+  `https://mpago.la/${'x'.repeat(280)}`,
+  `https://mpago.la/${'x'.repeat(300)}`,
+];
+
+export async function compararLinkDeCobro(cliente: pg.Client): Promise<string[]> {
+  const { rows: definicion } = await cliente.query<{ def: string }>(
+    `select pg_get_constraintdef(c.oid) as def
+     from pg_constraint c
+     where c.conrelid = 'public.ajustes'::regclass and c.conname = 'ajustes_cobro_link_formato'`,
+  );
+  const cruda = definicion[0]?.def;
+  if (cruda === undefined) return ['no existe el check ajustes_cobro_link_formato en la base'];
+
+  const expresion = cruda
+    .replace(/^CHECK\s*\(/, '')
+    .replace(/\)$/, '')
+    .replaceAll('cobro_link', 'c.valor');
+
+  const { rows } = await cliente.query<{ pasa: boolean }>(
+    `select (${expresion}) as pasa
+     from unnest($1::text[]) with ordinality as c (valor, orden)
+     order by c.orden`,
+    [LINKS_A_PROBAR],
+  );
+  if (rows.length !== LINKS_A_PROBAR.length) {
+    return [
+      `el check del link devolvió ${String(rows.length)} filas para ${String(LINKS_A_PROBAR.length)} casos`,
+    ];
+  }
+
+  return rows.flatMap((fila, i) => {
+    const valor = LINKS_A_PROBAR[i] ?? '';
+    const ts = valor === '' || esLinkDeMercadoPago(valor);
+    return ts === fila.pasa
+      ? []
+      : [`link de cobro ${JSON.stringify(valor)}: SQL ${String(fila.pasa)}, TS ${String(ts)}`];
   });
 }
 
@@ -1644,6 +1701,7 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararTopes(cliente)),
     ...(await compararPagosPorDelante(cliente)),
     ...(await compararFormasDeCobro(cliente)),
+    ...(await compararLinkDeCobro(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),
     ...(await compararTransiciones(cliente)),

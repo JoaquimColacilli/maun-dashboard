@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { centavos, type Money } from './money.ts';
+import type { FormaDeCobro } from './pagos.ts';
 import {
   comoPagar,
   HITOS,
+  PASOS_CON_MERCADO_PAGO,
   PASOS_PARA_TRANSFERIR,
   vistaDelCliente,
   hayComoTransferir,
+  type CobroDelTaller,
   type PagoDelCliente,
   type TrabajoDelCliente,
 } from './vistaCliente.ts';
@@ -38,7 +41,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       cobro: null,
     },
     pago: { instancia: null, formas: [], monto: null, siguiente: null },
-    cobro: { alias: null, cbu: null, titular: null, cuit: null },
+    cobro: { alias: null, cbu: null, titular: null, cuit: null, link: null },
     pagos: [],
     archivos: [],
     ...cambios,
@@ -411,15 +414,22 @@ describe('los importes son centavos enteros con marca', () => {
 
 describe('si hay cómo transferirle al taller', () => {
   it('alcanza con el alias o con el CBU: eso es lo que el cliente pega en su banco', () => {
-    expect(hayComoTransferir({ alias: 'maun.muebles', cbu: null, titular: null, cuit: null })).toBe(
-      true,
-    );
+    expect(
+      hayComoTransferir({
+        alias: 'maun.muebles',
+        cbu: null,
+        titular: null,
+        cuit: null,
+        link: null,
+      }),
+    ).toBe(true);
     expect(
       hayComoTransferir({
         alias: null,
         cbu: '0110001312345678901233',
         titular: null,
         cuit: null,
+        link: null,
       }),
     ).toBe(true);
   });
@@ -431,9 +441,12 @@ describe('si hay cómo transferirle al taller', () => {
         cbu: null,
         titular: 'Ana Gutiérrez',
         cuit: '27-30123456-4',
+        link: null,
       }),
     ).toBe(false);
-    expect(hayComoTransferir({ alias: null, cbu: null, titular: null, cuit: null })).toBe(false);
+    expect(
+      hayComoTransferir({ alias: null, cbu: null, titular: null, cuit: null, link: null }),
+    ).toBe(false);
   });
 });
 
@@ -443,6 +456,7 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
     cbu: '0110001312345678901233',
     titular: 'Ana Gutiérrez',
     cuit: null,
+    link: null,
   };
 
   it('con todo pagado no hay nada que ofrecer', () => {
@@ -620,5 +634,59 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
         expect(JSON.stringify(como)).not.toMatch(/arregl/i);
       }
     }
+  });
+});
+
+describe('el link de Mercado Pago del taller', () => {
+  const CON_LINK: CobroDelTaller = {
+    alias: 'maun.muebles',
+    cbu: '0110001312345678901233',
+    titular: 'Ana Gutiérrez',
+    cuit: null,
+    link: 'https://mpago.la/2vXyZ1',
+  };
+
+  const SOLO_EL_LINK: CobroDelTaller = {
+    alias: null,
+    cbu: null,
+    titular: null,
+    cuit: null,
+    link: 'https://mpago.la/2vXyZ1',
+  };
+
+  function conCobro(cobro: CobroDelTaller, formas: readonly FormaDeCobro[]) {
+    return comoPagar(
+      trabajo({
+        cobro,
+        pago: { instancia: 'sena', formas, monto: centavos(45_000_000), siguiente: null },
+      }),
+    );
+  }
+
+  it('lo devuelve y cambia los pasos: ya no se copia un alias, se escanea', () => {
+    const como = conCobro(CON_LINK, ['transferencia']);
+    expect(como?.link).toBe('https://mpago.la/2vXyZ1');
+    expect(como?.pasos).toBe(PASOS_CON_MERCADO_PAGO);
+    expect(como?.pasos).not.toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('sin link los pasos siguen siendo los de copiar el alias', () => {
+    const como = conCobro({ ...CON_LINK, link: null }, ['transferencia']);
+    expect(como?.link).toBeNull();
+    expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('no viaja si ese pago es en efectivo, igual que la cuenta', () => {
+    const como = conCobro(CON_LINK, ['efectivo']);
+    expect(como?.link).toBeNull();
+    expect(como?.transferencia).toBe(false);
+  });
+
+  it('tener solo el link ya alcanza para poder cobrar sin efectivo', () => {
+    expect(hayComoTransferir(SOLO_EL_LINK)).toBe(true);
+    const como = conCobro(SOLO_EL_LINK, ['transferencia']);
+    expect(como?.transferencia).toBe(true);
+    expect(como?.faltanLosDatos).toBe(false);
+    expect(como?.link).toBe('https://mpago.la/2vXyZ1');
   });
 });

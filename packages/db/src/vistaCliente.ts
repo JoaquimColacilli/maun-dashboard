@@ -1,4 +1,4 @@
-import { FORMAS_DE_COBRO, INSTANCIAS_DE_PAGO } from '@maun/domain';
+import { esLinkDeMercadoPago, FORMAS_DE_COBRO, INSTANCIAS_DE_PAGO } from '@maun/domain';
 import type {
   CobroDelTaller,
   ArchivoDelCliente,
@@ -86,9 +86,14 @@ function textoONada(valor: unknown, que: string): string | null {
   return leido === '' ? null : leido;
 }
 
+function linkDeCobro(valor: unknown): string | null {
+  const leido = textoONada(valor, 'el link para pagar');
+  return leido !== null && esLinkDeMercadoPago(leido) ? leido : null;
+}
+
 function cobro(valor: unknown): CobroDelTaller {
   if (valor === null || valor === undefined) {
-    return { alias: null, cbu: null, titular: null, cuit: null };
+    return { alias: null, cbu: null, titular: null, cuit: null, link: null };
   }
   const crudo = objeto(valor, 'los datos para transferir');
   return {
@@ -96,6 +101,7 @@ function cobro(valor: unknown): CobroDelTaller {
     cbu: textoONada(crudo.cbu, 'el CBU del taller'),
     titular: textoONada(crudo.titular, 'el titular de la cuenta'),
     cuit: textoONada(crudo.cuit, 'el CUIT del titular'),
+    link: linkDeCobro(crudo.link),
   };
 }
 

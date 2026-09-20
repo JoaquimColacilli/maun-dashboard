@@ -4,13 +4,18 @@ import {
   claveBancariaDe,
   digitosDeCbu,
   esClaveVirtual,
+  esLinkDeMercadoPago,
   formatearCbu,
+  HOSTS_DE_MERCADO_PAGO,
   LARGO_DE_CBU,
   LARGO_MAXIMO_DE_ALIAS,
+  LARGO_MAXIMO_DEL_LINK,
   LARGO_MINIMO_DE_ALIAS,
   normalizarAlias,
+  normalizarLinkDeCobro,
   revisarAlias,
   revisarCbu,
+  revisarLinkDeCobro,
   verificadorDelBloque,
 } from './cobro.ts';
 
@@ -168,5 +173,65 @@ describe('revisar un alias', () => {
   it('los largos son los de la norma', () => {
     expect(LARGO_MINIMO_DE_ALIAS).toBe(6);
     expect(LARGO_MAXIMO_DE_ALIAS).toBe(20);
+  });
+});
+
+describe('el link de cobro del taller', () => {
+  it('acepta los hosts con los que Mercado Pago reparte un cobro', () => {
+    for (const host of HOSTS_DE_MERCADO_PAGO) {
+      expect(revisarLinkDeCobro(`https://${host}/2vXyZ1`)).toEqual({ estado: 'valido' });
+    }
+  });
+
+  it('rechaza cualquier otro sitio, aunque el nombre se le parezca', () => {
+    expect(revisarLinkDeCobro('https://pagame-aca.com/taller')).toEqual({
+      estado: 'invalido',
+      motivo: 'otro-sitio',
+    });
+    expect(revisarLinkDeCobro('https://mercadopago.com.ar.pagame.net/x')).toEqual({
+      estado: 'invalido',
+      motivo: 'otro-sitio',
+    });
+    expect(revisarLinkDeCobro('https://mpago.la.otro.com/x')).toEqual({
+      estado: 'invalido',
+      motivo: 'otro-sitio',
+    });
+  });
+
+  it('rechaza lo que no viaja cifrado', () => {
+    expect(revisarLinkDeCobro('http://mpago.la/2vXyZ1')).toEqual({
+      estado: 'invalido',
+      motivo: 'sin-https',
+    });
+    expect(revisarLinkDeCobro('mpago.la/2vXyZ1')).toEqual({
+      estado: 'invalido',
+      motivo: 'sin-https',
+    });
+  });
+
+  it('rechaza lo que no entra en la columna', () => {
+    expect(revisarLinkDeCobro(`https://mpago.la/${'x'.repeat(LARGO_MAXIMO_DEL_LINK)}`)).toEqual({
+      estado: 'invalido',
+      motivo: 'largo',
+    });
+  });
+
+  it('vacío es vacío: el campo es opcional', () => {
+    expect(revisarLinkDeCobro('')).toEqual({ estado: 'vacio' });
+    expect(revisarLinkDeCobro('   ')).toEqual({ estado: 'vacio' });
+  });
+
+  it('le agrega la barra al link pelado, que es lo que espera la base', () => {
+    expect(normalizarLinkDeCobro('  https://mpago.la  ')).toBe('https://mpago.la/');
+    expect(normalizarLinkDeCobro('https://mpago.la/2vXyZ1')).toBe('https://mpago.la/2vXyZ1');
+    expect(revisarLinkDeCobro('https://link.mercadopago.com.ar')).toEqual({ estado: 'valido' });
+  });
+
+  it('esLinkDeMercadoPago es la misma regla, sin el motivo', () => {
+    expect(esLinkDeMercadoPago('https://mpago.la/2vXyZ1')).toBe(true);
+    expect(esLinkDeMercadoPago('https://pagame-aca.com/taller')).toBe(false);
+    expect(esLinkDeMercadoPago(`https://mpago.la/${'x'.repeat(LARGO_MAXIMO_DEL_LINK)}`)).toBe(
+      false,
+    );
   });
 });

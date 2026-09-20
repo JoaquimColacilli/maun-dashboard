@@ -34,6 +34,7 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       cbu: '0110001312345678901233',
       titular: 'Ana Gutiérrez',
       cuit: '27-30123456-4',
+      link: 'https://mpago.la/2vXyZ1',
     },
     pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto_centavos: 40_000_000 }],
     archivos: [
@@ -80,6 +81,7 @@ describe('leer la vista del cliente', () => {
         cbu: '0110001312345678901233',
         titular: 'Ana Gutiérrez',
         cuit: '27-30123456-4',
+        link: 'https://mpago.la/2vXyZ1',
       },
       pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: 40_000_000 }],
       archivos: [
@@ -238,19 +240,19 @@ describe('los datos para transferir', () => {
     const leido = leerVistaDelCliente(
       respuesta({ cobro: { alias: null, cbu: null, titular: null, cuit: null } }),
     );
-    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null, link: null });
   });
 
   it('una cadena vacía o con espacios se lee como que no hay dato', () => {
     const leido = leerVistaDelCliente(
       respuesta({ cobro: { alias: '', cbu: '  ', titular: null, cuit: '' } }),
     );
-    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null, link: null });
   });
 
   it('una respuesta vieja, sin la clave, no rompe la vista', () => {
     const leido = leerVistaDelCliente(respuesta({ cobro: undefined }));
-    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null, link: null });
   });
 
   it('y lo que vino con algo adentro se lee recortado', () => {
@@ -264,5 +266,35 @@ describe('los datos para transferir', () => {
     expect(() => leerVistaDelCliente(respuesta({ cobro: { alias: 42 } }))).toThrow(
       RespuestaInvalidaError,
     );
+  });
+});
+
+describe('el link de Mercado Pago', () => {
+  it('se lee cuando la base lo manda', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({
+        cobro: {
+          alias: null,
+          cbu: null,
+          titular: null,
+          cuit: null,
+          link: ' https://mpago.la/2vXyZ1 ',
+        },
+      }),
+    );
+    expect(leido.cobro.link).toBe('https://mpago.la/2vXyZ1');
+  });
+
+  it('un link que no es de Mercado Pago se descarta: esta página la abre un desconocido', () => {
+    for (const link of [
+      'https://pagame-aca.com/taller',
+      'http://mpago.la/2vXyZ1',
+      'javascript:alert(1)',
+    ]) {
+      const leido = leerVistaDelCliente(
+        respuesta({ cobro: { alias: null, cbu: null, titular: null, cuit: null, link } }),
+      );
+      expect(leido.cobro.link).toBeNull();
+    }
   });
 });

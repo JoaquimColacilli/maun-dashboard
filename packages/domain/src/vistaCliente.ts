@@ -41,6 +41,7 @@ export interface CobroDelTaller {
   cbu: string | null;
   titular: string | null;
   cuit: string | null;
+  link: string | null;
 }
 
 export interface PagoOfrecido {
@@ -71,7 +72,7 @@ export interface TrabajoDelCliente {
 }
 
 export function hayComoTransferir(cobro: CobroDelTaller): boolean {
-  return cobro.alias !== null || cobro.cbu !== null;
+  return cobro.alias !== null || cobro.cbu !== null || cobro.link !== null;
 }
 
 export interface PagoQueSigue {
@@ -86,6 +87,7 @@ export interface ComoPagar {
   monto: Money | null;
   montoParaPegar: string | null;
   transferencia: boolean;
+  link: string | null;
   efectivo: boolean;
   faltanLosDatos: boolean;
   titulo: string;
@@ -125,6 +127,9 @@ function elQueSigue(pago: PagoOfrecido | null): PagoQueSigue | null {
   };
 }
 
+export const PASOS_CON_MERCADO_PAGO =
+  'Escaneá el código con la cámara del celular o tocá el botón. Se abre Mercado Pago: escribí el monto de arriba y confirmá.';
+
 export const PASOS_PARA_TRANSFERIR =
   'Copiá el alias, pegalo en Transferir en la app de tu banco o de tu billetera, escribí el monto y confirmá.';
 
@@ -148,17 +153,19 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
   const pideTransferencia = ofrece(formas, 'transferencia');
   const transferencia = pideTransferencia && hayComoTransferir(trabajo.cobro);
   const efectivo = ofrece(formas, 'efectivo');
+  const link = transferencia ? trabajo.cobro.link : null;
 
   return {
     instancia,
     monto,
     montoParaPegar: monto === null ? null : montoParaPegar(monto),
     transferencia,
+    link,
     efectivo,
     faltanLosDatos: pideTransferencia && !transferencia,
     titulo: TITULO,
     etiquetaDelImporte: ETIQUETA_DEL_IMPORTE[instancia],
-    pasos: PASOS_PARA_TRANSFERIR,
+    pasos: link === null ? PASOS_PARA_TRANSFERIR : PASOS_CON_MERCADO_PAGO,
     enEfectivo: transferencia ? TAMBIEN_EFECTIVO[instancia] : SOLO_EFECTIVO[instancia],
     siguiente: elQueSigue(trabajo.pago.siguiente),
   };
