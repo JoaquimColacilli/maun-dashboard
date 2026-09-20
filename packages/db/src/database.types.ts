@@ -13,6 +13,7 @@ export type Database = {
           cobro_alias: string;
           cobro_cbu: string;
           cobro_cuit: string;
+          cobro_link: string;
           cobro_titular: string;
           costos_fijos_centavos: number;
           created_at: string;
@@ -33,6 +34,7 @@ export type Database = {
           cobro_alias?: string;
           cobro_cbu?: string;
           cobro_cuit?: string;
+          cobro_link?: string;
           cobro_titular?: string;
           costos_fijos_centavos?: number;
           created_at?: string;
@@ -53,6 +55,7 @@ export type Database = {
           cobro_alias?: string;
           cobro_cbu?: string;
           cobro_cuit?: string;
+          cobro_link?: string;
           cobro_titular?: string;
           costos_fijos_centavos?: number;
           created_at?: string;

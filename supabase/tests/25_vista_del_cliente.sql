@@ -10,7 +10,7 @@
 -- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
 -- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(89);
+select plan(99);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -73,7 +73,7 @@ select set_eq(
   $$,
   array[
     -- Viajan
-    'cobro_alias', 'cobro_cbu', 'cobro_titular', 'cobro_cuit',
+    'cobro_alias', 'cobro_cbu', 'cobro_titular', 'cobro_cuit', 'cobro_link',
     -- No viajan
     'id', 'household_id', 'created_at', 'updated_at', 'deleted_at', 'version',
     'sueldo_mensual_centavos', 'costos_fijos_centavos', 'meta_cocos_centavos',
@@ -164,8 +164,8 @@ select set_eq(
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'cobro') $$,
-  array['alias', 'cbu', 'titular', 'cuit'],
-  'de los datos para transferir viajan exactamente cuatro campos'
+  array['alias', 'cbu', 'titular', 'cuit', 'link'],
+  'de los datos para pagarle al taller viajan exactamente cinco campos: los cuatro de la cuenta y el link'
 );
 
 select set_eq(
@@ -260,7 +260,8 @@ select is(
     'alias', null,
     'cbu', '0110001312345678901233',
     'titular', 'Ana Gutiérrez',
-    'cuit', null
+    'cuit', null,
+    'link', null
   ),
   'lo que el dueño dejó vacío viaja en null, no en cadena vacía'
 );
@@ -305,7 +306,7 @@ select lives_ok(
 
 select is(
   public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'cobro',
-  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null),
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null, 'link', null),
   'con los cuatro vacíos no viaja ni un dato de cobro'
 );
 
@@ -825,7 +826,8 @@ select is(
     'alias', 'taller.maun.ok',
     'cbu', '0110001312345678901233',
     'titular', 'Ana Gutiérrez',
-    'cuit', '27-30123456-4'
+    'cuit', '27-30123456-4',
+    'link', null
   ),
   'y con la seña por transferencia, los cuatro datos de la cuenta viajan'
 );
@@ -860,7 +862,7 @@ select is(
 
 select is(
   public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'cobro',
-  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null),
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null, 'link', null),
   'y como el saldo es en efectivo, los datos de la cuenta no viajan aunque estén cargados'
 );
 
@@ -903,7 +905,7 @@ select is(
 
 select is(
   public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'cobro',
-  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null),
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null, 'link', null),
   'y la cuenta tampoco viaja: no queda nada que transferir'
 );
 
@@ -1047,6 +1049,112 @@ select is_empty(
   $ck$ select 1 from private.pagos_por_delante(100000000, 100000000, 5000) $ck$,
   'con todo pagado no falta ningún pago'
 );
+
+
+-- El link de cobro del taller (ADR 0054) --------------------------------------------------------------------------
+
+-- Este texto se convierte en un enlace y en un QR adentro de una página que abre un desconocido,
+-- así que el host lo cierra la base. Lo que el dueño pega tiene que ser de Mercado Pago o no entra.
+
+select throws_ok(
+  format(
+    $$ update public.ajustes set cobro_link = 'https://pagame-aca.com/taller' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  '23514',
+  null,
+  'un link que no es de Mercado Pago lo frena la base: el host es lista cerrada'
+);
+
+select throws_ok(
+  format(
+    $$ update public.ajustes set cobro_link = 'http://mpago.la/2vXyZ1' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  '23514',
+  null,
+  'y sin https tampoco: el cliente escribe un importe del otro lado'
+);
+
+select throws_ok(
+  format(
+    $$ update public.ajustes set cobro_link = %L where household_id = %L $$,
+    'https://mpago.la/' || repeat('x', 300),
+    tests.id('household_a')
+  ),
+  '23514',
+  null,
+  'ni uno más largo de trescientos caracteres'
+);
+
+select lives_ok(
+  format(
+    $$ update public.ajustes set cobro_link = 'https://mpago.la/2vXyZ1' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  'el link de cobro que sale de la app de Mercado Pago se guarda'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') -> 'cobro',
+  jsonb_build_object(
+    'alias', 'taller.maun.ok',
+    'cbu', '0110001312345678901233',
+    'titular', 'Ana Gutiérrez',
+    'cuit', '27-30123456-4',
+    'link', 'https://mpago.la/2vXyZ1'
+  ),
+  'con el pago por transferencia el link viaja igual que los cuatro datos de la cuenta'
+);
+
+-- La misma regla de siempre: lo que no se ofrece para el pago de ahora, no se manda. El link no es
+-- una excepción, y por eso es el quinto campo del mismo objeto y no uno suelto.
+update public.proyectos set cobro_sena = array['efectivo']::public.forma_de_cobro[]
+  where id = 'aaaaaaaa-0000-7000-8000-000000000041';
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') -> 'cobro',
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null, 'link', null),
+  'y con ese pago en efectivo el link tampoco viaja, aunque esté cargado'
+);
+
+update public.proyectos set cobro_sena = null
+  where id = 'aaaaaaaa-0000-7000-8000-000000000041';
+
+-- Tener link alcanza para que un trabajo sin configurar ofrezca las dos formas: es lo mismo que
+-- hace hayComoTransferir() de @maun/domain, que también mira los tres.
+update public.ajustes set cobro_alias = '', cobro_cbu = ''
+  where household_id = tests.id('household_a');
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') #> '{pago,formas}',
+  jsonb_build_array('transferencia', 'efectivo'),
+  'sin alias y sin CBU, tener link solo ya alcanza para que el valor por defecto siga siendo las dos formas'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') -> 'cobro',
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', 'Ana Gutiérrez', 'cuit', '27-30123456-4', 'link', 'https://mpago.la/2vXyZ1'),
+  'y lo único que viaja para pagar es el link'
+);
+
+select lives_ok(
+  format(
+    $$ update public.ajustes set cobro_link = '' where household_id = %L $$,
+    tests.id('household_a')
+  ),
+  'vaciarlo siempre se puede: es opcional como los otros cuatro'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') #>> '{cobro,link}',
+  null,
+  'y vacío viaja en null, no en cadena vacía'
+);
+
+update public.ajustes set cobro_alias = 'taller.maun.ok', cobro_cbu = '0110001312345678901233'
+  where household_id = tests.id('household_a');
+
 
 
 -- El rol anónimo no gana nada con esto ---------------------------------------------------------------------------

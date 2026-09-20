@@ -68,9 +68,11 @@ create table public.ajustes (
   cobro_cbu text not null default ''::text,
   cobro_titular text not null default ''::text,
   cobro_cuit text not null default ''::text,
+  cobro_link text not null default ''::text,
   constraint ajustes_cobro_alias_formato CHECK (cobro_alias = ''::text OR cobro_alias ~ '^[A-Za-z0-9.-]{6,20}$'::text),
   constraint ajustes_cobro_cbu_formato CHECK (cobro_cbu = ''::text OR cobro_cbu ~ '^[0-9]{22}$'::text),
   constraint ajustes_cobro_cuit_formato CHECK (cobro_cuit = ''::text OR cobro_cuit ~ '^[0-9]{2}-[0-9]{8}-[0-9]$'::text),
+  constraint ajustes_cobro_link_formato CHECK (cobro_link = ''::text OR char_length(cobro_link) <= 300 AND cobro_link ~ '^https://(www\.mercadopago\.com\.ar|mercadopago\.com\.ar|link\.mercadopago\.com\.ar|mpago\.la|mpago\.li)/[^[:space:]]*$'::text),
   constraint ajustes_cobro_titular_largo CHECK (char_length(cobro_titular) <= 200),
   constraint ajustes_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint ajustes_household_key UNIQUE (household_id),
@@ -92,6 +94,7 @@ comment on column public.ajustes.cobro_alias is 'El alias del taller para recibi
 comment on column public.ajustes.cobro_cbu is 'El CBU o el CVU del taller, 22 dígitos sin espacios ni guiones, o vacío. Se guarda limpio y se muestra agrupado. El check controla la forma; los dos dígitos verificadores los revisa el dominio, que es donde el dueño ve el aviso antes de guardar (ADR 0048).';
 comment on column public.ajustes.cobro_titular is 'A nombre de quién está la cuenta, o vacío. Está para que el cliente confirme contra lo que le muestra su banco antes de transferir.';
 comment on column public.ajustes.cobro_cuit is 'El CUIT del titular con guiones (NN-NNNNNNNN-N), o vacío. Mismo formato que public.clientes.cuit; el dígito verificador lo revisa la app.';
+comment on column public.ajustes.cobro_link is 'El link de Mercado Pago del taller para que el cliente le pague, o vacío. Lo pega el dueño: lo saca de su app, de Cobrar con QR o de Link de pago. La página del cliente lo muestra como código QR y como botón. No se deriva del alias ni del CVU porque no existe ningún link estándar que abra una billetera en «Transferir a este alias»: el QR interoperable del BCRA lo emite un PSP y es un QR de cobro. El check acota el host a Mercado Pago porque este texto se vuelve un enlace en una página pública. Cobrar por acá le cuesta comisión al taller; transferir al alias no (ADR 0051 y 0054).';
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
 create policy ajustes_edicion on public.ajustes as permissive
@@ -103,7 +106,7 @@ create policy ajustes_lectura on public.ajustes as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
-grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit) on public.ajustes to authenticated;
+grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit, cobro_link) on public.ajustes to authenticated;
 
 create table public.anotaciones (
   id uuid not null default private.uuidv7(),
@@ -3167,6 +3170,7 @@ declare
   v_ajustes public.ajustes;
   v_alias text;
   v_cbu text;
+  v_link text;
   v_hay_como_transferir boolean;
   v_pagado bigint;
   v_ahora record;
@@ -3195,7 +3199,8 @@ begin
 
   v_alias := nullif(v_ajustes.cobro_alias, '');
   v_cbu := nullif(v_ajustes.cobro_cbu, '');
-  v_hay_como_transferir := v_alias is not null or v_cbu is not null;
+  v_link := nullif(v_ajustes.cobro_link, '');
+  v_hay_como_transferir := v_alias is not null or v_cbu is not null or v_link is not null;
 
   select coalesce(sum(g.monto_centavos), 0) into v_pagado
   from public.pagos g
@@ -3263,13 +3268,15 @@ begin
       'monto_centavos', v_ahora.monto_centavos,
       'siguiente', v_siguiente
     ),
-    -- Cómo transferirle al taller, y solo si el pago que toca se puede pagar así. De ajustes no
-    -- viaja nada más: ni el sueldo, ni los costos fijos, ni la meta de Cocos, ni la seña.
+    -- Cómo pagarle al taller, y solo si el pago que toca se puede pagar así: los cuatro datos de
+    -- la cuenta para transferir y el link de Mercado Pago para pagar desde la misma página. De
+    -- ajustes no viaja nada más: ni el sueldo, ni los costos fijos, ni la meta de Cocos, ni la seña.
     'cobro', jsonb_build_object(
       'alias', case when v_por_transferencia then v_alias end,
       'cbu', case when v_por_transferencia then v_cbu end,
       'titular', case when v_por_transferencia then nullif(v_ajustes.cobro_titular, '') end,
-      'cuit', case when v_por_transferencia then nullif(v_ajustes.cobro_cuit, '') end
+      'cuit', case when v_por_transferencia then nullif(v_ajustes.cobro_cuit, '') end,
+      'link', case when v_por_transferencia then v_link end
     ),
     'fechas', jsonb_build_object(
       'presupuesto', (
@@ -3338,4 +3345,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cuatro campos de cobro, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048 y 0053).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053 y 0054).';
