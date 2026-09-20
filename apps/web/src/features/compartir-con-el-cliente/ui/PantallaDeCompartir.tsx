@@ -35,6 +35,7 @@ import {
   mensajeParaElCliente,
 } from '../model/compartir';
 import { ArchivosQueVeElCliente } from './ArchivosQueVeElCliente';
+import { ComoTePaga } from './ComoTePaga';
 
 export interface PantallaDeCompartirProps {
   resumen: ResumenDeProyecto;
@@ -361,6 +362,8 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
           </Hoja>
         )}
       </ConSalida>
+
+      <ComoTePaga resumen={resumen} />
 
       <ArchivosQueVeElCliente archivos={archivos} />
     </Pagina>

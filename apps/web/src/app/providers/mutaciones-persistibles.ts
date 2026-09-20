@@ -42,6 +42,7 @@ import {
 } from '@/entities/movimiento';
 import {
   CLAVE_DE_BAJA_DE_PROYECTO,
+  CLAVE_DE_FORMAS_DE_COBRO,
   CLAVE_DE_LIQUIDACION,
   CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
@@ -49,6 +50,7 @@ import {
   CLAVE_DE_REVERSION,
   CLAVE_DE_TAREAS,
   MUTACION_DE_BAJA_DE_PROYECTO,
+  MUTACION_DE_FORMAS_DE_COBRO,
   MUTACION_DE_LIQUIDACION,
   MUTACION_DE_MARCAS,
   MUTACION_DE_NOTAS,
@@ -107,6 +109,9 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_MARCAS, MUTACION_DE_MARCAS);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_FORMAS_DE_COBRO, MUTACION_DE_FORMAS_DE_COBRO);
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_PROYECTO, MUTACION_DE_BAJA_DE_PROYECTO);

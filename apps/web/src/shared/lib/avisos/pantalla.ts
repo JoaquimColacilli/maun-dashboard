@@ -151,6 +151,11 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Para darlo de baja hace falta señal.',
     error: 'No se dio de baja el enlace.',
   },
+  formasDeCobro: {
+    hecho: 'Listo: ya sabe cómo pagarte.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo cambiar cómo te paga.',
+  },
   archivoCompartido: {
     hecho: 'Listo: ya lo ve tu cliente.',
     enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',

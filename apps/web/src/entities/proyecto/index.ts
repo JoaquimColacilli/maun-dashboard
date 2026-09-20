@@ -16,6 +16,7 @@ export {
   aprobacionDeUnaOpcion,
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_COSTOS,
+  CLAVE_DE_FORMAS_DE_COBRO,
   CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
@@ -25,6 +26,7 @@ export {
   hijosDelProyecto,
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_COSTOS,
+  MUTACION_DE_FORMAS_DE_COBRO,
   MUTACION_DE_MARCAS,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
@@ -32,10 +34,23 @@ export {
   type BajaDeProyecto,
   type CostosDelTrabajo,
   type EdicionDeProyecto,
+  type FormasDeCobroDelTrabajo,
   type GuardadoDeProyecto,
   type MarcaDeLaAgenda,
   type MarcaDeTareas,
 } from './api/mutacion';
+export {
+  cambiaAlgunaForma,
+  cambioDeFormas,
+  cobroDelTaller,
+  COLUMNA_DE_LA_INSTANCIA,
+  elTallerRecibeTransferencias,
+  ETIQUETA_DE_LA_FORMA,
+  formasComoEstan,
+  formasDelTrabajo,
+  formasGuardadas,
+  NOMBRE_DE_LA_INSTANCIA,
+} from './model/cobro';
 export { cambiaAlgunaMarca, marcaDeImportante, marcaPuesta } from './model/marcas';
 export {
   cambiaAlgunCosto,
