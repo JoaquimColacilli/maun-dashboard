@@ -18,6 +18,7 @@ const CBU = '0110001312345678901233';
 const ALIAS = 'maun.muebles';
 const TITULAR = 'Ana Gutiérrez';
 const CUIT = '27-30123456-4';
+const LINK_DE_COBRO = 'https://mpago.la/2vXyZ1';
 
 const TITULO = 'Placard de tres puertas corredizas';
 
@@ -42,7 +43,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 test.afterEach(async () => {
-  await ajustarCobroDelTaller(sesion, { alias: '', cbu: '', titular: '', cuit: '' });
+  await ajustarCobroDelTaller(sesion, { alias: '', cbu: '', titular: '', cuit: '', link: '' });
 });
 
 // $900.000 de presupuesto, la seña de siempre es la mitad y todavía no cobró nada: le tocan
@@ -244,7 +245,7 @@ test('sin datos en Ajustes, por defecto solo efectivo y una línea que lleva a c
 
   await seccion.getByRole('link', { name: 'Cargalos en Ajustes' }).click();
   await expect(page).toHaveURL(/\/ajustes$/);
-  await expect(page.getByRole('region', { name: 'Cómo te transfieren' })).toContainText(
+  await expect(page.getByRole('region', { name: 'Cómo te pagan' })).toContainText(
     'no te cuesta comisión',
   );
 
@@ -346,6 +347,128 @@ test('sin conexión el código se dibuja igual: la dirección ya está en el apa
   await expect(hoja.getByRole('img', { name: /Código QR del enlace/ })).toBeVisible(CARGA);
 
   await context.setOffline(false);
+});
+
+test('con el link de Mercado Pago cargado, el cliente ve el código y el botón en vez de la cuenta', async ({
+  page,
+}, testInfo) => {
+  await ajustarCobroDelTaller(sesion, {
+    alias: ALIAS,
+    cbu: CBU,
+    titular: TITULAR,
+    cuit: CUIT,
+    link: LINK_DE_COBRO,
+  });
+
+  const token = tokenDePrueba();
+  await trabajoConEnlace(token);
+
+  const respuestas: string[] = [];
+  page.on('response', (respuesta) => {
+    if (respuesta.url().includes('vista_compartida')) {
+      void respuesta
+        .text()
+        .then((cuerpo) => respuestas.push(cuerpo))
+        .catch(() => undefined);
+    }
+  });
+
+  await page.goto(`/v/${token}`);
+  const bloque = page.getByRole('region', { name: 'Cómo pagar' });
+  await expect(bloque).toBeVisible(CARGA);
+
+  await expect(bloque).toContainText('Ahora, la seña');
+  await expect(bloque).toContainText('$ 450.000');
+  await expect(bloque.getByRole('img', { name: /Código QR para pagarle a/ })).toBeVisible(CARGA);
+
+  const boton = bloque.getByRole('link', { name: 'Pagar con Mercado Pago' });
+  await expect(boton).toHaveAttribute('href', LINK_DE_COBRO);
+  await expect(boton).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(boton).toHaveAttribute('target', '_blank');
+
+  await expect(bloque).not.toContainText(ALIAS);
+  await expect(bloque).not.toContainText('0110 0013 1234 5678 9012 33');
+  await expect(bloque.getByRole('button', { name: 'Copiar el alias' })).toHaveCount(0);
+  await expect(bloque.getByRole('button', { name: 'Copiar el monto' })).toBeVisible();
+  await expect(bloque).toContainText('Después, el saldo: $ 450.000');
+
+  console.log(`\n=== ${testInfo.project.name}: el bloque con el link de Mercado Pago ===`);
+  console.log(await bloque.ariaSnapshot());
+
+  await page.screenshot({
+    path: testInfo.outputPath(`vista-cliente-mercado-pago-${testInfo.project.name}.png`),
+    fullPage: true,
+  });
+
+  await expect.poll(() => respuestas.length, CARGA).toBeGreaterThan(0);
+  for (const cuerpo of respuestas) {
+    expect(cuerpo).toContain(LINK_DE_COBRO);
+  }
+});
+
+test('si ese pago es en efectivo, el link tampoco viaja', async ({ page }) => {
+  await ajustarCobroDelTaller(sesion, {
+    alias: ALIAS,
+    cbu: CBU,
+    titular: TITULAR,
+    cuit: CUIT,
+    link: LINK_DE_COBRO,
+  });
+
+  const token = tokenDePrueba();
+  const id = await trabajoConEnlace(token);
+
+  await page.goto(`/proyectos/${id}/compartir`);
+  await listoParaCortar(page);
+
+  const guardado = page.waitForResponse(
+    (respuesta) =>
+      respuesta.url().includes('/rest/v1/proyectos') && respuesta.request().method() === 'PATCH',
+  );
+  await elGrupo(page, 'La seña').getByRole('checkbox', { name: 'Transferencia' }).click();
+  await expect(
+    elGrupo(page, 'La seña').getByRole('checkbox', { name: 'Transferencia' }),
+  ).toHaveAttribute('aria-checked', 'false', CARGA);
+  await guardado;
+
+  const respuestas: string[] = [];
+  page.on('response', (respuesta) => {
+    if (respuesta.url().includes('vista_compartida')) {
+      void respuesta
+        .text()
+        .then((cuerpo) => respuestas.push(cuerpo))
+        .catch(() => undefined);
+    }
+  });
+
+  await page.goto(`/v/${token}`);
+  const bloque = page.getByRole('region', { name: 'Cómo pagar' });
+  await expect(bloque).toBeVisible(CARGA);
+  await expect(bloque).toContainText('La seña es en efectivo, en mano.');
+  await expect(bloque.getByRole('link', { name: 'Pagar con Mercado Pago' })).toHaveCount(0);
+
+  await expect.poll(() => respuestas.length, CARGA).toBeGreaterThan(0);
+  for (const cuerpo of respuestas) {
+    expect(cuerpo, 'el link de cobro viajó en la respuesta de la función pública').not.toContain(
+      LINK_DE_COBRO,
+    );
+    expect(cuerpo).not.toContain(ALIAS);
+  }
+});
+
+test('el dueño no puede guardar un link que no sea de Mercado Pago', async ({ page }) => {
+  await page.goto('/ajustes');
+  const campo = page.getByLabel('Link de Mercado Pago');
+  await expect(campo).toBeVisible(CARGA);
+
+  await campo.fill('https://pagame-aca.com/taller');
+  await page.getByRole('button', { name: 'Guardar los datos' }).click();
+  await expect(page.getByText(/Este link no es de Mercado Pago/)).toBeVisible(CARGA);
+
+  await campo.fill(LINK_DE_COBRO);
+  await expect(page.getByText(/te descuenta comisión de Mercado Pago/)).toBeVisible();
+  await page.getByRole('button', { name: 'Guardar los datos' }).click();
+  await expect(page.getByText('Guardado.')).toBeVisible(CARGA);
 });
 
 test.describe('en oscuro', () => {

@@ -1,9 +1,7 @@
-import { lazy, Suspense, useState } from 'react';
+import { useState } from 'react';
 
 import { copiar, usePantallaDespierta } from '@/shared/lib';
-import { Button, FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
-
-const DibujoDelQr = lazy(async () => import('./DibujoDelQr'));
+import { Button, FilaDeAcciones, Hoja, Icono, QrDeUnEnlace } from '@/shared/ui';
 
 export interface HojaDelQrProps {
   trabajo: string;
@@ -41,20 +39,7 @@ export function HojaDelQr({ trabajo, url, alCerrar }: HojaDelQrProps) {
         </div>
 
         <div className="rounded-panel border border-hairline bg-paper-fijo p-4">
-          <Suspense
-            fallback={
-              <div
-                aria-busy="true"
-                className="aspect-square w-full animate-maun-shimmer rounded-field bg-surface-2"
-              >
-                <span className="sr-only" role="status">
-                  Dibujando el código
-                </span>
-              </div>
-            }
-          >
-            <DibujoDelQr texto={url} etiqueta={`Código QR del enlace de ${trabajo}`} />
-          </Suspense>
+          <QrDeUnEnlace texto={url} etiqueta={`Código QR del enlace de ${trabajo}`} />
         </div>
 
         <p className="text-label leading-normal break-all text-text-2 select-text">{url}</p>

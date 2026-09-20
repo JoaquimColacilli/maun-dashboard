@@ -1,5 +1,6 @@
 import {
   centavos,
+  PASOS_CON_MERCADO_PAGO,
   PASOS_PARA_TRANSFERIR,
   PEDILE_LOS_DATOS,
   vistaDelCliente,
@@ -12,6 +13,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EL_PAGO_SE_COORDINA, LOS_PAGOS_LOS_ANOTA_EL_TALLER } from '../model/textos';
+import { PAGAR_CON_MERCADO_PAGO } from './ComoPagar';
 import { VistaDelCliente } from './VistaDelCliente';
 
 vi.mock('@/shared/api', () => ({
@@ -335,5 +337,59 @@ describe('los bordes del bloque', () => {
       expect(container.textContent).not.toMatch(/arregl/i);
       unmount();
     }
+  });
+});
+
+describe('con el link de Mercado Pago cargado', () => {
+  const LINK = 'https://mpago.la/2vXyZ1';
+  const CON_LINK: CobroDelTaller = { ...CON_TODO, link: LINK };
+
+  it('muestra el código y el botón, y deja de mostrar la cuenta', async () => {
+    dibujar(trabajo({ cobro: CON_LINK }, { formas: ['transferencia'], monto: 45_000_000 }));
+
+    const bloque = elBloqueSeguro();
+    expect(
+      await within(bloque).findByRole('img', { name: /Código QR para pagarle a/ }),
+    ).toBeInTheDocument();
+
+    const boton = within(bloque).getByRole('link', { name: PAGAR_CON_MERCADO_PAGO });
+    expect(boton).toHaveAttribute('href', LINK);
+    expect(boton).toHaveAttribute('rel', 'noopener noreferrer');
+
+    expect(bloque).not.toHaveTextContent('maun.muebles');
+    expect(bloque).not.toHaveTextContent('0110 0013 1234 5678 9012 33');
+    expect(within(bloque).queryByRole('button', { name: 'Copiar el alias' })).toBeNull();
+  });
+
+  it('el importe que tiene que escribir sigue arriba y se copia', () => {
+    dibujar(trabajo({ cobro: CON_LINK }, { formas: ['transferencia'], monto: 45_000_000 }));
+
+    const bloque = elBloqueSeguro();
+    expect(bloque).toHaveTextContent('$ 450.000');
+    expect(within(bloque).getByRole('button', { name: 'Copiar el monto' })).toBeInTheDocument();
+  });
+
+  it('los pasos dejan de hablar de copiar un alias', () => {
+    dibujar(trabajo({ cobro: CON_LINK }, { formas: ['transferencia'] }));
+
+    const bloque = elBloqueSeguro();
+    expect(bloque).toHaveTextContent(PASOS_CON_MERCADO_PAGO);
+    expect(bloque).not.toHaveTextContent(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('si ese pago es en efectivo no hay ni código ni botón ni link en la página', () => {
+    dibujar(trabajo({ cobro: CON_LINK }, { formas: ['efectivo'] }));
+
+    const bloque = elBloqueSeguro();
+    expect(within(bloque).queryByRole('link', { name: PAGAR_CON_MERCADO_PAGO })).toBeNull();
+    expect(document.body.innerHTML).not.toContain(LINK);
+  });
+
+  it('sin link se sigue mostrando la cuenta de siempre', () => {
+    dibujar(trabajo({ cobro: CON_TODO }, { formas: ['transferencia'] }));
+
+    const bloque = elBloqueSeguro();
+    expect(bloque).toHaveTextContent('maun.muebles');
+    expect(within(bloque).queryByRole('link', { name: PAGAR_CON_MERCADO_PAGO })).toBeNull();
   });
 });
