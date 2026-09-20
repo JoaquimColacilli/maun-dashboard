@@ -251,10 +251,18 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
 - **La página del cliente no tiene ningún código QR.** Hay un test que lo afirma: ni un `img` con
   nombre de código QR ni un `svg[role="img"]` en toda la página.
 - **Todo lo de cobros quedó en la columna derecha**, debajo de los datos del trabajo, por pedido
-  del dueño. En pantalla angosta no hay columnas, así que el bloque cae después de «Lo que
-  pagaste»: queda justo detrás del saldo, que es el orden que tiene sentido leyendo de arriba
-  abajo. La grilla lo coloca con `col-start` y `row-start` en vez de moverlo de lugar en el HTML,
-  para que el orden en pantalla angosta no dependa del de escritorio.
+  del dueño. Es el último bloque de esa columna, antes del pie. En pantalla angosta no hay
+  columnas, así que queda al final de la página: se pierde el lugar alto que tenía, y es el costo
+  de agruparlo como se pidió.
+- **El bloque es su propio contexto posicionado (`relative`), y tiene que serlo.** Los `sr-only`
+  de `DatoCopiable` son `position: absolute`. En la columna izquierda quedaban contenidos por el
+  `@container` —que aplica `contain: layout` y por eso es bloque contenedor de los absolutos—;
+  en la derecha no hay ninguno, así que se anclaban a `div#root`, que es `position: fixed`, y le
+  inflaban el `scrollHeight` a la altura de la página entera. El resultado era que la vista del
+  cliente abierta desde adentro de la app dejaba de llegar al final. Lo encontró
+  `e2e/con-sesion/vista-del-cliente-en-la-app.spec.ts`, que mide la cadena de scroll desde
+  `[data-fin-de-la-vista]` hacia arriba. La lección para el próximo bloque que se mueva de columna:
+  **un bloque con `sr-only` adentro no es portátil si no trae su propio `relative`.**
 - **El logo de Mercado Pago aparece solo cuando la cuenta es suya**, por el CVU o por el link, y
   nunca cuando el pago es en efectivo. Es un PNG de 19,5 kB que el dueño trajo; no hay una versión
   vectorial disponible, así que se sirve como imagen y se dibuja a 18 px de alto.
