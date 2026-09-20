@@ -58,3 +58,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0052](0052-el-enlace-se-guarda-entero.md)                                  | El enlace se guarda entero, no solo su huella                | Aceptada             |
 | [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página     | Aceptada             |
 | [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes   | Aceptada             |
+| [0055](0055-lo-que-se-guarda-en-el-aparato-y-lo-que-no.md)                  | Lo que se guarda en el aparato, y lo que no                  | Aceptada             |
