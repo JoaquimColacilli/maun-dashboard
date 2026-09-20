@@ -7,6 +7,8 @@ import {
   ESTADOS,
   esEstado,
   estaLiquidado,
+  formasDeCobro,
+  pagoQueToca,
   puedeCambiarEstado,
   puedeLiquidar,
   puedeRevertir,
@@ -20,6 +22,7 @@ import {
   type EntradaCascada,
   type EstadoLiquidado,
   type EstadoProyecto,
+  type FormaDeCobro,
   type Liquidacion,
   type LiquidacionRegistrada,
   type Reapertura,
@@ -223,6 +226,101 @@ export async function compararTopes(cliente: pg.Client): Promise<string[]> {
       topeFijos: Number(fila.tope_fijos_centavos),
     });
     return ts === sql ? [] : [`topes ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+type TuplaDelPago = [number | null, number, number];
+
+const PAGOS_QUE_TOCAN: TuplaDelPago[] = [
+  [null, 0, 5000],
+  [null, 12345, 5000],
+  [100_000_000, 0, 5000],
+  [100_000_000, 1, 5000],
+  [100_000_000, 49_999_999, 5000],
+  [100_000_000, 50_000_000, 5000],
+  [100_000_000, 50_000_001, 5000],
+  [100_000_000, 99_999_999, 5000],
+  [100_000_000, 100_000_000, 5000],
+  [100_000_000, 100_000_001, 5000],
+  [100_000_000, 0, 0],
+  [100_000_000, 0, 10000],
+  [100_000_000, 100_000_000, 10000],
+  [0, 0, 5000],
+  [1, 0, 5000],
+  [1, 1, 5000],
+  [3, 0, 3333],
+  [7, 0, 1],
+  [999, 0, 9999],
+  [123_456_789, 7_654_321, 4321],
+  [123_456_789, 61_728_395, 4321],
+];
+
+function pagoEnTs([precio, cobrado, bp]: TuplaDelPago): string {
+  const toca = pagoQueToca({
+    presupuesto: precio === null ? null : centavos(precio),
+    cobrado: centavos(cobrado),
+    porcentajeDelTaller: puntosBasicos(bp),
+    porcentajeDelTrabajo: null,
+  });
+  return JSON.stringify(toca === null ? { instancia: null, monto: null } : toca);
+}
+
+export async function compararPagoQueToca(cliente: pg.Client): Promise<string[]> {
+  const casos = PAGOS_QUE_TOCAN;
+  const { rows } = await cliente.query<{ instancia: string | null; monto_centavos: string | null }>(
+    `select r.*
+     from unnest($1::bigint[], $2::bigint[], $3::int[])
+       with ordinality as c (precio, cobrado, bp, orden)
+     cross join lateral private.pago_que_toca(c.precio, c.cobrado, c.bp) as r
+     order by c.orden`,
+    columnas(casos, 3),
+  );
+  if (rows.length !== casos.length) {
+    return [
+      `el pago que toca de SQL devolvió ${String(rows.length)} filas para ${String(casos.length)} casos`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const caso = casos[i] ?? [null, 0, 0];
+    const ts = pagoEnTs(caso);
+    const sql = JSON.stringify({
+      instancia: fila.instancia,
+      monto: fila.monto_centavos === null ? null : Number(fila.monto_centavos),
+    });
+    return ts === sql ? [] : [`pago que toca ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+const FORMAS_GUARDADAS: (readonly FormaDeCobro[] | null)[] = [
+  null,
+  ['transferencia'],
+  ['efectivo'],
+  ['transferencia', 'efectivo'],
+];
+
+export async function compararFormasDeCobro(cliente: pg.Client): Promise<string[]> {
+  const casos = FORMAS_GUARDADAS.flatMap((guardado) =>
+    [true, false].map((hay) => [guardado, hay] as const),
+  );
+  const { rows } = await cliente.query<{ formas: string[] }>(
+    `select private.formas_de_cobro(c.guardado::public.forma_de_cobro[], c.hay)::text[] as formas
+     from unnest($1::text[], $2::boolean[]) with ordinality as c (guardado, hay, orden)
+     order by c.orden`,
+    [
+      casos.map(([guardado]) => (guardado === null ? null : `{${guardado.join(',')}}`)),
+      casos.map(([, hay]) => hay),
+    ],
+  );
+  if (rows.length !== casos.length) {
+    return [
+      `las formas de cobro de SQL devolvieron ${String(rows.length)} filas para ${String(casos.length)} casos`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const caso = casos[i] ?? [null, true];
+    const ts = JSON.stringify(formasDeCobro(caso[0], caso[1]));
+    const sql = JSON.stringify(fila.formas);
+    return ts === sql ? [] : [`formas de cobro ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
   });
 }
 
@@ -1535,6 +1633,8 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
   return [
     ...(await compararCascada(cliente)),
     ...(await compararTopes(cliente)),
+    ...(await compararPagoQueToca(cliente)),
+    ...(await compararFormasDeCobro(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),
     ...(await compararTransiciones(cliente)),

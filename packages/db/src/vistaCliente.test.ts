@@ -19,6 +19,11 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       entregado: null,
       cobro: null,
     },
+    pago: {
+      instancia: 'sena',
+      formas: ['transferencia', 'efectivo'],
+      monto_centavos: 22_000_000,
+    },
     cobro: {
       alias: 'maun.muebles',
       cbu: '0110001312345678901233',
@@ -58,6 +63,11 @@ describe('leer la vista del cliente', () => {
         entregaPautada: '2026-10-02',
         entregado: null,
         cobro: null,
+      },
+      pago: {
+        instancia: 'sena',
+        formas: ['transferencia', 'efectivo'],
+        monto: 22_000_000,
       },
       cobro: {
         alias: 'maun.muebles',
@@ -141,6 +151,56 @@ describe('leer la vista del cliente', () => {
     ]) {
       expect(() => leerVistaDelCliente(rota)).toThrow(RespuestaInvalidaError);
     }
+  });
+});
+
+describe('el pago que toca', () => {
+  it('lee la instancia, las formas y el importe', () => {
+    expect(leerVistaDelCliente(respuesta()).pago).toEqual({
+      instancia: 'sena',
+      formas: ['transferencia', 'efectivo'],
+      monto: 22_000_000,
+    });
+  });
+
+  it('sin instancia no hay nada que pagar', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ pago: { instancia: null, formas: [], monto_centavos: null } }),
+    );
+    expect(leido.pago).toEqual({ instancia: null, formas: [], monto: null });
+  });
+
+  it('una respuesta vieja, sin la clave, no rompe la vista', () => {
+    expect(leerVistaDelCliente(respuesta({ pago: undefined })).pago).toEqual({
+      instancia: null,
+      formas: [],
+      monto: null,
+    });
+  });
+
+  it('una forma que esta versión no conoce se ignora en vez de romper la página del cliente', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({
+        pago: { instancia: 'saldo', formas: ['efectivo', 'cripto'], monto_centavos: 1 },
+      }),
+    );
+    expect(leido.pago.formas).toEqual(['efectivo']);
+  });
+
+  it('una instancia que no existe no se cree', () => {
+    expect(() =>
+      leerVistaDelCliente(
+        respuesta({ pago: { instancia: 'visita', formas: [], monto_centavos: null } }),
+      ),
+    ).toThrow(RespuestaInvalidaError);
+  });
+
+  it('ni un importe que no es un número', () => {
+    expect(() =>
+      leerVistaDelCliente(
+        respuesta({ pago: { instancia: 'sena', formas: [], monto_centavos: '100' } }),
+      ),
+    ).toThrow(RespuestaInvalidaError);
   });
 });
 

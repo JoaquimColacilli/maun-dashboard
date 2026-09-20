@@ -1,9 +1,13 @@
+import { FORMAS_DE_COBRO, INSTANCIAS_DE_PAGO } from '@maun/domain';
 import type {
   CobroDelTaller,
   ArchivoDelCliente,
   EstadoProyecto,
   FechasDelTrabajo,
+  FormaDeCobro,
+  InstanciaDePago,
   PagoDelCliente,
+  PagoPendiente,
   TrabajoDelCliente,
 } from '@maun/domain';
 
@@ -94,6 +98,27 @@ function cobro(valor: unknown): CobroDelTaller {
   };
 }
 
+function esForma(valor: unknown): valor is FormaDeCobro {
+  return FORMAS_DE_COBRO.some((forma) => forma === valor);
+}
+
+function pagoPendiente(valor: unknown): PagoPendiente {
+  if (valor === null || valor === undefined) {
+    return { instancia: null, formas: [], monto: null };
+  }
+  const crudo = objeto(valor, 'el pago que toca');
+  const instancia = textoONada(crudo.instancia, 'la instancia del pago');
+  if (instancia !== null && !INSTANCIAS_DE_PAGO.some((una) => una === instancia)) {
+    throw new RespuestaInvalidaError(`La vista del cliente devolvió un pago desconocido.`);
+  }
+  const monto = numeroONada(crudo.monto_centavos, 'el importe del pago que toca');
+  return {
+    instancia: instancia as InstanciaDePago | null,
+    formas: lista(crudo.formas, 'las formas de pago').filter(esForma),
+    monto: monto === null ? null : dinero(monto),
+  };
+}
+
 function fechas(valor: unknown): FechasDelTrabajo {
   const crudas = objeto(valor, 'las fechas');
   return {
@@ -119,6 +144,7 @@ export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
       return precio === null ? null : dinero(precio);
     })(),
     fechas: fechas(cuerpo.fechas),
+    pago: pagoPendiente(cuerpo.pago),
     cobro: cobro(cuerpo.cobro),
     pagos: pagos(cuerpo.pagos),
     archivos: archivos(cuerpo.archivos),

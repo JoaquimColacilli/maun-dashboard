@@ -1,6 +1,7 @@
 import type { EstadoProyecto } from './estados.ts';
 import { diasEntre } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
+import { montoParaPegar, ofrece, type FormaDeCobro, type InstanciaDePago } from './pagos.ts';
 
 export type HitoDelTrabajo = 'presupuesto' | 'aprobado' | 'fabricacion' | 'entregado' | 'pagado';
 
@@ -42,6 +43,12 @@ export interface CobroDelTaller {
   cuit: string | null;
 }
 
+export interface PagoPendiente {
+  instancia: InstanciaDePago | null;
+  formas: readonly FormaDeCobro[];
+  monto: Money | null;
+}
+
 export interface TrabajoDelCliente {
   taller: string;
   cliente: string;
@@ -50,6 +57,7 @@ export interface TrabajoDelCliente {
   estado: EstadoProyecto;
   precio: Money | null;
   fechas: FechasDelTrabajo;
+  pago: PagoPendiente;
   cobro: CobroDelTaller;
   pagos: readonly PagoDelCliente[];
   archivos: readonly ArchivoDelCliente[];
@@ -57,6 +65,67 @@ export interface TrabajoDelCliente {
 
 export function hayComoTransferir(cobro: CobroDelTaller): boolean {
   return cobro.alias !== null || cobro.cbu !== null;
+}
+
+export interface ComoPagar {
+  instancia: InstanciaDePago;
+  monto: Money | null;
+  montoParaPegar: string | null;
+  transferencia: boolean;
+  efectivo: boolean;
+  faltanLosDatos: boolean;
+  titulo: string;
+  etiquetaDelImporte: string;
+  pasos: string;
+  enEfectivo: string;
+}
+
+const TITULO: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'Para dejar la seña',
+  saldo: 'Para pagar el saldo',
+};
+
+const ETIQUETA_DEL_IMPORTE: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'Seña a transferir',
+  saldo: 'Saldo a transferir',
+};
+
+export const PASOS_PARA_TRANSFERIR =
+  'Copiá el alias, pegalo en Transferir en la app de tu banco o de tu billetera, escribí el monto y confirmá.';
+
+export const PEDILE_LOS_DATOS =
+  'Para transferir, pedile los datos de la cuenta al taller: todavía no los cargó.';
+
+const SOLO_EFECTIVO: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'La seña es en efectivo, en mano. Lo coordinás con el taller.',
+  saldo: 'El saldo es en efectivo, en mano. Lo coordinás con el taller.',
+};
+
+const TAMBIEN_EFECTIVO: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'La seña también la podés dejar en efectivo, en mano, coordinándolo con el taller.',
+  saldo: 'El saldo también lo podés pagar en efectivo, en mano, coordinándolo con el taller.',
+};
+
+export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
+  const { instancia, formas, monto } = trabajo.pago;
+  if (instancia === null) return null;
+
+  const pideTransferencia = ofrece(formas, 'transferencia');
+  const transferencia = pideTransferencia && hayComoTransferir(trabajo.cobro);
+  const efectivo = ofrece(formas, 'efectivo');
+
+  return {
+    instancia,
+    monto,
+    montoParaPegar: monto === null ? null : montoParaPegar(monto),
+    transferencia,
+    efectivo,
+    faltanLosDatos: pideTransferencia && !transferencia,
+    titulo: TITULO[instancia],
+    etiquetaDelImporte: ETIQUETA_DEL_IMPORTE[instancia],
+    pasos: PASOS_PARA_TRANSFERIR,
+    enEfectivo: transferencia ? TAMBIEN_EFECTIVO[instancia] : SOLO_EFECTIVO[instancia],
+  };
 }
 
 export interface HitoDeLaVista {

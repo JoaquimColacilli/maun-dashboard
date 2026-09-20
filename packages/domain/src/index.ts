@@ -102,11 +102,30 @@ export {
 } from './sena.ts';
 
 export {
+  conLaForma,
+  formasDeCobro,
+  FORMAS_DE_COBRO,
+  instanciasPendientes,
+  INSTANCIAS_DE_PAGO,
+  montoParaPegar,
+  ofrece,
+  pagoQueToca,
+  unaSolaForma,
+  type FormaDeCobro,
+  type InstanciaDePago,
+  type PagoQueToca,
+} from './pagos.ts';
+
+export {
+  comoPagar,
   hayComoTransferir,
   HITOS,
+  PASOS_PARA_TRANSFERIR,
+  PEDILE_LOS_DATOS,
   vistaDelCliente,
   type ArchivoDelCliente,
   type CobroDelTaller,
+  type ComoPagar,
   type EstadoDelHito,
   type EventoDelCliente,
   type FechasDelTrabajo,
@@ -114,6 +133,7 @@ export {
   type HitoDelTrabajo,
   type HitoDeLaVista,
   type PagoDelCliente,
+  type PagoPendiente,
   type TrabajoDelCliente,
   type VistaDelCliente,
 } from './vistaCliente.ts';

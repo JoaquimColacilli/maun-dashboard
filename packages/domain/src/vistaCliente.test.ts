@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { centavos, type Money } from './money.ts';
 import {
+  comoPagar,
   HITOS,
+  PASOS_PARA_TRANSFERIR,
   vistaDelCliente,
   hayComoTransferir,
   type PagoDelCliente,
@@ -35,6 +37,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
+    pago: { instancia: null, formas: [], monto: null },
     cobro: { alias: null, cbu: null, titular: null, cuit: null },
     pagos: [],
     archivos: [],
@@ -431,5 +434,102 @@ describe('si hay cómo transferirle al taller', () => {
       }),
     ).toBe(false);
     expect(hayComoTransferir({ alias: null, cbu: null, titular: null, cuit: null })).toBe(false);
+  });
+});
+
+describe('cómo puede pagar el cliente lo que le toca', () => {
+  const CUENTA = {
+    alias: 'maun.muebles',
+    cbu: '0110001312345678901233',
+    titular: 'Ana Gutiérrez',
+    cuit: null,
+  };
+
+  it('con todo pagado no hay nada que ofrecer', () => {
+    expect(comoPagar(trabajo())).toBeNull();
+  });
+
+  it('por transferencia arma el importe listo para pegar en el banco', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(150_000_000),
+        },
+      }),
+    );
+    expect(como).toMatchObject({
+      instancia: 'sena',
+      transferencia: true,
+      efectivo: false,
+      faltanLosDatos: false,
+      montoParaPegar: '1500000',
+      etiquetaDelImporte: 'Seña a transferir',
+    });
+    expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('en efectivo lo dice sin decir «también»: no hay otra forma', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: { instancia: 'saldo', formas: ['efectivo'], monto: centavos(44_000_000) },
+      }),
+    );
+    expect(como).toMatchObject({ transferencia: false, efectivo: true });
+    expect(como?.enEfectivo).toBe('El saldo es en efectivo, en mano. Lo coordinás con el taller.');
+  });
+
+  it('con las dos, la línea del efectivo es la segunda opción', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'saldo',
+          formas: ['transferencia', 'efectivo'],
+          monto: centavos(44_000_000),
+        },
+      }),
+    );
+    expect(como).toMatchObject({ transferencia: true, efectivo: true });
+    expect(como?.enEfectivo).toContain('también');
+  });
+
+  it('si pide transferencia y el taller no cargó la cuenta, lo dice en vez de mostrar un bloque vacío', () => {
+    const como = comoPagar(
+      trabajo({
+        pago: { instancia: 'sena', formas: ['transferencia'], monto: centavos(100) },
+      }),
+    );
+    expect(como).toMatchObject({ transferencia: false, efectivo: false, faltanLosDatos: true });
+  });
+
+  it('sin importe todavía, no hay nada que copiar', () => {
+    const como = comoPagar(
+      trabajo({
+        precio: null,
+        cobro: CUENTA,
+        pago: { instancia: 'sena', formas: ['transferencia', 'efectivo'], monto: null },
+      }),
+    );
+    expect(como?.monto).toBeNull();
+    expect(como?.montoParaPegar).toBeNull();
+  });
+
+  it('ningún texto del cliente dice «arreglar»: acá se lee como reparar', () => {
+    for (const instancia of ['sena', 'saldo'] as const) {
+      for (const formas of [
+        ['transferencia'],
+        ['efectivo'],
+        ['transferencia', 'efectivo'],
+      ] as const) {
+        const como = comoPagar(
+          trabajo({ cobro: CUENTA, pago: { instancia, formas, monto: centavos(1_000) } }),
+        );
+        expect(JSON.stringify(como)).not.toMatch(/arregl/i);
+      }
+    }
   });
 });
