@@ -5,6 +5,12 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-20.2',
+    lineas: [
+      'Arreglamos «Cómo lo ve tu cliente»: después de la última actualización, en los aparatos que ya venían usando la app esa pantalla se cortaba con un error.',
+    ],
+  },
+  {
     version: '2026-09-20',
     lineas: [
       'En cada trabajo elegís cómo te paga la seña y cómo el saldo: por transferencia, en efectivo o de las dos formas.',

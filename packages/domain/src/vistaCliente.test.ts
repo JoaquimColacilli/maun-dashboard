@@ -711,3 +711,26 @@ describe('el link de Mercado Pago del taller', () => {
     expect(como?.link).toBe('https://mpago.la/2vXyZ1');
   });
 });
+
+describe('un trabajo guardado por una versión vieja de la app', () => {
+  it('no rompe: sin «pago» no hay nada que cobrar, y la página se dibuja igual', () => {
+    const { pago: _pago, ...viejo } = trabajo();
+    const comoLoGuardoLaVersionVieja = viejo as unknown as TrabajoDelCliente;
+
+    expect(() => comoPagar(comoLoGuardoLaVersionVieja)).not.toThrow();
+    expect(comoPagar(comoLoGuardoLaVersionVieja)).toBeNull();
+    expect(() => vistaDelCliente(comoLoGuardoLaVersionVieja, HOY)).not.toThrow();
+  });
+
+  it('tampoco rompe si le falta la cuenta para transferir', () => {
+    const { cobro: _cobro, ...viejo } = trabajo({
+      pago: {
+        instancia: 'sena',
+        formas: ['transferencia'],
+        monto: centavos(1_000),
+        siguiente: null,
+      },
+    });
+    expect(comoPagar(viejo as unknown as TrabajoDelCliente)).toBeNull();
+  });
+});

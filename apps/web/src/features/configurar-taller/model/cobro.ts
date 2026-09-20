@@ -32,13 +32,16 @@ export interface ErrorDeCobro {
 
 export const LARGO_DEL_TITULAR = 200;
 
-export function cobroDeLosAjustes(ajustes: FilaDe<'ajustes'>): DatosDeCobro {
+export type AjustesGuardados = Omit<FilaDe<'ajustes'>, 'cobro_link'> &
+  Partial<Pick<FilaDe<'ajustes'>, 'cobro_link'>>;
+
+export function cobroDeLosAjustes(ajustes: AjustesGuardados): DatosDeCobro {
   return {
     alias: ajustes.cobro_alias,
     cbu: formatearCbu(ajustes.cobro_cbu),
     titular: ajustes.cobro_titular,
     cuit: ajustes.cobro_cuit,
-    link: ajustes.cobro_link,
+    link: ajustes.cobro_link ?? '',
   };
 }
 
