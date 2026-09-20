@@ -173,6 +173,7 @@ Los scripts y los tests se conectan con `pg` al pooler (`supabase/.temp/pooler-u
 ## Convenciones de SQL
 
 - Plata en `bigint` con sufijo `_centavos`. Nada de `numeric` ni `float` para importes.
+- **El cuerpo de una función se guarda tal cual en la base, finales de línea incluidos.** Una migración escrita con CRLF deja CRLF adentro de `pg_proc.prosrc` y después `tests/esquema.test.ts` falla con un diff que a la vista es idéntico. Los archivos de `supabase/migrations/` van con LF (ADR 0053).
 - `comment on table` y `comment on column` para todo lo que no sea obvio: es metadata real de la base.
 - Un `check` que evalúa a null pasa. Si la condición puede dar null, envolvela en `coalesce(..., false)`.
 - Los cuerpos de función van entre `$$`, no con `begin atomic`: el runner busca `begin`, `commit` y `rollback` sueltos, y el `end` de un `begin atomic` lo confundiría.

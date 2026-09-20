@@ -251,6 +251,12 @@ no se le pisa una decisión anterior.
 - **El teléfono del dueño sigue sincronizando con la app vieja.** Las columnas nuevas viajan en
   `to_jsonb(t)` y `leerLote` solo exige id, version y `deleted_at`: un bundle viejo las ignora. La
   clave `pago` de la vista pública también, porque el lector tolera que falte.
+- **El cuerpo de una función es texto literal en la base, con sus finales de línea.** La primera
+  migración quedó guardada con CRLF y Postgres se lo guardó adentro de `pg_proc.prosrc`, así que
+  `supabase/esquema.sql` decía LF y la base decía CRLF: `tests/esquema.test.ts` fallaba en cada
+  clon, con un diff que a la vista es idéntico. Lo arregla una tercera migración que vuelve a crear
+  la función, sin cambiarle una letra, desde un archivo con LF. Vale para cualquier migración que
+  se escriba desde Windows.
 - **Un enlace sin dirección de este lado no tiene QR.** Es la misma limitación que el 0052 dejó para
   los enlaces creados antes, y desaparece con ellos.
 
