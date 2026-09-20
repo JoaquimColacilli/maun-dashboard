@@ -118,7 +118,7 @@ async function trabajoConEnlace(token: string, escenario: Escenario): Promise<st
 }
 
 function elBloque(page: Page) {
-  return page.getByRole('region', { name: 'Cómo transferir' });
+  return page.getByRole('region', { name: 'Cómo pagar' });
 }
 
 test('el cliente ve los datos para transferir, con su botón para copiar cada uno', async ({
@@ -213,17 +213,20 @@ test('si fallan los dos caminos, no dice «Copiado»: deja el dato marcado y lo 
   });
 });
 
-test('sin datos cargados no hay bloque, y el saldo se coordina con el taller', async ({ page }) => {
+test('sin datos cargados en Ajustes, el pago pasa a ser en efectivo y no hay ni un dato de cuenta', async ({
+  page,
+}) => {
   const token = tokenDePrueba();
   await trabajoConEnlace(token, { estado: 'en_curso', presupuesto: 90_000_000 });
 
   await page.goto(`/v/${token}`);
   await expect(page.getByRole('region', { name: 'Tu mueble' })).toBeVisible(CARGA);
 
-  await expect(elBloque(page)).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'Lo que pagaste' })).toContainText(
-    'El saldo lo arreglás directamente con el taller',
-  );
+  const bloque = elBloque(page);
+  await expect(bloque).toBeVisible();
+  await expect(bloque).toContainText('en efectivo, en mano');
+  await expect(bloque.getByRole('button', { name: 'Copiar el alias' })).toHaveCount(0);
+  await expect(bloque.getByRole('button', { name: 'Copiar el CBU' })).toHaveCount(0);
 });
 
 test('el bloque aparece antes de aprobar y desaparece cuando está todo pagado', async ({
@@ -249,6 +252,37 @@ test('el bloque aparece antes de aprobar y desaparece cuando está todo pagado',
   await expect(page.getByRole('region', { name: 'Lo que pagaste' })).toContainText(
     'Gracias. No queda nada pendiente.',
   );
+});
+
+test('el cliente ve cuánto es el pago que le toca, lo copia listo para pegar, y cuál viene después', async ({
+  page,
+}, testInfo) => {
+  await ajustarCobroDelTaller(sesion, { alias: ALIAS, cbu: CBU, titular: TITULAR, cuit: CUIT });
+  const token = tokenDePrueba();
+  // $900.000 de presupuesto, la seña de siempre es la mitad y todavía no pagó nada: le tocan
+  // $450.000 ahora y le van a quedar $450.000 de saldo.
+  await trabajoConEnlace(token, { estado: 'en_curso', presupuesto: 90_000_000 });
+
+  await page.goto(`/v/${token}`);
+  const bloque = elBloque(page);
+  await expect(bloque).toBeVisible(CARGA);
+
+  await expect(bloque).toContainText('Ahora, la seña');
+  await expect(bloque).toContainText('$ 450.000');
+  await expect(bloque).toContainText('Después, el saldo: $ 450.000');
+
+  // El total que le falta sigue arriba, con su propia etiqueta.
+  await expect(page.getByRole('region', { name: 'Tu mueble' })).toContainText('Te falta pagar');
+  await expect(page.getByRole('region', { name: 'Tu mueble' })).toContainText('$ 900.000');
+
+  // El monto se copia pelado: sin signo pesos y sin puntos de miles.
+  await bloque.getByRole('button', { name: 'Copiar el monto' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('450000');
+
+  await page.screenshot({
+    path: testInfo.outputPath(`cuanto-es-cada-pago-${testInfo.project.name}.png`),
+    fullPage: true,
+  });
 });
 
 test('la página del cliente no le dice nunca cuánto hace que no pasa nada', async ({ page }) => {
@@ -298,6 +332,7 @@ test('la página del cliente no le dice nunca cuánto hace que no pasa nada', as
     expect(texto).not.toContain('no hay novedades');
     expect(texto).not.toContain('Esta página no cobra nada');
     expect(texto).not.toContain('ustedes lo arreglen');
+    expect(texto, `«${nombre}» le dice al cliente que «arregle» algo`).not.toMatch(/arregl/i);
     expect(texto).not.toContain('Cuando el mueble esté armado');
     console.log(`«${nombre}»: sección de pagos\n${await seccionDePagos(page)}\n`);
   }
@@ -323,7 +358,7 @@ test('los datos para transferir se recorren con el teclado y se copian con Enter
   );
 
   const recorrido: string[] = [];
-  for (let paso = 0; paso < 4; paso += 1) {
+  for (let paso = 0; paso < 5; paso += 1) {
     await page.keyboard.press('Tab');
     const foco = await page.evaluate(() => {
       const activo = document.activeElement;
@@ -336,6 +371,7 @@ test('los datos para transferir se recorren con el teclado y se copian con Enter
   console.log(`\n=== ${testInfo.project.name}: recorrido con Tab ===\n${recorrido.join('\n')}`);
 
   expect(recorrido).toEqual([
+    'button: Copiar el monto',
     'button: Copiar el alias',
     'button: Copiar el CBU',
     'button: Copiar el titular',

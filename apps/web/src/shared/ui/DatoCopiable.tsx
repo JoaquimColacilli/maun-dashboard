@@ -9,6 +9,7 @@ export interface DatoCopiableProps {
   valor: string;
   paraCopiar?: string;
   nombre: string;
+  destacado?: boolean;
 }
 
 const MUESTRA_MS = 4_000;
@@ -20,7 +21,13 @@ const DICHO: Readonly<Record<Exclude<ComoQuedo, 'nada'>, string>> = {
 
 const NO_SE_PUDO = 'No se pudo copiar. Marcalo con el dedo y copialo desde el menú del teléfono.';
 
-export function DatoCopiable({ etiqueta, valor, paraCopiar, nombre }: DatoCopiableProps) {
+export function DatoCopiable({
+  etiqueta,
+  valor,
+  paraCopiar,
+  nombre,
+  destacado = false,
+}: DatoCopiableProps) {
   const [comoQuedo, setComoQuedo] = useState<ComoQuedo | null>(null);
   const [anuncio, setAnuncio] = useState('');
   const elValor = useRef<HTMLSpanElement>(null);
@@ -49,7 +56,9 @@ export function DatoCopiable({ etiqueta, valor, paraCopiar, nombre }: DatoCopiab
         <span className="block text-label text-text-2">{etiqueta}</span>
         <span
           ref={elValor}
-          className="block text-body font-semibold break-all tabular-nums select-text"
+          className={`block font-semibold break-all tabular-nums select-text ${
+            destacado ? 'text-money-lg leading-tight' : 'text-body'
+          }`}
         >
           {valor}
         </span>

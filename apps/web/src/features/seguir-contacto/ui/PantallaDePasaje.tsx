@@ -10,6 +10,7 @@ import {
   comprobanteDeLaCondicion,
   FORMA_DE_PAGO,
   FORMAS_EN_ORDEN,
+  formasDelTrabajo,
   MUTACION_DE_PROYECTO,
   opcionAprobada,
   rutaDeEdicion,
@@ -28,6 +29,7 @@ import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 import {
   errorDelPasaje,
+  formaSugerida,
   guardadoDelPasaje,
   presupuestoDelPasaje,
   resumenDelPasaje,
@@ -55,7 +57,9 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const [falta, setFalta] = useState<string | undefined>(undefined);
   const primeraOpcion = useRef<HTMLInputElement>(null);
   const campoDelPresupuesto = useRef<HTMLInputElement>(null);
-  const [forma, setForma] = useState<FormaDePago>(proyecto.forma_pago ?? 'transferencia');
+  const [forma, setForma] = useState<FormaDePago>(() =>
+    formaSugerida(proyecto.forma_pago, formasDelTrabajo(proyecto, 'sena', ajustesDe(replica))),
+  );
   const [inicio, setInicio] = useState(proyecto.fecha_inicio ?? hoy);
   const [entrega, setEntrega] = useState(
     () => proyecto.entrega_estimada ?? entregaEstimada(proyecto.fecha_inicio ?? hoy),

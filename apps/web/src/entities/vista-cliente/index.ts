@@ -10,9 +10,9 @@ export {
 } from './api/consulta';
 export { AyudaDeLaVista, type AyudaDeLaVistaProps } from './ui/AyudaDeLaVista';
 export { CaminoDeHitos, type CaminoDeHitosProps } from './ui/CaminoDeHitos';
-export { ComoTransferir, type ComoTransferirProps } from './ui/ComoTransferir';
+export { ComoPagar, type ComoPagarProps } from './ui/ComoPagar';
 export {
-  EL_SALDO_SE_COORDINA,
+  EL_PAGO_SE_COORDINA,
   LOS_PAGOS_LOS_ANOTA_EL_TALLER,
   NO_QUEDA_NADA,
   pieDeLosPagos,

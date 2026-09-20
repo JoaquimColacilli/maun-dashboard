@@ -251,8 +251,12 @@ export function AjustesPage() {
                 Cómo te transfieren
               </h2>
               <p className="text-body leading-relaxed text-text-2">
-                Se cargan una vez y aparecen en la página que le compartís a cada cliente, al lado
-                de lo que falta pagar. Todos son opcionales: lo que dejes vacío, no se muestra.
+                Es la cuenta a la que te transfiere tu cliente. Se cargan una vez y aparecen en la
+                página que le compartís, al lado de lo que tiene que pagarte, con un botón para
+                copiar cada uno. El titular y el CUIT le sirven para confirmar que es la cuenta
+                correcta: su banco le muestra a nombre de quién está antes de confirmar. Recibir una
+                transferencia no te cuesta comisión. Todos son opcionales: lo que dejes vacío, no se
+                muestra.
               </p>
               <FormularioDeCobro ajustes={ajustes} />
             </section>

@@ -9,6 +9,7 @@ import {
   presupuestoDelPasaje,
   resumenDelPasaje,
   senaDelPasaje,
+  formaSugerida,
   senaSugerida,
   type ValoresDelPasaje,
 } from './pasaje';
@@ -279,5 +280,21 @@ describe('la seña que se carga al aprobar', () => {
 
     expect(pedido.pagos).toEqual([{ id: PAGO, fecha: HOY, concepto: 'Seña', monto_centavos: 500 }]);
     expect(pedido.datos.fecha_inicio).toBeNull();
+  });
+});
+
+describe('con qué forma de pago arranca la seña al aprobar', () => {
+  it('con una sola forma configurada, arranca en esa', () => {
+    expect(formaSugerida(null, ['efectivo'])).toBe('efectivo');
+    expect(formaSugerida(null, ['transferencia'])).toBe('transferencia');
+  });
+
+  it('con las dos, la elige él: arranca como hasta ahora', () => {
+    expect(formaSugerida(null, ['transferencia', 'efectivo'])).toBe('transferencia');
+  });
+
+  it('lo que el trabajo ya tenía guardado manda: no se lo pisa', () => {
+    expect(formaSugerida('cuotas', ['efectivo'])).toBe('cuotas');
+    expect(formaSugerida('mixto', ['transferencia'])).toBe('mixto');
   });
 });

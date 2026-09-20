@@ -1,8 +1,4 @@
-import {
-  hayComoTransferir,
-  type ArchivoDelCliente,
-  type VistaDelCliente as Vista,
-} from '@maun/domain';
+import { comoPagar, type ArchivoDelCliente, type VistaDelCliente as Vista } from '@maun/domain';
 
 import { urlDelArchivo } from '@/shared/api';
 import { fechaLarga, formatearPesos } from '@/shared/lib';
@@ -10,7 +6,7 @@ import { Icono, Pagina } from '@/shared/ui';
 
 import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
-import { ComoTransferir } from './ComoTransferir';
+import { ComoPagar } from './ComoPagar';
 
 export interface VistaDelClienteProps {
   vista: Vista;
@@ -90,9 +86,10 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
   const visuales = trabajo.archivos.filter(esImagen);
   const documentos = trabajo.archivos.filter((archivo) => !esImagen(archivo));
 
-  const hayDatosParaTransferir = hayComoTransferir(trabajo.cobro);
+  const como = comoPagar(trabajo);
+  const hayComoPagar = como !== null && (como.transferencia || como.efectivo);
   const textoSinPagos = sinPagosTodavia(vista);
-  const textoDelPie = pieDeLosPagos(vista, hayDatosParaTransferir);
+  const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
 
   return (
     <Pagina>
@@ -162,9 +159,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             )}
           </section>
 
-          {hayComoTransferir(trabajo.cobro) && !vista.saldado && (
-            <ComoTransferir cobro={trabajo.cobro} />
-          )}
+          <ComoPagar trabajo={trabajo} />
 
           <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>

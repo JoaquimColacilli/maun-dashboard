@@ -13,7 +13,7 @@ import {
 import { rutaDelProyecto, type ResumenDeProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { AyudaDeLaVista } from '@/entities/vista-cliente';
-import { filasDe, householdDe, mensajeDeSincronizacion } from '@/shared/api';
+import { ajustesDe, filasDe, householdDe, mensajeDeSincronizacion } from '@/shared/api';
 import {
   fechaLarga,
   hashDelToken,
@@ -28,6 +28,7 @@ import {
 } from '@/shared/lib';
 import { Button, ConSalida, FilaDeAcciones, Hoja, Icono, Pagina } from '@/shared/ui';
 
+import { filasDeCobro } from '../model/comoTePaga';
 import {
   comoSeVeElEnlace,
   comoSeVeEnWhatsapp,
@@ -73,6 +74,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   const household = householdDe(replica);
   const archivos = archivosDelProyecto(replica, proyecto.id);
   const vistos = loQueVeElCliente(archivos);
+  const hayPagoPendiente = filasDeCobro(resumen, ajustesDe(replica)).length > 0;
   const trabajando = generar.isPending || darDeBaja.isPending;
 
   const aRellenar = vista.como === 'activo' ? vista.aRellenar : null;
@@ -254,7 +256,12 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                 <a
                   href={enlaceDeWhatsapp(
                     cliente?.telefono ?? '',
-                    mensajeParaElCliente(resumen.nombreDelCliente, proyecto.titulo, vista.url),
+                    mensajeParaElCliente(
+                      resumen.nombreDelCliente,
+                      proyecto.titulo,
+                      vista.url,
+                      hayPagoPendiente,
+                    ),
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
