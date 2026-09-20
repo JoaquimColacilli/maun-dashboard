@@ -131,3 +131,10 @@ export function revisarLinkDeCobro(texto: string): RevisionDelLink {
   if (!LINK_DE_MERCADO_PAGO.test(link)) return { estado: 'invalido', motivo: 'otro-sitio' };
   return { estado: 'valido' };
 }
+
+export const PREFIJO_DE_MERCADO_PAGO = '0000003';
+
+export function esCuentaDeMercadoPago(clave: string): boolean {
+  const digitos = digitosDeCbu(clave);
+  return digitos.length === LARGO_DE_CBU && digitos.startsWith(PREFIJO_DE_MERCADO_PAGO);
+}

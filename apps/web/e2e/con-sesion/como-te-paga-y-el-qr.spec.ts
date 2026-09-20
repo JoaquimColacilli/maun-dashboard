@@ -19,6 +19,7 @@ const ALIAS = 'maun.muebles';
 const TITULAR = 'Ana Gutiérrez';
 const CUIT = '27-30123456-4';
 const LINK_DE_COBRO = 'https://mpago.la/2vXyZ1';
+const CVU_DE_MERCADO_PAGO = '0000003100012345678907';
 
 const TITULO = 'Placard de tres puertas corredizas';
 
@@ -349,12 +350,12 @@ test('sin conexión el código se dibuja igual: la dirección ya está en el apa
   await context.setOffline(false);
 });
 
-test('con el link de Mercado Pago cargado, el cliente ve el código y el botón en vez de la cuenta', async ({
+test('con el link cargado, el cliente ve el alias primero y el botón después, y ningún QR', async ({
   page,
 }, testInfo) => {
   await ajustarCobroDelTaller(sesion, {
     alias: ALIAS,
-    cbu: CBU,
+    cbu: CVU_DE_MERCADO_PAGO,
     titular: TITULAR,
     cuit: CUIT,
     link: LINK_DE_COBRO,
@@ -379,20 +380,26 @@ test('con el link de Mercado Pago cargado, el cliente ve el código y el botón 
 
   await expect(bloque).toContainText('Ahora, la seña');
   await expect(bloque).toContainText('$ 450.000');
-  await expect(bloque.getByRole('img', { name: /Código QR para pagarle a/ })).toBeVisible(CARGA);
+
+  await expect(bloque).toContainText(ALIAS);
+  await expect(bloque.getByRole('button', { name: 'Copiar el alias' })).toBeVisible();
+  await expect(bloque.getByRole('button', { name: 'Copiar el monto' })).toBeVisible();
 
   const boton = bloque.getByRole('link', { name: 'Pagar con Mercado Pago' });
   await expect(boton).toHaveAttribute('href', LINK_DE_COBRO);
   await expect(boton).toHaveAttribute('rel', 'noopener noreferrer');
   await expect(boton).toHaveAttribute('target', '_blank');
 
-  await expect(bloque).not.toContainText(ALIAS);
-  await expect(bloque).not.toContainText('0110 0013 1234 5678 9012 33');
-  await expect(bloque.getByRole('button', { name: 'Copiar el alias' })).toHaveCount(0);
-  await expect(bloque.getByRole('button', { name: 'Copiar el monto' })).toBeVisible();
+  // El alias es la forma que no le cuesta comisión al taller: va antes que el botón.
+  const texto = (await bloque.textContent()) ?? '';
+  expect(texto.indexOf(ALIAS)).toBeLessThan(texto.indexOf('Pagar con Mercado Pago'));
+
+  // Ningún código QR en la página del cliente: el de «Compartir con el cliente» es otra pantalla.
+  await expect(page.getByRole('img', { name: /Código QR/ })).toHaveCount(0);
+  await expect(page.locator('svg[role="img"]')).toHaveCount(0);
+
   await expect(bloque).toContainText('Después, el saldo: $ 450.000');
   await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
-  await expect(bloque).toContainText('El escáner de la app de Mercado Pago no lo toma');
 
   console.log(`\n=== ${testInfo.project.name}: el bloque con el link de Mercado Pago ===`);
   console.log(await bloque.ariaSnapshot());
@@ -469,9 +476,54 @@ test('el dueño no puede guardar un link que no sea de Mercado Pago', async ({ p
   await expect(page.getByText(/Este link no es de Mercado Pago/)).toBeVisible(CARGA);
 
   await campo.fill(LINK_DE_COBRO);
-  await expect(page.getByText(/te descuenta comisión de Mercado Pago/)).toBeVisible();
   await page.getByRole('button', { name: 'Guardar los datos' }).click();
   await expect(page.getByText('Guardado.')).toBeVisible(CARGA);
+});
+
+test('ajustes avisa siempre que ese cobro tiene comisión, y enlaza a los costos oficiales', async ({
+  page,
+}) => {
+  await page.goto('/ajustes');
+  const seccion = page.getByRole('region', { name: 'Cómo te pagan' });
+  await expect(seccion).toBeVisible(CARGA);
+
+  await expect(seccion).toContainText('es un cobro de Mercado Pago y te descuenta comisión');
+  await expect(seccion).toContainText('Que te transfieran al alias no te cuesta nada');
+
+  const costos = seccion.getByRole('link', { name: 'Ver los costos en Mercado Pago' });
+  await expect(costos).toHaveAttribute(
+    'href',
+    'https://www.mercadopago.com.ar/herramientas-para-vender/link-de-pago',
+  );
+  await expect(costos).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+test('el logo de Mercado Pago sale con un CVU suyo y no con un CBU de banco', async ({ page }) => {
+  const token = tokenDePrueba();
+  await trabajoConEnlace(token);
+
+  await ajustarCobroDelTaller(sesion, {
+    alias: ALIAS,
+    cbu: CBU,
+    titular: TITULAR,
+    cuit: CUIT,
+  });
+  await page.goto(`/v/${token}`);
+  const bloque = page.getByRole('region', { name: 'Cómo pagar' });
+  await expect(bloque).toBeVisible(CARGA);
+  await expect(bloque).toContainText('0110 0013 1234 5678 9012 33');
+  await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
+
+  await ajustarCobroDelTaller(sesion, {
+    alias: ALIAS,
+    cbu: CVU_DE_MERCADO_PAGO,
+    titular: TITULAR,
+    cuit: CUIT,
+  });
+  await page.goto(`/v/${token}`);
+  await expect(bloque).toBeVisible(CARGA);
+  await expect(bloque).toContainText('CVU');
+  await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
 });
 
 test.describe('en oscuro', () => {
@@ -514,10 +566,29 @@ test.describe('en oscuro', () => {
     });
     await page.keyboard.press('Escape');
 
+    const bloque = page.getByRole('region', { name: 'Cómo pagar' });
+
     await page.goto(`/v/${token}`);
-    await expect(page.getByRole('region', { name: 'Cómo pagar' })).toBeVisible(CARGA);
+    await expect(bloque).toBeVisible(CARGA);
+    await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
     await page.screenshot({
-      path: testInfo.outputPath(`oscuro-vista-cliente-${testInfo.project.name}.png`),
+      path: testInfo.outputPath(`oscuro-vista-cliente-banco-${testInfo.project.name}.png`),
+      fullPage: true,
+    });
+
+    await ajustarCobroDelTaller(sesion, {
+      alias: ALIAS,
+      cbu: CVU_DE_MERCADO_PAGO,
+      titular: TITULAR,
+      cuit: CUIT,
+      link: LINK_DE_COBRO,
+    });
+    await page.goto(`/v/${token}`);
+    await expect(bloque).toBeVisible(CARGA);
+    await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Código QR/ })).toHaveCount(0);
+    await page.screenshot({
+      path: testInfo.outputPath(`oscuro-vista-cliente-mercado-pago-${testInfo.project.name}.png`),
       fullPage: true,
     });
   });

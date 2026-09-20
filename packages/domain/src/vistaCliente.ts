@@ -1,3 +1,4 @@
+import { esCuentaDeMercadoPago } from './cobro.ts';
 import type { EstadoProyecto } from './estados.ts';
 import { diasEntre } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
@@ -88,6 +89,7 @@ export interface ComoPagar {
   montoParaPegar: string | null;
   transferencia: boolean;
   link: string | null;
+  mercadoPago: boolean;
   efectivo: boolean;
   faltanLosDatos: boolean;
   titulo: string;
@@ -127,11 +129,8 @@ function elQueSigue(pago: PagoOfrecido | null): PagoQueSigue | null {
   };
 }
 
-export const PASOS_CON_MERCADO_PAGO =
-  'Tocá el botón, o escaneá el código con la cámara del celular. Se abre Mercado Pago: escribí el monto de arriba y confirmá.';
-
-export const CON_LA_CAMARA =
-  'El código se lee con la cámara del celular. El escáner de la app de Mercado Pago no lo toma, porque es un enlace y no un código de cobro.';
+export const O_POR_MERCADO_PAGO =
+  'O pagá desde Mercado Pago, sin copiar nada: tocá el botón, escribí el monto de arriba y confirmá.';
 
 export const PASOS_PARA_TRANSFERIR =
   'Copiá el alias, pegalo en Transferir en la app de tu banco o de tu billetera, escribí el monto y confirmá.';
@@ -157,6 +156,7 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
   const transferencia = pideTransferencia && hayComoTransferir(trabajo.cobro);
   const efectivo = ofrece(formas, 'efectivo');
   const link = transferencia ? trabajo.cobro.link : null;
+  const cuenta = transferencia ? trabajo.cobro.cbu : null;
 
   return {
     instancia,
@@ -164,11 +164,12 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
     montoParaPegar: monto === null ? null : montoParaPegar(monto),
     transferencia,
     link,
+    mercadoPago: link !== null || (cuenta !== null && esCuentaDeMercadoPago(cuenta)),
     efectivo,
     faltanLosDatos: pideTransferencia && !transferencia,
     titulo: TITULO,
     etiquetaDelImporte: ETIQUETA_DEL_IMPORTE[instancia],
-    pasos: link === null ? PASOS_PARA_TRANSFERIR : PASOS_CON_MERCADO_PAGO,
+    pasos: PASOS_PARA_TRANSFERIR,
     enEfectivo: transferencia ? TAMBIEN_EFECTIVO[instancia] : SOLO_EFECTIVO[instancia],
     siguiente: elQueSigue(trabajo.pago.siguiente),
   };

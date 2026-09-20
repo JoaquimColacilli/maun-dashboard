@@ -5,7 +5,6 @@ import type { FormaDeCobro } from './pagos.ts';
 import {
   comoPagar,
   HITOS,
-  PASOS_CON_MERCADO_PAGO,
   PASOS_PARA_TRANSFERIR,
   vistaDelCliente,
   hayComoTransferir,
@@ -663,17 +662,39 @@ describe('el link de Mercado Pago del taller', () => {
     );
   }
 
-  it('lo devuelve y cambia los pasos: ya no se copia un alias, se escanea', () => {
+  it('lo devuelve sin tocar los pasos: el alias sigue siendo la forma sin comisión', () => {
     const como = conCobro(CON_LINK, ['transferencia']);
     expect(como?.link).toBe('https://mpago.la/2vXyZ1');
-    expect(como?.pasos).toBe(PASOS_CON_MERCADO_PAGO);
-    expect(como?.pasos).not.toBe(PASOS_PARA_TRANSFERIR);
+    expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
   });
 
-  it('sin link los pasos siguen siendo los de copiar el alias', () => {
+  it('sin link los pasos son los mismos', () => {
     const como = conCobro({ ...CON_LINK, link: null }, ['transferencia']);
     expect(como?.link).toBeNull();
     expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('con link, la cuenta es de Mercado Pago aunque el CBU sea de un banco', () => {
+    expect(conCobro(CON_LINK, ['transferencia'])?.mercadoPago).toBe(true);
+  });
+
+  it('sin link y con un CBU de banco, no', () => {
+    expect(conCobro({ ...CON_LINK, link: null }, ['transferencia'])?.mercadoPago).toBe(false);
+  });
+
+  it('sin link pero con un CVU de Mercado Pago, sí', () => {
+    const cobro = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
+    expect(conCobro(cobro, ['transferencia'])?.mercadoPago).toBe(true);
+  });
+
+  it('en efectivo no hay cuenta que mirar, así que tampoco es de Mercado Pago', () => {
+    const cobro = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
+    expect(conCobro(cobro, ['efectivo'])?.mercadoPago).toBe(false);
+  });
+
+  it('sin ningún dato cargado, tampoco', () => {
+    const vacio = { alias: null, cbu: null, titular: null, cuit: null, link: null };
+    expect(conCobro(vacio, ['transferencia'])?.mercadoPago).toBe(false);
   });
 
   it('no viaja si ese pago es en efectivo, igual que la cuenta', () => {

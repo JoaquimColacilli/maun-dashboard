@@ -4,6 +4,7 @@ import {
   claveBancariaDe,
   digitosDeCbu,
   esClaveVirtual,
+  esCuentaDeMercadoPago,
   esLinkDeMercadoPago,
   formatearCbu,
   HOSTS_DE_MERCADO_PAGO,
@@ -13,6 +14,7 @@ import {
   LARGO_MINIMO_DE_ALIAS,
   normalizarAlias,
   normalizarLinkDeCobro,
+  PREFIJO_DE_MERCADO_PAGO,
   revisarAlias,
   revisarCbu,
   revisarLinkDeCobro,
@@ -233,5 +235,28 @@ describe('el link de cobro del taller', () => {
     expect(esLinkDeMercadoPago(`https://mpago.la/${'x'.repeat(LARGO_MAXIMO_DEL_LINK)}`)).toBe(
       false,
     );
+  });
+});
+
+describe('reconocer una cuenta de Mercado Pago', () => {
+  it('el CVU de Mercado Pago arranca con el código de su PSP', () => {
+    expect(PREFIJO_DE_MERCADO_PAGO).toBe('0000003');
+    expect(esCuentaDeMercadoPago('0000003100012345678907')).toBe(true);
+    expect(esCuentaDeMercadoPago('0000 0031 0004 3479 1811 31')).toBe(true);
+  });
+
+  it('otra billetera no es Mercado Pago, aunque también sea un CVU', () => {
+    expect(esCuentaDeMercadoPago('0000058100043479181131')).toBe(false);
+    expect(esCuentaDeMercadoPago('0000168100043479181131')).toBe(false);
+    expect(esClaveVirtual('0000058100043479181131')).toBe(true);
+  });
+
+  it('un CBU de banco tampoco', () => {
+    expect(esCuentaDeMercadoPago('0110001312345678901233')).toBe(false);
+  });
+
+  it('algo que no tiene los 22 dígitos no es ninguna cuenta', () => {
+    expect(esCuentaDeMercadoPago('')).toBe(false);
+    expect(esCuentaDeMercadoPago('0000003')).toBe(false);
   });
 });

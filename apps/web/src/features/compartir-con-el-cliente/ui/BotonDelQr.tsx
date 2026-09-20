@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { enlaceActivo } from '@/entities/enlace';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filasDe } from '@/shared/api';
-import { ConSalida, Icono, precargarElQr } from '@/shared/ui';
+import { ConSalida, Icono } from '@/shared/ui';
 
 import { comoSeVeElEnlace } from '../model/compartir';
 import { HojaDelQr } from './HojaDelQr';
@@ -21,7 +21,7 @@ export function BotonDelQr({ proyectoId, trabajo, className = '' }: BotonDelQrPr
   const [abierto, setAbierto] = useState(false);
 
   useEffect(() => {
-    precargarElQr();
+    void import('./DibujoDelQr').catch(() => undefined);
   }, []);
 
   const activo = enlaceActivo(replica, proyectoId);
