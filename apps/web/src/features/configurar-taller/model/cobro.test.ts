@@ -185,3 +185,16 @@ describe('el link de Mercado Pago', () => {
     expect(problema?.campo).toBe('cbu');
   });
 });
+
+describe('una fila de ajustes guardada por una versión vieja', () => {
+  it('sin la columna del link se lee vacía, y guardar no rompe', () => {
+    const { cobro_link: _link, ...vieja } = ajustes();
+    const comoLaGuardoLaVersionVieja = vieja as unknown as FilaDe<'ajustes'>;
+
+    const cargados = cobroDeLosAjustes(comoLaGuardoLaVersionVieja);
+    expect(cargados.link).toBe('');
+    expect(() => cambiosDeCobro(cargados)).not.toThrow();
+    expect(cambiosDeCobro(cargados).cobro_link).toBe('');
+    expect(errorDeCobro(cargados)).toBeNull();
+  });
+});
