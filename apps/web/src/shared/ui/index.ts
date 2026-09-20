@@ -11,6 +11,7 @@ export {
 export { EnConstruccion } from './EnConstruccion';
 export { EstadoDeGuardado, type EstadoDeGuardadoProps } from './EstadoDeGuardado';
 export { ConSalida, Hoja, type ConSalidaProps, type HojaProps } from './Hoja';
+export { LogoDeMercadoPago, type LogoDeMercadoPagoProps } from './LogoDeMercadoPago';
 export { MailEnviado, type MailEnviadoProps } from './MailEnviado';
 export { PanelDeAvisos, type PanelDeAvisosProps } from './PanelDeAvisos';
 export { PanelDePaso, type PanelDePasoProps, type TonoDelPaso } from './PanelDePaso';

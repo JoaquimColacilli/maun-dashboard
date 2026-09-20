@@ -101,6 +101,18 @@ describe('el mensaje para el cliente', () => {
     expect(mensajeParaElCliente('  ', 'Mesada', 'https://m/v/t')).toContain('Hola, acá podés ver');
   });
 
+  it('con un pago pendiente, también le dice que ahí ve cómo pagarlo', () => {
+    expect(mensajeParaElCliente('Marcela', 'Placard', 'https://m/v/t', true)).toBe(
+      'Hola Marcela, acá podés ver cómo va y cómo pagarlo tu placard: https://m/v/t',
+    );
+  });
+
+  it('con todo pagado, el mensaje es el de siempre', () => {
+    expect(mensajeParaElCliente('Marcela', 'Placard', 'https://m/v/t', false)).toBe(
+      'Hola Marcela, acá podés ver cómo va tu placard: https://m/v/t',
+    );
+  });
+
   it('con teléfono abre el chat de esa persona, y sin teléfono deja elegir a quién', () => {
     expect(enlaceDeWhatsapp('+54 9 11 4088-2210', 'hola')).toBe(
       'https://wa.me/5491140882210?text=hola',

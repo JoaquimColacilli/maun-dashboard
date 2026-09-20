@@ -21,6 +21,15 @@ import {
   type ErrorDeCobro,
 } from '../model/cobro';
 
+export const AYUDA_DEL_LINK =
+  'Opcional. En tu app de Mercado Pago: Cobrar, Link de pago, Link sin monto definido. Copialo y pegalo acá. Tu cliente lo ve como un botón para pagarte.';
+
+export const LA_COMISION =
+  'Lo que entre por este enlace es un cobro de Mercado Pago y te descuenta comisión, aunque tu cliente pague con dinero de su propia cuenta: en Buenos Aires, 6,60 % más IVA si querés la plata al instante y 1,56 % más IVA esperando 35 días. Que te transfieran al alias no te cuesta nada.';
+
+export const COSTOS_DE_MERCADO_PAGO =
+  'https://www.mercadopago.com.ar/herramientas-para-vender/link-de-pago';
+
 export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
   const [datos, setDatos] = useState<DatosDeCobro>(() => cobroDeLosAjustes(ajustes));
   const [error, setError] = useState<ErrorDeCobro | undefined>(undefined);
@@ -103,6 +112,30 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
           cambiar('cuit', formatearCuit(evento.target.value));
         }}
       />
+      <Campo
+        etiqueta="Link de Mercado Pago"
+        inputMode="url"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        ayuda={AYUDA_DEL_LINK}
+        value={datos.link}
+        error={error?.campo === 'link' ? error.mensaje : undefined}
+        onChange={(evento) => {
+          cambiar('link', evento.target.value);
+        }}
+      />
+      <p className="-mt-1.5 text-label leading-normal text-atencion">
+        {LA_COMISION}{' '}
+        <a
+          href={COSTOS_DE_MERCADO_PAGO}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold underline underline-offset-3"
+        >
+          Ver los costos en Mercado Pago
+        </a>
+      </p>
 
       {guardar.isError && (
         <p role="alert" className="text-label font-medium text-alerta">

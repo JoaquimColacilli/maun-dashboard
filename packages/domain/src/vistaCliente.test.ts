@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { centavos, type Money } from './money.ts';
+import type { FormaDeCobro } from './pagos.ts';
 import {
+  comoPagar,
   HITOS,
+  PASOS_PARA_TRANSFERIR,
   vistaDelCliente,
   hayComoTransferir,
+  type CobroDelTaller,
   type PagoDelCliente,
   type TrabajoDelCliente,
 } from './vistaCliente.ts';
@@ -35,7 +39,8 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
-    cobro: { alias: null, cbu: null, titular: null, cuit: null },
+    pago: { instancia: null, formas: [], monto: null, siguiente: null },
+    cobro: { alias: null, cbu: null, titular: null, cuit: null, link: null },
     pagos: [],
     archivos: [],
     ...cambios,
@@ -408,15 +413,22 @@ describe('los importes son centavos enteros con marca', () => {
 
 describe('si hay cómo transferirle al taller', () => {
   it('alcanza con el alias o con el CBU: eso es lo que el cliente pega en su banco', () => {
-    expect(hayComoTransferir({ alias: 'maun.muebles', cbu: null, titular: null, cuit: null })).toBe(
-      true,
-    );
+    expect(
+      hayComoTransferir({
+        alias: 'maun.muebles',
+        cbu: null,
+        titular: null,
+        cuit: null,
+        link: null,
+      }),
+    ).toBe(true);
     expect(
       hayComoTransferir({
         alias: null,
         cbu: '0110001312345678901233',
         titular: null,
         cuit: null,
+        link: null,
       }),
     ).toBe(true);
   });
@@ -428,8 +440,274 @@ describe('si hay cómo transferirle al taller', () => {
         cbu: null,
         titular: 'Ana Gutiérrez',
         cuit: '27-30123456-4',
+        link: null,
       }),
     ).toBe(false);
-    expect(hayComoTransferir({ alias: null, cbu: null, titular: null, cuit: null })).toBe(false);
+    expect(
+      hayComoTransferir({ alias: null, cbu: null, titular: null, cuit: null, link: null }),
+    ).toBe(false);
+  });
+});
+
+describe('cómo puede pagar el cliente lo que le toca', () => {
+  const CUENTA = {
+    alias: 'maun.muebles',
+    cbu: '0110001312345678901233',
+    titular: 'Ana Gutiérrez',
+    cuit: null,
+    link: null,
+  };
+
+  it('con todo pagado no hay nada que ofrecer', () => {
+    expect(comoPagar(trabajo())).toBeNull();
+  });
+
+  it('por transferencia arma el importe listo para pegar en el banco', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(150_000_000),
+          siguiente: null,
+        },
+      }),
+    );
+    expect(como).toMatchObject({
+      instancia: 'sena',
+      transferencia: true,
+      efectivo: false,
+      faltanLosDatos: false,
+      montoParaPegar: '1500000',
+      etiquetaDelImporte: 'Ahora, la seña',
+    });
+    expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('en efectivo lo dice sin decir «también»: no hay otra forma', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'saldo',
+          formas: ['efectivo'],
+          monto: centavos(44_000_000),
+          siguiente: null,
+        },
+      }),
+    );
+    expect(como).toMatchObject({ transferencia: false, efectivo: true });
+    expect(como?.enEfectivo).toBe('El saldo es en efectivo, en mano. Lo coordinás con el taller.');
+  });
+
+  it('con las dos, la línea del efectivo es la segunda opción', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'saldo',
+          formas: ['transferencia', 'efectivo'],
+          monto: centavos(44_000_000),
+          siguiente: null,
+        },
+      }),
+    );
+    expect(como).toMatchObject({ transferencia: true, efectivo: true });
+    expect(como?.enEfectivo).toContain('también');
+  });
+
+  it('si pide transferencia y el taller no cargó la cuenta, lo dice en vez de mostrar un bloque vacío', () => {
+    const como = comoPagar(
+      trabajo({
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(100),
+          siguiente: null,
+        },
+      }),
+    );
+    expect(como).toMatchObject({ transferencia: false, efectivo: false, faltanLosDatos: true });
+  });
+
+  it('sin importe todavía, no hay nada que copiar', () => {
+    const como = comoPagar(
+      trabajo({
+        precio: null,
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia', 'efectivo'],
+          monto: null,
+          siguiente: null,
+        },
+      }),
+    );
+    expect(como?.monto).toBeNull();
+    expect(como?.montoParaPegar).toBeNull();
+  });
+
+  it('cuando hay otro pago después, lo nombra con su importe y con cómo se paga', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(50_000_000),
+          siguiente: {
+            instancia: 'saldo',
+            formas: ['efectivo'],
+            monto: centavos(80_000_000),
+          },
+        },
+      }),
+    );
+
+    expect(como?.siguiente).toEqual({
+      instancia: 'saldo',
+      monto: centavos(80_000_000),
+      nombre: 'el saldo',
+      comoSePaga: 'en efectivo',
+    });
+  });
+
+  it('el «cómo se paga» del que sigue nombra las dos formas cuando las hay', () => {
+    const conLasDos = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(1),
+          siguiente: { instancia: 'saldo', formas: ['transferencia', 'efectivo'], monto: null },
+        },
+      }),
+    );
+    expect(conLasDos?.siguiente?.comoSePaga).toBe('por transferencia o en efectivo');
+
+    const soloTransferencia = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['efectivo'],
+          monto: centavos(1),
+          siguiente: { instancia: 'saldo', formas: ['transferencia'], monto: centavos(2) },
+        },
+      }),
+    );
+    expect(soloTransferencia?.siguiente?.comoSePaga).toBe('por transferencia');
+  });
+
+  it('sin otro pago después, no hay nada que anticipar', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'saldo',
+          formas: ['efectivo'],
+          monto: centavos(1),
+          siguiente: null,
+        },
+      }),
+    );
+
+    expect(como?.siguiente).toBeNull();
+  });
+
+  it('ningún texto del cliente dice «arreglar»: acá se lee como reparar', () => {
+    for (const instancia of ['sena', 'saldo'] as const) {
+      for (const formas of [
+        ['transferencia'],
+        ['efectivo'],
+        ['transferencia', 'efectivo'],
+      ] as const) {
+        const como = comoPagar(
+          trabajo({
+            cobro: CUENTA,
+            pago: { instancia, formas, monto: centavos(1_000), siguiente: null },
+          }),
+        );
+        expect(JSON.stringify(como)).not.toMatch(/arregl/i);
+      }
+    }
+  });
+});
+
+describe('el link de Mercado Pago del taller', () => {
+  const CON_LINK: CobroDelTaller = {
+    alias: 'maun.muebles',
+    cbu: '0110001312345678901233',
+    titular: 'Ana Gutiérrez',
+    cuit: null,
+    link: 'https://mpago.la/2vXyZ1',
+  };
+
+  const SOLO_EL_LINK: CobroDelTaller = {
+    alias: null,
+    cbu: null,
+    titular: null,
+    cuit: null,
+    link: 'https://mpago.la/2vXyZ1',
+  };
+
+  function conCobro(cobro: CobroDelTaller, formas: readonly FormaDeCobro[]) {
+    return comoPagar(
+      trabajo({
+        cobro,
+        pago: { instancia: 'sena', formas, monto: centavos(45_000_000), siguiente: null },
+      }),
+    );
+  }
+
+  it('lo devuelve sin tocar los pasos: el alias sigue siendo la forma sin comisión', () => {
+    const como = conCobro(CON_LINK, ['transferencia']);
+    expect(como?.link).toBe('https://mpago.la/2vXyZ1');
+    expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('sin link los pasos son los mismos', () => {
+    const como = conCobro({ ...CON_LINK, link: null }, ['transferencia']);
+    expect(como?.link).toBeNull();
+    expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
+  });
+
+  it('con link, la cuenta es de Mercado Pago aunque el CBU sea de un banco', () => {
+    expect(conCobro(CON_LINK, ['transferencia'])?.mercadoPago).toBe(true);
+  });
+
+  it('sin link y con un CBU de banco, no', () => {
+    expect(conCobro({ ...CON_LINK, link: null }, ['transferencia'])?.mercadoPago).toBe(false);
+  });
+
+  it('sin link pero con un CVU de Mercado Pago, sí', () => {
+    const cobro = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
+    expect(conCobro(cobro, ['transferencia'])?.mercadoPago).toBe(true);
+  });
+
+  it('en efectivo no hay cuenta que mirar, así que tampoco es de Mercado Pago', () => {
+    const cobro = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
+    expect(conCobro(cobro, ['efectivo'])?.mercadoPago).toBe(false);
+  });
+
+  it('sin ningún dato cargado, tampoco', () => {
+    const vacio = { alias: null, cbu: null, titular: null, cuit: null, link: null };
+    expect(conCobro(vacio, ['transferencia'])?.mercadoPago).toBe(false);
+  });
+
+  it('no viaja si ese pago es en efectivo, igual que la cuenta', () => {
+    const como = conCobro(CON_LINK, ['efectivo']);
+    expect(como?.link).toBeNull();
+    expect(como?.transferencia).toBe(false);
+  });
+
+  it('tener solo el link ya alcanza para poder cobrar sin efectivo', () => {
+    expect(hayComoTransferir(SOLO_EL_LINK)).toBe(true);
+    const como = conCobro(SOLO_EL_LINK, ['transferencia']);
+    expect(como?.transferencia).toBe(true);
+    expect(como?.faltanLosDatos).toBe(false);
+    expect(como?.link).toBe('https://mpago.la/2vXyZ1');
   });
 });

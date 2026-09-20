@@ -8,8 +8,7 @@ export const SIN_PAGOS_APROBADO =
 export const LOS_PAGOS_LOS_ANOTA_EL_TALLER =
   'Los pagos aparecen acá cuando el taller los anota, no en el momento en que transferís.';
 
-export const EL_SALDO_SE_COORDINA =
-  'El saldo lo arreglás directamente con el taller: escribile para acordar cómo y cuándo.';
+export const EL_PAGO_SE_COORDINA = 'Para pagar, escribile al taller y lo coordinan entre ustedes.';
 
 export const NO_QUEDA_NADA = 'Gracias. No queda nada pendiente.';
 
@@ -18,8 +17,10 @@ export function sinPagosTodavia(vista: VistaDelCliente): string {
   return vista.hitoIndex >= APROBADO ? SIN_PAGOS_APROBADO : '';
 }
 
-export function pieDeLosPagos(vista: VistaDelCliente, hayDatosParaTransferir: boolean): string {
+// El pie solo manda a hablar con el taller cuando arriba no quedó ninguna forma concreta de pagar:
+// con el bloque de cómo pagar a la vista, repetirlo sería decirle que coordine algo que ya sabe.
+export function pieDeLosPagos(vista: VistaDelCliente, hayComoPagar: boolean): string {
   if (vista.saldado) return NO_QUEDA_NADA;
-  if (hayDatosParaTransferir) return LOS_PAGOS_LOS_ANOTA_EL_TALLER;
-  return `${EL_SALDO_SE_COORDINA} ${LOS_PAGOS_LOS_ANOTA_EL_TALLER}`;
+  if (hayComoPagar) return LOS_PAGOS_LOS_ANOTA_EL_TALLER;
+  return `${EL_PAGO_SE_COORDINA} ${LOS_PAGOS_LOS_ANOTA_EL_TALLER}`;
 }

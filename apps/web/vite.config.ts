@@ -8,6 +8,8 @@ import { defineConfig } from 'vitest/config';
 
 const NOMBRE_DE_SECRETO = /SERVICE_ROLE|SECRET/i;
 
+const SOLO_EN_SU_PANTALLA = /[\\/]node_modules[\\/]uqr[\\/]/;
+
 function esJwtDeServiceRole(valor: string): boolean {
   const payload = valor.split('.')[1];
   if (payload === undefined) return false;
@@ -46,7 +48,11 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: (id) => (id.includes('node_modules') ? 'vendor' : undefined),
+          // El vendor va en su propio chunk (ADR 0015), salvo lo que dibuja el QR: eso lo pide un
+          // import dinámico y tiene que quedarse en el chunk de esa pantalla, que es la única que
+          // lo usa. Si entrara al vendor, lo bajarían todos al arrancar la app.
+          manualChunks: (id) =>
+            SOLO_EN_SU_PANTALLA.test(id) || !id.includes('node_modules') ? undefined : 'vendor',
         },
       },
     },

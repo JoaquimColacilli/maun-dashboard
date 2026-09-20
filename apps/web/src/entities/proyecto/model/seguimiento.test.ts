@@ -38,6 +38,8 @@ function proyecto(id: string, extra: Partial<Proyecto> = {}): Proyecto {
     presupuesto_centavos: null,
     sena_bp: null,
     forma_pago: null,
+    cobro_sena: null,
+    cobro_saldo: null,
     comprobante: 'sin_comprobante',
     fecha_visita: null,
     visita_hora: null,

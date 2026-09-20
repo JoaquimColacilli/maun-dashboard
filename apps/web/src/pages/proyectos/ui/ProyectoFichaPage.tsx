@@ -334,7 +334,12 @@ export function ProyectoFichaPage() {
                 {pagos.map((pago, indice) => (
                   <li key={pago.id} className="grid grid-cols-[20px_1fr_auto] items-start gap-x-3">
                     <span aria-hidden className="flex h-full flex-col items-center">
-                      <span className="mt-3.5 size-2.5 flex-none rounded-pill bg-hogar" />
+                      <span
+                        className={`h-3.5 w-px flex-none ${
+                          indice === 0 ? 'bg-transparent' : 'bg-border'
+                        }`}
+                      />
+                      <span className="size-2.5 flex-none rounded-pill bg-hogar" />
                       <span
                         className={`w-px flex-1 ${
                           indice === pagos.length - 1 ? 'bg-transparent' : 'bg-border'

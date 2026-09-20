@@ -7,6 +7,9 @@ import {
   ESTADOS,
   esEstado,
   estaLiquidado,
+  esLinkDeMercadoPago,
+  formasDeCobro,
+  pagosPorDelante,
   puedeCambiarEstado,
   puedeLiquidar,
   puedeRevertir,
@@ -20,6 +23,7 @@ import {
   type EntradaCascada,
   type EstadoLiquidado,
   type EstadoProyecto,
+  type FormaDeCobro,
   type Liquidacion,
   type LiquidacionRegistrada,
   type Reapertura,
@@ -223,6 +227,166 @@ export async function compararTopes(cliente: pg.Client): Promise<string[]> {
       topeFijos: Number(fila.tope_fijos_centavos),
     });
     return ts === sql ? [] : [`topes ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+type TuplaDelPago = [number | null, number, number];
+
+const PAGOS_QUE_TOCAN: TuplaDelPago[] = [
+  [null, 0, 5000],
+  [null, 12345, 5000],
+  [100_000_000, 0, 5000],
+  [100_000_000, 1, 5000],
+  [100_000_000, 49_999_999, 5000],
+  [100_000_000, 50_000_000, 5000],
+  [100_000_000, 50_000_001, 5000],
+  [100_000_000, 99_999_999, 5000],
+  [100_000_000, 100_000_000, 5000],
+  [100_000_000, 100_000_001, 5000],
+  [100_000_000, 0, 0],
+  [100_000_000, 0, 10000],
+  [100_000_000, 100_000_000, 10000],
+  [0, 0, 5000],
+  [1, 0, 5000],
+  [1, 1, 5000],
+  [3, 0, 3333],
+  [7, 0, 1],
+  [999, 0, 9999],
+  [123_456_789, 7_654_321, 4321],
+  [123_456_789, 61_728_395, 4321],
+];
+
+function pagosEnTs([precio, cobrado, bp]: TuplaDelPago): string {
+  return JSON.stringify(
+    pagosPorDelante({
+      presupuesto: precio === null ? null : centavos(precio),
+      cobrado: centavos(cobrado),
+      porcentajeDelTaller: puntosBasicos(bp),
+      porcentajeDelTrabajo: null,
+    }),
+  );
+}
+
+export async function compararPagosPorDelante(cliente: pg.Client): Promise<string[]> {
+  const casos = PAGOS_QUE_TOCAN;
+  const { rows } = await cliente.query<{ pagos: string | null }>(
+    `select (
+       select jsonb_agg(
+         jsonb_build_object('instancia', r.instancia, 'monto', r.monto_centavos)
+         order by r.orden
+       )
+       from private.pagos_por_delante(c.precio, c.cobrado, c.bp) as r
+     )::text as pagos
+     from unnest($1::bigint[], $2::bigint[], $3::int[])
+       with ordinality as c (precio, cobrado, bp, orden)
+     order by c.orden`,
+    columnas(casos, 3),
+  );
+  if (rows.length !== casos.length) {
+    return [
+      `los pagos por delante de SQL devolvieron ${String(rows.length)} filas para ${String(casos.length)} casos`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const caso = casos[i] ?? [null, 0, 0];
+    const ts = pagosEnTs(caso);
+    // jsonb ordena las claves por largo y después alfabéticamente, así que la comparación se hace
+    // sobre objetos armados acá, no sobre el texto que devuelve Postgres.
+    const crudos =
+      fila.pagos === null ? [] : (JSON.parse(fila.pagos) as { instancia: string; monto: number }[]);
+    const sql = JSON.stringify(
+      crudos.map((pago) => ({ instancia: pago.instancia, monto: pago.monto })),
+    );
+    return ts === sql ? [] : [`pagos por delante ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+const FORMAS_GUARDADAS: (readonly FormaDeCobro[] | null)[] = [
+  null,
+  ['transferencia'],
+  ['efectivo'],
+  ['transferencia', 'efectivo'],
+];
+
+export async function compararFormasDeCobro(cliente: pg.Client): Promise<string[]> {
+  const casos = FORMAS_GUARDADAS.flatMap((guardado) =>
+    [true, false].map((hay) => [guardado, hay] as const),
+  );
+  const { rows } = await cliente.query<{ formas: string[] }>(
+    `select private.formas_de_cobro(c.guardado::public.forma_de_cobro[], c.hay)::text[] as formas
+     from unnest($1::text[], $2::boolean[]) with ordinality as c (guardado, hay, orden)
+     order by c.orden`,
+    [
+      casos.map(([guardado]) => (guardado === null ? null : `{${guardado.join(',')}}`)),
+      casos.map(([, hay]) => hay),
+    ],
+  );
+  if (rows.length !== casos.length) {
+    return [
+      `las formas de cobro de SQL devolvieron ${String(rows.length)} filas para ${String(casos.length)} casos`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const caso = casos[i] ?? [null, true];
+    const ts = JSON.stringify(formasDeCobro(caso[0], caso[1]));
+    const sql = JSON.stringify(fila.formas);
+    return ts === sql ? [] : [`formas de cobro ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+const LINKS_A_PROBAR: readonly string[] = [
+  '',
+  'https://mpago.la/2vXyZ1',
+  'https://mpago.li/2vXyZ1',
+  'https://link.mercadopago.com.ar/tallermaun',
+  'https://www.mercadopago.com.ar/cobrar/qr/1234',
+  'https://mercadopago.com.ar/cobrar',
+  'https://mpago.la/',
+  'https://mpago.la',
+  'http://mpago.la/2vXyZ1',
+  'mpago.la/2vXyZ1',
+  'https://MPAGO.LA/2vXyZ1',
+  'https://pagame-aca.com/taller',
+  'https://mercadopago.com.ar.pagame.net/x',
+  'https://mpago.la.otro.com/x',
+  'https://mpago.la/con espacio',
+  'https://mpago.la/con\ttab',
+  `https://mpago.la/${'x'.repeat(280)}`,
+  `https://mpago.la/${'x'.repeat(300)}`,
+];
+
+export async function compararLinkDeCobro(cliente: pg.Client): Promise<string[]> {
+  const { rows: definicion } = await cliente.query<{ def: string }>(
+    `select pg_get_constraintdef(c.oid) as def
+     from pg_constraint c
+     where c.conrelid = 'public.ajustes'::regclass and c.conname = 'ajustes_cobro_link_formato'`,
+  );
+  const cruda = definicion[0]?.def;
+  if (cruda === undefined) return ['no existe el check ajustes_cobro_link_formato en la base'];
+
+  const expresion = cruda
+    .replace(/^CHECK\s*\(/, '')
+    .replace(/\)$/, '')
+    .replaceAll('cobro_link', 'c.valor');
+
+  const { rows } = await cliente.query<{ pasa: boolean }>(
+    `select (${expresion}) as pasa
+     from unnest($1::text[]) with ordinality as c (valor, orden)
+     order by c.orden`,
+    [LINKS_A_PROBAR],
+  );
+  if (rows.length !== LINKS_A_PROBAR.length) {
+    return [
+      `el check del link devolvió ${String(rows.length)} filas para ${String(LINKS_A_PROBAR.length)} casos`,
+    ];
+  }
+
+  return rows.flatMap((fila, i) => {
+    const valor = LINKS_A_PROBAR[i] ?? '';
+    const ts = valor === '' || esLinkDeMercadoPago(valor);
+    return ts === fila.pasa
+      ? []
+      : [`link de cobro ${JSON.stringify(valor)}: SQL ${String(fila.pasa)}, TS ${String(ts)}`];
   });
 }
 
@@ -1535,6 +1699,9 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
   return [
     ...(await compararCascada(cliente)),
     ...(await compararTopes(cliente)),
+    ...(await compararPagosPorDelante(cliente)),
+    ...(await compararFormasDeCobro(cliente)),
+    ...(await compararLinkDeCobro(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),
     ...(await compararTransiciones(cliente)),

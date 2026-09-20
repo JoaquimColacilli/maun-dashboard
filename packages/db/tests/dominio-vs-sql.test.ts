@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   compararCascada,
   compararEstados,
+  compararFormasDeCobro,
   compararGuardadoDeProyecto,
   compararLibroDelSeed,
   compararLibroMayor,
   compararLiquidaciones,
+  compararPagosPorDelante,
   compararRangos,
   compararSeed,
   compararTopes,
@@ -21,6 +23,14 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
 
   it('los topes de SQL dan lo mismo que topesDeLaLiquidacion en miles de casos', async () => {
     expect(await enTransaccionConRollback(compararTopes)).toEqual([]);
+  });
+
+  it('qué pagos le faltan al cliente y cuánto es cada uno lo contestan igual las dos', async () => {
+    expect(await enTransaccionConRollback(compararPagosPorDelante)).toEqual([]);
+  });
+
+  it('el valor por defecto de las formas de cobro es el mismo en las dos', async () => {
+    expect(await enTransaccionConRollback(compararFormasDeCobro)).toEqual([]);
   });
 
   it('las dos rechazan exactamente los mismos importes fuera de rango', async () => {

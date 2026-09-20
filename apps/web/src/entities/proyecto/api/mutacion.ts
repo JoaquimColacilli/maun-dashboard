@@ -8,12 +8,14 @@ import {
   filaPorId,
   filasDe,
   guardarElProyecto,
+  guardarLasFormasDeCobro,
   guardarLosCostosEstimados,
   householdDe,
   marcarEnLaAgenda,
   marcarTareasDelPresupuesto,
   quitarFilaLocal,
   type CambiosDeCostos,
+  type CambiosDeFormasDeCobro,
   type CambiosDeMarcas,
   type CambiosDeProyecto,
   type CambiosDeTareas,
@@ -28,6 +30,7 @@ import { claveDeTodaReplica, COLA_DE_SALIDA, guardarCacheAhora } from '@/shared/
 
 import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
 import { datosActualesDelProyecto } from '../model/liquidacion';
+import { cambiaAlgunaForma } from '../model/cobro';
 import { cambiaAlgunCosto } from '../model/costos';
 import { cambiaAlgunaMarca } from '../model/marcas';
 import { ultimoContactoAlGuardar } from '../model/seguimiento';
@@ -38,6 +41,7 @@ export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
 export const CLAVE_DE_TAREAS = ['proyectos', 'tareas'] as const;
 export const CLAVE_DE_MARCAS = ['proyectos', 'marcas'] as const;
 export const CLAVE_DE_COSTOS = ['proyectos', 'costos'] as const;
+export const CLAVE_DE_FORMAS_DE_COBRO = ['proyectos', 'formas-de-cobro'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
 
 const REINTENTOS = 5;
@@ -227,6 +231,8 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         costo_herrajes_centavos: null,
         costo_flete_centavos: null,
         costo_ayudante_centavos: null,
+        cobro_sena: null,
+        cobro_saldo: null,
         fecha_cobro: null,
         dist_cobrado_centavos: null,
         dist_gastos_centavos: null,
@@ -449,7 +455,15 @@ export const MUTACION_DE_NOTAS: MutationOptions<FilaDe<'proyectos'>, unknown, Ed
   },
 };
 
-type CambiosDeUnaColumnaSuelta = CambiosDeTareas | CambiosDeMarcas | CambiosDeCostos;
+export interface FormasDeCobroDelTrabajo {
+  id: string;
+  cambios: CambiosDeFormasDeCobro;
+  previos: CambiosDeFormasDeCobro;
+  version: number;
+}
+
+type CambiosDeUnaColumnaSuelta =
+  CambiosDeTareas | CambiosDeMarcas | CambiosDeCostos | CambiosDeFormasDeCobro;
 
 function conUnaColumnaSuelta(
   replica: Replica,
@@ -531,6 +545,31 @@ export const MUTACION_DE_COSTOS: MutationOptions<FilaDe<'proyectos'>, unknown, C
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) =>
       conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgunCosto(actual, cambios)),
+    );
+    await guardarCacheAhora();
+  },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
+  },
+  onError: (_error, { id, previos, version }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLaColumnaSuelta(replica, id, previos, version));
+  },
+};
+
+export const MUTACION_DE_FORMAS_DE_COBRO: MutationOptions<
+  FilaDe<'proyectos'>,
+  unknown,
+  FormasDeCobroDelTrabajo
+> = {
+  mutationKey: CLAVE_DE_FORMAS_DE_COBRO,
+  mutationFn: ({ id, cambios }) => guardarLasFormasDeCobro(id, cambios),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id, cambios }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) =>
+      conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgunaForma(actual, cambios)),
     );
     await guardarCacheAhora();
   },

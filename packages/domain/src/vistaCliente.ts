@@ -1,6 +1,8 @@
+import { esCuentaDeMercadoPago } from './cobro.ts';
 import type { EstadoProyecto } from './estados.ts';
 import { diasEntre } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
+import { montoParaPegar, ofrece, type FormaDeCobro, type InstanciaDePago } from './pagos.ts';
 
 export type HitoDelTrabajo = 'presupuesto' | 'aprobado' | 'fabricacion' | 'entregado' | 'pagado';
 
@@ -40,6 +42,20 @@ export interface CobroDelTaller {
   cbu: string | null;
   titular: string | null;
   cuit: string | null;
+  link: string | null;
+}
+
+export interface PagoOfrecido {
+  instancia: InstanciaDePago;
+  formas: readonly FormaDeCobro[];
+  monto: Money | null;
+}
+
+export interface PagoPendiente {
+  instancia: InstanciaDePago | null;
+  formas: readonly FormaDeCobro[];
+  monto: Money | null;
+  siguiente: PagoOfrecido | null;
 }
 
 export interface TrabajoDelCliente {
@@ -50,13 +66,113 @@ export interface TrabajoDelCliente {
   estado: EstadoProyecto;
   precio: Money | null;
   fechas: FechasDelTrabajo;
+  pago: PagoPendiente;
   cobro: CobroDelTaller;
   pagos: readonly PagoDelCliente[];
   archivos: readonly ArchivoDelCliente[];
 }
 
 export function hayComoTransferir(cobro: CobroDelTaller): boolean {
-  return cobro.alias !== null || cobro.cbu !== null;
+  return cobro.alias !== null || cobro.cbu !== null || cobro.link !== null;
+}
+
+export interface PagoQueSigue {
+  instancia: InstanciaDePago;
+  monto: Money | null;
+  nombre: string;
+  comoSePaga: string;
+}
+
+export interface ComoPagar {
+  instancia: InstanciaDePago;
+  monto: Money | null;
+  montoParaPegar: string | null;
+  transferencia: boolean;
+  link: string | null;
+  mercadoPago: boolean;
+  efectivo: boolean;
+  faltanLosDatos: boolean;
+  titulo: string;
+  etiquetaDelImporte: string;
+  pasos: string;
+  enEfectivo: string;
+  siguiente: PagoQueSigue | null;
+}
+
+const TITULO = 'Cómo pagar';
+
+const ETIQUETA_DEL_IMPORTE: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'Ahora, la seña',
+  saldo: 'Ahora, el saldo',
+};
+
+const NOMBRE: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'la seña',
+  saldo: 'el saldo',
+};
+
+function comoSePaga(formas: readonly FormaDeCobro[]): string {
+  const porTransferencia = ofrece(formas, 'transferencia');
+  const enEfectivo = ofrece(formas, 'efectivo');
+  if (porTransferencia && enEfectivo) return 'por transferencia o en efectivo';
+  if (porTransferencia) return 'por transferencia';
+  return 'en efectivo';
+}
+
+function elQueSigue(pago: PagoOfrecido | null): PagoQueSigue | null {
+  if (pago === null) return null;
+  return {
+    instancia: pago.instancia,
+    monto: pago.monto,
+    nombre: NOMBRE[pago.instancia],
+    comoSePaga: comoSePaga(pago.formas),
+  };
+}
+
+export const O_POR_MERCADO_PAGO =
+  'O pagá desde Mercado Pago, sin copiar nada: tocá el botón, escribí el monto de arriba y confirmá.';
+
+export const PASOS_PARA_TRANSFERIR =
+  'Copiá el alias, pegalo en Transferir en la app de tu banco o de tu billetera, escribí el monto y confirmá.';
+
+export const PEDILE_LOS_DATOS =
+  'Para transferir, pedile los datos de la cuenta al taller: todavía no los cargó.';
+
+const SOLO_EFECTIVO: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'La seña es en efectivo, en mano. Lo coordinás con el taller.',
+  saldo: 'El saldo es en efectivo, en mano. Lo coordinás con el taller.',
+};
+
+const TAMBIEN_EFECTIVO: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'La seña también la podés dejar en efectivo, en mano, coordinándolo con el taller.',
+  saldo: 'El saldo también lo podés pagar en efectivo, en mano, coordinándolo con el taller.',
+};
+
+export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
+  const { instancia, formas, monto } = trabajo.pago;
+  if (instancia === null) return null;
+
+  const pideTransferencia = ofrece(formas, 'transferencia');
+  const transferencia = pideTransferencia && hayComoTransferir(trabajo.cobro);
+  const efectivo = ofrece(formas, 'efectivo');
+  const link = transferencia ? trabajo.cobro.link : null;
+  const cuenta = transferencia ? trabajo.cobro.cbu : null;
+
+  return {
+    instancia,
+    monto,
+    montoParaPegar: monto === null ? null : montoParaPegar(monto),
+    transferencia,
+    link,
+    mercadoPago: link !== null || (cuenta !== null && esCuentaDeMercadoPago(cuenta)),
+    efectivo,
+    faltanLosDatos: pideTransferencia && !transferencia,
+    titulo: TITULO,
+    etiquetaDelImporte: ETIQUETA_DEL_IMPORTE[instancia],
+    pasos: PASOS_PARA_TRANSFERIR,
+    enEfectivo: transferencia ? TAMBIEN_EFECTIVO[instancia] : SOLO_EFECTIVO[instancia],
+    siguiente: elQueSigue(trabajo.pago.siguiente),
+  };
 }
 
 export interface HitoDeLaVista {

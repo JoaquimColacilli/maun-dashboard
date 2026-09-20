@@ -248,11 +248,22 @@ export function AjustesPage() {
           {ajustes && (
             <section aria-labelledby="titulo-cobro" className={SECCION}>
               <h2 id="titulo-cobro" className="text-section font-semibold">
-                Cómo te transfieren
+                Cómo te pagan
               </h2>
               <p className="text-body leading-relaxed text-text-2">
-                Se cargan una vez y aparecen en la página que le compartís a cada cliente, al lado
-                de lo que falta pagar. Todos son opcionales: lo que dejes vacío, no se muestra.
+                Es la cuenta a la que te transfiere tu cliente. Se cargan una vez y aparecen en la
+                página que le compartís, al lado de lo que tiene que pagarte, con un botón para
+                copiar cada uno. El titular y el CUIT le sirven para confirmar que es la cuenta
+                correcta: su banco le muestra a nombre de quién está antes de confirmar. Recibir una
+                transferencia no te cuesta comisión. Todos son opcionales: lo que dejes vacío, no se
+                muestra.
+              </p>
+              <p className="text-body leading-relaxed text-text-2">
+                El link de Mercado Pago es aparte y es opcional. Sacalo de tu app, en Cobrar → Link
+                de pago → Link sin monto definido: se crea una sola vez y sirve para todos tus
+                trabajos. Si lo cargás, tu cliente ve en su página un botón que le abre Mercado Pago
+                para pagarte desde ahí, sin copiar nada: el monto se lo decimos arriba y lo escribe
+                él. Va después de tu alias, que es la forma que no te cuesta comisión.
               </p>
               <FormularioDeCobro ajustes={ajustes} />
             </section>

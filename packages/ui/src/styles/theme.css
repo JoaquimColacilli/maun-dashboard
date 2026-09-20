@@ -40,6 +40,12 @@
   --color-avatar-6: #5a5f9e;
   --color-sobre-avatar: #ffffff;
 
+  /* Los dos únicos colores que no cambian con el tema: el bloque dark de más abajo no los redefine.
+     Están para lo que tiene que salir negro sobre blanco siempre, gane el tema que gane, porque lo
+     lee una cámara y no una persona. */
+  --color-ink-fijo: #141414;
+  --color-paper-fijo: #ffffff;
+
   --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
   --font-display: 'Young Serif', Georgia, serif;
 

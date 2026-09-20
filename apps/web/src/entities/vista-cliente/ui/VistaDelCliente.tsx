@@ -1,8 +1,4 @@
-import {
-  hayComoTransferir,
-  type ArchivoDelCliente,
-  type VistaDelCliente as Vista,
-} from '@maun/domain';
+import { comoPagar, type ArchivoDelCliente, type VistaDelCliente as Vista } from '@maun/domain';
 
 import { urlDelArchivo } from '@/shared/api';
 import { fechaLarga, formatearPesos } from '@/shared/lib';
@@ -10,7 +6,7 @@ import { Icono, Pagina } from '@/shared/ui';
 
 import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
-import { ComoTransferir } from './ComoTransferir';
+import { ComoPagar } from './ComoPagar';
 
 export interface VistaDelClienteProps {
   vista: Vista;
@@ -90,9 +86,10 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
   const visuales = trabajo.archivos.filter(esImagen);
   const documentos = trabajo.archivos.filter((archivo) => !esImagen(archivo));
 
-  const hayDatosParaTransferir = hayComoTransferir(trabajo.cobro);
+  const como = comoPagar(trabajo);
+  const hayComoPagar = como !== null && (como.transferencia || como.efectivo);
   const textoSinPagos = sinPagosTodavia(vista);
-  const textoDelPie = pieDeLosPagos(vista, hayDatosParaTransferir);
+  const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
 
   return (
     <Pagina>
@@ -162,10 +159,6 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             )}
           </section>
 
-          {hayComoTransferir(trabajo.cobro) && !vista.saldado && (
-            <ComoTransferir cobro={trabajo.cobro} />
-          )}
-
           <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
             <CaminoDeHitos hitos={vista.hitos} hoy={hoy} />
@@ -185,7 +178,10 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                   >
                     <span aria-hidden className="flex h-full flex-col items-center">
                       <span
-                        className={`mt-4 size-2 flex-none rounded-pill ${indice === 0 ? 'bg-ink' : 'bg-border'}`}
+                        className={`h-4 w-px flex-none ${indice === 0 ? 'bg-transparent' : 'bg-hairline'}`}
+                      />
+                      <span
+                        className={`size-2 flex-none rounded-pill ${indice === 0 ? 'bg-ink' : 'bg-border'}`}
                       />
                       <span
                         className={`w-px flex-1 ${indice === vista.eventos.length - 1 ? 'bg-transparent' : 'bg-hairline'}`}
@@ -365,6 +361,8 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               />
             </dl>
           </section>
+
+          <ComoPagar trabajo={trabajo} />
 
           <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
             Esta página la arma el taller para vos y se actualiza sola a medida que avanza el

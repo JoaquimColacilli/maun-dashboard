@@ -586,6 +586,7 @@ export interface CobroDelTallerDePrueba {
   cbu: string;
   titular: string;
   cuit: string;
+  link?: string;
 }
 
 export async function ajustarCobroDelTaller(
@@ -601,6 +602,7 @@ export async function ajustarCobroDelTaller(
       cobro_cbu: cobro.cbu,
       cobro_titular: cobro.titular,
       cobro_cuit: cobro.cuit,
+      cobro_link: cobro.link ?? '',
     }),
   });
 }

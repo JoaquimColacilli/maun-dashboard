@@ -21,9 +21,15 @@ export function comoSeVeElEnlace(
   return { como: 'activo', url: enlaceDelCliente(guardado), aRellenar: guardado };
 }
 
-export function mensajeParaElCliente(cliente: string, trabajo: string, url: string): string {
+export function mensajeParaElCliente(
+  cliente: string,
+  trabajo: string,
+  url: string,
+  hayPagoPendiente = false,
+): string {
   const nombre = cliente.trim() === '' ? 'Hola' : `Hola ${cliente.split(' ')[0] ?? cliente}`;
-  return `${nombre}, acá podés ver cómo va tu ${trabajo.toLocaleLowerCase('es-AR')}: ${url}`;
+  const que = hayPagoPendiente ? 'cómo va y cómo pagarlo' : 'cómo va';
+  return `${nombre}, acá podés ver ${que} tu ${trabajo.toLocaleLowerCase('es-AR')}: ${url}`;
 }
 
 export function enlaceDeWhatsapp(telefono: string, mensaje: string): string {

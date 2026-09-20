@@ -54,5 +54,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0048](0048-los-datos-para-transferir.md)                                   | Los datos para transferir, en los ajustes del taller         | Aceptada             |
 | [0049](0049-la-vista-previa-del-enlace.md)                                  | La vista previa del enlace la arma una función de borde      | Aceptada             |
 | [0050](0050-la-vista-publica-no-depende-del-armazon-de-la-app.md)           | La vista pública no depende del armazón de la app            | Aceptada             |
-| [0051](0051-cobrar-con-mercado-pago.md)                                     | Cobrar con Mercado Pago: por ahora, el alias                 | Aceptada             |
+| [0051](0051-cobrar-con-mercado-pago.md)                                     | Cobrar con Mercado Pago: por ahora, el alias                 | Superada en parte    |
 | [0052](0052-el-enlace-se-guarda-entero.md)                                  | El enlace se guarda entero, no solo su huella                | Aceptada             |
+| [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página     | Aceptada             |
+| [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes   | Aceptada             |

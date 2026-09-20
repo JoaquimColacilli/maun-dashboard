@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-20',
+    lineas: [
+      'En cada trabajo elegís cómo te paga la seña y cómo el saldo: por transferencia, en efectivo o de las dos formas.',
+      'Tu cliente ve cuánto es el pago que le toca, con un botón para copiar el monto, y cuánto le va a quedar después. Si ese pago es en efectivo, no le mostramos tu cuenta: es en mano.',
+      'Si cargás tu enlace de Mercado Pago en Ajustes, tu cliente ve un botón para pagarte desde ahí, debajo de tu alias. Ese cobro sí te descuenta comisión; transferirte al alias no.',
+      'Al lado de «Mandárselo por WhatsApp» tenés un código QR con el mismo enlace, para mostrárselo en la mano. Anda sin señal, y darlo de baja lo apaga.',
+    ],
+  },
+  {
     version: '2026-09-19.2',
     lineas: [
       'El enlace de un trabajo ahora te aparece en todos tus aparatos, no solo en el que lo creaste. Si lo generaste en la computadora, lo copiás igual desde el celular.',

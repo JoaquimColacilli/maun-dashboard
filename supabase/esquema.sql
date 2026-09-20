@@ -25,6 +25,9 @@ comment on type public.condicion_fiscal is 'Condición frente al IVA del cliente
 create type public.estado_proyecto as enum ('contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'perdido', 'en_curso', 'entregado', 'cobrado');
 comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro: los primeros seis estados son de seguimiento (contacto, presupuesto estimativo, relevamiento, a presupuestar, presupuesto enviado y perdido), los últimos tres de obra. Las transiciones válidas viven en @maun/domain.';
 
+create type public.forma_de_cobro as enum ('transferencia', 'efectivo');
+comment on type public.forma_de_cobro is 'Cómo le paga el cliente al taller una instancia de pago concreta. Transferencia es el cliente entrando a su banco o a su billetera y mandando plata al alias del taller: la arranca él y no tiene costo. Efectivo es en mano. No hay una tercera: cobrar con un link de pago o con un QR de cobro de Mercado Pago le cuesta comisión al taller y este PR no los usa (ADR 0051 y 0053).';
+
 create type public.forma_pago as enum ('efectivo', 'transferencia', 'cuotas', 'mixto');
 comment on type public.forma_pago is 'Forma de pago acordada con el cliente para el proyecto.';
 
@@ -65,9 +68,11 @@ create table public.ajustes (
   cobro_cbu text not null default ''::text,
   cobro_titular text not null default ''::text,
   cobro_cuit text not null default ''::text,
+  cobro_link text not null default ''::text,
   constraint ajustes_cobro_alias_formato CHECK (cobro_alias = ''::text OR cobro_alias ~ '^[A-Za-z0-9.-]{6,20}$'::text),
   constraint ajustes_cobro_cbu_formato CHECK (cobro_cbu = ''::text OR cobro_cbu ~ '^[0-9]{22}$'::text),
   constraint ajustes_cobro_cuit_formato CHECK (cobro_cuit = ''::text OR cobro_cuit ~ '^[0-9]{2}-[0-9]{8}-[0-9]$'::text),
+  constraint ajustes_cobro_link_formato CHECK (cobro_link = ''::text OR char_length(cobro_link) <= 300 AND cobro_link ~ '^https://(www\.mercadopago\.com\.ar|mercadopago\.com\.ar|link\.mercadopago\.com\.ar|mpago\.la|mpago\.li)/[^[:space:]]*$'::text),
   constraint ajustes_cobro_titular_largo CHECK (char_length(cobro_titular) <= 200),
   constraint ajustes_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint ajustes_household_key UNIQUE (household_id),
@@ -89,6 +94,7 @@ comment on column public.ajustes.cobro_alias is 'El alias del taller para recibi
 comment on column public.ajustes.cobro_cbu is 'El CBU o el CVU del taller, 22 dígitos sin espacios ni guiones, o vacío. Se guarda limpio y se muestra agrupado. El check controla la forma; los dos dígitos verificadores los revisa el dominio, que es donde el dueño ve el aviso antes de guardar (ADR 0048).';
 comment on column public.ajustes.cobro_titular is 'A nombre de quién está la cuenta, o vacío. Está para que el cliente confirme contra lo que le muestra su banco antes de transferir.';
 comment on column public.ajustes.cobro_cuit is 'El CUIT del titular con guiones (NN-NNNNNNNN-N), o vacío. Mismo formato que public.clientes.cuit; el dígito verificador lo revisa la app.';
+comment on column public.ajustes.cobro_link is 'El link de Mercado Pago del taller para que el cliente le pague, o vacío. Lo pega el dueño: lo saca de su app, de Cobrar con QR o de Link de pago. La página del cliente lo muestra como código QR y como botón. No se deriva del alias ni del CVU porque no existe ningún link estándar que abra una billetera en «Transferir a este alias»: el QR interoperable del BCRA lo emite un PSP y es un QR de cobro. El check acota el host a Mercado Pago porque este texto se vuelve un enlace en una página pública. Cobrar por acá le cuesta comisión al taller; transferir al alias no (ADR 0051 y 0054).';
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
 create policy ajustes_edicion on public.ajustes as permissive
@@ -100,7 +106,7 @@ create policy ajustes_lectura on public.ajustes as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
-grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit) on public.ajustes to authenticated;
+grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit, cobro_link) on public.ajustes to authenticated;
 
 create table public.anotaciones (
   id uuid not null default private.uuidv7(),
@@ -666,8 +672,12 @@ create table public.proyectos (
   costo_ayudante_centavos bigint,
   entrega_hora time without time zone,
   visita_hora time without time zone,
+  cobro_sena forma_de_cobro[],
+  cobro_saldo forma_de_cobro[],
   constraint presupuesto_aprobado TRIGGER DEFERRABLE INITIALLY DEFERRED,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
+  constraint proyectos_cobro_saldo_valido CHECK (COALESCE(cobro_saldo IS NULL OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro] OR cobro_saldo = ARRAY['efectivo'::forma_de_cobro] OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro, 'efectivo'::forma_de_cobro], false)),
+  constraint proyectos_cobro_sena_valido CHECK (COALESCE(cobro_sena IS NULL OR cobro_sena = ARRAY['transferencia'::forma_de_cobro] OR cobro_sena = ARRAY['efectivo'::forma_de_cobro] OR cobro_sena = ARRAY['transferencia'::forma_de_cobro, 'efectivo'::forma_de_cobro], false)),
   constraint proyectos_costo_ayudante_no_negativo CHECK (costo_ayudante_centavos IS NULL OR costo_ayudante_centavos >= 0),
   constraint proyectos_costo_flete_no_negativo CHECK (costo_flete_centavos IS NULL OR costo_flete_centavos >= 0),
   constraint proyectos_costo_herrajes_no_negativo CHECK (costo_herrajes_centavos IS NULL OR costo_herrajes_centavos >= 0),
@@ -732,6 +742,8 @@ comment on column public.proyectos.costo_flete_centavos is 'Lo estimado en flete
 comment on column public.proyectos.costo_ayudante_centavos is 'Lo estimado en ayudante, en centavos. Null es «todavía no lo estimé».';
 comment on column public.proyectos.entrega_hora is 'A qué hora es la entrega, si tiene hora. Null es «en algún momento de ese día», como en una anotación. La agenda pone lo que tiene hora en su renglón y lo demás en la franja de todo el día (ADR 0045).';
 comment on column public.proyectos.visita_hora is 'A qué hora es la visita de relevamiento, si tiene hora. Null es «en algún momento de ese día».';
+comment on column public.proyectos.cobro_sena is 'Cómo se puede pagar la seña de este trabajo, o null si el dueño no lo tocó. Null no es vacío: es «vale el valor por defecto», que private.formas_de_cobro() calcula según si el taller tiene datos para transferir cargados. El check acepta exactamente tres valores, así que un pago nunca queda sin ninguna forma (ADR 0053).';
+comment on column public.proyectos.cobro_saldo is 'Lo mismo para el saldo. Son dos columnas y no una porque el dueño pide la seña por transferencia y cobra el saldo en efectivo cuando termina de instalar, que es el caso que motivó esto (ADR 0053).';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -754,7 +766,7 @@ create policy proyectos_lectura on public.proyectos as permissive
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
 grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora, cobro_sena, cobro_saldo) on public.proyectos to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -1923,6 +1935,23 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE
 
+CREATE OR REPLACE FUNCTION private.formas_de_cobro(p_guardado forma_de_cobro[], p_hay_como_transferir boolean)
+ RETURNS forma_de_cobro[]
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    p_guardado,
+    case
+      when p_hay_como_transferir then array['transferencia', 'efectivo']::public.forma_de_cobro[]
+      else array['efectivo']::public.forma_de_cobro[]
+    end
+  );
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.formas_de_cobro(forma_de_cobro[],boolean) is 'Las formas que valen para una instancia de pago: lo que el dueño guardó, o el valor por defecto. Por defecto son las dos, salvo que el taller no tenga ni alias ni CBU cargados en Ajustes, y entonces solo efectivo: ofrecer transferencia sin adónde transferir sería mandarle al cliente una pantalla vacía. Tiene gemela en TypeScript (formasDeCobro, en @maun/domain), que es la que usa la pantalla del dueño; las dos se comparan en scripts/comparacion.ts (ADR 0053).';
+
 CREATE OR REPLACE FUNCTION private.guardar_preferencias_de_avisos(p_zona text, p_hora time without time zone, p_avisos jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -2355,6 +2384,53 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
+
+CREATE OR REPLACE FUNCTION private.pagos_por_delante(p_precio_centavos bigint, p_pagado_centavos bigint, p_sena_bp integer)
+ RETURNS TABLE(orden integer, instancia text, monto_centavos bigint)
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+declare
+  v_falta bigint;
+  v_sena bigint;
+  v_despues bigint;
+begin
+  -- Sin presupuesto no hay importe que calcular, pero el camino se conoce igual: primero la seña y
+  -- después el saldo. La pantalla los anticipa sin número.
+  if p_precio_centavos is null then
+    return query values (1, 'sena', null::bigint), (2, 'saldo', null::bigint);
+    return;
+  end if;
+
+  v_falta := p_precio_centavos - p_pagado_centavos;
+  if v_falta <= 0 then
+    return;
+  end if;
+
+  -- La misma cuenta que aplicarPorcentaje() de @maun/domain y que el diezmo de private.cascada():
+  -- medio punto para redondear y división entera, que con importes no negativos es piso.
+  v_sena := (p_precio_centavos * p_sena_bp + 5000) / 10000;
+
+  if p_pagado_centavos >= v_sena then
+    return query values (1, 'saldo', v_falta);
+    return;
+  end if;
+
+  -- Lo que queda después de cubrir la seña no es «lo que falta menos la seña que falta»: es el
+  -- presupuesto menos la seña entera. Con parte de la seña ya cobrada las dos cuentas no dan lo
+  -- mismo, y la que el cliente va a tener que pagar es esta.
+  v_despues := p_precio_centavos - v_sena;
+  if v_despues <= 0 then
+    return query values (1, 'sena', v_sena - p_pagado_centavos);
+    return;
+  end if;
+
+  return query values (1, 'sena', v_sena - p_pagado_centavos), (2, 'saldo', v_despues);
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.pagos_por_delante(bigint,bigint,integer) is 'Los pagos que le faltan al cliente, en el orden en que los va a hacer: la seña mientras no esté cubierta y después el saldo, o nada cuando ya pagó todo. El importe de la seña es lo que falta de ella, con todo lo cobrado hasta hoy ya descontado —la visita incluida, que entra como un pago más—; el del saldo es el presupuesto menos la seña entera, que es lo que va a quedar cuando la termine de pagar. Sin presupuesto devuelve los dos sin importe: el porcentaje de seña es política comercial del taller y no viaja. Es la gemela en SQL de pagosPorDelante() de @maun/domain y scripts/comparacion.ts las compara caso por caso (ADR 0053).';
 
 CREATE OR REPLACE FUNCTION private.pedir_los_avisos()
  RETURNS bigint
@@ -3092,6 +3168,16 @@ declare
   v_taller text;
   v_cliente text;
   v_ajustes public.ajustes;
+  v_alias text;
+  v_cbu text;
+  v_link text;
+  v_hay_como_transferir boolean;
+  v_pagado bigint;
+  v_ahora record;
+  v_despues record;
+  v_formas public.forma_de_cobro[];
+  v_por_transferencia boolean;
+  v_siguiente jsonb;
 begin
   select * into v_p from public.proyectos p where p.id = p_proyecto_id and p.deleted_at is null;
 
@@ -3111,6 +3197,56 @@ begin
   select c.nombre into v_cliente from public.clientes c where c.id = v_p.cliente_id;
   select * into v_ajustes from public.ajustes a where a.household_id = v_p.household_id;
 
+  v_alias := nullif(v_ajustes.cobro_alias, '');
+  v_cbu := nullif(v_ajustes.cobro_cbu, '');
+  v_link := nullif(v_ajustes.cobro_link, '');
+  v_hay_como_transferir := v_alias is not null or v_cbu is not null or v_link is not null;
+
+  select coalesce(sum(g.monto_centavos), 0) into v_pagado
+  from public.pagos g
+  where g.household_id = v_p.household_id
+    and g.proyecto_id = v_p.id
+    and g.deleted_at is null;
+
+  select * into v_ahora from private.pagos_por_delante(
+    v_p.presupuesto_centavos,
+    v_pagado,
+    coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
+  ) where orden = 1;
+
+  select * into v_despues from private.pagos_por_delante(
+    v_p.presupuesto_centavos,
+    v_pagado,
+    coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
+  ) where orden = 2;
+
+  -- Con todo pagado no hay ninguna instancia, así que tampoco hay formas ni datos de la cuenta.
+  if v_ahora.instancia is null then
+    v_formas := array[]::public.forma_de_cobro[];
+  elsif v_ahora.instancia = 'sena' then
+    v_formas := private.formas_de_cobro(v_p.cobro_sena, v_hay_como_transferir);
+  else
+    v_formas := private.formas_de_cobro(v_p.cobro_saldo, v_hay_como_transferir);
+  end if;
+
+  v_por_transferencia := 'transferencia' = any (v_formas);
+
+  if v_despues.instancia is null then
+    v_siguiente := null;
+  else
+    v_siguiente := jsonb_build_object(
+      'instancia', v_despues.instancia,
+      'formas', to_jsonb(
+        case
+          when v_despues.instancia = 'sena'
+            then private.formas_de_cobro(v_p.cobro_sena, v_hay_como_transferir)
+          else private.formas_de_cobro(v_p.cobro_saldo, v_hay_como_transferir)
+        end
+      ),
+      'monto_centavos', v_despues.monto_centavos
+    );
+  end if;
+
   -- Los campos van enumerados uno por uno, a propósito. Si esto fuera to_jsonb(v_p) con la pantalla
   -- filtrando, el día que alguien le agregue una columna a proyectos esa columna quedaría expuesta
   -- sin que nadie lo decida: lo que el cliente ve se decide acá, no en el navegador. La suite lo
@@ -3123,13 +3259,24 @@ begin
     'direccion', v_p.direccion_entrega,
     'estado', v_p.estado,
     'precio_centavos', v_p.presupuesto_centavos,
-    -- Lo único que se suma a lo que el cliente veía: cómo transferirle al taller. De ajustes no
-    -- viaja nada más: ni el sueldo, ni los costos fijos, ni la meta de Cocos, ni la seña.
+    -- El pago que toca ahora y, si hay otro después, cuánto es y cómo se paga. Los importes salen
+    -- de lo que ya está guardado; el porcentaje de seña sigue sin viajar, que es lo que dejó
+    -- abierto el ADR 0048.
+    'pago', jsonb_build_object(
+      'instancia', v_ahora.instancia,
+      'formas', to_jsonb(v_formas),
+      'monto_centavos', v_ahora.monto_centavos,
+      'siguiente', v_siguiente
+    ),
+    -- Cómo pagarle al taller, y solo si el pago que toca se puede pagar así: los cuatro datos de
+    -- la cuenta para transferir y el link de Mercado Pago para pagar desde la misma página. De
+    -- ajustes no viaja nada más: ni el sueldo, ni los costos fijos, ni la meta de Cocos, ni la seña.
     'cobro', jsonb_build_object(
-      'alias', nullif(v_ajustes.cobro_alias, ''),
-      'cbu', nullif(v_ajustes.cobro_cbu, ''),
-      'titular', nullif(v_ajustes.cobro_titular, ''),
-      'cuit', nullif(v_ajustes.cobro_cuit, '')
+      'alias', case when v_por_transferencia then v_alias end,
+      'cbu', case when v_por_transferencia then v_cbu end,
+      'titular', case when v_por_transferencia then nullif(v_ajustes.cobro_titular, '') end,
+      'cuit', case when v_por_transferencia then nullif(v_ajustes.cobro_cuit, '') end,
+      'link', case when v_por_transferencia then v_link end
     ),
     'fechas', jsonb_build_object(
       'presupuesto', (
@@ -3198,4 +3345,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó y los datos para transferirle al taller. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cuatro campos de cobro y ninguno más. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046 y 0048).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053 y 0054).';

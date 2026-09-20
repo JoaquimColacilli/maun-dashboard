@@ -13,7 +13,7 @@ import {
 import { rutaDelProyecto, type ResumenDeProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { AyudaDeLaVista } from '@/entities/vista-cliente';
-import { filasDe, householdDe, mensajeDeSincronizacion } from '@/shared/api';
+import { ajustesDe, filasDe, householdDe, mensajeDeSincronizacion } from '@/shared/api';
 import {
   fechaLarga,
   hashDelToken,
@@ -28,6 +28,7 @@ import {
 } from '@/shared/lib';
 import { Button, ConSalida, FilaDeAcciones, Hoja, Icono, Pagina } from '@/shared/ui';
 
+import { filasDeCobro } from '../model/comoTePaga';
 import {
   comoSeVeElEnlace,
   comoSeVeEnWhatsapp,
@@ -35,6 +36,8 @@ import {
   mensajeParaElCliente,
 } from '../model/compartir';
 import { ArchivosQueVeElCliente } from './ArchivosQueVeElCliente';
+import { BotonDelQr } from './BotonDelQr';
+import { ComoTePaga } from './ComoTePaga';
 
 export interface PantallaDeCompartirProps {
   resumen: ResumenDeProyecto;
@@ -71,6 +74,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   const household = householdDe(replica);
   const archivos = archivosDelProyecto(replica, proyecto.id);
   const vistos = loQueVeElCliente(archivos);
+  const hayPagoPendiente = filasDeCobro(resumen, ajustesDe(replica)).length > 0;
   const trabajando = generar.isPending || darDeBaja.isPending;
 
   const aRellenar = vista.como === 'activo' ? vista.aRellenar : null;
@@ -169,8 +173,9 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
           Compartir con el cliente
         </h1>
         <p className="mt-0.5 max-w-[520px] text-body leading-relaxed text-text-2">
-          Ve el precio, lo que pagó, lo que falta y en qué anda el mueble. No ve tus costos, tu
-          ganancia, el diezmo ni el despiece.
+          Ve el precio, lo que pagó, lo que falta, cómo pagarte y en qué anda el mueble. No ve tus
+          costos, tu ganancia, el diezmo ni el despiece. El código QR abre el mismo enlace: quien lo
+          escanea ve exactamente lo mismo, y darlo de baja apaga los dos.
         </p>
         <div className="mt-1.5">
           <AyudaDeLaVista conTexto />
@@ -247,18 +252,26 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                 </span>
               </p>
 
-              <a
-                href={enlaceDeWhatsapp(
-                  cliente?.telefono ?? '',
-                  mensajeParaElCliente(resumen.nombreDelCliente, proyecto.titulo, vista.url),
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex min-h-tap w-fit items-center gap-2 rounded-field border border-border px-3 text-label font-medium hover:bg-surface"
-              >
-                <Icono nombre="message-circle" tamano={16} />
-                Mandárselo por WhatsApp
-              </a>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={enlaceDeWhatsapp(
+                    cliente?.telefono ?? '',
+                    mensajeParaElCliente(
+                      resumen.nombreDelCliente,
+                      proyecto.titulo,
+                      vista.url,
+                      hayPagoPendiente,
+                    ),
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-h-tap w-fit items-center gap-2 rounded-field border border-border px-3 text-label font-medium hover:bg-surface"
+                >
+                  <Icono nombre="message-circle" tamano={16} />
+                  Mandárselo por WhatsApp
+                </a>
+                <BotonDelQr proyectoId={proyecto.id} trabajo={proyecto.titulo} />
+              </div>
 
               <FilaDeAcciones>
                 {botonDeLaVista}
@@ -361,6 +374,8 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
           </Hoja>
         )}
       </ConSalida>
+
+      <ComoTePaga resumen={resumen} />
 
       <ArchivosQueVeElCliente archivos={archivos} />
     </Pagina>

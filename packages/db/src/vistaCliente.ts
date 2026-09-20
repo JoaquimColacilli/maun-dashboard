@@ -1,9 +1,14 @@
+import { esLinkDeMercadoPago, FORMAS_DE_COBRO, INSTANCIAS_DE_PAGO } from '@maun/domain';
 import type {
   CobroDelTaller,
   ArchivoDelCliente,
   EstadoProyecto,
   FechasDelTrabajo,
+  FormaDeCobro,
+  InstanciaDePago,
   PagoDelCliente,
+  PagoOfrecido,
+  PagoPendiente,
   TrabajoDelCliente,
 } from '@maun/domain';
 
@@ -81,9 +86,14 @@ function textoONada(valor: unknown, que: string): string | null {
   return leido === '' ? null : leido;
 }
 
+function linkDeCobro(valor: unknown): string | null {
+  const leido = textoONada(valor, 'el link para pagar');
+  return leido !== null && esLinkDeMercadoPago(leido) ? leido : null;
+}
+
 function cobro(valor: unknown): CobroDelTaller {
   if (valor === null || valor === undefined) {
-    return { alias: null, cbu: null, titular: null, cuit: null };
+    return { alias: null, cbu: null, titular: null, cuit: null, link: null };
   }
   const crudo = objeto(valor, 'los datos para transferir');
   return {
@@ -91,6 +101,48 @@ function cobro(valor: unknown): CobroDelTaller {
     cbu: textoONada(crudo.cbu, 'el CBU del taller'),
     titular: textoONada(crudo.titular, 'el titular de la cuenta'),
     cuit: textoONada(crudo.cuit, 'el CUIT del titular'),
+    link: linkDeCobro(crudo.link),
+  };
+}
+
+function esForma(valor: unknown): valor is FormaDeCobro {
+  return FORMAS_DE_COBRO.some((forma) => forma === valor);
+}
+
+const SIN_PAGO: PagoPendiente = { instancia: null, formas: [], monto: null, siguiente: null };
+
+function instanciaDe(valor: unknown, que: string): InstanciaDePago | null {
+  const leida = textoONada(valor, que);
+  if (leida === null) return null;
+  const conocida = INSTANCIAS_DE_PAGO.find((una) => una === leida);
+  if (conocida === undefined) {
+    throw new RespuestaInvalidaError('La vista del cliente devolvió un pago desconocido.');
+  }
+  return conocida;
+}
+
+function pagoOfrecido(valor: unknown): PagoOfrecido | null {
+  if (valor === null || valor === undefined) return null;
+  const crudo = objeto(valor, 'el pago que sigue');
+  const instancia = instanciaDe(crudo.instancia, 'la instancia del pago que sigue');
+  if (instancia === null) return null;
+  const monto = numeroONada(crudo.monto_centavos, 'el importe del pago que sigue');
+  return {
+    instancia,
+    formas: lista(crudo.formas, 'las formas del pago que sigue').filter(esForma),
+    monto: monto === null ? null : dinero(monto),
+  };
+}
+
+function pagoPendiente(valor: unknown): PagoPendiente {
+  if (valor === null || valor === undefined) return SIN_PAGO;
+  const crudo = objeto(valor, 'el pago que toca');
+  const monto = numeroONada(crudo.monto_centavos, 'el importe del pago que toca');
+  return {
+    instancia: instanciaDe(crudo.instancia, 'la instancia del pago'),
+    formas: lista(crudo.formas, 'las formas de pago').filter(esForma),
+    monto: monto === null ? null : dinero(monto),
+    siguiente: pagoOfrecido(crudo.siguiente),
   };
 }
 
@@ -119,6 +171,7 @@ export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
       return precio === null ? null : dinero(precio);
     })(),
     fechas: fechas(cuerpo.fechas),
+    pago: pagoPendiente(cuerpo.pago),
     cobro: cobro(cuerpo.cobro),
     pagos: pagos(cuerpo.pagos),
     archivos: archivos(cuerpo.archivos),

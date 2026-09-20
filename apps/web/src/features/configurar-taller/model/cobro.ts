@@ -3,21 +3,26 @@ import {
   digitosDeCbu,
   formatearCbu,
   formatearCuit,
+  HOSTS_DE_MERCADO_PAGO,
+  LARGO_MAXIMO_DEL_LINK,
   normalizarAlias,
+  normalizarLinkDeCobro,
   revisarAlias,
   revisarCbu,
   revisarCuit,
+  revisarLinkDeCobro,
 } from '@maun/domain';
 
 import type { CambiosDeAjustes, FilaDe } from '@/shared/api';
 
-export type CampoDeCobro = 'alias' | 'cbu' | 'titular' | 'cuit';
+export type CampoDeCobro = 'alias' | 'cbu' | 'titular' | 'cuit' | 'link';
 
 export interface DatosDeCobro {
   alias: string;
   cbu: string;
   titular: string;
   cuit: string;
+  link: string;
 }
 
 export interface ErrorDeCobro {
@@ -33,6 +38,7 @@ export function cobroDeLosAjustes(ajustes: FilaDe<'ajustes'>): DatosDeCobro {
     cbu: formatearCbu(ajustes.cobro_cbu),
     titular: ajustes.cobro_titular,
     cuit: ajustes.cobro_cuit,
+    link: ajustes.cobro_link,
   };
 }
 
@@ -42,6 +48,7 @@ export function cambiosDeCobro(datos: DatosDeCobro): CambiosDeAjustes {
     cobro_cbu: digitosDeCbu(datos.cbu),
     cobro_titular: datos.titular.trim(),
     cobro_cuit: formatearCuit(datos.cuit),
+    cobro_link: normalizarLinkDeCobro(datos.link),
   };
 }
 
@@ -88,12 +95,27 @@ function errorDelTitular(titular: string): ErrorDeCobro | null {
   };
 }
 
+function errorDelLink(link: string): ErrorDeCobro | null {
+  const revision = revisarLinkDeCobro(link);
+  if (revision.estado !== 'invalido') return null;
+  return {
+    campo: 'link',
+    mensaje:
+      revision.motivo === 'largo'
+        ? `Un link de Mercado Pago no pasa los ${String(LARGO_MAXIMO_DEL_LINK)} caracteres. Copialo de nuevo desde la app.`
+        : revision.motivo === 'sin-https'
+          ? 'Pegá el link entero, arrancando por https://. Usá el botón de copiar de la app de Mercado Pago.'
+          : `Este link no es de Mercado Pago. Tiene que empezar por ${HOSTS_DE_MERCADO_PAGO.join(', ')}.`,
+  };
+}
+
 export function errorDeCobro(datos: DatosDeCobro): ErrorDeCobro | null {
   return (
     errorDelAlias(datos.alias) ??
     errorDelCbu(datos.cbu) ??
     errorDelTitular(datos.titular) ??
-    errorDelCuit(datos.cuit)
+    errorDelCuit(datos.cuit) ??
+    errorDelLink(datos.link)
   );
 }
 

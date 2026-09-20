@@ -34,6 +34,8 @@ function proyecto(extra: Partial<Proyecto> = {}): Proyecto {
     presupuesto_centavos: 50_000_000,
     sena_bp: null,
     forma_pago: null,
+    cobro_sena: null,
+    cobro_saldo: null,
     comprobante: 'sin_comprobante',
     fecha_visita: null,
     visita_hora: null,

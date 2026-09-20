@@ -41,6 +41,8 @@ function contacto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     presupuesto_centavos: null,
     sena_bp: null,
     forma_pago: null,
+    cobro_sena: null,
+    cobro_saldo: null,
     comprobante: 'sin_comprobante',
     fecha_visita: '2026-09-10',
     visita_hora: null,

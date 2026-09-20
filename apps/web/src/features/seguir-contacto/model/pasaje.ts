@@ -1,4 +1,11 @@
-import { calcularSena, centavos, type PuntosBasicos, type SenaDelTrabajo } from '@maun/domain';
+import {
+  calcularSena,
+  centavos,
+  unaSolaForma,
+  type FormaDeCobro,
+  type PuntosBasicos,
+  type SenaDelTrabajo,
+} from '@maun/domain';
 
 import {
   aprobacionDeUnaOpcion,
@@ -93,6 +100,14 @@ export function resumenDelPasaje(
     cobrado,
     saldo: aprobado === null ? null : Math.max(0, aprobado - cobrado),
   };
+}
+
+export function formaSugerida(
+  guardada: FormaDePago | null,
+  formasDeLaSena: readonly FormaDeCobro[],
+): FormaDePago {
+  if (guardada !== null) return guardada;
+  return unaSolaForma(formasDeLaSena) ?? 'transferencia';
 }
 
 function pagoDeLaSena(monto: number | null, id: string, fecha: string): PagoParaGuardar[] {

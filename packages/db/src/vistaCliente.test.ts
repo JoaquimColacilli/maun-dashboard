@@ -19,11 +19,22 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       entregado: null,
       cobro: null,
     },
+    pago: {
+      instancia: 'sena',
+      formas: ['transferencia', 'efectivo'],
+      monto_centavos: 22_000_000,
+      siguiente: {
+        instancia: 'saldo',
+        formas: ['efectivo'],
+        monto_centavos: 62_000_000,
+      },
+    },
     cobro: {
       alias: 'maun.muebles',
       cbu: '0110001312345678901233',
       titular: 'Ana Gutiérrez',
       cuit: '27-30123456-4',
+      link: 'https://mpago.la/2vXyZ1',
     },
     pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto_centavos: 40_000_000 }],
     archivos: [
@@ -59,11 +70,18 @@ describe('leer la vista del cliente', () => {
         entregado: null,
         cobro: null,
       },
+      pago: {
+        instancia: 'sena',
+        formas: ['transferencia', 'efectivo'],
+        monto: 22_000_000,
+        siguiente: { instancia: 'saldo', formas: ['efectivo'], monto: 62_000_000 },
+      },
       cobro: {
         alias: 'maun.muebles',
         cbu: '0110001312345678901233',
         titular: 'Ana Gutiérrez',
         cuit: '27-30123456-4',
+        link: 'https://mpago.la/2vXyZ1',
       },
       pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: 40_000_000 }],
       archivos: [
@@ -144,24 +162,97 @@ describe('leer la vista del cliente', () => {
   });
 });
 
+describe('el pago que toca', () => {
+  it('lee la instancia, las formas, el importe y el pago que sigue', () => {
+    expect(leerVistaDelCliente(respuesta()).pago).toEqual({
+      instancia: 'sena',
+      formas: ['transferencia', 'efectivo'],
+      monto: 22_000_000,
+      siguiente: { instancia: 'saldo', formas: ['efectivo'], monto: 62_000_000 },
+    });
+  });
+
+  it('sin otro pago después, siguiente queda en null', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({
+        pago: {
+          instancia: 'saldo',
+          formas: ['efectivo'],
+          monto_centavos: 1,
+          siguiente: null,
+        },
+      }),
+    );
+    expect(leido.pago.siguiente).toBeNull();
+  });
+
+  it('una respuesta vieja, sin la clave siguiente, tampoco rompe', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ pago: { instancia: 'saldo', formas: ['efectivo'], monto_centavos: 1 } }),
+    );
+    expect(leido.pago.siguiente).toBeNull();
+  });
+
+  it('sin instancia no hay nada que pagar', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ pago: { instancia: null, formas: [], monto_centavos: null, siguiente: null } }),
+    );
+    expect(leido.pago).toEqual({ instancia: null, formas: [], monto: null, siguiente: null });
+  });
+
+  it('una respuesta vieja, sin la clave, no rompe la vista', () => {
+    expect(leerVistaDelCliente(respuesta({ pago: undefined })).pago).toEqual({
+      instancia: null,
+      formas: [],
+      monto: null,
+      siguiente: null,
+    });
+  });
+
+  it('una forma que esta versión no conoce se ignora en vez de romper la página del cliente', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({
+        pago: { instancia: 'saldo', formas: ['efectivo', 'cripto'], monto_centavos: 1 },
+      }),
+    );
+    expect(leido.pago.formas).toEqual(['efectivo']);
+  });
+
+  it('una instancia que no existe no se cree', () => {
+    expect(() =>
+      leerVistaDelCliente(
+        respuesta({ pago: { instancia: 'visita', formas: [], monto_centavos: null } }),
+      ),
+    ).toThrow(RespuestaInvalidaError);
+  });
+
+  it('ni un importe que no es un número', () => {
+    expect(() =>
+      leerVistaDelCliente(
+        respuesta({ pago: { instancia: 'sena', formas: [], monto_centavos: '100' } }),
+      ),
+    ).toThrow(RespuestaInvalidaError);
+  });
+});
+
 describe('los datos para transferir', () => {
   it('lo que el dueño no cargó llega en null y se queda en null', () => {
     const leido = leerVistaDelCliente(
       respuesta({ cobro: { alias: null, cbu: null, titular: null, cuit: null } }),
     );
-    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null, link: null });
   });
 
   it('una cadena vacía o con espacios se lee como que no hay dato', () => {
     const leido = leerVistaDelCliente(
       respuesta({ cobro: { alias: '', cbu: '  ', titular: null, cuit: '' } }),
     );
-    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null, link: null });
   });
 
   it('una respuesta vieja, sin la clave, no rompe la vista', () => {
     const leido = leerVistaDelCliente(respuesta({ cobro: undefined }));
-    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null });
+    expect(leido.cobro).toEqual({ alias: null, cbu: null, titular: null, cuit: null, link: null });
   });
 
   it('y lo que vino con algo adentro se lee recortado', () => {
@@ -175,5 +266,35 @@ describe('los datos para transferir', () => {
     expect(() => leerVistaDelCliente(respuesta({ cobro: { alias: 42 } }))).toThrow(
       RespuestaInvalidaError,
     );
+  });
+});
+
+describe('el link de Mercado Pago', () => {
+  it('se lee cuando la base lo manda', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({
+        cobro: {
+          alias: null,
+          cbu: null,
+          titular: null,
+          cuit: null,
+          link: ' https://mpago.la/2vXyZ1 ',
+        },
+      }),
+    );
+    expect(leido.cobro.link).toBe('https://mpago.la/2vXyZ1');
+  });
+
+  it('un link que no es de Mercado Pago se descarta: esta página la abre un desconocido', () => {
+    for (const link of [
+      'https://pagame-aca.com/taller',
+      'http://mpago.la/2vXyZ1',
+      'javascript:alert(1)',
+    ]) {
+      const leido = leerVistaDelCliente(
+        respuesta({ cobro: { alias: null, cbu: null, titular: null, cuit: null, link } }),
+      );
+      expect(leido.cobro.link).toBeNull();
+    }
   });
 });

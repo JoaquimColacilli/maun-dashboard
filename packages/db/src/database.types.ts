@@ -13,6 +13,7 @@ export type Database = {
           cobro_alias: string;
           cobro_cbu: string;
           cobro_cuit: string;
+          cobro_link: string;
           cobro_titular: string;
           costos_fijos_centavos: number;
           created_at: string;
@@ -33,6 +34,7 @@ export type Database = {
           cobro_alias?: string;
           cobro_cbu?: string;
           cobro_cuit?: string;
+          cobro_link?: string;
           cobro_titular?: string;
           costos_fijos_centavos?: number;
           created_at?: string;
@@ -53,6 +55,7 @@ export type Database = {
           cobro_alias?: string;
           cobro_cbu?: string;
           cobro_cuit?: string;
+          cobro_link?: string;
           cobro_titular?: string;
           costos_fijos_centavos?: number;
           created_at?: string;
@@ -746,6 +749,8 @@ export type Database = {
       proyectos: {
         Row: {
           cliente_id: string;
+          cobro_saldo: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos: number | null;
           costo_flete_centavos: number | null;
@@ -804,6 +809,8 @@ export type Database = {
         };
         Insert: {
           cliente_id: string;
+          cobro_saldo?: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena?: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante?: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos?: number | null;
           costo_flete_centavos?: number | null;
@@ -862,6 +869,8 @@ export type Database = {
         };
         Update: {
           cliente_id?: string;
+          cobro_saldo?: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena?: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante?: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos?: number | null;
           costo_flete_centavos?: number | null;
@@ -984,6 +993,8 @@ export type Database = {
         };
         Returns: {
           cliente_id: string;
+          cobro_saldo: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos: number | null;
           costo_flete_centavos: number | null;
@@ -1065,6 +1076,8 @@ export type Database = {
         };
         Returns: {
           cliente_id: string;
+          cobro_saldo: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos: number | null;
           costo_flete_centavos: number | null;
@@ -1152,6 +1165,8 @@ export type Database = {
         Args: { p_proyecto_id: string; p_version: number };
         Returns: {
           cliente_id: string;
+          cobro_saldo: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos: number | null;
           costo_flete_centavos: number | null;
@@ -1223,6 +1238,8 @@ export type Database = {
         };
         Returns: {
           cliente_id: string;
+          cobro_saldo: Database['public']['Enums']['forma_de_cobro'][] | null;
+          cobro_sena: Database['public']['Enums']['forma_de_cobro'][] | null;
           comprobante: Database['public']['Enums']['comprobante'];
           costo_ayudante_centavos: number | null;
           costo_flete_centavos: number | null;
@@ -1317,6 +1334,7 @@ export type Database = {
         | 'en_curso'
         | 'entregado'
         | 'cobrado';
+      forma_de_cobro: 'transferencia' | 'efectivo';
       forma_pago: 'efectivo' | 'transferencia' | 'cuotas' | 'mixto';
       origen_contacto: 'referido' | 'redes' | 'volvio' | 'cartel' | 'otro';
       rol_household: 'titular' | 'miembro';
@@ -1459,6 +1477,7 @@ export const Constants = {
         'entregado',
         'cobrado',
       ],
+      forma_de_cobro: ['transferencia', 'efectivo'],
       forma_pago: ['efectivo', 'transferencia', 'cuotas', 'mixto'],
       origen_contacto: ['referido', 'redes', 'volvio', 'cartel', 'otro'],
       rol_household: ['titular', 'miembro'],

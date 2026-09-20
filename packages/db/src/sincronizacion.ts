@@ -39,6 +39,7 @@ export const COLUMNAS_DE_AJUSTES = [
   'cobro_cbu',
   'cobro_titular',
   'cobro_cuit',
+  'cobro_link',
 ] as const;
 
 export type ColumnaDeAjustes = (typeof COLUMNAS_DE_AJUSTES)[number];
@@ -382,6 +383,29 @@ export async function guardarCostosEstimados(
   cliente: ClienteMaun,
   id: string,
   cambios: CambiosDeCostos,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export const COLUMNAS_DE_FORMAS_DE_COBRO = ['cobro_sena', 'cobro_saldo'] as const;
+
+export type ColumnaDeFormaDeCobro = (typeof COLUMNAS_DE_FORMAS_DE_COBRO)[number];
+
+export type CambiosDeFormasDeCobro = Partial<Pick<FilaDe<'proyectos'>, ColumnaDeFormaDeCobro>>;
+
+// Cómo te paga tampoco entra por guardar_proyecto: es un update de sus dos columnas solas, como los
+// costos estimados y las marcas de la agenda (ADR 0053).
+export async function guardarFormasDeCobro(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeFormasDeCobro,
 ): Promise<FilaDe<'proyectos'>> {
   const { data, error } = await cliente
     .from('proyectos')
