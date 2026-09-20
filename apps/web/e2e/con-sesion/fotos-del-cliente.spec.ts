@@ -329,7 +329,7 @@ test('ajustes tiene dónde cargar los datos para transferir', async ({
   await page.goto('/ajustes');
   await listoParaCortar(page);
 
-  const seccion = page.getByRole('region', { name: 'Cómo te transfieren' });
+  const seccion = page.getByRole('region', { name: 'Cómo te pagan' });
   await expect(seccion).toBeVisible(CARGA);
   await seccion.getByLabel('Alias').fill('plata_del_taller');
   await seccion.getByRole('button', { name: 'Guardar los datos' }).click();
