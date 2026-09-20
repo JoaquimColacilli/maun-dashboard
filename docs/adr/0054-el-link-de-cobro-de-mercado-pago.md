@@ -1,6 +1,9 @@
 # 0054. El link de cobro de Mercado Pago, pegado a mano en los ajustes
 
-Estado: aceptada, 2026-09-20. Revierte la decisión de no ofrecer Mercado Pago que tomaron el
+Estado: aceptada, 2026-09-20. **Corregida el mismo día, antes de salir**: el QR de pago que este
+ADR había decidido se sacó de la página del cliente; queda solo el botón. Ver la sección «La
+corrección: el QR de pago no va» más abajo, y con ella cae la sección del escáner, que describe un
+problema que ya no existe. Revierte la decisión de no ofrecer Mercado Pago que tomaron el
 [0051](0051-cobrar-con-mercado-pago.md) y el [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md),
 por pedido explícito del dueño y con el costo sobre la mesa. Amplía la lista blanca del
 [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md).
@@ -43,6 +46,10 @@ y no una transferencia, y sale plata.
 
 ## Lo que cuesta, con los números de hoy
 
+**Corregida**: esta es la tarifa del **QR de cobro**, y lo que este PR terminó mandando es un
+**link**, que tiene otra y es más cara. La que aplica está en «El link personal es un cobro, y no
+es barato», más abajo. Esta queda para tener las dos a la vista.
+
 De la página de «Cobrar con código QR» de Mercado Pago Argentina, consultada el 2026-09-20:
 
 | Con qué paga el cliente                          | Comisión al taller |
@@ -70,6 +77,10 @@ entre 0,6 % y 0,8 %.
 
 ## El escáner de la app de Mercado Pago no lee este código, y no tiene arreglo
 
+**Superada por la corrección**: el QR de pago se sacó, así que esto ya no le pasa a nadie. Queda
+escrito porque es el motivo por el que se sacó, y porque le ahorra la investigación al próximo que
+proponga un QR de pago en esta app.
+
 Comprobado por el dueño con su teléfono, y es la conducta esperada:
 
 - **Con la cámara del celular**: lee el código y abre el enlace. Funciona.
@@ -95,15 +106,79 @@ importe fijo** (`mpago.la/…`) es un producto distinto del link personal (`link
 y podría estar en la lista de cosas que el escáner sí reconoce. Se comprueba pegando uno de esos en
 Ajustes y escaneando el código con la app. Si lo toma, no hay nada que cambiar en el código.
 
+## La corrección: el QR de pago no va
+
+Agregada el 2026-09-20, antes de que esto saliera. El dueño lo probó y decidió sacarlo:
+
+> Sacamos el QR de pago de la página del cliente. La gente lo escanea con la app de Mercado Pago o
+> la del banco, esos escáneres solo leen QR de cobro, y confunde.
+
+Tiene razón, y el motivo está medido en la sección de arriba: **el único escáner que un cliente va
+a usar frente a un código que dice «Mercado Pago» es el de Mercado Pago, y ese lo rechaza.** Un QR
+que solo funciona con la aplicación de cámara, cuando la señal visual empuja a abrir la billetera,
+es una trampa. Poner un cartel explicándolo era tapar el problema con texto.
+
+Y hay algo más de fondo: **el que mira esa página ya tiene el teléfono en la mano**. No hay nadie a
+quien mostrarle una pantalla. El QR nunca tuvo un caso de uso real ahí; el botón sí.
+
+Qué se fue: el código del bloque «Cómo pagar», su texto sobre la cámara y el escáner, los pasos que
+hablaban de escanear, sus tests y sus capturas. Qué se quedó: **el QR del enlace de «Compartir con
+el cliente»**, que es otra cosa —lleva a la página del cliente, no a un pago, y el dueño se lo
+muestra en la mano— con su pantalla, su decodificación probada y su dibujo. Como ese QR volvió a
+ser el único, `DibujoDelQr` volvió a vivir en `features/compartir-con-el-cliente`, de donde había
+salido, y los dos envoltorios que existían solo para compartirlo entre las dos pantallas
+—`QrDeUnEnlace` y `precargarElQr`— se borraron. `uqr` se queda: lo usa el QR que quedó.
+
+## El link personal es un cobro, y no es barato
+
+También corregido acá. La tabla de la sección anterior es la del **QR de cobro** (0,80 % con dinero
+en cuenta), y este PR no manda un QR: manda un **link**. La tarifa del link es otra y es mucho más
+cara. Del ADR [0051](0051-cobrar-con-mercado-pago.md), verificada contra la página oficial, para
+Buenos Aires y **sin IVA**:
+
+| Cuándo querés la plata | Se lleva Mercado Pago |
+| ---------------------- | --------------------- |
+| Al instante            | **6,60 %**            |
+| A 10 días              | 4,61 %                |
+| A 18 días              | 3,56 %                |
+| A 35 días              | 1,56 %                |
+
+Y lo más importante: **esa tabla vale para todos los medios de pago, dinero en cuenta de Mercado
+Pago incluido**. La página lo enumera en la primera columna. No existe el caso barato del link. Una
+seña de $450.000 cobrada al instante deja $29.700 en Mercado Pago, $35.937 con IVA; transferida al
+alias, cero.
+
+Por eso el orden en la página del cliente cambió: **el alias y el CVU van primero**, que es la
+forma que no le cuesta nada al taller, y el botón de Mercado Pago va después, como la alternativa
+cómoda. Y en Ajustes, debajo del campo, el aviso está siempre —no solo cuando hay algo cargado— con
+el número y el enlace a la página de costos de Mercado Pago.
+
+## El logo, solo cuando la cuenta es de Mercado Pago
+
+La objeción 3 de la primera versión quedó cerrada: mostrar el logo al lado de un CBU de banco era
+decirle algo falso a un cliente que está por mandar plata.
+
+Un CVU no alcanza para saberlo: Ualá, Naranja X y las demás billeteras también tienen CVU. Lo que
+identifica al proveedor son los dígitos 4 a 7, después del `000` que marca que la cuenta es
+virtual. Mercado Pago es `0003`, así que su CVU **empieza con `0000003`** —Ualá es `0000058`,
+Naranja X `0000168`—. `esCuentaDeMercadoPago()` de `@maun/domain` es esa regla, y el logo sale
+cuando la cuenta la cumple **o** cuando hay link de Mercado Pago cargado, que es prueba directa.
+
+El mapeo de código a proveedor es operativo, no está en una tabla del BCRA: lo administra la cámara
+compensadora. Si Mercado Pago sumara un código nuevo, el logo dejaría de salir para las cuentas
+nuevas. Es una degradación silenciosa y benigna —deja de mostrarse un logo— y nunca al revés: nunca
+va a decir «Mercado Pago» sobre una cuenta que no lo es.
+
 ## Decisión
 
 **Un campo nuevo en Ajustes, `ajustes.cobro_link`, donde el dueño pega su propio link de Mercado
 Pago.** No se deriva de nada: se pega.
 
 Cuando está cargado y el pago que le toca al cliente se ofrece por transferencia, su página muestra
-el importe arriba, en grande y con su botón de copiar, y debajo el link como **código QR** y como
-**botón**. El alias, el CVU, el titular y el CUIT dejan de mostrarse, que es lo que el dueño marcó.
-Cuando no está cargado, la página es exactamente la de antes.
+el importe arriba, en grande y con su botón de copiar; después el alias, el CVU, el titular y el
+CUIT con sus botones de copiar; y al final el link como **botón**. Ese orden es la decisión: lo que
+no le cuesta comisión al taller va primero. Cuando el link no está cargado, la página es
+exactamente la de antes.
 
 El link que hay que pegar es el **«Link sin monto definido»** de Mercado Pago: en la app, Cobrar →
 Link de pago → Link sin monto definido. Se crea una sola vez, es reutilizable y **el importe lo
@@ -168,22 +243,20 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
 
 - **El dueño paga comisión por lo que se cobre por acá.** Es la consecuencia principal y es la que
   él eligió. Está dicha en Ajustes, debajo del campo, y vuelve a decirse apenas escribe algo.
-- **Mientras el link esté cargado, el cliente ya no ve el alias.** Pierde la opción gratis. Es lo
-  que el dueño marcó, y se revierte vaciando un campo.
+- **El cliente sigue viendo el alias, y primero.** La forma sin comisión no se esconde detrás de
+  la cómoda.
 - **El link es del taller, no del trabajo.** Es el mismo para todos los trabajos y no lleva importe:
   el importe lo escribe el cliente, que es exactamente el «monto 0 a rellenar» que pidió, y la
-  página se lo dice arriba del código.
-- **El dibujo del QR se mudó a `shared/ui`.** La página del cliente es una entidad y no puede
-  importar de una feature. `DibujoDelQr`, `QrDeUnEnlace` y `precargarElQr()` viven ahora en
-  `shared/ui`, y la hoja del QR del dueño usa el mismo componente. `uqr` sigue fuera del chunk de
-  vendor.
+  página se lo dice arriba.
+- **La página del cliente no tiene ningún código QR.** Hay un test que lo afirma: ni un `img` con
+  nombre de código QR ni un `svg[role="img"]` en toda la página.
 - **Todo lo de cobros quedó en la columna derecha**, debajo de los datos del trabajo, por pedido
   del dueño. En pantalla angosta no hay columnas, así que el bloque cae después de «Lo que
   pagaste»: queda justo detrás del saldo, que es el orden que tiene sentido leyendo de arriba
   abajo. La grilla lo coloca con `col-start` y `row-start` en vez de moverlo de lugar en el HTML,
   para que el orden en pantalla angosta no dependa del de escritorio.
-- **El logo de Mercado Pago aparece cada vez que ese pago se cobra por transferencia**, haya link o
-  no, y nunca cuando es en efectivo. Es un PNG de 19,5 kB que el dueño trajo; no hay una versión
+- **El logo de Mercado Pago aparece solo cuando la cuenta es suya**, por el CVU o por el link, y
+  nunca cuando el pago es en efectivo. Es un PNG de 19,5 kB que el dueño trajo; no hay una versión
   vectorial disponible, así que se sirve como imagen y se dibuja a 18 px de alto.
 
 ## Objeciones
@@ -199,12 +272,9 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
    por trabajo resolvería esto y necesita la API, que está descartada. Mientras tanto, el pago mal
    escrito se ve en la app cuando el dueño lo anota, igual que hoy.
 
-3. **El logo dice «Mercado Pago» aunque la cuenta no sea de Mercado Pago.** Se muestra siempre que
-   ese pago se cobre por transferencia, que es lo que el dueño pidió. Hoy es exacto, porque su
-   cuenta es un CVU de Mercado Pago. El día que cargue un CBU de un banco, el logo va a estar
-   diciéndole algo falso a un cliente que está por mandar plata. Se arregla con una condición —el
-   dominio ya distingue CBU de CVU con `claveBancariaDe()`—, pero eso no es lo que se pidió y no lo
-   hice.
+3. **Cerrada.** Era: «el logo dice Mercado Pago aunque la cuenta no sea de Mercado Pago». El dueño
+   aceptó la objeción y ahora el logo sale solo cuando la cuenta es suya, por el CVU o por el link.
+   Ver «El logo, solo cuando la cuenta es de Mercado Pago».
 
 4. **El QR y el botón no los pude probar contra Mercado Pago.** El link que usan los tests es uno de
    forma válida, no una cuenta real. Que el código se lee y da exactamente la dirección está probado
@@ -217,7 +287,13 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
   2026-09-20.
 - Mercado Pago Argentina, «Link de pago». Consultada el 2026-09-20.
 - Mercado Pago Argentina, ayuda 23993 «¿Qué es Link sin monto definido?» y 23995 «¿Cómo cobrar con
-  Link sin monto definido?»: se crea una vez, es reutilizable y el importe lo pone el que paga.
+  Link sin monto definido?»: se crea una vez, es reutilizable y el importe lo pone el que paga. Es
+  un producto de Link de pago, así que le corresponde la tarifa del link y no la del QR.
+- BCRA, «Clave Virtual Uniforme (CVU)» y la guía de consultas frecuentes RI-PSP: el primer bloque
+  de ocho dígitos identifica al PSP, con `000` como código de entidad para las cuentas virtuales.
+  El valor concreto por proveedor —Mercado Pago `0000003`, Ualá `0000058`, Naranja X `0000168`— es
+  operativo y sale de los validadores de CBU/CVU; verificado también contra el CVU real del
+  taller.
 - BCRA, «Transferencias 3.0 · Pago con transferencia · Interoperabilidad entre los esquemas»:
   estándar EMVCo, campo 51 para CBU/CVU/alias y el rol de los administradores de esquema.
 - BCRA, texto ordenado de Transferencias, punto 6.3.1.2: arancel al comercio entre 0,6 % y 0,8 %.
