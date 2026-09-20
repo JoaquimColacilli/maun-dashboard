@@ -68,6 +68,33 @@ El tope del 0,80 % para los pagos con transferencia no lo pone Mercado Pago: lo 
 Central, en el punto 6.3.1.2 del texto ordenado de Transferencias, que fija el arancel al comercio
 entre 0,6 % y 0,8 %.
 
+## El escáner de la app de Mercado Pago no lee este código, y no tiene arreglo
+
+Comprobado por el dueño con su teléfono, y es la conducta esperada:
+
+- **Con la cámara del celular**: lee el código y abre el enlace. Funciona.
+- **Con el escáner de adentro de la app de Mercado Pago**: «Este código QR no es para hacer
+  pagos. Podés abrirlo con tu navegador o escanear otro QR.»
+
+No es un error del código que dibujamos. El escáner de Mercado Pago está hecho para leer **códigos
+de cobro** —el payload EMVCo del QR interoperable— y rechaza a propósito cualquier otro contenido;
+por eso, en vez de fallar, ofrece abrirlo en el navegador. Un QR cuyo contenido es una URL nunca va
+a ser un código de cobro, por más que la URL sea de Mercado Pago.
+
+Para que ese escáner lo tome haría falta emitir un QR interoperable, y eso vuelve al punto de más
+arriba: lo emite un PSP contra un esquema. Mercado Pago le emite uno al dueño —es el de Cobrar →
+QR— pero es una imagen que le da la app, no algo que se pueda derivar del enlace.
+
+Lo que sí hace este PR es que la página no mande a nadie al escáner equivocado: debajo del código
+dice, con todas las letras, que se lee con la cámara y que el escáner de la app no lo toma. Y los
+pasos arrancan por el botón, porque quien está mirando la página ya tiene el teléfono en la mano y
+no necesita escanear nada: el código es para cuando el dueño le muestra la pantalla a otra persona.
+
+Queda una prueba de treinta segundos que el dueño puede hacer y yo no: un **link de pago con
+importe fijo** (`mpago.la/…`) es un producto distinto del link personal (`link.mercadopago.com.ar/…`)
+y podría estar en la lista de cosas que el escáner sí reconoce. Se comprueba pegando uno de esos en
+Ajustes y escaneando el código con la app. Si lo toma, no hay nada que cambiar en el código.
+
 ## Decisión
 
 **Un campo nuevo en Ajustes, `ajustes.cobro_link`, donde el dueño pega su propio link de Mercado
@@ -150,6 +177,14 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
   importar de una feature. `DibujoDelQr`, `QrDeUnEnlace` y `precargarElQr()` viven ahora en
   `shared/ui`, y la hoja del QR del dueño usa el mismo componente. `uqr` sigue fuera del chunk de
   vendor.
+- **Todo lo de cobros quedó en la columna derecha**, debajo de los datos del trabajo, por pedido
+  del dueño. En pantalla angosta no hay columnas, así que el bloque cae después de «Lo que
+  pagaste»: queda justo detrás del saldo, que es el orden que tiene sentido leyendo de arriba
+  abajo. La grilla lo coloca con `col-start` y `row-start` en vez de moverlo de lugar en el HTML,
+  para que el orden en pantalla angosta no dependa del de escritorio.
+- **El logo de Mercado Pago aparece cada vez que ese pago se cobra por transferencia**, haya link o
+  no, y nunca cuando es en efectivo. Es un PNG de 19,5 kB que el dueño trajo; no hay una versión
+  vectorial disponible, así que se sirve como imagen y se dibuja a 18 px de alto.
 
 ## Objeciones
 
@@ -164,7 +199,14 @@ dominio— y el archivo de pgTAP la prueba con el alias y el CBU vacíos.
    por trabajo resolvería esto y necesita la API, que está descartada. Mientras tanto, el pago mal
    escrito se ve en la app cuando el dueño lo anota, igual que hoy.
 
-3. **El QR y el botón no los pude probar contra Mercado Pago.** El link que usan los tests es uno de
+3. **El logo dice «Mercado Pago» aunque la cuenta no sea de Mercado Pago.** Se muestra siempre que
+   ese pago se cobre por transferencia, que es lo que el dueño pidió. Hoy es exacto, porque su
+   cuenta es un CVU de Mercado Pago. El día que cargue un CBU de un banco, el logo va a estar
+   diciéndole algo falso a un cliente que está por mandar plata. Se arregla con una condición —el
+   dominio ya distingue CBU de CVU con `claveBancariaDe()`—, pero eso no es lo que se pidió y no lo
+   hice.
+
+4. **El QR y el botón no los pude probar contra Mercado Pago.** El link que usan los tests es uno de
    forma válida, no una cuenta real. Que el código se lee y da exactamente la dirección está probado
    con un decodificador de verdad; que Mercado Pago abra la pantalla de pago del taller solo se
    comprueba escaneándolo con un teléfono contra una cuenta real, y eso lo tiene que hacer él.
