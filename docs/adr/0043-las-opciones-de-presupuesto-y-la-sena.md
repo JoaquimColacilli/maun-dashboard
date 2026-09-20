@@ -128,6 +128,12 @@ relevamiento técnico» es una resta sobre lo que ya hay.
 **No tiene gemela en SQL y no la necesita**, como `resumenDelMes` y `sueldoDelMes`: nada en la base
 consume la seña. La base guarda los dos porcentajes y su rango, nada más.
 
+> **Corregido el 2026-09-20 por el [ADR 0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md).**
+> Ahora sí hay algo en la base que consume la seña: la vista del cliente le dice cuánto es el pago
+> que le toca, y ese importe lo tiene que calcular la base, porque el porcentaje no viaja. La gemela
+> es `private.pagos_por_delante()` y `scripts/comparacion.ts` la compara caso por caso contra
+> `pagosPorDelante()` del dominio. Lo demás de esta sección sigue igual.
+
 ### 6. Ninguna pantalla ofrece escribir un presupuesto que se va a descartar
 
 La base garantiza el número, pero una pantalla que deja tipear un importe que después la base ignora
@@ -287,3 +293,5 @@ immediate`, que es un camino que la app no recorre nunca. Es una garantía proba
   dispositivo no las ve por delta hasta el reconcile. Se leen tolerando la fila que no las trae, como
   `visita_hecha` (ADR 0042).
 - Todo cambio en la seña se hace en el dominio, con sus tests. No hay gemela en SQL que mantener.
+  (Desde el ADR 0053 sí la hay, para la vista del cliente: el cambio se hace en los dos lados y el
+  comparador falla si divergen.)

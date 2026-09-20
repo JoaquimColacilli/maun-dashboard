@@ -80,6 +80,10 @@ del nodo fantasma y solo cuenta como copiado si ese handler corrió. El fantasma
   `25_vista_del_cliente.sql` clasifica ahora **toda columna de `ajustes`**, no solo las de
   `proyectos`. Una columna nueva en cualquiera de las dos rompe el test hasta que alguien decida.
 - Los cuatro campos son lo **único** que se suma a lo que el cliente ve desde el ADR 0046.
+- **Objeción anotada, cerrada el 2026-09-20 por el
+  [ADR 0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md):** la página dice el importe, y
+  `sena_bp` sigue sin viajar. Lo que viaja es el peso, calculado en la base. Lo que sigue es lo que
+  se había decidido acá.
 - **Objeción anotada.** El PR pedía que, aprobado y sin pagos, la página diga _cuánto_ es la seña.
   No se puede sin mandarle `sena_bp` al cliente, y el mismo PR pide que no se sume nada más a la
   lista blanca. Se resolvió a favor de no ampliarla: la página dice que lo primero es la seña y que
