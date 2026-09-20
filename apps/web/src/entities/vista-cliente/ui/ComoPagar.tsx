@@ -1,6 +1,7 @@
 import {
   claveBancariaDe,
   comoPagar,
+  CON_LA_CAMARA,
   formatearCbu,
   PEDILE_LOS_DATOS,
   type ComoPagar as Como,
@@ -8,7 +9,7 @@ import {
 } from '@maun/domain';
 
 import { formatearPesos } from '@/shared/lib';
-import { DatoCopiable, Icono, QrDeUnEnlace } from '@/shared/ui';
+import { DatoCopiable, Icono, LogoDeMercadoPago, QrDeUnEnlace } from '@/shared/ui';
 
 export interface ComoPagarProps {
   trabajo: TrabajoDelCliente;
@@ -59,7 +60,10 @@ export function ComoPagar({ trabajo }: ComoPagarProps) {
       aria-label="Cómo pagar"
       className="mt-5 rounded-panel border border-hairline bg-surface px-4 py-3.5"
     >
-      <h2 className="text-section font-semibold">{como.titulo}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-section font-semibold">{como.titulo}</h2>
+        {como.transferencia && <LogoDeMercadoPago />}
+      </div>
 
       <div className="mt-1.5">
         {como.monto !== null && como.montoParaPegar !== null && (
@@ -109,6 +113,10 @@ export function ComoPagar({ trabajo }: ComoPagarProps) {
 
       {como.transferencia && (
         <p className="mt-2.5 text-label leading-relaxed text-text-2">{como.pasos}</p>
+      )}
+
+      {porMercadoPago && (
+        <p className="mt-1.5 text-label leading-relaxed text-text-3">{CON_LA_CAMARA}</p>
       )}
 
       {porMercadoPago && cobro.titular !== null && (

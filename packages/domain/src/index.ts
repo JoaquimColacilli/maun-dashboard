@@ -128,6 +128,7 @@ export {
   comoPagar,
   hayComoTransferir,
   HITOS,
+  CON_LA_CAMARA,
   PASOS_CON_MERCADO_PAGO,
   PASOS_PARA_TRANSFERIR,
   PEDILE_LOS_DATOS,

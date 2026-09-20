@@ -391,6 +391,8 @@ test('con el link de Mercado Pago cargado, el cliente ve el código y el botón 
   await expect(bloque.getByRole('button', { name: 'Copiar el alias' })).toHaveCount(0);
   await expect(bloque.getByRole('button', { name: 'Copiar el monto' })).toBeVisible();
   await expect(bloque).toContainText('Después, el saldo: $ 450.000');
+  await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
+  await expect(bloque).toContainText('El escáner de la app de Mercado Pago no lo toma');
 
   console.log(`\n=== ${testInfo.project.name}: el bloque con el link de Mercado Pago ===`);
   console.log(await bloque.ariaSnapshot());
@@ -446,6 +448,7 @@ test('si ese pago es en efectivo, el link tampoco viaja', async ({ page }) => {
   await expect(bloque).toBeVisible(CARGA);
   await expect(bloque).toContainText('La seña es en efectivo, en mano.');
   await expect(bloque.getByRole('link', { name: 'Pagar con Mercado Pago' })).toHaveCount(0);
+  await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
 
   await expect.poll(() => respuestas.length, CARGA).toBeGreaterThan(0);
   for (const cuerpo of respuestas) {

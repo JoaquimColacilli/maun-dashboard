@@ -128,7 +128,10 @@ function elQueSigue(pago: PagoOfrecido | null): PagoQueSigue | null {
 }
 
 export const PASOS_CON_MERCADO_PAGO =
-  'Escaneá el código con la cámara del celular o tocá el botón. Se abre Mercado Pago: escribí el monto de arriba y confirmá.';
+  'Tocá el botón, o escaneá el código con la cámara del celular. Se abre Mercado Pago: escribí el monto de arriba y confirmá.';
+
+export const CON_LA_CAMARA =
+  'El código se lee con la cámara del celular. El escáner de la app de Mercado Pago no lo toma, porque es un enlace y no un código de cobro.';
 
 export const PASOS_PARA_TRANSFERIR =
   'Copiá el alias, pegalo en Transferir en la app de tu banco o de tu billetera, escribí el monto y confirmá.';

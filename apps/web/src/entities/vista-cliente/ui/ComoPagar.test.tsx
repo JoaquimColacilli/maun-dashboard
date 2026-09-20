@@ -1,5 +1,6 @@
 import {
   centavos,
+  CON_LA_CAMARA,
   PASOS_CON_MERCADO_PAGO,
   PASOS_PARA_TRANSFERIR,
   PEDILE_LOS_DATOS,
@@ -391,5 +392,40 @@ describe('con el link de Mercado Pago cargado', () => {
     const bloque = elBloqueSeguro();
     expect(bloque).toHaveTextContent('maun.muebles');
     expect(within(bloque).queryByRole('link', { name: PAGAR_CON_MERCADO_PAGO })).toBeNull();
+  });
+});
+
+describe('el logo de Mercado Pago', () => {
+  it('aparece cuando ese pago se cobra por transferencia, con link o sin link', () => {
+    for (const cobro of [CON_TODO, { ...CON_TODO, link: 'https://mpago.la/2vXyZ1' }]) {
+      const { unmount } = dibujar(trabajo({ cobro }, { formas: ['transferencia'] }));
+      expect(within(elBloqueSeguro()).getByAltText('Mercado Pago')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('no aparece si ese pago es en efectivo', () => {
+    dibujar(trabajo({ cobro: CON_TODO }, { formas: ['efectivo'] }));
+    expect(within(elBloqueSeguro()).queryByAltText('Mercado Pago')).toBeNull();
+  });
+
+  it('tampoco si el taller no cargó ningún dato', () => {
+    dibujar(trabajo({ cobro: SIN_NADA }, { formas: ['transferencia'] }));
+    expect(within(elBloqueSeguro()).queryByAltText('Mercado Pago')).toBeNull();
+  });
+
+  it('con link, avisa que el código se lee con la cámara y no con el escáner de la app', () => {
+    dibujar(
+      trabajo(
+        { cobro: { ...CON_TODO, link: 'https://mpago.la/2vXyZ1' } },
+        { formas: ['transferencia'] },
+      ),
+    );
+    expect(elBloqueSeguro()).toHaveTextContent(CON_LA_CAMARA);
+  });
+
+  it('sin link no dice nada de la cámara: no hay código que escanear', () => {
+    dibujar(trabajo({ cobro: CON_TODO }, { formas: ['transferencia'] }));
+    expect(elBloqueSeguro()).not.toHaveTextContent(CON_LA_CAMARA);
   });
 });

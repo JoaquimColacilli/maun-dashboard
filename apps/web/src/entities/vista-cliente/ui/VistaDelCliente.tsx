@@ -98,7 +98,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
       </header>
 
       <div className="mt-4 grid grid-cols-1 items-start gap-x-11 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <div className="@container min-w-0">
+        <div className="@container min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
             <span className="text-body text-text-2">{trabajo.cliente}</span>
             <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
@@ -158,8 +158,6 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               </>
             )}
           </section>
-
-          <ComoPagar trabajo={trabajo} />
 
           <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
@@ -241,7 +239,11 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
           </section>
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:col-start-2 lg:row-start-2">
+          <ComoPagar trabajo={trabajo} />
+        </div>
+
+        <div className="min-w-0 lg:col-start-2 lg:row-start-1">
           <section aria-label="Fotos y planos" className="mt-8 lg:mt-0">
             <div className="mb-3 flex items-baseline justify-between gap-2.5">
               <h2 className="text-section font-semibold">Fotos y planos</h2>
