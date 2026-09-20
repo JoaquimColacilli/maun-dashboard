@@ -43,10 +43,17 @@ export interface CobroDelTaller {
   cuit: string | null;
 }
 
+export interface PagoOfrecido {
+  instancia: InstanciaDePago;
+  formas: readonly FormaDeCobro[];
+  monto: Money | null;
+}
+
 export interface PagoPendiente {
   instancia: InstanciaDePago | null;
   formas: readonly FormaDeCobro[];
   monto: Money | null;
+  siguiente: PagoOfrecido | null;
 }
 
 export interface TrabajoDelCliente {
@@ -67,6 +74,13 @@ export function hayComoTransferir(cobro: CobroDelTaller): boolean {
   return cobro.alias !== null || cobro.cbu !== null;
 }
 
+export interface PagoQueSigue {
+  instancia: InstanciaDePago;
+  monto: Money | null;
+  nombre: string;
+  comoSePaga: string;
+}
+
 export interface ComoPagar {
   instancia: InstanciaDePago;
   monto: Money | null;
@@ -78,17 +92,38 @@ export interface ComoPagar {
   etiquetaDelImporte: string;
   pasos: string;
   enEfectivo: string;
+  siguiente: PagoQueSigue | null;
 }
 
-const TITULO: Readonly<Record<InstanciaDePago, string>> = {
-  sena: 'Para dejar la seña',
-  saldo: 'Para pagar el saldo',
-};
+const TITULO = 'Cómo pagar';
 
 const ETIQUETA_DEL_IMPORTE: Readonly<Record<InstanciaDePago, string>> = {
-  sena: 'Seña a transferir',
-  saldo: 'Saldo a transferir',
+  sena: 'Ahora, la seña',
+  saldo: 'Ahora, el saldo',
 };
+
+const NOMBRE: Readonly<Record<InstanciaDePago, string>> = {
+  sena: 'la seña',
+  saldo: 'el saldo',
+};
+
+function comoSePaga(formas: readonly FormaDeCobro[]): string {
+  const porTransferencia = ofrece(formas, 'transferencia');
+  const enEfectivo = ofrece(formas, 'efectivo');
+  if (porTransferencia && enEfectivo) return 'por transferencia o en efectivo';
+  if (porTransferencia) return 'por transferencia';
+  return 'en efectivo';
+}
+
+function elQueSigue(pago: PagoOfrecido | null): PagoQueSigue | null {
+  if (pago === null) return null;
+  return {
+    instancia: pago.instancia,
+    monto: pago.monto,
+    nombre: NOMBRE[pago.instancia],
+    comoSePaga: comoSePaga(pago.formas),
+  };
+}
 
 export const PASOS_PARA_TRANSFERIR =
   'Copiá el alias, pegalo en Transferir en la app de tu banco o de tu billetera, escribí el monto y confirmá.';
@@ -121,10 +156,11 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
     transferencia,
     efectivo,
     faltanLosDatos: pideTransferencia && !transferencia,
-    titulo: TITULO[instancia],
+    titulo: TITULO,
     etiquetaDelImporte: ETIQUETA_DEL_IMPORTE[instancia],
     pasos: PASOS_PARA_TRANSFERIR,
     enEfectivo: transferencia ? TAMBIEN_EFECTIVO[instancia] : SOLO_EFECTIVO[instancia],
+    siguiente: elQueSigue(trabajo.pago.siguiente),
   };
 }
 

@@ -9,6 +9,7 @@ import {
   montoParaPegar,
   ofrece,
   pagoQueToca,
+  pagosPorDelante,
   unaSolaForma,
   type FormaDeCobro,
 } from './pagos.ts';
@@ -145,6 +146,59 @@ describe('qué pago toca', () => {
   });
 });
 
+describe('los pagos que le faltan al cliente, en orden', () => {
+  it('sin presupuesto se conocen los dos, sin importe', () => {
+    expect(pagosPorDelante(trabajo(null, 0))).toEqual([
+      { instancia: 'sena', monto: null },
+      { instancia: 'saldo', monto: null },
+    ]);
+  });
+
+  it('sin nada pagado, la seña y lo que va a quedar de saldo', () => {
+    expect(pagosPorDelante(trabajo(100_000_000, 0))).toEqual([
+      { instancia: 'sena', monto: centavos(50_000_000) },
+      { instancia: 'saldo', monto: centavos(50_000_000) },
+    ]);
+  });
+
+  it('con parte de la seña cobrada, el saldo de después no se mueve', () => {
+    expect(pagosPorDelante(trabajo(100_000_000, 20_000_000))).toEqual([
+      { instancia: 'sena', monto: centavos(30_000_000) },
+      { instancia: 'saldo', monto: centavos(50_000_000) },
+    ]);
+  });
+
+  it('lo que cobró en la visita ya está descontado: es un pago más del trabajo', () => {
+    expect(pagosPorDelante(trabajo(100_000_000, 5_000_000))[0]).toEqual({
+      instancia: 'sena',
+      monto: centavos(45_000_000),
+    });
+  });
+
+  it('con la seña cubierta queda solo el saldo', () => {
+    expect(pagosPorDelante(trabajo(100_000_000, 60_000_000))).toEqual([
+      { instancia: 'saldo', monto: centavos(40_000_000) },
+    ]);
+  });
+
+  it('con la seña al 100 % no hay saldo después: es un pago solo', () => {
+    expect(pagosPorDelante(trabajo(100_000_000, 0, 10_000))).toEqual([
+      { instancia: 'sena', monto: centavos(100_000_000) },
+    ]);
+  });
+
+  it('saldado no falta ninguno', () => {
+    expect(pagosPorDelante(trabajo(100_000_000, 100_000_000))).toEqual([]);
+  });
+
+  it('el pago que toca es el primero de la lista', () => {
+    expect(pagoQueToca(trabajo(100_000_000, 0))).toEqual(
+      pagosPorDelante(trabajo(100_000_000, 0))[0],
+    );
+    expect(pagoQueToca(trabajo(100_000_000, 100_000_000))).toBeNull();
+  });
+});
+
 describe('qué instancias faltan', () => {
   it('sin presupuesto faltan las dos: todavía no pagó nada', () => {
     expect(instanciasPendientes(trabajo(null, 0))).toEqual(['sena', 'saldo']);
@@ -160,6 +214,10 @@ describe('qué instancias faltan', () => {
 
   it('saldado no falta nada', () => {
     expect(instanciasPendientes(trabajo(100_000_000, 100_000_000))).toEqual([]);
+  });
+
+  it('con la seña al 100 % la única instancia es la seña: no hay saldo que configurar', () => {
+    expect(instanciasPendientes(trabajo(100_000_000, 0, 10_000))).toEqual(['sena']);
   });
 });
 

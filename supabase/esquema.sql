@@ -2382,26 +2382,26 @@ $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
 
-CREATE OR REPLACE FUNCTION private.pago_que_toca(p_precio_centavos bigint, p_pagado_centavos bigint, p_sena_bp integer, OUT instancia text, OUT monto_centavos bigint)
- RETURNS record
+CREATE OR REPLACE FUNCTION private.pagos_por_delante(p_precio_centavos bigint, p_pagado_centavos bigint, p_sena_bp integer)
+ RETURNS TABLE(orden integer, instancia text, monto_centavos bigint)
  LANGUAGE plpgsql
  IMMUTABLE
  SET search_path TO ''
 AS $function$
 declare
+  v_falta bigint;
   v_sena bigint;
+  v_despues bigint;
 begin
-  instancia := null;
-  monto_centavos := null;
-
-  -- Sin presupuesto no hay importe que calcular, pero lo que sigue es la seña igual: es lo primero
-  -- que el cliente paga y es lo que la pantalla le anticipa.
+  -- Sin presupuesto no hay importe que calcular, pero el camino se conoce igual: primero la seña y
+  -- después el saldo. La pantalla los anticipa sin número.
   if p_precio_centavos is null then
-    instancia := 'sena';
+    return query values (1, 'sena', null::bigint), (2, 'saldo', null::bigint);
     return;
   end if;
 
-  if p_pagado_centavos >= p_precio_centavos then
+  v_falta := p_precio_centavos - p_pagado_centavos;
+  if v_falta <= 0 then
     return;
   end if;
 
@@ -2409,18 +2409,25 @@ begin
   -- medio punto para redondear y división entera, que con importes no negativos es piso.
   v_sena := (p_precio_centavos * p_sena_bp + 5000) / 10000;
 
-  if p_pagado_centavos < v_sena then
-    instancia := 'sena';
-    monto_centavos := v_sena - p_pagado_centavos;
+  if p_pagado_centavos >= v_sena then
+    return query values (1, 'saldo', v_falta);
     return;
   end if;
 
-  instancia := 'saldo';
-  monto_centavos := p_precio_centavos - p_pagado_centavos;
+  -- Lo que queda después de cubrir la seña no es «lo que falta menos la seña que falta»: es el
+  -- presupuesto menos la seña entera. Con parte de la seña ya cobrada las dos cuentas no dan lo
+  -- mismo, y la que el cliente va a tener que pagar es esta.
+  v_despues := p_precio_centavos - v_sena;
+  if v_despues <= 0 then
+    return query values (1, 'sena', v_sena - p_pagado_centavos);
+    return;
+  end if;
+
+  return query values (1, 'sena', v_sena - p_pagado_centavos), (2, 'saldo', v_despues);
 end;
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.pago_que_toca(bigint,bigint,integer) is 'Qué le toca pagar al cliente ahora y cuánto: la seña mientras no esté cubierta, después el saldo, y nada cuando ya pagó todo (instancia en null). El importe es lo que falta de esa instancia, no el total. Sin presupuesto la instancia es la seña y el importe es null, porque el porcentaje de seña es política comercial del taller y no viaja: lo que viaja es el peso que el cliente tiene que transferir. Es la gemela en SQL de pagoQueToca() de @maun/domain y scripts/comparacion.ts las compara caso por caso (ADR 0053).';
+comment on function private.pagos_por_delante(bigint,bigint,integer) is 'Los pagos que le faltan al cliente, en el orden en que los va a hacer: la seña mientras no esté cubierta y después el saldo, o nada cuando ya pagó todo. El importe de la seña es lo que falta de ella, con todo lo cobrado hasta hoy ya descontado —la visita incluida, que entra como un pago más—; el del saldo es el presupuesto menos la seña entera, que es lo que va a quedar cuando la termine de pagar. Sin presupuesto devuelve los dos sin importe: el porcentaje de seña es política comercial del taller y no viaja. Es la gemela en SQL de pagosPorDelante() de @maun/domain y scripts/comparacion.ts las compara caso por caso (ADR 0053).';
 
 CREATE OR REPLACE FUNCTION private.pedir_los_avisos()
  RETURNS bigint
@@ -3162,9 +3169,11 @@ declare
   v_cbu text;
   v_hay_como_transferir boolean;
   v_pagado bigint;
-  v_pago record;
+  v_ahora record;
+  v_despues record;
   v_formas public.forma_de_cobro[];
   v_por_transferencia boolean;
+  v_siguiente jsonb;
 begin
   select * into v_p from public.proyectos p where p.id = p_proyecto_id and p.deleted_at is null;
 
@@ -3194,22 +3203,44 @@ begin
     and g.proyecto_id = v_p.id
     and g.deleted_at is null;
 
-  select * into v_pago from private.pago_que_toca(
+  select * into v_ahora from private.pagos_por_delante(
     v_p.presupuesto_centavos,
     v_pagado,
     coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
-  );
+  ) where orden = 1;
+
+  select * into v_despues from private.pagos_por_delante(
+    v_p.presupuesto_centavos,
+    v_pagado,
+    coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
+  ) where orden = 2;
 
   -- Con todo pagado no hay ninguna instancia, así que tampoco hay formas ni datos de la cuenta.
-  if v_pago.instancia is null then
+  if v_ahora.instancia is null then
     v_formas := array[]::public.forma_de_cobro[];
-  elsif v_pago.instancia = 'sena' then
+  elsif v_ahora.instancia = 'sena' then
     v_formas := private.formas_de_cobro(v_p.cobro_sena, v_hay_como_transferir);
   else
     v_formas := private.formas_de_cobro(v_p.cobro_saldo, v_hay_como_transferir);
   end if;
 
   v_por_transferencia := 'transferencia' = any (v_formas);
+
+  if v_despues.instancia is null then
+    v_siguiente := null;
+  else
+    v_siguiente := jsonb_build_object(
+      'instancia', v_despues.instancia,
+      'formas', to_jsonb(
+        case
+          when v_despues.instancia = 'sena'
+            then private.formas_de_cobro(v_p.cobro_sena, v_hay_como_transferir)
+          else private.formas_de_cobro(v_p.cobro_saldo, v_hay_como_transferir)
+        end
+      ),
+      'monto_centavos', v_despues.monto_centavos
+    );
+  end if;
 
   -- Los campos van enumerados uno por uno, a propósito. Si esto fuera to_jsonb(v_p) con la pantalla
   -- filtrando, el día que alguien le agregue una columna a proyectos esa columna quedaría expuesta
@@ -3223,12 +3254,14 @@ begin
     'direccion', v_p.direccion_entrega,
     'estado', v_p.estado,
     'precio_centavos', v_p.presupuesto_centavos,
-    -- El pago que toca ahora. El importe es el peso que el cliente tiene que mandar; el porcentaje
-    -- de seña sigue sin viajar, que es lo que dejó abierto el ADR 0048.
+    -- El pago que toca ahora y, si hay otro después, cuánto es y cómo se paga. Los importes salen
+    -- de lo que ya está guardado; el porcentaje de seña sigue sin viajar, que es lo que dejó
+    -- abierto el ADR 0048.
     'pago', jsonb_build_object(
-      'instancia', v_pago.instancia,
+      'instancia', v_ahora.instancia,
       'formas', to_jsonb(v_formas),
-      'monto_centavos', v_pago.monto_centavos
+      'monto_centavos', v_ahora.monto_centavos,
+      'siguiente', v_siguiente
     ),
     -- Cómo transferirle al taller, y solo si el pago que toca se puede pagar así. De ajustes no
     -- viaja nada más: ni el sueldo, ni los costos fijos, ni la meta de Cocos, ni la seña.
@@ -3305,4 +3338,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora y cómo puede pagarlo. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cuatro campos de cobro, y solo cuando el pago que toca se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja es el importe que falta. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048 y 0053).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cuatro campos de cobro, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048 y 0053).';

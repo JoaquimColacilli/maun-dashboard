@@ -9,7 +9,7 @@ export const INSTANCIAS_DE_PAGO = ['sena', 'saldo'] as const;
 
 export type InstanciaDePago = (typeof INSTANCIAS_DE_PAGO)[number];
 
-export interface PagoQueToca {
+export interface PagoPorDelante {
   instancia: InstanciaDePago;
   monto: Money | null;
 }
@@ -42,20 +42,34 @@ export function unaSolaForma(formas: readonly FormaDeCobro[]): FormaDeCobro | nu
   return primera !== undefined && otras.length === 0 ? primera : null;
 }
 
-export function pagoQueToca(entrada: EntradaDeLaSena): PagoQueToca | null {
-  if (entrada.presupuesto === null) return { instancia: 'sena', monto: null };
+export function pagosPorDelante(entrada: EntradaDeLaSena): readonly PagoPorDelante[] {
+  if (entrada.presupuesto === null) {
+    return [
+      { instancia: 'sena', monto: null },
+      { instancia: 'saldo', monto: null },
+    ];
+  }
 
-  const saldo = restar(entrada.presupuesto, entrada.cobrado);
-  if (saldo <= 0) return null;
+  const falta = restar(entrada.presupuesto, entrada.cobrado);
+  if (falta <= 0) return [];
 
   const sena = calcularSena(entrada);
-  if (sena.situacion === 'falta') return { instancia: 'sena', monto: sena.falta };
-  return { instancia: 'saldo', monto: saldo };
+  if (sena.situacion !== 'falta') return [{ instancia: 'saldo', monto: falta }];
+
+  const despues = restar(entrada.presupuesto, sena.esperada);
+  if (despues <= 0) return [{ instancia: 'sena', monto: sena.falta }];
+  return [
+    { instancia: 'sena', monto: sena.falta },
+    { instancia: 'saldo', monto: despues },
+  ];
+}
+
+export function pagoQueToca(entrada: EntradaDeLaSena): PagoPorDelante | null {
+  return pagosPorDelante(entrada)[0] ?? null;
 }
 
 export function instanciasPendientes(entrada: EntradaDeLaSena): readonly InstanciaDePago[] {
-  if (entrada.presupuesto !== null && entrada.cobrado >= entrada.presupuesto) return [];
-  return calcularSena(entrada).situacion === 'cubierta' ? ['saldo'] : ['sena', 'saldo'];
+  return pagosPorDelante(entrada).map((pago) => pago.instancia);
 }
 
 export function montoParaPegar(monto: Money): string {

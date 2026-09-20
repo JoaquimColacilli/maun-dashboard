@@ -23,6 +23,11 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       instancia: 'sena',
       formas: ['transferencia', 'efectivo'],
       monto_centavos: 22_000_000,
+      siguiente: {
+        instancia: 'saldo',
+        formas: ['efectivo'],
+        monto_centavos: 62_000_000,
+      },
     },
     cobro: {
       alias: 'maun.muebles',
@@ -68,6 +73,7 @@ describe('leer la vista del cliente', () => {
         instancia: 'sena',
         formas: ['transferencia', 'efectivo'],
         monto: 22_000_000,
+        siguiente: { instancia: 'saldo', formas: ['efectivo'], monto: 62_000_000 },
       },
       cobro: {
         alias: 'maun.muebles',
@@ -155,19 +161,41 @@ describe('leer la vista del cliente', () => {
 });
 
 describe('el pago que toca', () => {
-  it('lee la instancia, las formas y el importe', () => {
+  it('lee la instancia, las formas, el importe y el pago que sigue', () => {
     expect(leerVistaDelCliente(respuesta()).pago).toEqual({
       instancia: 'sena',
       formas: ['transferencia', 'efectivo'],
       monto: 22_000_000,
+      siguiente: { instancia: 'saldo', formas: ['efectivo'], monto: 62_000_000 },
     });
+  });
+
+  it('sin otro pago después, siguiente queda en null', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({
+        pago: {
+          instancia: 'saldo',
+          formas: ['efectivo'],
+          monto_centavos: 1,
+          siguiente: null,
+        },
+      }),
+    );
+    expect(leido.pago.siguiente).toBeNull();
+  });
+
+  it('una respuesta vieja, sin la clave siguiente, tampoco rompe', () => {
+    const leido = leerVistaDelCliente(
+      respuesta({ pago: { instancia: 'saldo', formas: ['efectivo'], monto_centavos: 1 } }),
+    );
+    expect(leido.pago.siguiente).toBeNull();
   });
 
   it('sin instancia no hay nada que pagar', () => {
     const leido = leerVistaDelCliente(
-      respuesta({ pago: { instancia: null, formas: [], monto_centavos: null } }),
+      respuesta({ pago: { instancia: null, formas: [], monto_centavos: null, siguiente: null } }),
     );
-    expect(leido.pago).toEqual({ instancia: null, formas: [], monto: null });
+    expect(leido.pago).toEqual({ instancia: null, formas: [], monto: null, siguiente: null });
   });
 
   it('una respuesta vieja, sin la clave, no rompe la vista', () => {
@@ -175,6 +203,7 @@ describe('el pago que toca', () => {
       instancia: null,
       formas: [],
       monto: null,
+      siguiente: null,
     });
   });
 

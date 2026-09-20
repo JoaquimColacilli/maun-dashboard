@@ -8,7 +8,7 @@ import {
   esEstado,
   estaLiquidado,
   formasDeCobro,
-  pagoQueToca,
+  pagosPorDelante,
   puedeCambiarEstado,
   puedeLiquidar,
   puedeRevertir,
@@ -255,39 +255,48 @@ const PAGOS_QUE_TOCAN: TuplaDelPago[] = [
   [123_456_789, 61_728_395, 4321],
 ];
 
-function pagoEnTs([precio, cobrado, bp]: TuplaDelPago): string {
-  const toca = pagoQueToca({
-    presupuesto: precio === null ? null : centavos(precio),
-    cobrado: centavos(cobrado),
-    porcentajeDelTaller: puntosBasicos(bp),
-    porcentajeDelTrabajo: null,
-  });
-  return JSON.stringify(toca === null ? { instancia: null, monto: null } : toca);
+function pagosEnTs([precio, cobrado, bp]: TuplaDelPago): string {
+  return JSON.stringify(
+    pagosPorDelante({
+      presupuesto: precio === null ? null : centavos(precio),
+      cobrado: centavos(cobrado),
+      porcentajeDelTaller: puntosBasicos(bp),
+      porcentajeDelTrabajo: null,
+    }),
+  );
 }
 
-export async function compararPagoQueToca(cliente: pg.Client): Promise<string[]> {
+export async function compararPagosPorDelante(cliente: pg.Client): Promise<string[]> {
   const casos = PAGOS_QUE_TOCAN;
-  const { rows } = await cliente.query<{ instancia: string | null; monto_centavos: string | null }>(
-    `select r.*
+  const { rows } = await cliente.query<{ pagos: string | null }>(
+    `select (
+       select jsonb_agg(
+         jsonb_build_object('instancia', r.instancia, 'monto', r.monto_centavos)
+         order by r.orden
+       )
+       from private.pagos_por_delante(c.precio, c.cobrado, c.bp) as r
+     )::text as pagos
      from unnest($1::bigint[], $2::bigint[], $3::int[])
        with ordinality as c (precio, cobrado, bp, orden)
-     cross join lateral private.pago_que_toca(c.precio, c.cobrado, c.bp) as r
      order by c.orden`,
     columnas(casos, 3),
   );
   if (rows.length !== casos.length) {
     return [
-      `el pago que toca de SQL devolvió ${String(rows.length)} filas para ${String(casos.length)} casos`,
+      `los pagos por delante de SQL devolvieron ${String(rows.length)} filas para ${String(casos.length)} casos`,
     ];
   }
   return rows.flatMap((fila, i) => {
     const caso = casos[i] ?? [null, 0, 0];
-    const ts = pagoEnTs(caso);
-    const sql = JSON.stringify({
-      instancia: fila.instancia,
-      monto: fila.monto_centavos === null ? null : Number(fila.monto_centavos),
-    });
-    return ts === sql ? [] : [`pago que toca ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+    const ts = pagosEnTs(caso);
+    // jsonb ordena las claves por largo y después alfabéticamente, así que la comparación se hace
+    // sobre objetos armados acá, no sobre el texto que devuelve Postgres.
+    const crudos =
+      fila.pagos === null ? [] : (JSON.parse(fila.pagos) as { instancia: string; monto: number }[]);
+    const sql = JSON.stringify(
+      crudos.map((pago) => ({ instancia: pago.instancia, monto: pago.monto })),
+    );
+    return ts === sql ? [] : [`pagos por delante ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
   });
 }
 
@@ -1633,7 +1642,7 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
   return [
     ...(await compararCascada(cliente)),
     ...(await compararTopes(cliente)),
-    ...(await compararPagoQueToca(cliente)),
+    ...(await compararPagosPorDelante(cliente)),
     ...(await compararFormasDeCobro(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),

@@ -110,10 +110,11 @@ export {
   montoParaPegar,
   ofrece,
   pagoQueToca,
+  pagosPorDelante,
   unaSolaForma,
   type FormaDeCobro,
   type InstanciaDePago,
-  type PagoQueToca,
+  type PagoPorDelante,
 } from './pagos.ts';
 
 export {
@@ -133,7 +134,9 @@ export {
   type HitoDelTrabajo,
   type HitoDeLaVista,
   type PagoDelCliente,
+  type PagoOfrecido,
   type PagoPendiente,
+  type PagoQueSigue,
   type TrabajoDelCliente,
   type VistaDelCliente,
 } from './vistaCliente.ts';

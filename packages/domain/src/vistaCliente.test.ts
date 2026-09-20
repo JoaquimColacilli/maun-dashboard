@@ -37,7 +37,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
-    pago: { instancia: null, formas: [], monto: null },
+    pago: { instancia: null, formas: [], monto: null, siguiente: null },
     cobro: { alias: null, cbu: null, titular: null, cuit: null },
     pagos: [],
     archivos: [],
@@ -457,6 +457,7 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
           instancia: 'sena',
           formas: ['transferencia'],
           monto: centavos(150_000_000),
+          siguiente: null,
         },
       }),
     );
@@ -466,7 +467,7 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
       efectivo: false,
       faltanLosDatos: false,
       montoParaPegar: '1500000',
-      etiquetaDelImporte: 'Seña a transferir',
+      etiquetaDelImporte: 'Ahora, la seña',
     });
     expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
   });
@@ -475,7 +476,12 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
     const como = comoPagar(
       trabajo({
         cobro: CUENTA,
-        pago: { instancia: 'saldo', formas: ['efectivo'], monto: centavos(44_000_000) },
+        pago: {
+          instancia: 'saldo',
+          formas: ['efectivo'],
+          monto: centavos(44_000_000),
+          siguiente: null,
+        },
       }),
     );
     expect(como).toMatchObject({ transferencia: false, efectivo: true });
@@ -490,6 +496,7 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
           instancia: 'saldo',
           formas: ['transferencia', 'efectivo'],
           monto: centavos(44_000_000),
+          siguiente: null,
         },
       }),
     );
@@ -500,7 +507,12 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
   it('si pide transferencia y el taller no cargó la cuenta, lo dice en vez de mostrar un bloque vacío', () => {
     const como = comoPagar(
       trabajo({
-        pago: { instancia: 'sena', formas: ['transferencia'], monto: centavos(100) },
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(100),
+          siguiente: null,
+        },
       }),
     );
     expect(como).toMatchObject({ transferencia: false, efectivo: false, faltanLosDatos: true });
@@ -511,11 +523,85 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
       trabajo({
         precio: null,
         cobro: CUENTA,
-        pago: { instancia: 'sena', formas: ['transferencia', 'efectivo'], monto: null },
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia', 'efectivo'],
+          monto: null,
+          siguiente: null,
+        },
       }),
     );
     expect(como?.monto).toBeNull();
     expect(como?.montoParaPegar).toBeNull();
+  });
+
+  it('cuando hay otro pago después, lo nombra con su importe y con cómo se paga', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(50_000_000),
+          siguiente: {
+            instancia: 'saldo',
+            formas: ['efectivo'],
+            monto: centavos(80_000_000),
+          },
+        },
+      }),
+    );
+
+    expect(como?.siguiente).toEqual({
+      instancia: 'saldo',
+      monto: centavos(80_000_000),
+      nombre: 'el saldo',
+      comoSePaga: 'en efectivo',
+    });
+  });
+
+  it('el «cómo se paga» del que sigue nombra las dos formas cuando las hay', () => {
+    const conLasDos = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['transferencia'],
+          monto: centavos(1),
+          siguiente: { instancia: 'saldo', formas: ['transferencia', 'efectivo'], monto: null },
+        },
+      }),
+    );
+    expect(conLasDos?.siguiente?.comoSePaga).toBe('por transferencia o en efectivo');
+
+    const soloTransferencia = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'sena',
+          formas: ['efectivo'],
+          monto: centavos(1),
+          siguiente: { instancia: 'saldo', formas: ['transferencia'], monto: centavos(2) },
+        },
+      }),
+    );
+    expect(soloTransferencia?.siguiente?.comoSePaga).toBe('por transferencia');
+  });
+
+  it('sin otro pago después, no hay nada que anticipar', () => {
+    const como = comoPagar(
+      trabajo({
+        cobro: CUENTA,
+        pago: {
+          instancia: 'saldo',
+          formas: ['efectivo'],
+          monto: centavos(1),
+          siguiente: null,
+        },
+      }),
+    );
+
+    expect(como?.siguiente).toBeNull();
   });
 
   it('ningún texto del cliente dice «arreglar»: acá se lee como reparar', () => {
@@ -526,7 +612,10 @@ describe('cómo puede pagar el cliente lo que le toca', () => {
         ['transferencia', 'efectivo'],
       ] as const) {
         const como = comoPagar(
-          trabajo({ cobro: CUENTA, pago: { instancia, formas, monto: centavos(1_000) } }),
+          trabajo({
+            cobro: CUENTA,
+            pago: { instancia, formas, monto: centavos(1_000), siguiente: null },
+          }),
         );
         expect(JSON.stringify(como)).not.toMatch(/arregl/i);
       }

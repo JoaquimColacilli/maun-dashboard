@@ -10,7 +10,7 @@
 -- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
 -- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(88);
+select plan(89);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -158,8 +158,8 @@ select set_eq(
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'pago') $$,
-  array['instancia', 'formas', 'monto_centavos'],
-  'del pago que toca viajan exactamente tres cosas: cuál es, cómo se paga y cuánto falta'
+  array['instancia', 'formas', 'monto_centavos', 'siguiente'],
+  'del pago que toca viajan exactamente cuatro cosas: cuál es, cómo se paga, cuánto falta y cuál viene después'
 );
 
 select set_eq(
@@ -766,7 +766,12 @@ select is(
   jsonb_build_object(
     'instancia', 'sena',
     'formas', jsonb_build_array('transferencia', 'efectivo'),
-    'monto_centavos', 50000000
+    'monto_centavos', 50000000,
+    'siguiente', jsonb_build_object(
+      'instancia', 'saldo',
+      'formas', jsonb_build_array('transferencia', 'efectivo'),
+      'monto_centavos', 50000000
+    )
   ),
   'un trabajo que nadie configuró ofrece las dos formas y pide la seña: la mitad del presupuesto'
 );
@@ -804,9 +809,14 @@ select is(
   jsonb_build_object(
     'instancia', 'sena',
     'formas', jsonb_build_array('transferencia'),
-    'monto_centavos', 50000000
+    'monto_centavos', 50000000,
+    'siguiente', jsonb_build_object(
+      'instancia', 'saldo',
+      'formas', jsonb_build_array('efectivo'),
+      'monto_centavos', 50000000
+    )
   ),
-  'con la seña pendiente manda las formas de la seña, no las del saldo'
+  'con la seña pendiente manda las formas de la seña, y el que sigue con las suyas'
 );
 
 select is(
@@ -842,9 +852,10 @@ select is(
   jsonb_build_object(
     'instancia', 'saldo',
     'formas', jsonb_build_array('efectivo'),
-    'monto_centavos', 50000000
+    'monto_centavos', 50000000,
+    'siguiente', null
   ),
-  'cubierta la seña, lo que toca es el saldo con las formas del saldo'
+  'cubierta la seña, lo que toca es el saldo con las formas del saldo, y ya no viene ninguno más'
 );
 
 select is(
@@ -884,7 +895,9 @@ insert into public.pagos (id, proyecto_id, fecha, concepto, monto_centavos)
 
 select is(
   public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'pago',
-  jsonb_build_object('instancia', null, 'formas', jsonb_build_array(), 'monto_centavos', null),
+  jsonb_build_object(
+    'instancia', null, 'formas', jsonb_build_array(), 'monto_centavos', null, 'siguiente', null
+  ),
   'con todo pagado no toca ninguna instancia y no hay ninguna forma que ofrecer'
 );
 
@@ -908,9 +921,14 @@ select is(
   jsonb_build_object(
     'instancia', 'sena',
     'formas', jsonb_build_array('transferencia', 'efectivo'),
-    'monto_centavos', null
+    'monto_centavos', null,
+    'siguiente', jsonb_build_object(
+      'instancia', 'saldo',
+      'formas', jsonb_build_array('transferencia', 'efectivo'),
+      'monto_centavos', null
+    )
   ),
-  'sin presupuesto lo que viene es la seña, sin importe'
+  'sin presupuesto lo que viene es la seña y después el saldo, los dos sin importe'
 );
 
 -- El check: un pago no puede quedarse sin ninguna forma, ni con repetidos, ni con un null adentro,
@@ -985,27 +1003,49 @@ select is(
 );
 
 select is(
-  (select instancia from private.pago_que_toca(100000000, 0, 5000)),
-  'sena',
-  'sin nada pagado toca la seña'
+  (
+    select jsonb_agg(jsonb_build_object('i', r.instancia, 'm', r.monto_centavos) order by r.orden)
+    from private.pagos_por_delante(100000000, 0, 5000) as r
+  ),
+  jsonb_build_array(
+    jsonb_build_object('i', 'sena', 'm', 50000000),
+    jsonb_build_object('i', 'saldo', 'm', 50000000)
+  ),
+  'sin nada pagado faltan los dos, cada uno con su importe'
+);
+
+-- Con parte de la seña cobrada, lo que falta de la seña baja y el saldo de después no se mueve:
+-- son dos cuentas distintas y esta es la que se equivocaría si se restaran entre sí.
+select is(
+  (
+    select jsonb_agg(jsonb_build_object('i', r.instancia, 'm', r.monto_centavos) order by r.orden)
+    from private.pagos_por_delante(100000000, 20000000, 5000) as r
+  ),
+  jsonb_build_array(
+    jsonb_build_object('i', 'sena', 'm', 30000000),
+    jsonb_build_object('i', 'saldo', 'm', 50000000)
+  ),
+  'con parte de la seña cobrada, el saldo de después sigue siendo el presupuesto menos la seña entera'
 );
 
 select is(
-  (select monto_centavos from private.pago_que_toca(100000000, 0, 5000)),
-  50000000::bigint,
-  'y el importe es el porcentaje aplicado al presupuesto'
-);
-
-select is(
-  (select monto_centavos from private.pago_que_toca(1, 0, 5000)),
+  (select monto_centavos from private.pagos_por_delante(1, 0, 5000) where orden = 1),
   1::bigint,
   'el redondeo es el mismo que el del dominio: medio centavo para arriba'
 );
 
 select is(
-  (select instancia from private.pago_que_toca(100000000, 100000000, 5000)),
-  null,
-  'con todo pagado no toca nada'
+  (
+    select count(*)::int
+    from private.pagos_por_delante(100000000, 0, 10000)
+  ),
+  1,
+  'con la seña al 100 % no hay saldo después: es un pago solo'
+);
+
+select is_empty(
+  $ck$ select 1 from private.pagos_por_delante(100000000, 100000000, 5000) $ck$,
+  'con todo pagado no falta ningún pago'
 );
 
 
@@ -1018,7 +1058,9 @@ select tests.entrar_como_anon();
 
 select is(
   public.vista_compartida('el-token-del-vestidor-aa') -> 'pago',
-  jsonb_build_object('instancia', null, 'formas', jsonb_build_array(), 'monto_centavos', null),
+  jsonb_build_object(
+    'instancia', null, 'formas', jsonb_build_array(), 'monto_centavos', null, 'siguiente', null
+  ),
   'por el link se ve el mismo pago que desde la app: es la misma función'
 );
 
@@ -1030,10 +1072,10 @@ select throws_ok(
 );
 
 select throws_ok(
-  $ck$ select private.pago_que_toca(100, 0, 5000) $ck$,
+  $ck$ select * from private.pagos_por_delante(100, 0, 5000) $ck$,
   '42501',
   null,
-  'ni la del pago que toca'
+  'ni la de los pagos que faltan'
 );
 
 

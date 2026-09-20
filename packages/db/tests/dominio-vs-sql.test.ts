@@ -8,7 +8,7 @@ import {
   compararLibroDelSeed,
   compararLibroMayor,
   compararLiquidaciones,
-  compararPagoQueToca,
+  compararPagosPorDelante,
   compararRangos,
   compararSeed,
   compararTopes,
@@ -25,8 +25,8 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
     expect(await enTransaccionConRollback(compararTopes)).toEqual([]);
   });
 
-  it('qué pago le toca al cliente y cuánto falta lo contestan igual las dos', async () => {
-    expect(await enTransaccionConRollback(compararPagoQueToca)).toEqual([]);
+  it('qué pagos le faltan al cliente y cuánto es cada uno lo contestan igual las dos', async () => {
+    expect(await enTransaccionConRollback(compararPagosPorDelante)).toEqual([]);
   });
 
   it('el valor por defecto de las formas de cobro es el mismo en las dos', async () => {

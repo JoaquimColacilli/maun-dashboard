@@ -7,6 +7,7 @@ import type {
   FormaDeCobro,
   InstanciaDePago,
   PagoDelCliente,
+  PagoOfrecido,
   PagoPendiente,
   TrabajoDelCliente,
 } from '@maun/domain';
@@ -102,20 +103,40 @@ function esForma(valor: unknown): valor is FormaDeCobro {
   return FORMAS_DE_COBRO.some((forma) => forma === valor);
 }
 
+const SIN_PAGO: PagoPendiente = { instancia: null, formas: [], monto: null, siguiente: null };
+
+function instanciaDe(valor: unknown, que: string): InstanciaDePago | null {
+  const leida = textoONada(valor, que);
+  if (leida === null) return null;
+  const conocida = INSTANCIAS_DE_PAGO.find((una) => una === leida);
+  if (conocida === undefined) {
+    throw new RespuestaInvalidaError('La vista del cliente devolvió un pago desconocido.');
+  }
+  return conocida;
+}
+
+function pagoOfrecido(valor: unknown): PagoOfrecido | null {
+  if (valor === null || valor === undefined) return null;
+  const crudo = objeto(valor, 'el pago que sigue');
+  const instancia = instanciaDe(crudo.instancia, 'la instancia del pago que sigue');
+  if (instancia === null) return null;
+  const monto = numeroONada(crudo.monto_centavos, 'el importe del pago que sigue');
+  return {
+    instancia,
+    formas: lista(crudo.formas, 'las formas del pago que sigue').filter(esForma),
+    monto: monto === null ? null : dinero(monto),
+  };
+}
+
 function pagoPendiente(valor: unknown): PagoPendiente {
-  if (valor === null || valor === undefined) {
-    return { instancia: null, formas: [], monto: null };
-  }
+  if (valor === null || valor === undefined) return SIN_PAGO;
   const crudo = objeto(valor, 'el pago que toca');
-  const instancia = textoONada(crudo.instancia, 'la instancia del pago');
-  if (instancia !== null && !INSTANCIAS_DE_PAGO.some((una) => una === instancia)) {
-    throw new RespuestaInvalidaError(`La vista del cliente devolvió un pago desconocido.`);
-  }
   const monto = numeroONada(crudo.monto_centavos, 'el importe del pago que toca');
   return {
-    instancia: instancia as InstanciaDePago | null,
+    instancia: instanciaDe(crudo.instancia, 'la instancia del pago'),
     formas: lista(crudo.formas, 'las formas de pago').filter(esForma),
     monto: monto === null ? null : dinero(monto),
+    siguiente: pagoOfrecido(crudo.siguiente),
   };
 }
 
