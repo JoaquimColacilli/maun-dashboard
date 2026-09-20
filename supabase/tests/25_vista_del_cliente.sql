@@ -1,6 +1,7 @@
 -- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su huella y su dirección
--- (ADR 0052), el registro de los cambios de etapa, los datos para transferir (ADR 0048) y el título
--- que alimenta la vista previa del enlace (ADR 0049).
+-- (ADR 0052), el registro de los cambios de etapa, los datos para transferir (ADR 0048), el título
+-- que alimenta la vista previa del enlace (ADR 0049) y cómo te paga, la forma de cobro por trabajo y
+-- por instancia de pago (ADR 0053).
 --
 -- Los dos tests que importan son los primeros: toda columna de proyectos y toda columna de ajustes
 -- están clasificadas, y agregar una columna a cualquiera de las dos rompe este archivo hasta que
@@ -9,7 +10,7 @@
 -- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
 -- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(58);
+select plan(88);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -19,10 +20,13 @@ select tests.guardar('household_b', private.crear_household('Taller de Beto', te
 
 -- Toda columna de proyectos está clasificada ---------------------------------------------------------------
 
--- Las ocho que viajan, aunque sea con otro nombre: titulo es «trabajo», presupuesto_centavos es
--- «precio», direccion_entrega es «direccion» y las cuatro fechas arman el camino. Todas las demás
--- no salen de la base, y eso incluye los costos estimados, el margen que se deriva de ellos, las
--- tareas de presupuestar, las notas de obra, la distribución congelada y las marcas de la agenda.
+-- Las diez que viajan, aunque sea con otro nombre: titulo es «trabajo», presupuesto_centavos es
+-- «precio», direccion_entrega es «direccion», las cuatro fechas arman el camino, y cobro_sena y
+-- cobro_saldo deciden «pago», que es cómo puede pagar lo que le toca. Ojo con esas dos: no viaja su
+-- valor crudo, viaja el de la instancia que toca, pasado por private.formas_de_cobro(). Todas las
+-- demás no salen de la base, y eso incluye los costos estimados, el margen que se deriva de ellos,
+-- las tareas de presupuestar, las notas de obra, la distribución congelada, las marcas de la agenda
+-- y sena_bp, que es el porcentaje y sigue sin viajar: lo que viaja es el importe que falta.
 select set_eq(
   $$
     select a.attname::text
@@ -33,6 +37,7 @@ select set_eq(
     -- Viajan
     'titulo', 'estado', 'presupuesto_centavos', 'direccion_entrega',
     'fecha_inicio', 'entrega_estimada', 'fecha_entrega', 'fecha_cobro',
+    'cobro_sena', 'cobro_saldo',
     -- No viajan
     'id', 'household_id', 'cliente_id', 'descripcion', 'forma_pago', 'comprobante',
     'fecha_visita', 'ultimo_contacto', 'notas', 'vencimiento_presupuesto',
@@ -92,7 +97,7 @@ insert into public.proyectos (
 ) values (
   'aaaaaaaa-0000-7000-8000-000000000010', 'aaaaaaaa-0000-7000-8000-000000000001',
   'Placard 3 puertas', 'Melamina blanca con herrajes Blum', 'en_curso', 124000000,
-  'transferencia', 'factura_b',
+  'cuotas', 'factura_b',
   '2026-07-20', '2026-08-24', '2026-10-02', 'Olazábal 1240, Ituzaingó',
   'OJO: el cliente regatea, no bajar de 900', 4321
 );
@@ -147,8 +152,14 @@ where household_id = tests.id('household_a');
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')) $$,
-  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'cobro', 'fechas', 'pagos', 'archivos'],
+  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'pago', 'cobro', 'fechas', 'pagos', 'archivos'],
   'la vista devuelve exactamente estos campos y ninguno más'
+);
+
+select set_eq(
+  $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'pago') $$,
+  array['instancia', 'formas', 'monto_centavos'],
+  'del pago que toca viajan exactamente tres cosas: cuál es, cómo se paga y cuánto falta'
 );
 
 select set_eq(
@@ -185,6 +196,9 @@ select set_eq(
 -- Y lo que no devuelve ------------------------------------------------------------------------------------------
 
 -- Los importes de arriba están puestos para que se reconozcan de un vistazo dentro del JSON entero.
+-- La forma de pago del trabajo es «cuotas» y no «transferencia» a propósito: desde que el payload
+-- dice cómo puede pagar el cliente, la palabra «transferencia» aparece ahí de manera legítima, y
+-- una aguja que la busque dejaría de probar lo que quiere probar, que proyectos.forma_pago no sale.
 select is_empty(
   format(
     $$
@@ -197,7 +211,7 @@ select is_empty(
         'Melamina blanca con herrajes Blum',
         '189000000', 'Con frentes laqueados',
         '11-5555-0001', 'Paga tarde',
-        'factura_b', 'transferencia',
+        'factura_b', 'cuotas',
         '2026-07-20', '4321',
         '777777', '888888', '999999', '6543', '1717'
       ]) as v (aguja)
@@ -713,6 +727,313 @@ select is(
   public.titulo_compartido('el-token-de-la-biblioteca')::text like '%el-token-de-la-biblioteca%',
   false,
   'y la vista previa del enlace tampoco lo devuelve'
+);
+
+
+-- Cómo te paga (ADR 0053) --------------------------------------------------------------------------------------------
+
+-- Un trabajo propio, con su presupuesto redondo y su porcentaje de seña, para que las cuentas se
+-- lean de un vistazo: $1.000.000 de presupuesto, 50 % de seña, así que la seña son $500.000.
+
+select tests.salir();
+select tests.entrar_como(tests.id('ana'));
+
+update public.ajustes set
+  sena_bp = 5000,
+  cobro_alias = 'taller.maun.ok',
+  cobro_cbu = '0110001312345678901233',
+  cobro_titular = 'Ana Gutiérrez',
+  cobro_cuit = '27-30123456-4'
+where household_id = tests.id('household_a');
+
+insert into public.proyectos (id, cliente_id, titulo, estado, presupuesto_centavos)
+  values (
+    'aaaaaaaa-0000-7000-8000-000000000040', 'aaaaaaaa-0000-7000-8000-000000000001',
+    'Vestidor', 'en_curso', 100000000
+  );
+
+insert into public.enlaces_publicos (id, proyecto_id, token_hash)
+  values (
+    'aaaaaaaa-0000-7000-8000-000000000400',
+    'aaaaaaaa-0000-7000-8000-000000000040',
+    encode(sha256(convert_to('el-token-del-vestidor-aa', 'UTF8')), 'hex')
+  );
+
+-- Sin configurar y con datos para transferir cargados: las dos formas.
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'pago',
+  jsonb_build_object(
+    'instancia', 'sena',
+    'formas', jsonb_build_array('transferencia', 'efectivo'),
+    'monto_centavos', 50000000
+  ),
+  'un trabajo que nadie configuró ofrece las dos formas y pide la seña: la mitad del presupuesto'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') #>> '{cobro,alias}',
+  'taller.maun.ok',
+  'y como se puede transferir, los datos de la cuenta viajan'
+);
+
+-- Sin datos para transferir en Ajustes, el valor por defecto es solo efectivo: ofrecer una
+-- transferencia sin adónde transferir sería mandarle al cliente una pantalla vacía.
+
+update public.ajustes set cobro_alias = '', cobro_cbu = ''
+  where household_id = tests.id('household_a');
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') #> '{pago,formas}',
+  jsonb_build_array('efectivo'),
+  'sin alias ni CBU en Ajustes, por defecto el pago es solo en efectivo'
+);
+
+update public.ajustes set cobro_alias = 'taller.maun.ok', cobro_cbu = '0110001312345678901233'
+  where household_id = tests.id('household_a');
+
+-- La configuración del dueño: la seña por transferencia y el saldo en efectivo.
+
+update public.proyectos set
+  cobro_sena = array['transferencia']::public.forma_de_cobro[],
+  cobro_saldo = array['efectivo']::public.forma_de_cobro[]
+where id = 'aaaaaaaa-0000-7000-8000-000000000040';
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'pago',
+  jsonb_build_object(
+    'instancia', 'sena',
+    'formas', jsonb_build_array('transferencia'),
+    'monto_centavos', 50000000
+  ),
+  'con la seña pendiente manda las formas de la seña, no las del saldo'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'cobro',
+  jsonb_build_object(
+    'alias', 'taller.maun.ok',
+    'cbu', '0110001312345678901233',
+    'titular', 'Ana Gutiérrez',
+    'cuit', '27-30123456-4'
+  ),
+  'y con la seña por transferencia, los cuatro datos de la cuenta viajan'
+);
+
+-- Un pago parcial de la seña: lo que toca es lo que falta, no la seña entera.
+
+insert into public.pagos (id, proyecto_id, fecha, concepto, monto_centavos)
+  values ('aaaaaaaa-0000-7000-8000-000000000410', 'aaaaaaaa-0000-7000-8000-000000000040', '2026-09-10', 'A cuenta', 20000000);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') #> '{pago,monto_centavos}',
+  to_jsonb(30000000::bigint),
+  'con parte de la seña cobrada, el importe que viaja es lo que falta de la seña'
+);
+
+-- Con la seña cubierta pasa a tocar el saldo, que este trabajo cobra en efectivo. Y ahí los datos
+-- de la cuenta dejan de viajar: lo que no se muestra, no se manda.
+
+insert into public.pagos (id, proyecto_id, fecha, concepto, monto_centavos)
+  values ('aaaaaaaa-0000-7000-8000-000000000411', 'aaaaaaaa-0000-7000-8000-000000000040', '2026-09-12', 'Resto de la seña', 30000000);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'pago',
+  jsonb_build_object(
+    'instancia', 'saldo',
+    'formas', jsonb_build_array('efectivo'),
+    'monto_centavos', 50000000
+  ),
+  'cubierta la seña, lo que toca es el saldo con las formas del saldo'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'cobro',
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null),
+  'y como el saldo es en efectivo, los datos de la cuenta no viajan aunque estén cargados'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040')::text like '%taller.maun.ok%',
+  false,
+  'ni el alias aparece en ningún lado del payload'
+);
+
+-- Las dos formas a la vez.
+
+update public.proyectos
+  set cobro_saldo = array['transferencia', 'efectivo']::public.forma_de_cobro[]
+where id = 'aaaaaaaa-0000-7000-8000-000000000040';
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') #> '{pago,formas}',
+  jsonb_build_array('transferencia', 'efectivo'),
+  'el saldo puede ofrecer las dos'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') #>> '{cobro,cbu}',
+  '0110001312345678901233',
+  'y con transferencia entre las dos, la cuenta vuelve a viajar'
+);
+
+-- Saldado: no toca ninguna instancia, no hay formas y no hay cuenta.
+
+insert into public.pagos (id, proyecto_id, fecha, concepto, monto_centavos)
+  values ('aaaaaaaa-0000-7000-8000-000000000412', 'aaaaaaaa-0000-7000-8000-000000000040', '2026-09-14', 'Saldo', 50000000);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'pago',
+  jsonb_build_object('instancia', null, 'formas', jsonb_build_array(), 'monto_centavos', null),
+  'con todo pagado no toca ninguna instancia y no hay ninguna forma que ofrecer'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000040') -> 'cobro',
+  jsonb_build_object('alias', null, 'cbu', null, 'titular', null, 'cuit', null),
+  'y la cuenta tampoco viaja: no queda nada que transferir'
+);
+
+-- Sin presupuesto, la instancia es la seña y el importe no existe: el porcentaje es política
+-- comercial del taller y no viaja, así que el peso no se puede calcular todavía.
+
+insert into public.proyectos (id, cliente_id, titulo, estado)
+  values (
+    'aaaaaaaa-0000-7000-8000-000000000041', 'aaaaaaaa-0000-7000-8000-000000000001',
+    'Mueble de baño', 'presupuesto_enviado'
+  );
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') -> 'pago',
+  jsonb_build_object(
+    'instancia', 'sena',
+    'formas', jsonb_build_array('transferencia', 'efectivo'),
+    'monto_centavos', null
+  ),
+  'sin presupuesto lo que viene es la seña, sin importe'
+);
+
+-- El check: un pago no puede quedarse sin ninguna forma, ni con repetidos, ni con un null adentro,
+-- ni con las dos al revés. Postgres corta en el primer check que no pasa, así que van de a uno.
+
+select throws_ok(
+  $ck$
+    update public.proyectos set cobro_sena = array[]::public.forma_de_cobro[]
+    where id = 'aaaaaaaa-0000-7000-8000-000000000040'
+  $ck$,
+  '23514',
+  null,
+  'un pago sin ninguna forma lo frena la base, no la pantalla'
+);
+
+select throws_ok(
+  $ck$
+    update public.proyectos set cobro_sena = array['efectivo', 'efectivo']::public.forma_de_cobro[]
+    where id = 'aaaaaaaa-0000-7000-8000-000000000040'
+  $ck$,
+  '23514',
+  null,
+  'y la misma forma repetida también'
+);
+
+select throws_ok(
+  $ck$
+    update public.proyectos set cobro_sena = array[null]::public.forma_de_cobro[]
+    where id = 'aaaaaaaa-0000-7000-8000-000000000040'
+  $ck$,
+  '23514',
+  null,
+  'y un null adentro del arreglo: por eso el check va envuelto en coalesce'
+);
+
+select throws_ok(
+  $ck$
+    update public.proyectos set cobro_saldo = array['efectivo', 'transferencia']::public.forma_de_cobro[]
+    where id = 'aaaaaaaa-0000-7000-8000-000000000040'
+  $ck$,
+  '23514',
+  null,
+  'las dos formas se guardan siempre en el mismo orden: una sola representación de lo mismo'
+);
+
+select lives_ok(
+  $ck$
+    update public.proyectos set cobro_sena = null, cobro_saldo = null
+    where id = 'aaaaaaaa-0000-7000-8000-000000000040'
+  $ck$,
+  'volver a null siempre se puede: es «no lo configuré», y ahí vale el valor por defecto'
+);
+
+-- Las dos reglas, sueltas, que son las que tienen gemela en @maun/domain.
+
+select is(
+  private.formas_de_cobro(null, true),
+  array['transferencia', 'efectivo']::public.forma_de_cobro[],
+  'sin nada guardado y con datos para transferir, las dos'
+);
+
+select is(
+  private.formas_de_cobro(null, false),
+  array['efectivo']::public.forma_de_cobro[],
+  'sin nada guardado y sin datos para transferir, solo efectivo'
+);
+
+select is(
+  private.formas_de_cobro(array['transferencia']::public.forma_de_cobro[], false),
+  array['transferencia']::public.forma_de_cobro[],
+  'lo que el dueño guardó manda, aunque Ajustes esté vacío: es su decisión, no la nuestra'
+);
+
+select is(
+  (select instancia from private.pago_que_toca(100000000, 0, 5000)),
+  'sena',
+  'sin nada pagado toca la seña'
+);
+
+select is(
+  (select monto_centavos from private.pago_que_toca(100000000, 0, 5000)),
+  50000000::bigint,
+  'y el importe es el porcentaje aplicado al presupuesto'
+);
+
+select is(
+  (select monto_centavos from private.pago_que_toca(1, 0, 5000)),
+  1::bigint,
+  'el redondeo es el mismo que el del dominio: medio centavo para arriba'
+);
+
+select is(
+  (select instancia from private.pago_que_toca(100000000, 100000000, 5000)),
+  null,
+  'con todo pagado no toca nada'
+);
+
+
+-- El rol anónimo no gana nada con esto ---------------------------------------------------------------------------
+
+-- La puerta del link es la misma de siempre y devuelve lo mismo que la de adentro, con el pago
+-- incluido. Las dos funciones nuevas viven en private, que la API no expone.
+
+select tests.entrar_como_anon();
+
+select is(
+  public.vista_compartida('el-token-del-vestidor-aa') -> 'pago',
+  jsonb_build_object('instancia', null, 'formas', jsonb_build_array(), 'monto_centavos', null),
+  'por el link se ve el mismo pago que desde la app: es la misma función'
+);
+
+select throws_ok(
+  $ck$ select private.formas_de_cobro(null, true) $ck$,
+  '42501',
+  null,
+  'y el rol anónimo no puede ejecutar la regla del valor por defecto: vive en private'
+);
+
+select throws_ok(
+  $ck$ select private.pago_que_toca(100, 0, 5000) $ck$,
+  '42501',
+  null,
+  'ni la del pago que toca'
 );
 
 

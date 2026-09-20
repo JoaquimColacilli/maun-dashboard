@@ -227,6 +227,8 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         costo_herrajes_centavos: null,
         costo_flete_centavos: null,
         costo_ayudante_centavos: null,
+        cobro_sena: null,
+        cobro_saldo: null,
         fecha_cobro: null,
         dist_cobrado_centavos: null,
         dist_gastos_centavos: null,
