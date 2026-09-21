@@ -16,6 +16,9 @@ La única fuente es `src/styles/theme.css`, portado 1:1 de `design-reference/src
 
 Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están reseteados: `bg-blue-500` o `text-sm` no existen. No hay hex sueltos en componentes. Si falta un token, se agrega en `theme.css`.
 
+- **Los colores de las opiniones son tres: `op-bien`, `op-neutro` y `op-mal`** (ADR 0057). Dos tintas con un gris en el medio, y `op-bien` es la tinta del texto: ninguno es un color de tesoro, que están reservados. **El color nunca va solo**: cada paso de la escala lleva su carita y su palabra, y la leyenda de la barra repartida lleva forma. El oscuro redefine `op-neutro` y `op-mal`; `op-bien` sigue a `ink`.
+- Las opiniones sumaron `text-body-sm`, `text-subtitulo`, `text-subtitulo-lg`, `text-firma`, `text-h2`, `text-cifra`, `text-cifra-lg` y `rounded-telefono` (el marco de «Así la ve tu cliente»), todos del showcase. Antes de sumar otro tamaño, fijate si alguno de estos sirve.
+
 ## Tema oscuro (ADR 0020)
 
 - **Es por tokens, nunca con `dark:` en los componentes.** El bloque `:root { @variant dark { … } }` de `theme.css` redefine las variables, y todo lo que usa tokens cambia solo.

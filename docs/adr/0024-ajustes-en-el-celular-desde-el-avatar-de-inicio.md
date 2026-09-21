@@ -3,6 +3,9 @@
 - Estado: aceptada
 - Fecha: 2026-09-13
 - Completa al [0013](0013-shell-navegacion-e-inicio.md), que eligió qué destinos entran en cada barra.
+- Completado por el [0057](0057-las-opiniones-de-los-clientes.md) el 2026-09-21: Opiniones fue el
+  segundo destino sin lugar en la barra, y la foto pasó a abrir la hoja que este ADR anticipaba, con
+  Opiniones, Diezmo, Agenda, Ajustes y Cerrar sesión.
 
 ## Contexto
 

@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`) y la vista del cliente (`vistaCliente.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046 y las de los datos para transferir en el 0048.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`), la vista del cliente (`vistaCliente.ts`) y las opiniones de los clientes (`opiniones.ts` y `encuesta.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046, las de los datos para transferir en el 0048 y las de las opiniones en el 0057.
 
 ## Pureza (la aplican las herramientas)
 
@@ -62,6 +62,15 @@ le llega.
 - **`cobro` son los datos para transferirle al taller** (alias, CBU o CVU, titular y CUIT, ADR 0048): llegan del payload, y `hayComoTransferir` dice si alcanza para mostrar el bloque. El titular y el CUIT solos no alcanzan: con eso no se transfiere.
 - **No tiene gemela en SQL**, como `calcularSena`: la base arma el payload, no la presentación.
 
+## Las opiniones (ADR 0057)
+
+- **Los umbrales viven en `opiniones.ts` y en ningún otro lado**: `UMBRAL_BARRAS` (12: hasta 11, un punto por persona), `UMBRAL_EVOLUCION` y `UMBRAL_MESES` (12 respuestas **y** medio año para mostrar la evolución), `TOPE_PREGUNTAS` y `TOPE_PROPIAS`. Lo que se muestra lo decide `modoDeMostrar`, y la barra repartida es solo para las preguntas con polos. **Una pantalla no compara contra 12**: lee `resultado.modo` y `evolucion.conEvolucion`.
+- **`resumenDeOpiniones(datos, hoy)` es todo Resultados**, calculado en el aparato desde la réplica: la titular con su promedio y su cuenta, lo enviado y lo contestado, la distribución de cada pregunta, sus versiones anteriores aparte, las archivadas aparte, los comentarios, la evolución y lo que no se leyó. **Las propias de un trabajo no entran en ningún número general.**
+- **Un porcentaje nunca va solo** (`porcentaje`: «53% (9 de 17)») y un promedio lleva su cuenta (`promedio`, con un decimal solo si hace falta).
+- **`comoGuardar` decide qué es una versión nueva**: en el lugar si nadie la vio; se pregunta si ya la contestaron y cambió el texto; versión nueva sin preguntar si cambió cómo se contesta y ya salió. La base sostiene lo mismo (`MN013`, `MN014`). `sePuedeBorrar` repite la regla de borrado del trigger para que la pantalla no mande un borrado que la base rechazaría; **no la ata el comparador**: si cambia una, se cambia la otra a mano, y `26_opiniones.sql` y sus tests las cubren por separado.
+- **`validarRespuesta` (`encuesta.ts`) es gemela de `private.validar_respuesta`**, y el orden de las revisiones es parte de la regla: el motivo que devuelve tiene que ser el mismo que el de la base, caso por caso. Los largos se cuentan en puntos de código (`Array.from`), no en unidades de UTF-16, y los blancos que se recortan son los de ASCII, como en SQL.
+- `esLinkDeResena` es gemela del `check` de `ajustes.resena_link`.
+
 ## El CUIT
 
 `revisarCuit` **avisa, no bloquea** (ADR 0014). Devuelve cuatro estados y no un booleano, porque el caso del módulo 11 que da 10 no tiene una convención única: `verificadorDeCuit` devuelve `null` ahí en vez de elegir entre "inválido" y "mapearlo a 9", y `revisarCuit` lo llama `ambiguo`. El prefijo y el verificador que no cierra también son advertencias. Lo único que la app frena es el largo, y no por el checksum: es el `check` de formato de la base, y un rechazo definitivo tapa la cola.
@@ -71,6 +80,7 @@ le llega.
 - `private.cascada` y `private.transicion_valida`, en la migración `20260911200100_cascada_estados_y_cobro.sql`.
 - `private.topes_de_la_liquidacion`, `private.liquidacion_valida`, `private.reversion_valida` y el bloque de objetivos y la suma del mes de `private.liquidar`, en `20260911210000_topes_mensuales_y_perdido.sql`.
 - **`asientosDelLibro` y `saldosPorTesoro` contra la vista `public.libro_mayor`**, que es el estado vivo del esquema (`supabase/esquema.sql`), no el archivo de la migración: los dos difieren y el archivo está desactualizado (ADR 0013 y 0014).
+- **`validarRespuesta` contra `private.validar_respuesta` y `esLinkDeResena` contra el `check` de `ajustes.resena_link`**, en `20260921180000_opiniones_de_los_clientes.sql` (ADR 0057).
 
 `lineasDelLibro` **no tiene gemela en SQL y no la necesita**: es la forma sin partir de lo mismo, y
 `asientosDelLibro` es literalmente `lineasDelLibro(...).flatMap(asientosDeLaLinea)`. Nada en la base
