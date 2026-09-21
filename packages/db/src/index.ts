@@ -124,6 +124,15 @@ export {
   guardarTareasDelPresupuesto,
   generarEnlacePublico,
   guardarElTokenDelEnlace,
+  COLUMNAS_DE_PREGUNTA,
+  guardarPregunta,
+  mandarEncuesta,
+  marcarRespuestaLeida,
+  recordarEncuesta,
+  revocarEncuesta,
+  type ColumnaDePregunta,
+  type EncuestaNueva,
+  type PreguntaParaGuardar,
   leerProyectoGuardado,
   liquidarProyecto,
   marcarArchivoParaElCliente,
@@ -168,3 +177,15 @@ export {
 } from './sincronizacion.ts';
 
 export { leerVistaDelCliente, traerVistaCompartida, traerVistaDelCliente } from './vistaCliente.ts';
+
+export {
+  contestarLaEncuesta,
+  leerEncuestaCompartida,
+  leerResultadoDeContestar,
+  motivoDelRechazo,
+  traerEncuestaCompartida,
+  type EncuestaCompartida,
+  type LoQueContesto,
+  type RenglonContestado,
+  type ResultadoDeContestar,
+} from './encuestaPublica.ts';
