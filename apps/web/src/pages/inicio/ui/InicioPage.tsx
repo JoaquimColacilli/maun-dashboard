@@ -198,6 +198,7 @@ function Barra({
   pct: number;
   color: string;
 }) {
+  const lleno = Math.min(100, Math.max(0, pct));
   return (
     <div>
       <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-label">
@@ -207,16 +208,13 @@ function Barra({
       <div
         role="progressbar"
         aria-label={etiqueta}
-        aria-valuenow={pct}
+        aria-valuenow={lleno}
         aria-valuetext={detalle === undefined ? texto : `${texto}. ${detalle}`}
         aria-valuemin={0}
         aria-valuemax={100}
         className="h-1.5 overflow-hidden rounded-control bg-surface-2"
       >
-        <div
-          className={`h-full rounded-control ${color}`}
-          style={{ width: `${String(Math.min(100, pct))}%` }}
-        />
+        <div className={`h-full rounded-control ${color}`} style={{ width: `${String(lleno)}%` }} />
       </div>
       {detalle !== undefined && <p className="mt-1 text-meta text-text-3">{detalle}</p>}
     </div>

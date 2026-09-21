@@ -14,17 +14,16 @@ export interface FraseDelSueldo {
   detalle: string | undefined;
 }
 
-export function fraseDelSueldo({
-  pagado,
-  esperado,
-  cobros,
-  porCobro,
-}: SueldoDelMes): FraseDelSueldo {
+function quienLoPago(cobros: number): string {
+  return cobros > 1 ? `los ${String(cobros)} cobros del mes pagaron` : 'el cobro del mes pagó';
+}
+
+export function fraseDelSueldo({ pagado, esperado, cobros }: SueldoDelMes): FraseDelSueldo {
   return {
     texto: `${formatearPesos(pagado)} de ${formatearPesos(esperado)}`,
     detalle:
-      porCobro && cobros > 1
-        ? `${String(cobros)} cobros este mes, y cada uno paga su propio sueldo.`
+      pagado > esperado
+        ? `Ya está cubierto: ${quienLoPago(cobros)} ${formatearPesos(pagado)}.`
         : undefined,
   };
 }

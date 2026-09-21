@@ -5,6 +5,13 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-21',
+    lineas: [
+      'En Inicio, «Sueldo del mes» se mide contra el sueldo que cargaste, aunque en el mes hayas cobrado varios trabajos. Antes sumaba un sueldo por cada cobro.',
+      'Si los trabajos del mes ya pagaron más que tu sueldo, la barra queda llena y te dice cuánto entró.',
+    ],
+  },
+  {
     version: '2026-09-20.2',
     lineas: [
       'Arreglamos «Cómo lo ve tu cliente»: después de la última actualización, en los aparatos que ya venían usando la app esa pantalla se cortaba con un error.',

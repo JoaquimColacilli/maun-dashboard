@@ -1,7 +1,8 @@
 # 0020. Pulido visual: tema oscuro, hojas, plata, avisos y un solo molde
 
-- Estado: aceptada
+- Estado: aceptada, corregida
 - Fecha: 2026-09-12
+- Corregida el 2026-09-21 por el [ADR 0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md): el mensaje de Inicio sigue leyendo lo mismo que la barra, pero los dos miden contra **un** sueldo por mes, no contra uno por cobro.
 
 ## Contexto
 
