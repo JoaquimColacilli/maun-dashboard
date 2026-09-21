@@ -1,7 +1,7 @@
 -- Dos talleres, cada uno con su usuario y un juego completo de datos. Un usuario ve y toca solo
 -- lo suyo, por cada camino: las tablas, la vista, las funciones de sync y las foreign keys.
 
-select plan(45);
+select plan(46);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('b', tests.crear_usuario('b@maun.test'));
@@ -76,6 +76,11 @@ select results_eq('select id from public.archivos', array['aaaaaaaa-0000-7000-80
 select results_eq('select id from public.opciones_de_presupuesto', array['aaaaaaaa-0000-7000-8000-000000000008'::uuid], 'A ve solo sus opciones de presupuesto');
 select results_eq('select id from public.necesidades', array['aaaaaaaa-0000-7000-8000-000000000009'::uuid], 'A ve solo lo que hace falta en sus trabajos');
 select results_eq('select id from public.enlaces_publicos', array['aaaaaaaa-0000-7000-8000-00000000000a'::uuid], 'A ve solo los links de sus trabajos');
+select is(
+  (select array_agg(distinct household_id) from public.preguntas),
+  array[tests.id('household_a')],
+  'A ve solo las preguntas de su encuesta, aunque B tenga la misma sembrada'
+);
 
 select is_empty(
   format('select 1 from public.libro_mayor where household_id <> %L', tests.id('household_a')),
@@ -85,8 +90,8 @@ select isnt_empty('select 1 from public.libro_mayor', 'el libro mayor de A tiene
 
 select is(
   (select jsonb_object_agg(t.clave, jsonb_array_length(t.valor)) from jsonb_each(public.bootstrap() - 'cursor') as t (clave, valor)),
-  '{"households": 1, "household_members": 1, "ajustes": 1, "clientes": 1, "proyectos": 1, "pagos": 1, "gastos": 1, "opciones_de_presupuesto": 1, "necesidades": 1, "movimientos": 1, "anotaciones": 1, "archivos": 1, "enlaces_publicos": 1}'::jsonb,
-  'bootstrap() de A trae su household completo'
+  '{"households": 1, "household_members": 1, "ajustes": 1, "clientes": 1, "proyectos": 1, "pagos": 1, "gastos": 1, "opciones_de_presupuesto": 1, "necesidades": 1, "movimientos": 1, "anotaciones": 1, "archivos": 1, "enlaces_publicos": 1, "preguntas": 5, "encuestas_enviadas": 0, "respuestas": 0, "renglones_de_respuesta": 0}'::jsonb,
+  'bootstrap() de A trae su household completo, con las cinco preguntas de la encuesta que nace escrita'
 );
 
 select is(
@@ -247,7 +252,7 @@ select tests.entrar_como(tests.id('sin_taller'));
 
 select is(
   (select jsonb_object_agg(t.clave, jsonb_array_length(t.valor)) from jsonb_each(public.bootstrap() - 'cursor') as t (clave, valor)),
-  '{"households": 0, "household_members": 0, "ajustes": 0, "clientes": 0, "proyectos": 0, "pagos": 0, "gastos": 0, "opciones_de_presupuesto": 0, "necesidades": 0, "movimientos": 0, "anotaciones": 0, "archivos": 0, "enlaces_publicos": 0}'::jsonb,
+  '{"households": 0, "household_members": 0, "ajustes": 0, "clientes": 0, "proyectos": 0, "pagos": 0, "gastos": 0, "opciones_de_presupuesto": 0, "necesidades": 0, "movimientos": 0, "anotaciones": 0, "archivos": 0, "enlaces_publicos": 0, "preguntas": 0, "encuestas_enviadas": 0, "respuestas": 0, "renglones_de_respuesta": 0}'::jsonb,
   'un usuario sin household no ve nada'
 );
 

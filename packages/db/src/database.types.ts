@@ -23,6 +23,7 @@ export type Database = {
           meta_cocos_centavos: number;
           perdido_con_diezmo: boolean;
           perdido_con_sueldo: boolean;
+          resena_link: string;
           sena_bp: number;
           sueldo_mensual_centavos: number;
           sueldo_tope_mensual: boolean;
@@ -44,6 +45,7 @@ export type Database = {
           meta_cocos_centavos?: number;
           perdido_con_diezmo?: boolean;
           perdido_con_sueldo?: boolean;
+          resena_link?: string;
           sena_bp?: number;
           sueldo_mensual_centavos?: number;
           sueldo_tope_mensual?: boolean;
@@ -65,6 +67,7 @@ export type Database = {
           meta_cocos_centavos?: number;
           perdido_con_diezmo?: boolean;
           perdido_con_sueldo?: boolean;
+          resena_link?: string;
           sena_bp?: number;
           sueldo_mensual_centavos?: number;
           sueldo_tope_mensual?: boolean;
@@ -330,6 +333,69 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'households';
             referencedColumns: ['id'];
+          },
+        ];
+      };
+      encuestas_enviadas: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          enviada_at: string;
+          household_id: string;
+          id: string;
+          preguntas: Json;
+          proyecto_id: string;
+          recordada_at: string | null;
+          revocada_at: string | null;
+          token: string;
+          token_hash: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          enviada_at?: string;
+          household_id?: string;
+          id?: string;
+          preguntas?: Json;
+          proyecto_id: string;
+          recordada_at?: string | null;
+          revocada_at?: string | null;
+          token: string;
+          token_hash: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          enviada_at?: string;
+          household_id?: string;
+          id?: string;
+          preguntas?: Json;
+          proyecto_id?: string;
+          recordada_at?: string | null;
+          revocada_at?: string | null;
+          token?: string;
+          token_hash?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'encuestas_enviadas_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'encuestas_enviadas_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
           },
         ];
       };
@@ -746,6 +812,84 @@ export type Database = {
           },
         ];
       };
+      preguntas: {
+        Row: {
+          archivada_at: string | null;
+          cantidad_de_opciones: number;
+          created_at: string;
+          deleted_at: string | null;
+          escala: Database['public']['Enums']['escala_de_pregunta'] | null;
+          household_id: string;
+          id: string;
+          numero: number;
+          obligatoria: boolean;
+          opciones: string[] | null;
+          orden: number;
+          proyecto_id: string | null;
+          serie: string;
+          texto: string;
+          tipo: Database['public']['Enums']['tipo_de_pregunta'];
+          titular: boolean;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          archivada_at?: string | null;
+          cantidad_de_opciones?: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          escala?: Database['public']['Enums']['escala_de_pregunta'] | null;
+          household_id?: string;
+          id?: string;
+          numero?: number;
+          obligatoria?: boolean;
+          opciones?: string[] | null;
+          orden?: number;
+          proyecto_id?: string | null;
+          serie: string;
+          texto: string;
+          tipo: Database['public']['Enums']['tipo_de_pregunta'];
+          titular?: boolean;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          archivada_at?: string | null;
+          cantidad_de_opciones?: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          escala?: Database['public']['Enums']['escala_de_pregunta'] | null;
+          household_id?: string;
+          id?: string;
+          numero?: number;
+          obligatoria?: boolean;
+          opciones?: string[] | null;
+          orden?: number;
+          proyecto_id?: string | null;
+          serie?: string;
+          texto?: string;
+          tipo?: Database['public']['Enums']['tipo_de_pregunta'];
+          titular?: boolean;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'preguntas_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'preguntas_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       proyectos: {
         Row: {
           cliente_id: string;
@@ -937,6 +1081,130 @@ export type Database = {
           },
           {
             foreignKeyName: 'proyectos_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      renglones_de_respuesta: {
+        Row: {
+          cantidad_de_opciones: number;
+          created_at: string;
+          deleted_at: string | null;
+          household_id: string;
+          id: string;
+          pregunta_id: string;
+          pregunta_texto: string;
+          respuesta_id: string;
+          tipo: Database['public']['Enums']['tipo_de_pregunta'];
+          updated_at: string;
+          valor_numero: number | null;
+          valor_opciones: number[] | null;
+          valor_texto: string | null;
+          version: number;
+        };
+        Insert: {
+          cantidad_de_opciones: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id: string;
+          id?: string;
+          pregunta_id: string;
+          pregunta_texto: string;
+          respuesta_id: string;
+          tipo: Database['public']['Enums']['tipo_de_pregunta'];
+          updated_at?: string;
+          valor_numero?: number | null;
+          valor_opciones?: number[] | null;
+          valor_texto?: string | null;
+          version?: number;
+        };
+        Update: {
+          cantidad_de_opciones?: number;
+          created_at?: string;
+          deleted_at?: string | null;
+          household_id?: string;
+          id?: string;
+          pregunta_id?: string;
+          pregunta_texto?: string;
+          respuesta_id?: string;
+          tipo?: Database['public']['Enums']['tipo_de_pregunta'];
+          updated_at?: string;
+          valor_numero?: number | null;
+          valor_opciones?: number[] | null;
+          valor_texto?: string | null;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'renglones_de_respuesta_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'renglones_de_respuesta_pregunta_fk';
+            columns: ['household_id', 'pregunta_id', 'tipo', 'cantidad_de_opciones'];
+            isOneToOne: false;
+            referencedRelation: 'preguntas';
+            referencedColumns: ['household_id', 'id', 'tipo', 'cantidad_de_opciones'];
+          },
+          {
+            foreignKeyName: 'renglones_de_respuesta_respuesta_fk';
+            columns: ['household_id', 'respuesta_id'];
+            isOneToOne: false;
+            referencedRelation: 'respuestas';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
+      respuestas: {
+        Row: {
+          contestada_at: string;
+          created_at: string;
+          deleted_at: string | null;
+          encuesta_id: string;
+          household_id: string;
+          id: string;
+          leida_at: string | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          contestada_at?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          encuesta_id: string;
+          household_id: string;
+          id?: string;
+          leida_at?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          contestada_at?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          encuesta_id?: string;
+          household_id?: string;
+          id?: string;
+          leida_at?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'respuestas_encuesta_fk';
+            columns: ['household_id', 'encuesta_id'];
+            isOneToOne: true;
+            referencedRelation: 'encuestas_enviadas';
+            referencedColumns: ['household_id', 'id'];
+          },
+          {
+            foreignKeyName: 'respuestas_household_id_fkey';
             columns: ['household_id'];
             isOneToOne: false;
             referencedRelation: 'households';
@@ -1141,11 +1409,16 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      contestar_encuesta: {
+        Args: { p_respuesta: Json; p_token: string };
+        Returns: Json;
+      };
       dar_de_baja_suscripcion: {
         Args: { p_endpoint: string };
         Returns: boolean;
       };
       delta: { Args: { p_desde: string }; Returns: Json };
+      encuesta_compartida: { Args: { p_token: string }; Returns: Json };
       estado_de_mis_avisos: { Args: { p_endpoint?: string }; Returns: Json };
       guardar_preferencias_de_avisos: {
         Args: { p_avisos: Json; p_hora: string; p_zona: string };
@@ -1324,6 +1597,7 @@ export type Database = {
       categoria_anotacion: 'materiales' | 'taller';
       comprobante: 'factura_a' | 'factura_b' | 'factura_c' | 'remito' | 'sin_comprobante';
       condicion_fiscal: 'consumidor_final' | 'monotributo' | 'responsable_inscripto' | 'exento';
+      escala_de_pregunta: 'conformidad' | 'tiempos' | 'trato';
       estado_proyecto:
         | 'contacto'
         | 'presupuesto_estimativo'
@@ -1340,6 +1614,7 @@ export type Database = {
       rol_household: 'titular' | 'miembro';
       tesoro: 'hogar' | 'maun' | 'diezmo' | 'cocos';
       tipo_de_necesidad: 'herraje' | 'herramienta';
+      tipo_de_pregunta: 'escala5' | 'sitalvezno' | 'una' | 'varias' | 'texto';
       tipo_movimiento:
         'ingreso' | 'gasto' | 'transferencia' | 'pago_diezmo' | 'aporte_cocos' | 'ajuste';
     };
@@ -1466,6 +1741,7 @@ export const Constants = {
       categoria_anotacion: ['materiales', 'taller'],
       comprobante: ['factura_a', 'factura_b', 'factura_c', 'remito', 'sin_comprobante'],
       condicion_fiscal: ['consumidor_final', 'monotributo', 'responsable_inscripto', 'exento'],
+      escala_de_pregunta: ['conformidad', 'tiempos', 'trato'],
       estado_proyecto: [
         'contacto',
         'presupuesto_estimativo',
@@ -1483,6 +1759,7 @@ export const Constants = {
       rol_household: ['titular', 'miembro'],
       tesoro: ['hogar', 'maun', 'diezmo', 'cocos'],
       tipo_de_necesidad: ['herraje', 'herramienta'],
+      tipo_de_pregunta: ['escala5', 'sitalvezno', 'una', 'varias', 'texto'],
       tipo_movimiento: [
         'ingreso',
         'gasto',

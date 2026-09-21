@@ -64,7 +64,9 @@ select set_eq(
 -- Los cuatro datos para transferir viajan, y nada más de esta tabla: el sueldo, los costos fijos,
 -- la meta de Cocos, su tasa, la seña y las tres preferencias de liquidación son parte de cómo se
 -- reparte la plata adentro del taller, y eso el cliente no lo ve ni de lejos. Ajustes está acá
--- desde que uno de sus campos viaja: una columna nueva rompe este test igual que en proyectos.
+-- desde que uno de sus campos viaja: una columna nueva rompe este test igual que en proyectos. El
+-- enlace de reseña no viaja por esta puerta: sale por la de la encuesta, y su clasificación está en
+-- 27_encuesta_publica.sql.
 select set_eq(
   $$
     select a.attname::text
@@ -78,7 +80,7 @@ select set_eq(
     'id', 'household_id', 'created_at', 'updated_at', 'deleted_at', 'version',
     'sueldo_mensual_centavos', 'costos_fijos_centavos', 'meta_cocos_centavos',
     'tasa_cocos_anual_bp', 'sueldo_tope_mensual', 'perdido_con_sueldo', 'perdido_con_diezmo',
-    'sena_bp'
+    'sena_bp', 'resena_link'
   ],
   'toda columna de ajustes está clasificada: una columna nueva rompe este test hasta que alguien decida si el cliente la ve'
 );

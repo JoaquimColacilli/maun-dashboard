@@ -33,6 +33,7 @@ function ajustes(extra: Partial<FilaDe<'ajustes'>> = {}): FilaDe<'ajustes'> {
     cobro_titular: '',
     cobro_cuit: '',
     cobro_link: '',
+    resena_link: '',
     created_at: '2026-09-19T12:00:00Z',
     updated_at: '2026-09-19T12:00:00Z',
     deleted_at: null,
