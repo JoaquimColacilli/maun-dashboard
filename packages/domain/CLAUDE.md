@@ -32,7 +32,7 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 `resumenDelMes` es lo que se muestra por mes: objetivo, liquidado y lo que falta, de sueldo y de fijos.
 
-`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra el que prometían. Con el tope por proyecto, que es la regla del dueño, cada cobro promete su propio sueldo, con el objetivo con el que se liquidó; con el tope mensual, el mes promete uno. Por eso `LiquidacionRegistrada` lleva `sueldoMensual` (ADR 0011). Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
+`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra **un** sueldo, el del mes según `resumenDelMes` (el de los ajustes para el mes en curso; el objetivo del último cobro para un mes cerrado). **No suma un sueldo por cobro**, aunque el reparto sea por proyecto: el sueldo que se asigna el dueño es lo que el hogar necesita por mes, y la regla por proyecto es cómo se junta, no cuánto hace falta. Si los cobros pagan más, lo pagado pasa lo esperado y la pantalla lo nombra (ADR 0056, que corrige al 0011). Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
 
 ## La seña
 

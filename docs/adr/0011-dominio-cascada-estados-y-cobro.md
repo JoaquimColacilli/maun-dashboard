@@ -2,6 +2,8 @@
 
 Estado: aceptada, 2026-09-11. Actualizada el mismo día con los topes mensuales, el sueldo con tope por proyecto o por mes y el cierre de un perdido como liquidación, que resuelven las preguntas que este ADR dejaba abiertas. Actualizada el 2026-09-12 (paso 12) con las respuestas del dueño: la seña retenida paga diezmo y no paga sueldo, el tope de sueldo se queda por proyecto, y la barra "Sueldo del mes" mide lo que promete esa regla.
 
+**Corregida el 2026-09-21 por el [ADR 0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)**, solo en la sección «La barra "Sueldo del mes"»: la barra vuelve a medir contra **un** sueldo por mes, que es la necesidad del hogar, y nombra el excedente cuando los cobros pagan más. La regla de reparto —el tope de sueldo por proyecto— queda como está.
+
 ## Contexto
 
 La regla central del negocio, la cascada que reparte la ganancia de un proyecto, se necesita en dos lugares:

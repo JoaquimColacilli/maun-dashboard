@@ -14,7 +14,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0008](0008-migraciones-a-mano-sin-docker.md)                               | Migraciones a mano, sin Docker, en un solo proyecto          | Aceptada             |
 | [0009](0009-velocidad.md)                                                   | Velocidad: región, cache primero y un solo round trip        | Aceptada             |
 | [0010](0010-sincronizacion-replica-completa.md)                             | Sincronización: réplica completa del household               | Aceptada             |
-| [0011](0011-dominio-cascada-estados-y-cobro.md)                             | Dominio: cascada, estados y cobro, sin divergir de SQL       | Aceptada             |
+| [0011](0011-dominio-cascada-estados-y-cobro.md)                             | Dominio: cascada, estados y cobro, sin divergir de SQL       | Aceptada, corregida  |
 | [0012](0012-acceso-sesion-y-cola-de-salida.md)                              | Acceso, sesión sin red y cola de salida ordenada             | Aceptada             |
 | [0013](0013-shell-navegacion-e-inicio.md)                                   | Shell, navegación por ancho e Inicio desde la réplica        | Aceptada, corregida  |
 | [0014](0014-clientes-el-primer-camino-de-escritura.md)                      | Clientes: el primer camino de escritura                      | Aceptada             |
@@ -23,7 +23,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0017](0017-los-datos-del-sistema-viejo.md)                                 | Los datos del sistema viejo entran por un script             | Aceptada, pendiente  |
 | [0018](0018-finanzas-el-diezmo-y-los-movimientos-a-mano.md)                 | Finanzas, el diezmo y los movimientos a mano                 | Aceptada             |
 | [0019](0019-seguimiento-el-contacto-es-la-misma-fila.md)                    | Seguimiento: el contacto es la misma fila, sin tablero       | Aceptada             |
-| [0020](0020-pulido-visual.md)                                               | Pulido visual: tema oscuro, hojas, plata, avisos y molde     | Aceptada             |
+| [0020](0020-pulido-visual.md)                                               | Pulido visual: tema oscuro, hojas, plata, avisos y molde     | Aceptada, corregida  |
 | [0021](0021-perfil-sin-foto.md)                                             | Perfil: el nombre en la cuenta, iniciales en vez de foto     | Reemplazada por 0022 |
 | [0022](0022-foto-de-perfil.md)                                              | Foto de perfil: recorte en el navegador y bucket público     | Aceptada             |
 | [0023](0023-sesion-bloqueo-con-huella-y-passkeys.md)                        | Pantallas de sesión, bloqueo con huella y passkeys           | Aceptada, corregida  |
@@ -59,3 +59,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página     | Aceptada             |
 | [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes   | Aceptada             |
 | [0055](0055-lo-que-se-guarda-en-el-aparato-y-lo-que-no.md)                  | Lo que se guarda en el aparato, y lo que no                  | Aceptada             |
+| [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                   | Aceptada             |
