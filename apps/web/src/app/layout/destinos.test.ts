@@ -23,6 +23,11 @@ describe('seccionDeLaRuta', () => {
     expect(seccionDeLaRuta('/proyectos/5eed0000-0000-7000-8000-000000000001')).toBe('proyectos');
   });
 
+  it('Resultados y Preguntas son las dos partes de Opiniones', () => {
+    expect(seccionDeLaRuta('/opiniones')).toBe('opiniones');
+    expect(seccionDeLaRuta('/opiniones/preguntas')).toBe('opiniones');
+  });
+
   it('una ruta desconocida cae en Inicio en vez de dejar la barra sin nada marcado', () => {
     expect(seccionDeLaRuta('/lo-que-sea')).toBe('inicio');
   });

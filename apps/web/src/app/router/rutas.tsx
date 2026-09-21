@@ -7,6 +7,7 @@ import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
 import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/pages/finanzas';
 import { InicioPage } from '@/pages/inicio';
+import { PreguntasPage } from '@/pages/opiniones';
 import {
   ContactoNuevoPage,
   ProyectoCompartirPage,
@@ -36,6 +37,7 @@ export const RUTAS_DE_PANTALLA: RouteObject[] = [
   { path: '/clientes', element: <ClientesPage /> },
   { path: '/clientes/:id', element: <ClienteFichaPage /> },
   { path: '/finanzas', element: <FinanzasPage /> },
+  { path: '/opiniones/preguntas', element: <PreguntasPage /> },
   { path: '/diezmo', element: <DiezmoPage /> },
   { path: '/ajustes', element: <AjustesPage /> },
   { path: '/ajustes/avisos', element: <AvisosPage /> },

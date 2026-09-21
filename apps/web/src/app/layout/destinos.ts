@@ -7,6 +7,7 @@ export type IdDeSeccion =
   | 'proyectos'
   | 'clientes'
   | 'finanzas'
+  | 'opiniones'
   | 'diezmo'
   | 'ajustes';
 
@@ -37,6 +38,13 @@ export const DESTINOS: Readonly<Record<IdDeSeccion, Destino>> = {
   proyectos: { id: 'proyectos', etiqueta: 'Proyectos', ruta: '/proyectos', icono: 'folder-kanban' },
   clientes: { id: 'clientes', etiqueta: 'Clientes', ruta: '/clientes', icono: 'users' },
   finanzas: { id: 'finanzas', etiqueta: 'Finanzas', ruta: '/finanzas', icono: 'wallet' },
+  opiniones: {
+    id: 'opiniones',
+    etiqueta: 'Opiniones',
+    ruta: '/opiniones',
+    icono: 'message-square-quote',
+    alternativa: 'inicio',
+  },
   diezmo: {
     id: 'diezmo',
     etiqueta: 'Diezmo',

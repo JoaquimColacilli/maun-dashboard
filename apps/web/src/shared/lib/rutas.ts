@@ -111,6 +111,20 @@ export function rutaDeLaVistaDelCliente(id: string): string {
   return `/proyectos/${id}/vista-cliente`;
 }
 
+export const RUTA_DE_OPINIONES = '/opiniones';
+
+export const RUTA_DE_PREGUNTAS = '/opiniones/preguntas';
+
+export const PARAMETRO_DE_RESPUESTA = 'respuesta';
+
+export function rutaDeLaRespuesta(id: string): string {
+  return `${RUTA_DE_OPINIONES}?${new URLSearchParams({ [PARAMETRO_DE_RESPUESTA]: id }).toString()}`;
+}
+
+export function rutaDeLaPregunta(id: string): string {
+  return `${RUTA_DE_OPINIONES}#pregunta-${id}`;
+}
+
 export const PREFIJO_DE_LA_VISTA_PUBLICA = '/v/';
 
 export const RUTA_DE_LA_VISTA_PUBLICA = `${PREFIJO_DE_LA_VISTA_PUBLICA}:token`;

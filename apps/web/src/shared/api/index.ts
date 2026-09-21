@@ -28,6 +28,15 @@ export {
   mensajeDeAcceso,
   mensajeDeSincronizacion,
 } from './errores';
+export {
+  contestarEncuesta,
+  darDeBajaLaEncuesta,
+  encuestaCompartida,
+  guardarLaPregunta,
+  mandarLaEncuesta,
+  marcarLaOpinionLeida,
+  recordarLaEncuesta,
+} from './opiniones';
 export { esperarHuellaDelAutocompletado, registrarHuella } from './passkeys';
 export {
   traducirRechazo,
@@ -162,4 +171,13 @@ export {
   type TipoMovimiento,
   type TotalesDelProyecto,
   type EnlaceNuevo,
+  COLUMNAS_DE_PREGUNTA,
+  motivoDelRechazo,
+  type ColumnaDePregunta,
+  type EncuestaCompartida,
+  type EncuestaNueva,
+  type LoQueContesto,
+  type PreguntaParaGuardar,
+  type RenglonContestado,
+  type ResultadoDeContestar,
 } from '@maun/db';

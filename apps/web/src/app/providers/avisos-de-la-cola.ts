@@ -38,6 +38,12 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   anotacionBorrada: 'guardado',
   archivo: 'guardado',
   archivoBorrado: 'guardado',
+  pregunta: 'guardado',
+  preguntaPropia: 'guardado',
+  opinionLeida: 'guardado',
+  encuesta: 'guardado',
+  bajaDeLaEncuesta: 'guardado',
+  recordatorio: 'guardado',
 };
 
 const CLAVE_DE_LO_ANOTADO = 'anotado-sin-senal';

@@ -166,6 +166,36 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
     error: 'No se pudo cambiar qué ve tu cliente.',
   },
+  pregunta: {
+    hecho: 'Pregunta guardada.',
+    enCola: 'Pregunta anotada sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la pregunta.',
+  },
+  preguntaPropia: {
+    hecho: 'La sumamos a la encuesta de este trabajo.',
+    enCola: 'Pregunta anotada sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la pregunta de este trabajo.',
+  },
+  opinionLeida: {
+    hecho: 'Opinión leída.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo marcar la opinión como leída.',
+  },
+  encuesta: {
+    hecho: 'El enlace de la encuesta está listo.',
+    enCola: 'Para crear el enlace de la encuesta hace falta señal.',
+    error: 'No se creó el enlace de la encuesta.',
+  },
+  bajaDeLaEncuesta: {
+    hecho: 'El enlace de la encuesta ya no funciona.',
+    enCola: 'Para darlo de baja hace falta señal.',
+    error: 'No se dio de baja el enlace de la encuesta.',
+  },
+  recordatorio: {
+    hecho: 'Queda anotado que se lo recordaste.',
+    enCola: 'Recordatorio anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se anotó el recordatorio.',
+  },
 } as const satisfies Record<string, TextosDeAviso>;
 
 export type QueSeGuarda = keyof typeof TEXTOS_DE_AVISO;

@@ -58,6 +58,18 @@ import {
   MUTACION_DE_REVERSION,
   MUTACION_DE_TAREAS,
 } from '@/entities/proyecto';
+import {
+  CLAVE_DE_BAJA_DE_ENCUESTA,
+  CLAVE_DE_ENCUESTA,
+  CLAVE_DE_LECTURA,
+  CLAVE_DE_PREGUNTA,
+  CLAVE_DE_RECORDATORIO,
+  MUTACION_DE_BAJA_DE_ENCUESTA,
+  MUTACION_DE_ENCUESTA,
+  MUTACION_DE_LECTURA,
+  MUTACION_DE_PREGUNTA,
+  MUTACION_DE_RECORDATORIO,
+} from '@/entities/opinion';
 import { CLAVE_DEL_PERFIL, MUTACION_DEL_PERFIL } from '@/entities/sesion';
 import {
   CLAVE_DE_AJUSTES,
@@ -148,6 +160,21 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_TOKEN_DE_ENLACE, MUTACION_DE_TOKEN_DE_ENLACE);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_PREGUNTA, MUTACION_DE_PREGUNTA);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_LECTURA, MUTACION_DE_LECTURA);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_RECORDATORIO, MUTACION_DE_RECORDATORIO);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_ENCUESTA, MUTACION_DE_ENCUESTA);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ENCUESTA, MUTACION_DE_BAJA_DE_ENCUESTA);
   },
 ];
 

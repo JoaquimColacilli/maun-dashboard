@@ -75,6 +75,34 @@ export function fechaLarga(fecha: string, hoy: string = hoyLocal()): string {
   return `${DIAS[dia.getUTCDay()] ?? ''} ${String(dia.getUTCDate())} ${MESES_CORTOS[dia.getUTCMonth()] ?? ''}${sufijo}`;
 }
 
+export function diaLocal(momento: string): string {
+  return hoyLocal(new Date(momento));
+}
+
+export function diaYMes(fecha: string, hoy: string = hoyLocal()): string {
+  const dia = comoUtc(fecha);
+  const anio = dia.getUTCFullYear();
+  const mes = (MESES[dia.getUTCMonth()] ?? '').toLowerCase();
+  const sufijo = anio === comoUtc(hoy).getUTCFullYear() ? '' : ` de ${String(anio)}`;
+  return `${String(dia.getUTCDate())} de ${mes}${sufijo}`;
+}
+
+export function diaYMesCorto(fecha: string): string {
+  const dia = comoUtc(fecha);
+  return `${String(dia.getUTCDate())} ${MESES_CORTOS[dia.getUTCMonth()] ?? ''}`;
+}
+
+export function haceCuanto(fecha: string, hoy: string = hoyLocal()): string {
+  const dias = -diasHasta(fecha, hoy);
+  if (dias <= 0) return 'hoy';
+  if (dias === 1) return 'ayer';
+  if (dias < 30) return `hace ${String(dias)} días`;
+  const meses = Math.round(dias / 30);
+  if (meses < 12) return `hace ${String(meses)} ${meses === 1 ? 'mes' : 'meses'}`;
+  const anios = Math.round(meses / 12);
+  return `hace ${String(anios)} ${anios === 1 ? 'año' : 'años'}`;
+}
+
 export function diasHasta(fecha: string, desde: string = hoyLocal()): number {
   return Math.round((comoUtc(fecha).getTime() - comoUtc(desde).getTime()) / MS_POR_DIA);
 }

@@ -2,15 +2,43 @@ import { describe, expect, it } from 'vitest';
 
 import {
   diaDelMes,
+  diaLocal,
   diasDelMes,
   diasHasta,
+  diaYMes,
+  diaYMesCorto,
   fechaLarga,
+  haceCuanto,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
   nombreDelMes,
   relativa,
 } from './fechas';
+
+describe('las fechas de las opiniones', () => {
+  it('el día y el mes, con el año solo si no es el de hoy', () => {
+    expect(diaYMes('2026-09-02', '2026-09-21')).toBe('2 de septiembre');
+    expect(diaYMes('2025-12-15', '2026-09-21')).toBe('15 de diciembre de 2025');
+    expect(diaYMesCorto('2026-09-02')).toBe('2 sep');
+  });
+
+  it('hace cuánto, hasta en años', () => {
+    expect(haceCuanto('2026-09-21', '2026-09-21')).toBe('hoy');
+    expect(haceCuanto('2026-09-22', '2026-09-21')).toBe('hoy');
+    expect(haceCuanto('2026-09-20', '2026-09-21')).toBe('ayer');
+    expect(haceCuanto('2026-09-16', '2026-09-21')).toBe('hace 5 días');
+    expect(haceCuanto('2026-08-20', '2026-09-21')).toBe('hace 1 mes');
+    expect(haceCuanto('2026-04-01', '2026-09-21')).toBe('hace 6 meses');
+    expect(haceCuanto('2025-09-01', '2026-09-21')).toBe('hace 1 año');
+    expect(haceCuanto('2024-08-01', '2026-09-21')).toBe('hace 2 años');
+  });
+
+  it('el día de un momento es el del reloj del dispositivo', () => {
+    const momento = new Date(2026, 8, 21, 23, 30).toISOString();
+    expect(diaLocal(momento)).toBe('2026-09-21');
+  });
+});
 
 describe('hoyLocal', () => {
   it('usa el día del reloj del dispositivo, no el UTC', () => {

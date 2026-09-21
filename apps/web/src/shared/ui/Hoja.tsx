@@ -86,6 +86,8 @@ export interface HojaProps {
   ancho?: keyof typeof ANCHO;
   desdeAbajo?: boolean;
   conCambios?: boolean;
+  antes?: ReactNode;
+  bajada?: string;
 }
 
 export function Hoja({
@@ -96,6 +98,8 @@ export function Hoja({
   ancho = 'normal',
   desdeAbajo = false,
   conCambios = false,
+  antes,
+  bajada,
 }: HojaProps) {
   const pantalla = useAnchoDePantalla();
   const altoVisible = useAltoVisible();
@@ -214,9 +218,17 @@ export function Hoja({
       }`}
     >
       <header className="flex flex-none items-center justify-between gap-3 border-b border-hairline py-2.5 pr-2.5 pl-5 md:py-3.5 md:pr-3.5 md:pl-6">
-        <h2 id={idTitulo} className="text-body-lg leading-snug font-semibold">
-          {titulo}
-        </h2>
+        <div className="flex min-w-0 items-center gap-3">
+          {antes}
+          <div className="flex min-w-0 flex-col">
+            <h2 id={idTitulo} className="text-body-lg leading-snug font-semibold">
+              {titulo}
+            </h2>
+            {bajada !== undefined && (
+              <span className="truncate text-label text-text-2">{bajada}</span>
+            )}
+          </div>
+        </div>
         <button
           type="button"
           onClick={pedirCierre}
