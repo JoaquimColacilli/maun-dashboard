@@ -97,6 +97,7 @@ export {
 } from './push';
 export {
   CLAVE_DE_LOS_ENLACES,
+  enlaceDeLaEncuesta,
   enlaceDelCliente,
   hashDelToken,
   olvidarLosTokens,

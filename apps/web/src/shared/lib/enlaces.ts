@@ -62,3 +62,7 @@ export function olvidarLosTokens(): void {
 export function enlaceDelCliente(token: string): string {
   return `${globalThis.location.origin}/v/${token}`;
 }
+
+export function enlaceDeLaEncuesta(token: string): string {
+  return `${globalThis.location.origin}/o/${token}`;
+}

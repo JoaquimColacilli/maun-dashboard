@@ -35,6 +35,7 @@ import {
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
+import { PedirLaOpinion } from '@/features/pedir-la-opinion';
 import {
   fechaLarga,
   formatearPesos,
@@ -274,6 +275,10 @@ export function ProyectoFichaPage() {
 
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-2 lg:gap-x-11">
         <div className="flex min-w-0 flex-col gap-5">
+          {(proyecto.estado === 'entregado' || proyecto.estado === 'cobrado') && (
+            <PedirLaOpinion proyecto={proyecto} cliente={cliente} />
+          )}
+
           <BloqueDeLaSena
             sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
             propia={senaDelProyecto(proyecto) !== null}

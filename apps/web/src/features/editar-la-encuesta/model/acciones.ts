@@ -1,16 +1,14 @@
 import type { PreguntaEditable } from '@maun/domain';
-import type { MutationOptions, QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 
-import { MUTACION_DE_PREGUNTA, type FilaDePregunta } from '@/entities/opinion';
-import { filaPorId, type PreguntaParaGuardar, type Replica } from '@/shared/api';
 import {
-  avisarEnPantalla,
-  claveDeTodaReplica,
-  metaDeAvisos,
-  uuidv7,
-  type NuevoAviso,
-  type QueSeGuarda,
-} from '@/shared/lib';
+  guardarPreguntaEnLaCola as guardarEnLaCola,
+  paraGuardar,
+  preguntaEnLaReplica,
+  type FilaDePregunta,
+} from '@/entities/opinion';
+import type { PreguntaParaGuardar } from '@/shared/api';
+import { avisarEnPantalla, uuidv7, type NuevoAviso } from '@/shared/lib';
 
 export type Avisador = (aviso: NuevoAviso) => void;
 
@@ -20,37 +18,8 @@ const LARGO_DEL_RECORTE = 34;
 
 export type ModoDeGuardar = 'en-el-lugar' | 'version-nueva';
 
-function mandarALaCola<TDatos, TVariables>(
-  cliente: QueryClient,
-  opciones: MutationOptions<TDatos, unknown, TVariables>,
-  variables: TVariables,
-): void {
-  void cliente
-    .getMutationCache()
-    .build(cliente, opciones)
-    .execute(variables)
-    .catch(() => undefined);
-}
-
 export function recortado(texto: string): string {
   return texto.length > LARGO_DEL_RECORTE ? `${texto.slice(0, LARGO_DEL_RECORTE)}…` : texto;
-}
-
-export function paraGuardar(fila: FilaDePregunta): PreguntaParaGuardar {
-  return {
-    id: fila.id,
-    serie: fila.serie,
-    numero: fila.numero,
-    proyecto_id: fila.proyecto_id,
-    orden: fila.orden,
-    texto: fila.texto,
-    tipo: fila.tipo,
-    escala: fila.escala,
-    obligatoria: fila.obligatoria,
-    opciones: fila.opciones,
-    archivada_at: fila.archivada_at,
-    deleted_at: fila.deleted_at,
-  };
 }
 
 function conElBorrador(fila: PreguntaParaGuardar, borrador: PreguntaEditable): PreguntaParaGuardar {
@@ -62,28 +31,6 @@ function conElBorrador(fila: PreguntaParaGuardar, borrador: PreguntaEditable): P
     obligatoria: borrador.obligatoria,
     opciones: borrador.opciones === null ? null : [...borrador.opciones],
   };
-}
-
-export function preguntaEnLaReplica(cliente: QueryClient, id: string): FilaDePregunta | undefined {
-  for (const [, replica] of cliente.getQueriesData<Replica>({ queryKey: claveDeTodaReplica() })) {
-    const fila = replica === undefined ? undefined : filaPorId(replica, 'preguntas', id);
-    if (fila) return fila;
-  }
-  return undefined;
-}
-
-export function guardarEnLaCola(
-  cliente: QueryClient,
-  fila: PreguntaParaGuardar,
-  titular: boolean,
-  previa: FilaDePregunta | null,
-  que: QueSeGuarda = 'pregunta',
-): void {
-  mandarALaCola(
-    cliente,
-    { ...MUTACION_DE_PREGUNTA, meta: metaDeAvisos(que, { silencioso: true, sujeto: fila.texto }) },
-    { fila, titular, previa },
-  );
 }
 
 export function agregarPregunta(

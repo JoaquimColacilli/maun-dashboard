@@ -1,4 +1,10 @@
 export {
+  guardarPreguntaEnLaCola,
+  mandarALaCola,
+  paraGuardar,
+  preguntaEnLaReplica,
+} from './api/cola';
+export {
   CLAVE_DE_BAJA_DE_ENCUESTA,
   CLAVE_DE_ENCUESTA,
   CLAVE_DE_LECTURA,

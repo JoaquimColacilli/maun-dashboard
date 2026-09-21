@@ -200,6 +200,8 @@ export interface FichaDeLaRespuesta {
   telefono: string;
   contestadaEl: string;
   lineas: LineaDeLaRespuesta[];
+  titular: Paso | null;
+  comentario: string | null;
 }
 
 export function fichaDeLaRespuesta(
@@ -213,15 +215,22 @@ export function fichaDeLaRespuesta(
   const proyecto = filaPorId(replica, 'proyectos', encuesta.proyecto_id);
   const cliente =
     proyecto === undefined ? undefined : filaPorId(replica, 'clientes', proyecto.cliente_id);
+  const lineas = lineasDeLaRespuesta(
+    fotoDeLaEncuesta(encuesta),
+    renglonesPorRespuesta(replica).get(respuesta.id) ?? [],
+  );
+  const titular = lineas.find(
+    (linea) => filaPorId(replica, 'preguntas', linea.pregunta.id)?.titular === true,
+  );
+  const comentario = lineas.find((linea) => linea.texto !== null && !linea.pregunta.propia);
   return {
     respuesta,
     trabajo: trabajoOpinado(replica, encuesta.proyecto_id),
     telefono: cliente?.telefono ?? '',
     contestadaEl: diaLocal(respuesta.contestada_at),
-    lineas: lineasDeLaRespuesta(
-      fotoDeLaEncuesta(encuesta),
-      renglonesPorRespuesta(replica).get(respuesta.id) ?? [],
-    ),
+    lineas,
+    titular: titular?.pasos[0] ?? null,
+    comentario: comentario?.texto ?? null,
   };
 }
 
