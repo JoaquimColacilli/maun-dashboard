@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  esLaEncuestaPublica,
   esLaVistaPublica,
+  esUnaPaginaPublica,
+  PREFIJO_DE_LA_ENCUESTA_PUBLICA,
+  RUTA_DE_LA_ENCUESTA_PUBLICA,
   fechaDelEnlace,
   PREFIJO_DE_LA_VISTA_PUBLICA,
   PARAMETRO_DE_ENTREGA,
@@ -80,5 +84,19 @@ describe('la vista pública del enlace', () => {
   it('el patrón del router sale del mismo prefijo', () => {
     expect(RUTA_DE_LA_VISTA_PUBLICA).toBe(`${PREFIJO_DE_LA_VISTA_PUBLICA}:token`);
     expect(esLaVistaPublica(RUTA_DE_LA_VISTA_PUBLICA)).toBe(true);
+  });
+});
+
+describe('la encuesta pública', () => {
+  it('tiene su propio prefijo, hermano del de la vista, y las dos son páginas públicas', () => {
+    expect(esLaEncuestaPublica('/o/7k2m9pq4')).toBe(true);
+    expect(esLaEncuestaPublica('/v/7k2m9pq4')).toBe(false);
+    expect(esLaEncuestaPublica('/opiniones')).toBe(false);
+    expect(esLaEncuestaPublica('/opiniones/preguntas')).toBe(false);
+    expect(RUTA_DE_LA_ENCUESTA_PUBLICA).toBe(`${PREFIJO_DE_LA_ENCUESTA_PUBLICA}:token`);
+    expect(esUnaPaginaPublica('/o/7k2m9pq4')).toBe(true);
+    expect(esUnaPaginaPublica('/v/7k2m9pq4')).toBe(true);
+    expect(esUnaPaginaPublica('/opiniones')).toBe(false);
+    expect(esUnaPaginaPublica('/')).toBe(false);
   });
 });

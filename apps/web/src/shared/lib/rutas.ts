@@ -132,3 +132,15 @@ export const RUTA_DE_LA_VISTA_PUBLICA = `${PREFIJO_DE_LA_VISTA_PUBLICA}:token`;
 export function esLaVistaPublica(ruta: string): boolean {
   return ruta.startsWith(PREFIJO_DE_LA_VISTA_PUBLICA);
 }
+
+export const PREFIJO_DE_LA_ENCUESTA_PUBLICA = '/o/';
+
+export const RUTA_DE_LA_ENCUESTA_PUBLICA = `${PREFIJO_DE_LA_ENCUESTA_PUBLICA}:token`;
+
+export function esLaEncuestaPublica(ruta: string): boolean {
+  return ruta.startsWith(PREFIJO_DE_LA_ENCUESTA_PUBLICA);
+}
+
+export function esUnaPaginaPublica(ruta: string): boolean {
+  return esLaVistaPublica(ruta) || esLaEncuestaPublica(ruta);
+}

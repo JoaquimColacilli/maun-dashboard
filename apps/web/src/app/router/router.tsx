@@ -1,8 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AccesoPage } from '@/pages/acceso';
+import { EncuestaPublicaPage } from '@/pages/encuesta-publica';
 import { VistaPublicaPage } from '@/pages/vista-cliente';
-import { RUTA_DE_LA_VISTA_PUBLICA } from '@/shared/lib';
+import { RUTA_DE_LA_ENCUESTA_PUBLICA, RUTA_DE_LA_VISTA_PUBLICA } from '@/shared/lib';
 
 import { Marco } from '../layout/Marco';
 import { Shell } from '../layout/Shell';
@@ -12,6 +13,7 @@ import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from './rutas';
 
 export const router = createBrowserRouter([
   { path: RUTA_DE_LA_VISTA_PUBLICA, element: <VistaPublicaPage /> },
+  { path: RUTA_DE_LA_ENCUESTA_PUBLICA, element: <EncuestaPublicaPage /> },
   {
     element: <Shell />,
     children: [

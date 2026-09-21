@@ -107,7 +107,11 @@ export {
   tokenNuevo,
 } from './enlaces';
 export {
+  esLaEncuestaPublica,
   esLaVistaPublica,
+  esUnaPaginaPublica,
+  PREFIJO_DE_LA_ENCUESTA_PUBLICA,
+  RUTA_DE_LA_ENCUESTA_PUBLICA,
   PARAMETRO_DE_TESORO,
   PREFIJO_DE_LA_VISTA_PUBLICA,
   PARAMETRO_DE_RESPUESTA,

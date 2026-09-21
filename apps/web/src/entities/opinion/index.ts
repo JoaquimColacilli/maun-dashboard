@@ -1,4 +1,10 @@
 export {
+  claveDeLaEncuestaCompartida,
+  laEncuestaNoSirve,
+  useEncuestaCompartida,
+  type ResultadoDeLaEncuesta,
+} from './api/compartida';
+export {
   guardarPreguntaEnLaCola,
   mandarALaCola,
   paraGuardar,

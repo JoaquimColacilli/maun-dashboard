@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import FUENTE from '../index.html?raw';
 import {
+  claseDelEnlace,
   conLasEtiquetas,
+  DESCRIPCION_DE_LA_ENCUESTA,
   DESCRIPCION_DE_LA_VISTA,
   escapar,
   etiquetasGenericas,
+  tituloDeLaEncuesta,
   tituloDeLaVista,
   tokenDeLaRuta,
   TITULO_GENERICO,
@@ -159,6 +162,42 @@ describe('las etiquetas genéricas', () => {
     expect(genericas.titulo).toBe(TITULO_GENERICO);
     expect(genericas.descripcion).toBe(DESCRIPCION_DE_LA_VISTA);
     expect(conLasEtiquetas(HTML, genericas)).not.toContain('Finanzas');
+  });
+});
+
+describe('el enlace de la encuesta', () => {
+  const URL_DE_LA_ENCUESTA = 'https://maun-dashboard.netlify.app/o/tZEFrYutatg5xhw1mcrUKIAFXk';
+
+  it('se reconoce por su prefijo y el token sale igual que en la vista', () => {
+    expect(claseDelEnlace('/o/tZEFrYutatg5xhw1mcrUKIAFXk')).toBe('encuesta');
+    expect(claseDelEnlace('/v/tZEFrYutatg5xhw1mcrUKIAFXk')).toBe('vista');
+    expect(claseDelEnlace('/opiniones')).toBeNull();
+    expect(tokenDeLaRuta('/o/tZEFrYutatg5xhw1mcrUKIAFXk/')).toBe('tZEFrYutatg5xhw1mcrUKIAFXk');
+    expect(tokenDeLaRuta('/o/../../etc/passwd')).toBeNull();
+    expect(tokenDeLaRuta('/opiniones/preguntas')).toBeNull();
+  });
+
+  it('el título dice de qué taller es y que es una encuesta, sin el cliente ni el trabajo', () => {
+    expect(tituloDeLaEncuesta('MAUN Muebles')).toBe('Encuesta de MAUN Muebles');
+    expect(tituloDeLaEncuesta('  ')).toBe('Una encuesta del taller');
+  });
+
+  it('el head no lleva nombres ni montos, y el genérico no cambia si el enlace no sirve', () => {
+    const reescrito = conLasEtiquetas(HTML, {
+      titulo: tituloDeLaEncuesta('MAUN Muebles'),
+      descripcion: DESCRIPCION_DE_LA_ENCUESTA,
+      url: URL_DE_LA_ENCUESTA,
+      imagen: IMAGEN,
+    });
+    expect(contenido(reescrito, 'og:title')).toBe('Encuesta de MAUN Muebles');
+    expect(contenido(reescrito, 'og:description')).toBe(DESCRIPCION_DE_LA_ENCUESTA);
+    expect(reescrito).not.toMatch(/\$\s?\d/);
+    expect(etiquetasGenericas(URL_DE_LA_ENCUESTA, IMAGEN, 'encuesta')).toEqual({
+      titulo: TITULO_GENERICO,
+      descripcion: DESCRIPCION_DE_LA_ENCUESTA,
+      url: URL_DE_LA_ENCUESTA,
+      imagen: IMAGEN,
+    });
   });
 });
 

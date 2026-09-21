@@ -1,9 +1,13 @@
 import {
+  claseDelEnlace,
   conLasEtiquetas,
+  DESCRIPCION_DE_LA_ENCUESTA,
   DESCRIPCION_DE_LA_VISTA,
   etiquetasGenericas,
+  tituloDeLaEncuesta,
   tituloDeLaVista,
   tokenDeLaRuta,
+  type ClaseDeEnlace,
   type EtiquetasDeLaVista,
 } from '../etiquetas.ts';
 
@@ -74,11 +78,11 @@ async function conTope<T>(promesa: Promise<T>, tope: number): Promise<T | null> 
   }
 }
 
-async function tituloDelEnlace(token: string): Promise<TituloDelTrabajo | null> {
+async function consultar(funcion: string, token: string): Promise<unknown> {
   const base = laBase();
   if (base === null) return null;
 
-  const pedido = fetch(`${base.url}/rest/v1/rpc/titulo_compartido`, {
+  const pedido = fetch(`${base.url}/rest/v1/rpc/${funcion}`, {
     method: 'POST',
     headers: {
       apikey: base.clave,
@@ -90,7 +94,46 @@ async function tituloDelEnlace(token: string): Promise<TituloDelTrabajo | null> 
     .then(async (respuesta) => (respuesta.ok ? ((await respuesta.json()) as unknown) : null))
     .catch(() => null);
 
-  return leerElTitulo(await conTope(pedido, TOPE_DE_LA_CONSULTA_MS));
+  return conTope(pedido, TOPE_DE_LA_CONSULTA_MS);
+}
+
+async function tituloDelEnlace(token: string): Promise<TituloDelTrabajo | null> {
+  return leerElTitulo(await consultar('titulo_compartido', token));
+}
+
+async function tallerDeLaEncuesta(token: string): Promise<string | null> {
+  const encuesta = await consultar('encuesta_compartida', token);
+  if (typeof encuesta !== 'object' || encuesta === null) return null;
+  const taller: unknown = Reflect.get(encuesta, 'taller');
+  return typeof taller === 'string' ? taller : null;
+}
+
+async function etiquetasDelEnlace(
+  clase: ClaseDeEnlace | null,
+  token: string | null,
+  url: string,
+  imagen: string,
+): Promise<EtiquetasDeLaVista> {
+  if (clase === 'encuesta') {
+    const taller = token === null ? null : await tallerDeLaEncuesta(token);
+    return taller === null
+      ? etiquetasGenericas(url, imagen, 'encuesta')
+      : {
+          titulo: tituloDeLaEncuesta(taller),
+          descripcion: DESCRIPCION_DE_LA_ENCUESTA,
+          url,
+          imagen,
+        };
+  }
+  const trabajo = token === null ? null : await tituloDelEnlace(token);
+  return trabajo === null
+    ? etiquetasGenericas(url, imagen)
+    : {
+        titulo: tituloDeLaVista(trabajo.trabajo, trabajo.taller),
+        descripcion: DESCRIPCION_DE_LA_VISTA,
+        url,
+        imagen,
+      };
 }
 
 export default async function vistaPrevia(
@@ -106,18 +149,12 @@ export default async function vistaPrevia(
   const canonica = `${direccion.origin}${direccion.pathname}`;
   const imagen = `${direccion.origin}${IMAGEN_DE_LA_VISTA}`;
 
-  const token = tokenDeLaRuta(direccion.pathname);
-  const trabajo = token === null ? null : await tituloDelEnlace(token);
-
-  const etiquetas: EtiquetasDeLaVista =
-    trabajo === null
-      ? etiquetasGenericas(canonica, imagen)
-      : {
-          titulo: tituloDeLaVista(trabajo.trabajo, trabajo.taller),
-          descripcion: DESCRIPCION_DE_LA_VISTA,
-          url: canonica,
-          imagen,
-        };
+  const etiquetas = await etiquetasDelEnlace(
+    claseDelEnlace(direccion.pathname),
+    tokenDeLaRuta(direccion.pathname),
+    canonica,
+    imagen,
+  );
 
   const cabeceras = new Headers(respuesta.headers);
   cabeceras.set('content-type', 'text/html; charset=utf-8');
@@ -134,6 +171,6 @@ export default async function vistaPrevia(
 }
 
 export const config = {
-  path: '/v/*',
+  path: ['/v/*', '/o/*'],
   onError: 'bypass',
 } as const;
