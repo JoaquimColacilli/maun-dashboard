@@ -65,4 +65,12 @@ describe('destinoResaltado', () => {
   it('la barra del celular no cambió: cuatro destinos y ninguno es la Agenda', () => {
     expect(NAV_MOVIL).toEqual(['inicio', 'proyectos', 'clientes', 'finanzas']);
   });
+
+  it('Opiniones entra en tablet y escritorio entre Finanzas y Diezmo, y en el celular se llega desde Inicio', () => {
+    expect(NAV_ESCRITORIO.slice(5, 8)).toEqual(['finanzas', 'opiniones', 'diezmo']);
+    expect(NAV_TABLET.slice(4, 7)).toEqual(['finanzas', 'opiniones', 'diezmo']);
+    expect(destinoResaltado('opiniones', NAV_ESCRITORIO)).toBe('opiniones');
+    expect(destinoResaltado('opiniones', NAV_TABLET)).toBe('opiniones');
+    expect(destinoResaltado('opiniones', NAV_MOVIL)).toBe('inicio');
+  });
 });

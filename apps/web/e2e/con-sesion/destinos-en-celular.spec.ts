@@ -15,7 +15,7 @@ async function aInicio(page: Page): Promise<void> {
   await expect(titulo(page, 'Inicio')).toBeVisible();
 }
 
-test.describe('los siete destinos del sidebar, en el celular', () => {
+test.describe('los ocho destinos del sidebar, en el celular', () => {
   test.skip(({ isMobile }) => !isMobile, 'la barra de cuatro destinos es del celular');
 
   test('la barra inferior sigue con sus cuatro destinos y el botón de cargar', async ({ page }) => {
@@ -71,11 +71,28 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
     await expect(titulo(page, 'Diezmo')).toBeVisible();
 
     await aInicio(page);
-    await page.getByRole('link', { name: 'Ajustes y tu cuenta' }).click();
+    await page.getByRole('button', { name: /^Tu cuenta/ }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('link', { name: /^Ajustes/ })
+      .click();
     await expect(titulo(page, 'Ajustes')).toBeVisible();
     await expect(
       page.getByRole('region', { name: 'Lo que la base rechazó o ajustó' }),
     ).toBeVisible();
+
+    await aInicio(page);
+    await page.getByRole('button', { name: /^Tu cuenta/ }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('link', { name: /^Opiniones/ })
+      .click();
+    await expect(titulo(page, 'Resultados')).toBeVisible();
+    await page
+      .getByRole('navigation', { name: 'Opiniones' })
+      .getByRole('link', { name: 'Preguntas' })
+      .click();
+    await expect(titulo(page, 'Preguntas')).toBeVisible();
 
     await aInicio(page);
     await page
@@ -92,11 +109,11 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
     await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
 
     const agenda = page.getByRole('link', { name: 'Agenda', exact: true });
-    const avatar = page.getByRole('link', { name: 'Ajustes y tu cuenta' });
+    const avatar = page.getByRole('button', { name: /^Tu cuenta/ });
     await expect(page.getByRole('main').locator('header').first()).toMatchAriaSnapshot(`
       - heading "Inicio" [level=1]
       - link "Agenda"
-      - link "Ajustes y tu cuenta"
+      - button /^Tu cuenta/
     `);
 
     let alcanzado = false;
@@ -115,7 +132,12 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
     await aInicio(page);
     await avatar.focus();
     await page.keyboard.press('Enter');
-    await expect(titulo(page, 'Ajustes')).toBeVisible();
+    const hoja = page.getByRole('dialog');
+    await expect(hoja).toBeVisible();
+    await expect(avatar).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(hoja).toHaveCount(0);
+    await expect(avatar).toBeFocused();
   });
 
   test('el ícono de la agenda está al lado de la foto, mide lo que un dedo y no es una campana', async ({
@@ -126,7 +148,7 @@ test.describe('los siete destinos del sidebar, en el celular', () => {
 
     const encabezado = page.getByRole('main').locator('header').first();
     const agenda = encabezado.getByRole('link', { name: 'Agenda', exact: true });
-    const avatar = encabezado.getByRole('link', { name: 'Ajustes y tu cuenta' });
+    const avatar = encabezado.getByRole('button', { name: /^Tu cuenta/ });
     const caja = await agenda.boundingBox();
     const cajaDelAvatar = await avatar.boundingBox();
     if (caja === null || cajaDelAvatar === null) throw new Error('el encabezado no se ve');
@@ -155,8 +177,40 @@ test.describe('en escritorio', () => {
     await page.goto('/');
     await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
 
-    await expect(page.getByRole('link', { name: 'Ajustes y tu cuenta' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Tu cuenta/ })).toHaveCount(0);
     await expect(barra(page).getByRole('button', { name: 'Ajustes' })).toBeVisible();
+  });
+
+  test('Opiniones está en la barra lateral, entre Finanzas y Diezmo, con sus dos partes', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+
+    const destinos = await barra(page)
+      .getByRole('button')
+      .evaluateAll((todos) => todos.map((boton) => boton.textContent.trim()));
+    expect(destinos.slice(destinos.indexOf('Finanzas'), destinos.indexOf('Finanzas') + 3)).toEqual([
+      'Finanzas',
+      'Opiniones',
+      'Diezmo',
+    ]);
+
+    await barra(page).getByRole('button', { name: 'Opiniones' }).click();
+    await expect(titulo(page, 'Resultados')).toBeVisible();
+    await expect(barra(page).getByRole('button', { name: 'Opiniones' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await page
+      .getByRole('navigation', { name: 'Opiniones' })
+      .getByRole('link', { name: 'Preguntas' })
+      .click();
+    await expect(titulo(page, 'Preguntas')).toBeVisible();
+    await expect(barra(page).getByRole('button', { name: 'Opiniones' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   test('la Agenda está en la barra lateral y no suma un bloque en Inicio', async ({ page }) => {

@@ -19,6 +19,7 @@ export {
   datosDeLasOpiniones,
   fichaDeLaRespuesta,
   fotoDeLaEncuesta,
+  novedadesDeOpiniones,
   pedidoDelTrabajo,
   preguntaGuardada,
   resumenDelTaller,
@@ -28,8 +29,10 @@ export {
   type FilaDeEncuesta,
   type FilaDePregunta,
   type FilaDeRespuesta,
+  type NovedadesDeOpiniones,
   type PedidoDelTrabajo,
   type TrabajosParaPedir,
+  type UltimaSinLeer,
 } from './model/datos';
 export {
   BORDE_DEL_POLO,

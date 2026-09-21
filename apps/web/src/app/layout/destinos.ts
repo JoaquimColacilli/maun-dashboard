@@ -69,6 +69,7 @@ export const NAV_TABLET: readonly IdDeSeccion[] = [
   'proyectos',
   'clientes',
   'finanzas',
+  'opiniones',
   'diezmo',
 ];
 
@@ -79,6 +80,7 @@ export const NAV_ESCRITORIO: readonly IdDeSeccion[] = [
   'proyectos',
   'clientes',
   'finanzas',
+  'opiniones',
   'diezmo',
   'ajustes',
 ];

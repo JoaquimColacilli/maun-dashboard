@@ -11,6 +11,7 @@ import {
   type Escala,
   type EstadoDelPedido,
   type LineaDeLaRespuesta,
+  type Paso,
   type PreguntaDeLaEncuesta,
   type PreguntaGuardada,
   type RenglonGuardado,
@@ -153,6 +154,44 @@ export function datosDeLasOpiniones(replica: Replica): DatosDeLasOpiniones {
 
 export function resumenDelTaller(replica: Replica, hoy: string): ResumenDeOpiniones {
   return resumenDeOpiniones(datosDeLasOpiniones(replica), hoy);
+}
+
+export interface UltimaSinLeer {
+  respuestaId: string;
+  cliente: string;
+  trabajo: string;
+  titular: Paso | null;
+  comentario: string | null;
+}
+
+export interface NovedadesDeOpiniones {
+  sinLeer: number;
+  nombres: string[];
+  ultima: UltimaSinLeer | null;
+}
+
+export function novedadesDeOpiniones(replica: Replica, hoy: string): NovedadesDeOpiniones {
+  const resumen = resumenDelTaller(replica, hoy);
+  const filaDe = (respuestaId: string) =>
+    resumen.trabajos.find((fila) => fila.pedido.envio.respuestaId === respuestaId);
+  const [primera] = resumen.sinLeer;
+  const suFila = primera === undefined ? undefined : filaDe(primera.id);
+  return {
+    sinLeer: resumen.sinLeer.length,
+    nombres: resumen.sinLeer.map((respuesta) => filaDe(respuesta.id)?.trabajo.cliente ?? ''),
+    ultima:
+      primera === undefined
+        ? null
+        : {
+            respuestaId: primera.id,
+            cliente: suFila?.trabajo.cliente ?? '',
+            trabajo: suFila?.trabajo.trabajo ?? '',
+            titular: suFila?.titular ?? null,
+            comentario:
+              resumen.comentarios.find((comentario) => comentario.respuestaId === primera.id)
+                ?.texto ?? null,
+          },
+  };
 }
 
 export interface FichaDeLaRespuesta {
