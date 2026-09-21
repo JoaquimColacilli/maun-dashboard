@@ -164,7 +164,7 @@ function Comentario({
       onChange={(evento) => {
         alCambiar(evento.target.value);
       }}
-      className="papel-rayado w-full resize-y rounded-panel border-[1.5px] border-border px-3.5 py-3 text-body-lg text-ink placeholder:text-text-3 focus:border-ink"
+      className="papel-rayado w-full resize-y rounded-panel border-[1.5px] border-border bg-position-[0_11px] px-3.5 py-3 text-body-lg leading-7 text-ink placeholder:text-text-3 focus:border-ink"
     />
   );
 }

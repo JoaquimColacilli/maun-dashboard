@@ -17,15 +17,19 @@ export {
 } from './api/mutacion';
 export {
   datosDeLasOpiniones,
+  fichaDeLaRespuesta,
   fotoDeLaEncuesta,
   pedidoDelTrabajo,
   preguntaGuardada,
   resumenDelTaller,
   trabajoOpinado,
+  trabajosParaPedir,
+  type FichaDeLaRespuesta,
   type FilaDeEncuesta,
   type FilaDePregunta,
   type FilaDeRespuesta,
   type PedidoDelTrabajo,
+  type TrabajosParaPedir,
 } from './model/datos';
 export {
   BORDE_DEL_POLO,

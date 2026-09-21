@@ -46,7 +46,7 @@ export function LineasDeLaRespuesta({ lineas, conPropias = false }: LineasDeLaRe
       {escritas.map((linea) => (
         <div key={linea.pregunta.id} className="mt-4">
           <div className="mb-1.75 text-label text-text-2">{linea.pregunta.texto}</div>
-          <p className="papel-rayado m-0 rounded-field px-4 py-3.5 text-body-lg whitespace-pre-line text-pretty">
+          <p className="papel-rayado m-0 rounded-field px-4 py-3.5 text-body-lg leading-7 whitespace-pre-line text-pretty">
             {linea.texto}
           </p>
           {conPropias && linea.pregunta.propia && <MarcaDePropia />}

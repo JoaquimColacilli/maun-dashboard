@@ -78,6 +78,9 @@ const DESDE_ABAJO =
 const CENTRADA =
   'inset-0 m-auto h-fit max-h-[88dvh] rounded-dialog scale-96 opacity-0 open:scale-100 open:opacity-100 starting:open:scale-96 starting:open:opacity-0';
 
+const AL_COSTADO =
+  'inset-y-0 right-0 left-auto h-full max-h-none w-[min(480px,92%)] translate-x-full open:translate-x-0 starting:open:translate-x-full';
+
 export interface HojaProps {
   titulo: string;
   alCerrar: () => void;
@@ -87,7 +90,9 @@ export interface HojaProps {
   desdeAbajo?: boolean;
   conCambios?: boolean;
   antes?: ReactNode;
-  bajada?: string;
+  bajada?: ReactNode;
+  alCostado?: boolean;
+  tituloGrande?: boolean;
 }
 
 export function Hoja({
@@ -100,6 +105,8 @@ export function Hoja({
   conCambios = false,
   antes,
   bajada,
+  alCostado = false,
+  tituloGrande = false,
 }: HojaProps) {
   const pantalla = useAnchoDePantalla();
   const altoVisible = useAltoVisible();
@@ -214,18 +221,23 @@ export function Hoja({
           : undefined
       }
       className={`fixed m-0 max-w-none flex-col bg-paper p-0 text-ink shadow-float open:flex ${TRANSICION} ${
-        abajo ? DESDE_ABAJO : `${CENTRADA} ${ANCHO[ancho]}`
+        abajo ? DESDE_ABAJO : alCostado ? AL_COSTADO : `${CENTRADA} ${ANCHO[ancho]}`
       }`}
     >
       <header className="flex flex-none items-center justify-between gap-3 border-b border-hairline py-2.5 pr-2.5 pl-5 md:py-3.5 md:pr-3.5 md:pl-6">
         <div className="flex min-w-0 items-center gap-3">
           {antes}
           <div className="flex min-w-0 flex-col">
-            <h2 id={idTitulo} className="text-body-lg leading-snug font-semibold">
+            <h2
+              id={idTitulo}
+              className={`leading-snug font-semibold ${tituloGrande ? 'text-firma' : 'text-body-lg'}`}
+            >
               {titulo}
             </h2>
-            {bajada !== undefined && (
+            {typeof bajada === 'string' ? (
               <span className="truncate text-label text-text-2">{bajada}</span>
+            ) : (
+              bajada
             )}
           </div>
         </div>

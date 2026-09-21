@@ -6,7 +6,15 @@ const ID = '5eed0000-0000-7000-8000-000000000001';
 
 describe('seActualizaTirando', () => {
   it('las pantallas que leen de la réplica tienen el gesto', () => {
-    for (const ruta of ['/', '/seguimiento', '/proyectos', '/clientes', '/finanzas', '/diezmo']) {
+    for (const ruta of [
+      '/',
+      '/seguimiento',
+      '/proyectos',
+      '/clientes',
+      '/finanzas',
+      '/opiniones',
+      '/diezmo',
+    ]) {
       expect(seActualizaTirando(ruta), ruta).toBe(true);
     }
   });

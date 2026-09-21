@@ -2,6 +2,7 @@ import {
   ESCALAS,
   estadoDelPedido,
   envioDe,
+  lineasDeLaRespuesta,
   propiasDelTrabajo,
   resumenDeOpiniones,
   TIPOS_DE_PREGUNTA,
@@ -9,6 +10,7 @@ import {
   type EncuestaGuardada,
   type Escala,
   type EstadoDelPedido,
+  type LineaDeLaRespuesta,
   type PreguntaDeLaEncuesta,
   type PreguntaGuardada,
   type RenglonGuardado,
@@ -151,6 +153,59 @@ export function datosDeLasOpiniones(replica: Replica): DatosDeLasOpiniones {
 
 export function resumenDelTaller(replica: Replica, hoy: string): ResumenDeOpiniones {
   return resumenDeOpiniones(datosDeLasOpiniones(replica), hoy);
+}
+
+export interface FichaDeLaRespuesta {
+  respuesta: FilaDeRespuesta;
+  trabajo: TrabajoOpinado;
+  telefono: string;
+  contestadaEl: string;
+  lineas: LineaDeLaRespuesta[];
+}
+
+export function fichaDeLaRespuesta(
+  replica: Replica,
+  respuestaId: string,
+): FichaDeLaRespuesta | null {
+  const respuesta = filaPorId(replica, 'respuestas', respuestaId);
+  if (!respuesta) return null;
+  const encuesta = filaPorId(replica, 'encuestas_enviadas', respuesta.encuesta_id);
+  if (!encuesta) return null;
+  const proyecto = filaPorId(replica, 'proyectos', encuesta.proyecto_id);
+  const cliente =
+    proyecto === undefined ? undefined : filaPorId(replica, 'clientes', proyecto.cliente_id);
+  return {
+    respuesta,
+    trabajo: trabajoOpinado(replica, encuesta.proyecto_id),
+    telefono: cliente?.telefono ?? '',
+    contestadaEl: diaLocal(respuesta.contestada_at),
+    lineas: lineasDeLaRespuesta(
+      fotoDeLaEncuesta(encuesta),
+      renglonesPorRespuesta(replica).get(respuesta.id) ?? [],
+    ),
+  };
+}
+
+const TERMINADOS: readonly string[] = ['entregado', 'cobrado'];
+
+export interface TrabajosParaPedir {
+  terminados: number;
+  sinPedir: string | null;
+}
+
+export function trabajosParaPedir(replica: Replica): TrabajosParaPedir {
+  const conPedido = new Set(
+    filasDe(replica, 'encuestas_enviadas').map((encuesta) => encuesta.proyecto_id),
+  );
+  const terminados = filasDe(replica, 'proyectos')
+    .filter((proyecto) => TERMINADOS.includes(proyecto.estado))
+    .sort((a, b) =>
+      (b.fecha_entrega ?? b.updated_at).localeCompare(a.fecha_entrega ?? a.updated_at),
+    );
+  return {
+    terminados: terminados.length,
+    sinPedir: terminados.find((proyecto) => !conPedido.has(proyecto.id))?.id ?? null,
+  };
 }
 
 export interface PedidoDelTrabajo {
