@@ -94,7 +94,6 @@ export interface SueldoDelMes {
   pagado: Money;
   esperado: Money;
   cobros: number;
-  porCobro: boolean;
 }
 
 const FORMATO_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -266,21 +265,13 @@ export function sueldoDelMes(
   mesEnCurso: string,
 ): SueldoDelMes {
   const resumen = resumenDelMes(liquidaciones, mes, ajustes, mesEnCurso);
-  const conSueldo = liquidaciones.filter(
+  const cobros = liquidaciones.filter(
     (liquidacion) => mesDe(liquidacion.fecha) === mes && liquidacion.objetivoSueldo > 0,
-  );
-  const porCobro = conSueldo.filter((liquidacion) => !liquidacion.sueldoMensual);
-
-  let esperado = CERO;
-  for (const liquidacion of porCobro) esperado = sumar(esperado, liquidacion.objetivoSueldo);
-  if (porCobro.length < conSueldo.length || conSueldo.length === 0) {
-    esperado = sumar(esperado, resumen.sueldo.objetivo);
-  }
+  ).length;
 
   return {
     pagado: resumen.sueldo.liquidado,
-    esperado,
-    cobros: conSueldo.length,
-    porCobro: conSueldo.length > 0 && porCobro.length === conSueldo.length,
+    esperado: resumen.sueldo.objetivo,
+    cobros,
   };
 }

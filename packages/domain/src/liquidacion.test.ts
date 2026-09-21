@@ -302,7 +302,7 @@ describe('el resumen de un mes', () => {
   });
 });
 
-describe('el sueldo de un mes, con el tope por cobro', () => {
+describe('el sueldo de un mes: se mide contra un sueldo, tenga los cobros que tenga', () => {
   const ajustes = { sueldoMensual: SUELDO, costosFijos: FIJOS };
 
   it('sin cobros espera un sueldo, el de los ajustes', () => {
@@ -310,43 +310,59 @@ describe('el sueldo de un mes, con el tope por cobro', () => {
       pagado: 0,
       esperado: SUELDO,
       cobros: 0,
-      porCobro: false,
     });
   });
 
-  it('dos cobros enteros esperan dos sueldos: la barra no se pasa del cien por ciento', () => {
+  it('dos cobros en el mes siguen esperando un solo sueldo, no dos', () => {
+    const dos = [
+      registrada('2026-09-05', { sueldo: centavos(90_000_000) }),
+      registrada('2026-09-20', { sueldo: centavos(30_000_000) }),
+    ];
+    expect(sueldoDelMes(dos, '2026-09', ajustes, '2026-09')).toEqual({
+      pagado: 120_000_000,
+      esperado: SUELDO,
+      cobros: 2,
+    });
+  });
+
+  it('el caso de MAUN Muebles en septiembre: dos cobros a medias, contra un sueldo de $1.800.000', () => {
+    const septiembre = [
+      registrada('2026-09-08', { sueldo: centavos(14_220_000) }),
+      registrada('2026-09-09', { sueldo: centavos(95_160_420) }),
+    ];
+    expect(sueldoDelMes(septiembre, '2026-09', ajustes, '2026-09')).toEqual({
+      pagado: 109_380_420,
+      esperado: 180_000_000,
+      cobros: 2,
+    });
+  });
+
+  it('con dos cobros enteros lo pagado pasa el sueldo, y lo esperado sigue siendo uno', () => {
     const dos = [
       registrada('2026-09-05', { sueldo: SUELDO }),
       registrada('2026-09-20', { sueldo: SUELDO }),
     ];
     expect(sueldoDelMes(dos, '2026-09', ajustes, '2026-09')).toEqual({
       pagado: 360_000_000,
-      esperado: 360_000_000,
+      esperado: SUELDO,
       cobros: 2,
-      porCobro: true,
     });
   });
 
-  it('un cobro que no alcanzó para su sueldo se ve como lo que le faltó, aunque el otro lo haya pagado entero', () => {
-    const dos = [
-      registrada('2026-09-05', { sueldo: SUELDO }),
-      registrada('2026-09-20', { sueldo: centavos(90_000_000) }),
-    ];
-    expect(sueldoDelMes(dos, '2026-09', ajustes, '2026-09')).toMatchObject({
-      pagado: 270_000_000,
-      esperado: 360_000_000,
-    });
-  });
-
-  it('cada cobro espera el objetivo con el que se liquidó, no el de hoy', () => {
-    const conOtroObjetivo = [
+  it('un mes cerrado espera el sueldo con el que se liquidó su último cobro, no el de hoy', () => {
+    const agosto = [
       registrada('2026-08-05', {
         sueldo: centavos(100_000_000),
         objetivoSueldo: centavos(100_000_000),
+        liquidadaEn: 1,
       }),
-      registrada('2026-08-20', { sueldo: SUELDO }),
+      registrada('2026-08-20', {
+        sueldo: centavos(40_000_000),
+        objetivoSueldo: centavos(150_000_000),
+        liquidadaEn: 2,
+      }),
     ];
-    expect(sueldoDelMes(conOtroObjetivo, '2026-08', ajustes, '2026-09').esperado).toBe(280_000_000);
+    expect(sueldoDelMes(agosto, '2026-08', ajustes, '2026-09').esperado).toBe(150_000_000);
   });
 
   it('un perdido sin sueldo y los cobros de otro mes no cuentan', () => {
@@ -355,34 +371,21 @@ describe('el sueldo de un mes, con el tope por cobro', () => {
       registrada('2026-09-10', { estado: 'perdido', objetivoSueldo: CERO }),
       registrada('2026-08-28', { sueldo: SUELDO }),
     ];
-    expect(sueldoDelMes(mezcla, '2026-09', ajustes, '2026-09')).toMatchObject({
+    expect(sueldoDelMes(mezcla, '2026-09', ajustes, '2026-09')).toEqual({
       pagado: SUELDO,
       esperado: SUELDO,
       cobros: 1,
     });
   });
 
-  it('con el tope por mes el mes espera un solo sueldo, tenga los cobros que tenga', () => {
-    const mensuales = [
-      registrada('2026-09-05', { sueldo: centavos(120_000_000), sueldoMensual: true }),
-      registrada('2026-09-20', { sueldo: centavos(60_000_000), sueldoMensual: true }),
+  it('el modo del tope no cambia lo que se espera: por cobro o por mes, el mes espera un sueldo', () => {
+    const porCobro = [
+      registrada('2026-09-05', { sueldo: centavos(120_000_000) }),
+      registrada('2026-09-20', { sueldo: centavos(60_000_000) }),
     ];
-    expect(sueldoDelMes(mensuales, '2026-09', ajustes, '2026-09')).toEqual({
-      pagado: SUELDO,
-      esperado: SUELDO,
-      cobros: 2,
-      porCobro: false,
-    });
-  });
-
-  it('si el modo cambió a mitad de mes, los cobros por trabajo suman su sueldo y los mensuales comparten uno', () => {
-    const mezcla = [
-      registrada('2026-09-05', { sueldo: SUELDO }),
-      registrada('2026-09-20', { sueldo: CERO, sueldoMensual: true }),
-    ];
-    expect(sueldoDelMes(mezcla, '2026-09', ajustes, '2026-09')).toMatchObject({
-      esperado: 360_000_000,
-      porCobro: false,
-    });
+    const mensuales = porCobro.map((liquidacion) => ({ ...liquidacion, sueldoMensual: true }));
+    expect(sueldoDelMes(porCobro, '2026-09', ajustes, '2026-09')).toEqual(
+      sueldoDelMes(mensuales, '2026-09', ajustes, '2026-09'),
+    );
   });
 });
