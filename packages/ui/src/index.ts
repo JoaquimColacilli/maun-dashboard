@@ -16,3 +16,9 @@ export type { MontoQueEntraProps, TamanoDelMonto } from './components/MontoQueEn
 export type { MoneyInputProps } from './components/MoneyInput.tsx';
 export { Pagina } from './components/Pagina.tsx';
 export type { PaginaProps } from './components/Pagina.tsx';
+export { entraALaVista, PrincipalYApoyo } from './components/PrincipalYApoyo.tsx';
+export type { PrincipalYApoyoProps } from './components/PrincipalYApoyo.tsx';
+export { SeccionEnFila, SeccionesEnFilas } from './components/SeccionesEnFilas.tsx';
+export type { SeccionEnFilaProps, SeccionesEnFilasProps } from './components/SeccionesEnFilas.tsx';
+export { CeldaAncha, Tablero } from './components/Tablero.tsx';
+export type { CeldaAnchaProps, TableroProps } from './components/Tablero.tsx';
