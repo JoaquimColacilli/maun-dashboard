@@ -4,6 +4,8 @@
 - Fecha: 2026-09-13
 - Se apoya en el [0026](0026-el-bloqueo-cuenta-el-tiempo-afuera.md), que apagó el gesto nativo, y en
   el [0010](0010-sincronizacion-replica-completa.md).
+- Completado por el [0061](0061-el-aviso-de-version-sale-del-registro.md): al soltar, además de
+  sincronizar, pregunta si hay una versión nueva, sin esperarla. Sigue sin recargar.
 
 ## Contexto
 

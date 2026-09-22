@@ -3,7 +3,8 @@
 ## Para Claude
 
 - Antes de tocar un paquete, leé su `CLAUDE.md`: `apps/web`, `packages/domain`, `packages/db`, `packages/ui`.
-- No hay CI. `pnpm verify` (lint, typecheck, test y build de todo el workspace) es el paso obligatorio antes de pushear: un cambio está terminado solo cuando pasa en verde. Si tocaste la app, además `pnpm e2e`.
+- No hay CI. `pnpm verify` (lint, typecheck, test y build de todo el workspace, más el arnés del aviso de versión nueva) es el paso obligatorio antes de pushear: un cambio está terminado solo cuando pasa en verde. Si tocaste la app, además `pnpm e2e`.
+- El arnés del aviso (`e2e:version` de `apps/web`, ADR 0061) corre Playwright contra dos builds de la app: necesita la cuenta de prueba de `apps/web/.env` (`E2E_EMAIL`, `E2E_PASSWORD`) y Chromium instalado (`pnpm --filter @maun/web exec playwright install chromium`).
 - `design-reference/` es material de consulta local (ignorado por git): se lee, nunca se modifica ni se importa.
 - No hay Docker: `supabase start`, `db diff`, `db pull`, `db reset`, `db dump` y `test db` no andan. El flujo de base sin Docker está en `packages/db/CLAUDE.md` (ADR 0008).
 - `pnpm verify` corre la suite de pgTAP contra la base real: necesita red y `SUPABASE_DB_PASSWORD` en `supabase/.env`.

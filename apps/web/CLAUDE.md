@@ -27,7 +27,7 @@ src/
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
                proyecto, movimiento y agenda
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
-               uuid, sync, huella, teclado, push) y ui
+               uuid, sync, huella, teclado, push, versión nueva) y ui
   sw/          el service worker propio (ADR 0035), fuera de src y con su tsconfig
 ```
 
@@ -74,7 +74,7 @@ src/
 - **Desbloquear y activar el bloqueo borran la salida pendiente** (`salioAbierta`): el pedido de la huella del sistema puede ocultar la página, y sin eso desbloquear volvería a bloquear apenas la página vuelve a la vista.
 - **Toda forma nueva de desbloquear pasa por `marcarDesbloqueada`**, que es la que anota el momento. Los listeners los prende `ConBloqueo` con `vigilarElBloqueo()`; no los registres al importar el módulo.
 - **Volver a bloquear no desmonta la app.** Al abrir, `ConBloqueo` reemplaza todo por `PantallaDeBloqueo`; al volver de segundo plano monta `BloqueoAlVolver`, un `<dialog>` modal encima de la app, para no perder lo que se estaba cargando. Tiene que ser `<dialog>`: una hoja abierta deja inerte todo lo que no sea el modal de más arriba.
-- **El gesto nativo de tirar hacia abajo sigue apagado**: `overscroll-behavior-y: none` en `html` y `body`. El service worker está en `prompt` y solo recarga después de tocar «Actualizar». El gesto propio sincroniza sin recargar (ADR 0027, abajo).
+- **El gesto nativo de tirar hacia abajo sigue apagado**: `overscroll-behavior-y: none` en `html` y `body`. La app solo recarga después de tocar «Actualizar» (ADR 0061). El gesto propio sincroniza sin recargar y además pregunta por la versión nueva (ADR 0027 y 0061, abajo).
 - Passkeys: el opt-in experimental está en `crearClienteMaun`. El autocompletado del mail (`esperarHuellaDelAutocompletado`) es la ceremonia en dos pasos, porque `signInWithPasskey` no admite mediación condicional. Es silenciosa salvo cuando falla la verificación. **Vive solo en `/acceso`**: la pantalla de bloqueo no la monta.
 - **`IndicadorSync` vive en `Marco`, no en `Shell`**: en las pantallas de sesión no hay nada que sincronizar, y tapaba el botón de la huella.
 - **Ninguna pantalla de sesión encierra** (ADR 0031). El bloqueo tiene «Entrar con otra cuenta» (`EntrarConOtraCuenta`, de `features/cerrar-sesion`, que pone `ConBloqueo`): con la cola vacía sale directo, con cambios dice antes cuántos se pierden. Validar la sesión tiene tope (`TOPE_PARA_VALIDAR_LA_SESION_MS`): pasado, abre con la sesión guardada. La primera carga del taller, a los 15 s, ofrece reintentar o cerrar sesión sin cortarla (`CargaQueTarda`). **Un estado de espera nuevo en una guarda lleva su salida**: lo que espera a la red puede no terminar nunca.
@@ -82,6 +82,7 @@ src/
 ## Tirar para actualizar (ADR 0027)
 
 - **Al soltar, sincroniza: nunca recarga el documento.** Recargar monta la app de cero y pide la huella, y no trae nada: el documento está precacheado y los datos, en la réplica. Si te encontrás escribiendo `location.reload()` o `navigate(0)` para traer datos, es `sincronizarAhora` (`entities/replica`): drena la cola y trae la réplica. La usan el gesto y «Sincronizar ahora» de Ajustes, que es el camino sin gesto.
+- **Al soltar también pregunta por la versión nueva** (ADR 0061), sin esperarla y sin alargar el indicador: lo hace `useSincronizarAhora`, así que el gesto y «Sincronizar ahora» preguntan los dos. Con el aviso a la vista, el indicador cuelga debajo de su borde (medido, no un número): antes quedaba tapado.
 - `useTirarParaActualizar` (`shared/lib`) escucha el `<main>` de `Marco` con **listeners pasivos**: se midió que cancelar no cambia nada, porque el gesto se engancha a la ventana, que no scrollea. **No le pongas `overscroll-behavior` al `<main>`**: con `none` ahí el gesto se engancha al `<main>` y volver el dedo scrollea el contenido (78 px de 80). Si alguna vez hace falta, el `touchmove` tiene que cancelarse mientras se tira.
 - Dónde aplica lo decide `seActualizaTirando` (`app/layout`), solo en el ancho `movil`. Se apaga con una ruta de hoja o con `useHayAlgoEnCurso()`. **Toda `Hoja` y `BloqueoAlVolver` ya se anotan; un formulario en línea nuevo en esas pantallas se anota con `useAlgoEnCurso(conCambios)`.** Hace falta: las hojas de una pantalla viven en el DOM adentro del `<main>` y sus toques llegan al listener.
 - Sin señal no sale a la red y lo dice con `describirEstadoSync`. Con señal espera hasta diez segundos (`TOPE_DE_LA_SINCRONIZACION_MS`) y después dice que sigue intentando: nunca queda girando.
@@ -170,6 +171,7 @@ src/
   - **Corre contra el build (`vite build && vite preview`), no contra el dev server**: el service worker solo existe en el artefacto real, y sin él no se puede probar cerrar la app y reabrirla sin señal.
   - `workers: 1`: los proyectos comparten el household de la cuenta de prueba y cada test con sesión lo vacía antes de empezar (`e2e/apoyo/taller.ts`).
   - Ese taller se vacía en cada corrida: no lo uses para mirar datos a mano.
+- **El arnés del aviso de versión tiene su propia config** (`playwright.version.config.ts`, proyectos `version-celular` y `version-escritorio`) y corre dentro de `pnpm verify`: necesita la misma cuenta de prueba y Chromium instalado. No levanta `vite preview`: construye sus dos builds en `node_modules/.arnes-de-version` y las sirve él.
 
 ## Proyectos (ADR 0015)
 
@@ -402,10 +404,14 @@ src/
 - **La carga del push la arma `supabase/functions/avisos/texto.ts` y la lee `sw/sw.ts`** (`titulo`, `cuerpo`, `url`, `etiqueta`): si cambia una, cambia la otra.
 - **No hay campana, y no la agregues** (ADR 0036). Una campana promete una bandeja de mensajes y la app no tiene ninguna: los avisos son push, y lo que existe es una pantalla de configuración en Ajustes, en la hoja que abre la foto de Inicio. Tampoco va «Avisos» aparte en la barra lateral: Ajustes ya está ahí. Si alguna vez hace falta el historial de lo avisado, es una bandeja de verdad y va en su propio paso. El ícono del encabezado de Inicio es la agenda.
 
-## El service worker (ADR 0035)
+## El service worker (ADR 0035) y el aviso de versión nueva (ADR 0061)
 
 - **Es propio: `sw/sw.ts` con `injectManifest`.** Tiene el precache de Workbox, la limpieza de caches viejos, la navegación al `index.html`, el mensaje `SKIP_WAITING` del aviso de versión nueva y los handlers de `push` y `notificationclick`. Compila con `tsconfig.sw.json` (lib WebWorker) y lo revisa el mismo ESLint.
-- Un cambio en el precache o en el registro se verifica abriendo sin señal, encolando y viendo aparecer «Hay una versión nueva» con el service worker en espera, no solo con los e2e.
+- **Nada fuera de `shared/lib/version-nueva.ts` registra el service worker ni decide si hay versión nueva.** El módulo arranca una sola vez en `arrancar()`, antes de montar React y nunca en `/v/` ni en `/o/`: lee el registro apenas arranca, registra `/sw.js` (mismo alcance y tipo que antes) recién con el `load`, y el aviso sale de mirar el registro (`waiting` con una `active` al lado), no de haber estado escuchando justo cuando terminó. La interfaz lo lee con `useVersionNueva()` (`useSyncExternalStore`). No vuelvas a `useRegisterSW` ni a `workbox-window`: ignoran una versión que ya se estaba bajando y dejan de escuchar después de la primera «externa» (ADR 0061).
+- **Cualquier forma nueva de refrescar pregunta por la versión nueva**: `buscarVersionNueva()`, o `useSincronizarAhora`, que ya lo hace. El módulo decide cuándo sale a la red (`decidirElChequeo`): nunca dos a la vez, nunca mientras se baja una, sin señal no pregunta y lo deja pendiente para cuando vuelva, y los automáticos (al arrancar, al volver a verse, al volver la red, cada hora a la vista) como mucho uno por minuto. Un momento nuevo va ahí, con su test.
+- **«Actualizar» es `aplicarLaVersionNueva()`**: `SKIP_WAITING` a la que espera y una sola recarga, con el cambio de controlador o cuando la nueva queda activa (una página sin controlar no recibe el cambio). Una pestaña que mostró el aviso recarga cuando otra aplica la versión, como antes.
+- `injectRegister: false` en `vite.config.ts`: en vite-plugin-pwa 1.3.0 es el valor que no inyecta nada (`null` quedó obsoleto). `workbox-window` sigue en `devDependencies` solo porque el plugin lo pide como dependencia par.
+- **El arnés del aviso** (`e2e/version/`, `pnpm --filter @maun/web e2e:version`, adentro de `pnpm verify`): dos builds de producción de verdad servidas una después de la otra en `localhost:4180`, con el service worker real. La B es un segundo `vite build` con una novedad más inyectada al compilar (`preparar.ts`), así que su `sw.js` y su precache los arma el build. El servidor (`arnes.ts`) cuenta los pedidos a `sw.js`, retiene o demora lo nuevo de la B y puede hacerlo fallar una vez. Un cambio en el registro, en el precache o en cómo se pregunta se prueba ahí.
 
 ## Cosas que muerden en el e2e
 
@@ -448,4 +454,8 @@ src/
 - **Para probar que una vuelta no bloquea, la huella del teléfono virtual tiene que no verificar** (`huellaQueVerifica(telefono, false)`). Con la huella que se confirma sola, el bloqueo aparece y se va antes de que el test lo vea, y un bloqueo indebido pasa por bueno.
 - **En la PC, con la capa del día abierta, sus textos también están en la celda**: un texto aparece dos veces. Buscalo dentro de la celda (`laAnotacionDeHoy`, `celda`) o de la capa (`getByRole('complementary')`).
 - **En el celular, un mes sin nada no muestra la lista por día**: muestra «Todavía no hay nada en el mes», sin los botones «Ver el …». Para abrir la hoja de un día libre en un test, anotá antes algo en otro día.
+- **En el arnés, publicá la B recién cuando la última navegación terminó de preguntar** (`hastaQueDejeDePreguntar`). El chequeo que dispara una navegación sale un segundo después de que la página queda con la red casi quieta; si llega después de publicar, el test deja de probar una app abierta de antes y pasa hasta con el código roto. Así pasó el primer test del bucle contra `main`.
+- **Ctrl+Shift+R (`Page.reload` con `ignoreCache`) en la única pestaña deja a la versión vieja sin nadie que la use, y la que esperaba se activa sola.** Para probar una página sin controlar con una versión esperando hace falta otra pestaña abierta. Y `Page.reload` por CDP vuelve antes de navegar: esperá el `load`.
+- **`--app=` necesita `channel: 'chromium'`** (el headless nuevo). En `chrome-headless-shell`, que es el de siempre, se ignora y abre `about:blank`; con el canal, `display-mode: standalone` da verdadero.
+- **Dos arneses a la vez chocan en el 4180**, y un worktree debajo de `%TEMP%` pasa los 260 caracteres de Windows: Vite no resuelve sus propios `#imports`. Usá una ruta corta.
 - **La capa tapa los días de al lado.** Para probar que tocar otro día la mueve, elegí uno que no quede debajo: `agenda.spec.ts` va de un lunes al domingo de la misma fila. Las puntas se miden con `getBoundingClientRect` (`puntaDe`), porque la que no corresponde tiene ancho cero.
