@@ -80,6 +80,111 @@ async function enLaBase(id: string, necesidadId: string): Promise<FilaDeNecesida
   return (await necesidadesDe(sesion, id)).find((necesidad) => necesidad.id === necesidadId);
 }
 
+test.describe('los materiales', () => {
+  test('son el primero de los tres segmentos y entran en los contadores', async ({
+    page,
+  }, testInfo) => {
+    const melamina = crypto.randomUUID();
+    const id = await trabajoCon('E2E Tres segmentos', [
+      { id: melamina, tipo: 'material', nombre: 'placas de melamina blanca 18 mm', cantidad: 3 },
+      { id: crypto.randomUUID(), tipo: 'material', nombre: 'Tablón de guatambú', listo: true },
+      { id: crypto.randomUUID(), tipo: 'material', nombre: 'Laca poliuretánica' },
+      {
+        id: crypto.randomUUID(),
+        tipo: 'herraje',
+        nombre: 'Juegos de Patas Regulables 100 / 150 mm c/ Clip',
+        cantidad: 4,
+      },
+      { id: crypto.randomUUID(), tipo: 'herraje', nombre: 'Bisagras Cazoleta 35', cantidad: 4 },
+      { id: crypto.randomUUID(), tipo: 'herraje', nombre: 'Correderas 500mm', cantidad: 4 },
+      { id: crypto.randomUUID(), tipo: 'herraje', nombre: 'Pitutos Metalicos', cantidad: 4 },
+      { id: crypto.randomUUID(), tipo: 'herramienta', nombre: 'Sierra Circular' },
+      { id: crypto.randomUUID(), tipo: 'herramienta', nombre: 'Sargentos', cantidad: 4 },
+    ]);
+    await abrirLaFicha(page, id, 'E2E Tres segmentos');
+    const bloque = loQueHaceFalta(page);
+
+    await expect(bloque.getByRole('heading', { level: 3 })).toHaveText([
+      'Materiales necesarios',
+      'Herrajes necesarios',
+      'Herramientas necesarias',
+    ]);
+    await expect(bloque.locator('summary')).toContainText('1 de 9');
+    await expect(
+      bloque.getByText(/^Los materiales y los herrajes que hay que pedir/),
+    ).toBeVisible();
+    const materiales = bloque.getByRole('region', { name: 'Materiales necesarios' });
+    await expect(materiales).toContainText('1 de 3 listos');
+    await expect(bloque.getByRole('region', { name: 'Herrajes necesarios' })).toContainText(
+      '4 cosas',
+    );
+    await expect(bloque.getByRole('region', { name: 'Herramientas necesarias' })).toContainText(
+      '2 cosas',
+    );
+
+    await bloque.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath('los-tres-segmentos.png'), fullPage: true });
+    await bloque.screenshot({ path: testInfo.outputPath('lo-que-hace-falta.png') });
+
+    await materiales.getByLabel('Cuántos materiales').fill('2');
+    const campo = materiales.getByRole('combobox', { name: 'Qué material hace falta' });
+    await campo.fill('Caño estructural 40x40');
+    await materiales.getByRole('button', { name: 'Agregar el material' }).click();
+    await expect(
+      materiales.getByRole('textbox', { name: 'Nombre de Caño estructural 40x40', exact: true }),
+    ).toBeVisible(CARGA);
+    await expect(bloque.locator('summary')).toContainText('1 de 10');
+    await expect(materiales).toContainText('1 de 4 listos');
+
+    await expect
+      .poll(
+        async () =>
+          (await necesidadesDe(sesion, id)).find(
+            (fila) => fila.nombre === 'Caño estructural 40x40',
+          ),
+        CARGA,
+      )
+      .toMatchObject({ tipo: 'material', cantidad: 2, listo: false });
+
+    await cantidadDe(page, melamina).fill('5');
+    await cantidadDe(page, melamina).press('Enter');
+    await expect.poll(async () => (await enLaBase(id, melamina))?.cantidad, CARGA).toBe(5);
+  });
+
+  test('cada segmento sugiere lo suyo: escribiendo un material no aparece una herramienta', async ({
+    page,
+  }) => {
+    await trabajoCon('E2E Trabajo anterior', [
+      { id: crypto.randomUUID(), tipo: 'material', nombre: 'Laca poliuretánica' },
+      { id: crypto.randomUUID(), tipo: 'herramienta', nombre: 'Lijadora de banda' },
+      { id: crypto.randomUUID(), tipo: 'herraje', nombre: 'Lengüetas' },
+    ]);
+    const id = await trabajoCon('E2E Trabajo nuevo', []);
+    await abrirLaFicha(page, id, 'E2E Trabajo nuevo');
+    const bloque = loQueHaceFalta(page);
+
+    const materiales = bloque.getByRole('region', { name: 'Materiales necesarios' });
+    const campoDeMateriales = materiales.getByRole('combobox', { name: 'Qué material hace falta' });
+    await campoDeMateriales.click();
+    await campoDeMateriales.fill('l');
+    const sugeridos = materiales.getByRole('listbox');
+    await expect(sugeridos.getByText('Laca poliuretánica')).toBeVisible(CARGA);
+    await expect(sugeridos.getByText('Lijadora de banda')).toHaveCount(0);
+    await expect(sugeridos.getByText('Lengüetas')).toHaveCount(0);
+    await campoDeMateriales.press('Escape');
+
+    const herramientas = bloque.getByRole('region', { name: 'Herramientas necesarias' });
+    const campoDeHerramientas = herramientas.getByRole('combobox', {
+      name: 'Qué herramienta hace falta',
+    });
+    await campoDeHerramientas.click();
+    await campoDeHerramientas.fill('l');
+    const deHerramientas = herramientas.getByRole('listbox');
+    await expect(deHerramientas.getByText('Lijadora de banda')).toBeVisible(CARGA);
+    await expect(deHerramientas.getByText('Laca poliuretánica')).toHaveCount(0);
+  });
+});
+
 test.describe('editar lo que ya está cargado, en la misma fila', () => {
   test('la cantidad y el nombre se cambian sin borrar nada y sin tocar el tildado', async ({
     page,

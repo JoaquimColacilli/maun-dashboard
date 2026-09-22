@@ -1,4 +1,11 @@
-import { cantidadEscrita, faseDe, nombreEscrito } from '@maun/domain';
+import {
+  cantidadEscrita,
+  cuentaDeLoQueHaceFalta,
+  faseDe,
+  nombreEscrito,
+  segmentosDeLoQueHaceFalta,
+  type SegmentoDeLoQueHaceFalta,
+} from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
@@ -8,17 +15,14 @@ import {
   conUnaNecesidadEditada,
   conUnaNecesidadMas,
   conUnaNecesidadTildada,
-  cuantasListas,
   guardadoDeLoQueHaceFalta,
-  LISTAS_DEL_TRABAJO,
+  listaDelTipo,
   MUTACION_DE_PROYECTO,
   necesidadesDelProyecto,
-  necesidadesPorTipo,
   nombreConCantidad,
   sinUnaNecesidad,
   type Necesidad,
   type Proyecto,
-  type TipoDeLaLista,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { mensajeDeSincronizacion, type NecesidadParaGuardar } from '@/shared/api';
@@ -29,21 +33,22 @@ import { CampoDeNecesidad } from './CampoDeNecesidad';
 import { FilaDeNecesidad } from './FilaDeNecesidad';
 
 interface ListaProps {
-  lista: TipoDeLaLista;
+  segmento: SegmentoDeLoQueHaceFalta<Necesidad>;
   todas: readonly Necesidad[];
   bloqueado: boolean;
   alCambiar: (quedan: readonly NecesidadParaGuardar[], aviso?: () => void) => void;
 }
 
-function Lista({ lista, todas, bloqueado, alCambiar }: ListaProps) {
+function Lista({ segmento, todas, bloqueado, alCambiar }: ListaProps) {
+  const lista = listaDelTipo(segmento.tipo);
   const replica = useReplicaDelTaller();
   const [nombre, setNombre] = useState('');
   const [cantidad, setCantidad] = useState('');
   const campo = useRef<HTMLDivElement>(null);
 
-  const delTipo = necesidadesPorTipo(todas, lista.tipo);
+  const delTipo = segmento.items;
   const catalogo = catalogoDelTaller(replica, lista.tipo);
-  const listas = cuantasListas(delTipo);
+  const listas = segmento.listos;
 
   function agregar(desdeElCatalogo?: string): void {
     const escrito = nombreEscrito(desdeElCatalogo ?? nombre);
@@ -205,14 +210,13 @@ export function LoQueHaceFalta({ proyecto, abiertoAlPrincipio }: LoQueHaceFaltaP
 
   const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
   const bloqueado = proyecto.estado === 'cobrado' || proyecto.estado === 'perdido';
-  const cuantas = todas.length;
-  const listas = cuantasListas(todas);
+  const { cuantas, listas } = cuentaDeLoQueHaceFalta(todas);
 
   return (
     <BloquePlegable
       titulo="Lo que hace falta"
       abiertoAlPrincipio={abiertoAlPrincipio ?? (enSeguimiento || proyecto.estado === 'en_curso')}
-      ayuda="Los herrajes que hay que pedir y las herramientas que hay que tener el día que lo hagas. Se te sugieren los que ya usaste."
+      ayuda="Los materiales y los herrajes que hay que pedir, y las herramientas que hay que tener el día que lo hagas. Se te sugieren los que ya usaste."
       resumen={
         cuantas === 0
           ? undefined
@@ -221,10 +225,10 @@ export function LoQueHaceFalta({ proyecto, abiertoAlPrincipio }: LoQueHaceFaltaP
             : `${String(listas)} de ${String(cuantas)}`
       }
     >
-      {LISTAS_DEL_TRABAJO.map((lista) => (
+      {segmentosDeLoQueHaceFalta(todas).map((segmento) => (
         <Lista
-          key={lista.tipo}
-          lista={lista}
+          key={segmento.tipo}
+          segmento={segmento}
           todas={todas}
           bloqueado={bloqueado}
           alCambiar={alCambiar}

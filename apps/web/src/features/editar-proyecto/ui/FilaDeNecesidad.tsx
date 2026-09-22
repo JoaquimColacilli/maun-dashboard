@@ -119,7 +119,9 @@ export function FilaDeNecesidad({
         readOnly={bloqueado}
         placeholder="–"
         aria-label={`Cantidad de ${necesidad.nombre}`}
-        className={`h-11 w-10 flex-none px-1 text-center text-body font-semibold tabular-nums placeholder:font-normal placeholder:text-text-3 ${campo} ${tono}`}
+        className={`h-11 w-10 flex-none px-1 text-center text-body font-semibold tabular-nums placeholder:font-normal placeholder:text-text-3 ${campo} ${
+          necesidad.cantidad === null && necesidad.listo ? 'text-text-3' : tono
+        }`}
       />
 
       <div className="grid min-w-0 flex-1">

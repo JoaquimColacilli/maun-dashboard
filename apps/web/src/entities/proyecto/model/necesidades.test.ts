@@ -1,3 +1,4 @@
+import { TIPOS_DE_NECESIDAD } from '@maun/domain';
 import { describe, expect, it } from 'vitest';
 
 import { TABLAS_REPLICADAS, type Replica, type TablaReplicada } from '@/shared/api';
@@ -9,10 +10,9 @@ import {
   conUnaNecesidadEditada,
   conUnaNecesidadMas,
   conUnaNecesidadTildada,
-  cuantasListas,
+  listaDelTipo,
   LISTAS_DEL_TRABAJO,
   necesidadesDelProyecto,
-  necesidadesPorTipo,
   nombreConCantidad,
   sinUnaNecesidad,
   sugerenciasParaEscribir,
@@ -44,13 +44,19 @@ function conFilas(filas: readonly Necesidad[]): Replica {
 
 const NOMBRES = (entradas: readonly { nombre: string }[]) => entradas.map((e) => e.nombre);
 
-describe('las dos listas del trabajo', () => {
-  it('son las dos que él escribe a mano, y las dos llevan cantidad opcional', () => {
+describe('las tres listas del trabajo', () => {
+  it('van en el orden del dominio: materiales, herrajes y herramientas', () => {
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.tipo)).toEqual(TIPOS_DE_NECESIDAD);
     expect(LISTAS_DEL_TRABAJO.map((lista) => lista.titulo)).toEqual([
+      'Materiales necesarios',
       'Herrajes necesarios',
       'Herramientas necesarias',
     ]);
+  });
+
+  it('las tres llevan cantidad opcional, y cada campo dice de qué es', () => {
     expect(LISTAS_DEL_TRABAJO.map((lista) => lista.cuantos)).toEqual([
+      'Cuántos materiales',
       'Cuántos herrajes',
       'Cuántas herramientas',
     ]);
@@ -58,11 +64,17 @@ describe('las dos listas del trabajo', () => {
 
   it('cada una habla en su género: no dice «agregar el herramienta»', () => {
     expect(LISTAS_DEL_TRABAJO.map((lista) => lista.agregar)).toEqual([
+      'Agregar el material',
       'Agregar el herraje',
       'Agregar la herramienta',
     ]);
-    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.listo)).toEqual(['Listo', 'Lista']);
-    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.listos)).toEqual(['listos', 'listas']);
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.listo)).toEqual(['Listo', 'Listo', 'Lista']);
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.listos)).toEqual(['listos', 'listos', 'listas']);
+  });
+
+  it('los textos de un tipo se buscan por el tipo', () => {
+    expect(listaDelTipo('material').titulo).toBe('Materiales necesarios');
+    expect(listaDelTipo('herramienta').agregar).toBe('Agregar la herramienta');
   });
 });
 
@@ -80,16 +92,6 @@ describe('lo que hace falta para un trabajo', () => {
       'n2',
       'n3',
     ]);
-  });
-
-  it('separa herrajes de herramientas', () => {
-    const delTrabajo = necesidadesDelProyecto(conFilas(filas), 'p1');
-    expect(necesidadesPorTipo(delTrabajo, 'herraje').map((f) => f.id)).toEqual(['n1', 'n2']);
-    expect(necesidadesPorTipo(delTrabajo, 'herramienta').map((f) => f.id)).toEqual(['n3']);
-  });
-
-  it('cuenta lo que ya está listo', () => {
-    expect(cuantasListas(necesidadesDelProyecto(conFilas(filas), 'p1'))).toBe(1);
   });
 });
 
