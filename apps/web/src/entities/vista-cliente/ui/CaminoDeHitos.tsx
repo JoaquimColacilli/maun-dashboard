@@ -23,7 +23,7 @@ function linea(activa: boolean, oculta: boolean): string {
 }
 
 export function CaminoDeHitos({ hitos, nota, hoy }: CaminoDeHitosProps) {
-  const actual = hitos.findIndex((hito) => hito.estado === 'actual');
+  const alcanzado = hitos.filter((hito) => hito.estado !== 'futuro').length - 1;
 
   return (
     <ol
@@ -40,7 +40,7 @@ export function CaminoDeHitos({ hitos, nota, hoy }: CaminoDeHitosProps) {
               <div className="flex flex-col items-center @xl:relative @xl:h-[18px] @xl:flex-row @xl:items-center">
                 <span
                   aria-hidden
-                  className={`h-1.5 w-0 border-l @xl:absolute @xl:top-1/2 @xl:right-[calc(100%-9px)] @xl:left-[calc(-100%+9px)] @xl:h-0 @xl:w-auto @xl:-translate-y-1/2 @xl:border-t @xl:border-l-0 ${linea(indice <= actual, indice === 0)}`}
+                  className={`h-1.5 w-0 border-l @xl:absolute @xl:top-1/2 @xl:right-[calc(100%-9px)] @xl:left-[calc(-100%+9px)] @xl:h-0 @xl:w-auto @xl:-translate-y-1/2 @xl:border-t @xl:border-l-0 ${linea(indice <= alcanzado, indice === 0)}`}
                 />
                 <span
                   aria-hidden
@@ -50,7 +50,7 @@ export function CaminoDeHitos({ hitos, nota, hoy }: CaminoDeHitosProps) {
                 </span>
                 <span
                   aria-hidden
-                  className={`w-0 flex-1 border-l @xl:hidden ${linea(indice < actual, indice === hitos.length - 1)}`}
+                  className={`w-0 flex-1 border-l @xl:hidden ${linea(indice < alcanzado, indice === hitos.length - 1)}`}
                 />
               </div>
               <div className="flex flex-col gap-0.5 pb-5 @xl:pr-3 @xl:pb-0">
