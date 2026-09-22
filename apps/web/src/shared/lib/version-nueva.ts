@@ -21,13 +21,30 @@ export interface EntornoDeLaVersion {
   registrar: () => Promise<RegistroDeLaVersion>;
   alCargar: (accion: () => void) => void;
   alCambiarElControlador: (accion: () => void) => void;
+  hayRed: () => boolean;
   recargar: () => void;
 }
 
 export interface VigiaDeLaVersion {
   lista: () => TrabajadorDeLaVersion | null;
   suscribir: (avisar: () => void) => () => void;
+  buscar: () => Promise<void>;
   aplicar: () => void;
+}
+
+export type DecisionDelChequeo = 'preguntar' | 'sumarse' | 'no';
+
+export interface SituacionDelChequeo {
+  hayRegistro: boolean;
+  hayUnoEnCurso: boolean;
+  seEstaBajando: boolean;
+  hayRed: boolean;
+}
+
+export function decidirElChequeo(situacion: SituacionDelChequeo): DecisionDelChequeo {
+  if (situacion.hayUnoEnCurso) return 'sumarse';
+  if (!situacion.hayRegistro || situacion.seEstaBajando || !situacion.hayRed) return 'no';
+  return 'preguntar';
 }
 
 export function versionLista(registro: RegistroDeLaVersion): TrabajadorDeLaVersion | null {
@@ -40,6 +57,7 @@ export function crearVigiaDeLaVersion(entorno: EntornoDeLaVersion): VigiaDeLaVer
   const conocidos = new WeakSet<RegistroDeLaVersion>();
   let registro: RegistroDeLaVersion | null = null;
   let lista: TrabajadorDeLaVersion | null = null;
+  let enCurso: Promise<void> | null = null;
   let huboUnaLista = false;
   let recargando = false;
 
@@ -77,6 +95,30 @@ export function crearVigiaDeLaVersion(entorno: EntornoDeLaVersion): VigiaDeLaVer
     recalcular();
   };
 
+  const buscar = (): Promise<void> => {
+    const actual = registro;
+    const decision = decidirElChequeo({
+      hayRegistro: actual !== null,
+      hayUnoEnCurso: enCurso !== null,
+      seEstaBajando: actual !== null && actual.installing !== null,
+      hayRed: entorno.hayRed(),
+    });
+    if (decision === 'sumarse' && enCurso !== null) return enCurso;
+    if (decision !== 'preguntar' || actual === null) return Promise.resolve();
+    const chequeo = actual
+      .update()
+      .then(
+        () => undefined,
+        () => undefined,
+      )
+      .finally(() => {
+        enCurso = null;
+        recalcular();
+      });
+    enCurso = chequeo;
+    return chequeo;
+  };
+
   entorno.registroActual().then(conocer, () => undefined);
   entorno.alCargar(() => {
     entorno.registrar().then(conocer, () => undefined);
@@ -93,6 +135,7 @@ export function crearVigiaDeLaVersion(entorno: EntornoDeLaVersion): VigiaDeLaVer
         suscriptores.delete(avisar);
       };
     },
+    buscar,
     aplicar: () => {
       const esperando = registro?.waiting ?? null;
       if (esperando === null) {
@@ -123,6 +166,7 @@ function entornoDelNavegador(): EntornoDeLaVersion {
     alCambiarElControlador: (accion) => {
       trabajadores.addEventListener('controllerchange', accion);
     },
+    hayRed: () => navigator.onLine,
     recargar: () => {
       globalThis.location.reload();
     },
@@ -138,6 +182,10 @@ function vigiaActual(): VigiaDeLaVersion | undefined {
 export function vigilarLaVersionNueva(): void {
   if (vigiaActual() !== undefined || !('serviceWorker' in navigator)) return;
   Reflect.set(globalThis, CLAVE_DEL_VIGIA, crearVigiaDeLaVersion(entornoDelNavegador()));
+}
+
+export function buscarVersionNueva(): Promise<void> {
+  return vigiaActual()?.buscar() ?? Promise.resolve();
 }
 
 export function aplicarLaVersionNueva(): void {

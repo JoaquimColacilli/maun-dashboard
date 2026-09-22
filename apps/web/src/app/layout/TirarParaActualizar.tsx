@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react';
+import { useLayoutEffect, useState, type ReactNode, type RefObject } from 'react';
 
 import {
   describirDesenlace,
@@ -9,6 +9,7 @@ import {
   describirEstadoSync,
   useEstadoSync,
   useTirarParaActualizar,
+  useVersionNueva,
   type EstadoSync,
   type FaseDelTiron,
 } from '@/shared/lib';
@@ -99,6 +100,25 @@ export interface TirarParaActualizarProps {
   deshabilitado: boolean;
 }
 
+function useDebajoDelAviso(contenedor: RefObject<HTMLElement | null>, medir: boolean): number {
+  const [debajo, setDebajo] = useState(0);
+
+  useLayoutEffect(() => {
+    const actualizar = () => {
+      const aviso = document.querySelector('[data-aviso-de-version]');
+      const principal = contenedor.current;
+      const borde =
+        medir && aviso !== null && principal !== null
+          ? aviso.getBoundingClientRect().bottom - principal.getBoundingClientRect().top
+          : 0;
+      setDebajo(Math.max(0, Math.ceil(borde)));
+    };
+    actualizar();
+  }, [contenedor, medir]);
+
+  return debajo;
+}
+
 export function TirarParaActualizar({
   contenedor,
   usuarioId,
@@ -111,6 +131,8 @@ export function TirarParaActualizar({
     deshabilitado,
   );
   const estadoSync = useEstadoSync();
+  const hayVersionNueva = useVersionNueva();
+  const debajoDelAviso = useDebajoDelAviso(contenedor, hayVersionNueva && fase !== 'quieto');
 
   if (fase === 'quieto') return null;
 
@@ -124,7 +146,7 @@ export function TirarParaActualizar({
     >
       <div
         style={{
-          transform: `translateY(${String(distancia - ALTO_DEL_INDICADOR)}px)`,
+          transform: `translateY(${String(debajoDelAviso + distancia - ALTO_DEL_INDICADOR)}px)`,
           opacity: fase === 'volviendo' ? 0 : 1,
         }}
         className={`absolute top-0 left-1/2 flex min-h-10 w-max max-w-[calc(100vw-40px)] -translate-x-1/2 items-center gap-2.5 rounded-pill border border-hairline bg-elevado py-1.5 pr-4 pl-1.5 text-label leading-tight font-medium text-ink shadow-float ${

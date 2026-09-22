@@ -59,6 +59,40 @@ function marcaDelDocumento(page: Page): Promise<string | undefined> {
   );
 }
 
+test('volviendo a la app abierta de antes y tirando sin parar, el aviso aparece apenas termina la descarga', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000);
+  const arnes = elArnes();
+  await entrarConLaSesion(context, await tallerVacio());
+  await abrirLaVersionA(page, arnes);
+  arnes.retenerLoNuevo();
+  arnes.publicar('b');
+
+  const tirones = tirarSinParar(page, await dedo(page));
+  await page.waitForTimeout(4 * CADA_CUANTO_TIRA_MS);
+  const antesDeSoltar = {
+    serviceWorker: arnes.pedidosDelServiceWorker(),
+    loNuevo: arnes.pedidosDeLoNuevo(),
+  };
+  arnes.soltarLoNuevo();
+  const soltado = Date.now();
+
+  try {
+    await expect(aviso(page)).toBeVisible({ timeout: 20_000 });
+  } finally {
+    await tirones.parar();
+    console.log(
+      `volviendo y tirando: ${String(tirones.cuantos())} tirones; antes de soltar, ${String(antesDeSoltar.loNuevo)} pedido a lo nuevo; ${String(arnes.pedidosDelServiceWorker())} pedidos a sw.js en todo el test`,
+    );
+  }
+  const tardo = Date.now() - soltado;
+  console.log(`volviendo y tirando: el aviso apareció a los ${String(tardo)} ms de soltar`);
+  expect(antesDeSoltar.loNuevo).toBe(1);
+  expect(tardo).toBeLessThan(DESPUES_DE_SOLTAR_MS);
+});
+
 test('abriendo la app mientras se baja la versión nueva y tirando sin parar, el aviso aparece apenas termina la descarga', async ({
   page,
   context,

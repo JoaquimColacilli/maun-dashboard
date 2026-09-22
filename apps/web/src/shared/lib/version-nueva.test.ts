@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import WORKER from '../../../sw/sw.ts?raw';
 import {
   crearVigiaDeLaVersion,
+  decidirElChequeo,
   PEDIDO_DE_ACTUALIZAR,
   URL_DEL_SERVICE_WORKER,
   versionLista,
@@ -73,6 +74,7 @@ class RegistroFalso extends EventTarget implements RegistroDeLaVersion {
 interface EntornoFalso extends EntornoDeLaVersion {
   cargar: () => void;
   cambiarElControlador: () => void;
+  cortarLaRed: () => void;
   readonly recargas: () => number;
   readonly registros: () => number;
 }
@@ -82,6 +84,7 @@ function entornoFalso(registro: RegistroFalso, { yaRegistrada = true } = {}): En
   const alCambiar: (() => void)[] = [];
   let recargas = 0;
   let registros = 0;
+  let red = true;
   return {
     registroActual: () => Promise.resolve(yaRegistrada ? registro : undefined),
     registrar: () => {
@@ -93,6 +96,10 @@ function entornoFalso(registro: RegistroFalso, { yaRegistrada = true } = {}): En
     },
     alCambiarElControlador: (accion) => {
       alCambiar.push(accion);
+    },
+    hayRed: () => red,
+    cortarLaRed: () => {
+      red = false;
     },
     recargar: () => {
       recargas += 1;
@@ -258,6 +265,107 @@ describe('el vigía de la versión nueva', () => {
     registro.activarLaQueEspera();
 
     expect(vigia.lista()).toBeNull();
+  });
+});
+
+describe('cuándo se pregunta si hay una versión nueva', () => {
+  const tranquila = { hayRegistro: true, hayUnoEnCurso: false, seEstaBajando: false, hayRed: true };
+
+  it('con todo en calma, pregunta', () => {
+    expect(decidirElChequeo(tranquila)).toBe('preguntar');
+  });
+
+  it('si ya hay uno en curso, se suma a ese: nunca dos a la vez', () => {
+    expect(decidirElChequeo({ ...tranquila, hayUnoEnCurso: true })).toBe('sumarse');
+  });
+
+  it('mientras se baja una versión, no pregunta: no suma nada y le compite a la descarga', () => {
+    expect(decidirElChequeo({ ...tranquila, seEstaBajando: true })).toBe('no');
+  });
+
+  it('sin señal no sale a la red', () => {
+    expect(decidirElChequeo({ ...tranquila, hayRed: false })).toBe('no');
+  });
+
+  it('antes de conocer el registro no hay a quién preguntarle', () => {
+    expect(decidirElChequeo({ ...tranquila, hayRegistro: false })).toBe('no');
+  });
+});
+
+describe('preguntar', () => {
+  it('le pide al registro que busque la versión nueva', async () => {
+    const registro = new RegistroFalso();
+    const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
+    await enCalma();
+
+    await vigia.buscar();
+
+    expect(registro.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('diez pedidos seguidos mientras el primero no terminó salen como uno solo', async () => {
+    const registro = new RegistroFalso();
+    let terminar: () => void = () => undefined;
+    registro.update.mockImplementation(
+      () =>
+        new Promise((resolver) => {
+          terminar = () => {
+            resolver(registro);
+          };
+        }),
+    );
+    const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
+    await enCalma();
+
+    const pedidos = Array.from({ length: 10 }, () => vigia.buscar());
+    terminar();
+    await Promise.all(pedidos);
+
+    expect(registro.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('mientras se baja una versión, no pregunta', async () => {
+    const registro = new RegistroFalso();
+    const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
+    await enCalma();
+    registro.empezarAInstalar();
+
+    await vigia.buscar();
+
+    expect(registro.update).not.toHaveBeenCalled();
+  });
+
+  it('sin señal no pregunta', async () => {
+    const registro = new RegistroFalso();
+    const entorno = entornoFalso(registro);
+    const vigia = crearVigiaDeLaVersion(entorno);
+    await enCalma();
+    entorno.cortarLaRed();
+
+    await vigia.buscar();
+
+    expect(registro.update).not.toHaveBeenCalled();
+  });
+
+  it('si no puede bajar el script, el rechazo queda adentro y el siguiente pedido vuelve a preguntar', async () => {
+    const registro = new RegistroFalso();
+    registro.update.mockRejectedValueOnce(new TypeError('Failed to update a ServiceWorker'));
+    const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
+    await enCalma();
+
+    await expect(vigia.buscar()).resolves.toBeUndefined();
+    await vigia.buscar();
+
+    expect(registro.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('antes de conocer el registro no hace nada', async () => {
+    const registro = new RegistroFalso();
+    const vigia = crearVigiaDeLaVersion(entornoFalso(registro, { yaRegistrada: false }));
+
+    await vigia.buscar();
+
+    expect(registro.update).not.toHaveBeenCalled();
   });
 });
 
