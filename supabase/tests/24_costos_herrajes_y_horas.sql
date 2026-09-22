@@ -223,7 +223,7 @@ select throws_ok(
     )
   $$,
   '22004',
-  'Cada herraje o herramienta necesita id, tipo y nombre',
+  'Cada material, herraje o herramienta necesita id, tipo y nombre',
   'un tipo que no existe se rechaza con un mensaje, no con el 22P02 crudo del cast'
 );
 
@@ -238,7 +238,7 @@ select throws_ok(
     )
   $$,
   '22004',
-  'Cada herraje o herramienta necesita id, tipo y nombre',
+  'Cada material, herraje o herramienta necesita id, tipo y nombre',
   'un nombre en blanco se rechaza antes de llegar al check de la tabla'
 );
 

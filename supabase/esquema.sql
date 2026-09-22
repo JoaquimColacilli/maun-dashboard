@@ -43,8 +43,8 @@ comment on type public.rol_household is 'Rol de un usuario dentro de su househol
 create type public.tesoro as enum ('hogar', 'maun', 'diezmo', 'cocos');
 comment on type public.tesoro is 'Las cuatro cajas: hogar (la familia), maun (el taller), diezmo (lo apartado para el diezmo) y cocos (el ahorro invertido).';
 
-create type public.tipo_de_necesidad as enum ('herraje', 'herramienta');
-comment on type public.tipo_de_necesidad is 'Si lo que hace falta es un herraje (bisagras, pistones, tiradores, tarugos) o una herramienta (sierra circular, lijadora de banda, multitool). El dueño las nombró como dos listas distintas, pero las dos son «lo que necesito para este trabajo» y se repiten entre trabajos: una sola tabla con el tipo adentro (ADR 0045).';
+create type public.tipo_de_necesidad as enum ('herraje', 'herramienta', 'material');
+comment on type public.tipo_de_necesidad is 'Qué es lo que hace falta: un material (placas de melamina, un tablón para la mesada, pintura, laca, un caño estructural), un herraje (bisagras, pistones, tiradores, tarugos) o una herramienta (sierra circular, lijadora de banda, multitool). El dueño las nombró como listas distintas, pero todas son «lo que necesito para este trabajo» y se repiten entre trabajos: una sola tabla con el tipo adentro (ADR 0045 y 0060). El orden en que se muestran vive en @maun/domain, no en el orden del enum.';
 
 create type public.tipo_de_pregunta as enum ('escala5', 'sitalvezno', 'una', 'varias', 'texto');
 comment on type public.tipo_de_pregunta is 'Cómo se contesta una pregunta, y no hay otra forma: escala de cinco caritas, sí / tal vez / no, una opción entre varias, varias opciones, o texto libre. Son los tipos del diseño y ninguno más (ADR 0057).';
@@ -568,11 +568,11 @@ create table public.necesidades (
   constraint necesidades_pkey PRIMARY KEY (id),
   constraint necesidades_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id)
 );
-comment on table public.necesidades is 'Los herrajes y las herramientas que hacen falta para un trabajo. Hasta ahora el dueño las escribía a mano en las notas del trabajo, en dos listas. El catálogo de nombres no es otra tabla: son los nombres distintos que ya usó, que salen de estas mismas filas (ADR 0045).';
+comment on table public.necesidades is 'Los materiales, los herrajes y las herramientas que hacen falta para un trabajo. Hasta ahora el dueño los escribía a mano en las notas del trabajo. El catálogo de nombres no es otra tabla: son los nombres distintos que ya usó, que salen de estas mismas filas, uno por tipo (ADR 0045 y 0060).';
 comment on column public.necesidades.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
-comment on column public.necesidades.tipo is 'Herraje o herramienta. El autocompletado sugiere solo nombres del mismo tipo.';
+comment on column public.necesidades.tipo is 'Material, herraje o herramienta. El autocompletado sugiere solo nombres del mismo tipo.';
 comment on column public.necesidades.nombre is 'Cómo lo llama él: «Bisagras», «Sierra Circular». Es también la clave del catálogo derivado.';
-comment on column public.necesidades.cantidad is 'Cuántos, si lleva número. Null es «hace falta y no conté»: una herramienta, o los tarugos.';
+comment on column public.necesidades.cantidad is 'Cuántos, si lleva número, sin unidad: la unidad va en el nombre («3 placas de melamina blanca 18 mm» es cantidad 3). Null es «hace falta y no conté»: los tarugos, o una sierra que hay una sola.';
 comment on column public.necesidades.listo is 'Ya lo pedió, lo compró o lo tiene separado. Se queda en la lista, tachado, como una anotación tildada de la agenda.';
 comment on column public.necesidades.deleted_at is 'Borrado lógico, como en todo el household.';
 CREATE INDEX necesidades_household_actualizado ON public.necesidades USING btree (household_id, updated_at);
@@ -1611,7 +1611,7 @@ begin
   end if;
 
   if p_necesidades is not null and jsonb_typeof(p_necesidades) <> 'array' then
-    raise exception 'Los herrajes y las herramientas van en un array jsonb' using errcode = '22023';
+    raise exception 'Lo que hace falta va en un array jsonb' using errcode = '22023';
   end if;
 
   -- Las horas se leen como texto por la misma razón que las fechas: un <input type="time"> vacío
@@ -1675,8 +1675,9 @@ begin
     raise exception 'Cada opción de presupuesto necesita id y monto' using errcode = '22004';
   end if;
 
-  -- El tipo se lee como texto y se valida contra sus dos valores: castearlo de una cortaría con un
-  -- 22P02 crudo, que es definitivo y no tiene traducción.
+  -- El tipo se lee como texto y se valida contra los valores del enum: castearlo de una cortaría con
+  -- un 22P02 crudo, que es definitivo y no tiene traducción. Contra el enum y no contra una lista
+  -- escrita acá, para que un tipo nuevo no obligue a reescribir la función (ADR 0060).
   if exists (
     select 1
     from jsonb_to_recordset(coalesce(p_necesidades, '[]'::jsonb))
@@ -1685,12 +1686,13 @@ begin
        or (
          not coalesce(r.borrado, false)
          and (
-           coalesce(r.tipo, '') not in ('herraje', 'herramienta')
+           coalesce(r.tipo, '') <> all (enum_range(null::public.tipo_de_necesidad)::text[])
            or btrim(coalesce(r.nombre, '')) = ''
          )
        )
   ) then
-    raise exception 'Cada herraje o herramienta necesita id, tipo y nombre' using errcode = '22004';
+    raise exception 'Cada material, herraje o herramienta necesita id, tipo y nombre'
+      using errcode = '22004';
   end if;
 
   -- Primer lock: el proyecto, con for update, la misma disciplina que private.liquidar. La guarda
