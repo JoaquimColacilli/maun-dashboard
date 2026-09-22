@@ -43,7 +43,9 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 ## El margen y lo que hace falta (ADR 0045)
 
 - `calcularMargen` es la otra resta que pidió el dueño: el presupuesto menos lo que calcula gastar. Las cuatro categorías son fijas (`CATEGORIAS_DE_COSTO`: madera, herrajes, flete, ayudante) y **null no es cero**: null es «todavía no lo estimé» y cero es «este trabajo no lleva flete». Devuelve una unión de tres situaciones, no números sueltos, y **el margen puede ser negativo**: eso es justamente lo que hay que ver. **No hay ninguna función que vaya del costo al presupuesto**, y no la agregues: el presupuesto incluye la ganancia, que la decide él.
-- `catalogoDeNecesidades` arma el catálogo de nombres desde las filas que ya existen: no hay tabla de catálogo. Ordena por lo más usado, después por lo más reciente y después alfabético, para que la lista no baile. `claveDelNombre` compara sin acentos ni mayúsculas, y `sugerenciasDeNecesidad` pone adelante lo que **empieza** con lo escrito y descarta lo que ya está escrito igual.
+- `catalogoDeNecesidades` arma el catálogo de nombres desde las filas que ya existen: no hay tabla de catálogo. Ordena por lo más usado, después por lo más reciente y después alfabético, para que la lista no baile. `claveDelNombre` compara sin acentos ni mayúsculas, y `sugerenciasDeNecesidad` pone adelante lo que **empieza** con lo escrito y descarta lo que ya está escrito igual. El catálogo es **de un tipo**: un material no se sugiere en las herramientas.
+- **El orden de los segmentos es `TIPOS_DE_NECESIDAD` y en ningún otro lado** (ADR 0060): material, herraje, herramienta. `segmentosDeLoQueHaceFalta` los arma en ese orden, siempre los tres, y `cuentaDeLoQueHaceFalta` es la suma de los segmentos. Un tipo nuevo va acá y en el enum de la base (`packages/db/src/necesidades.test.ts` ata los dos), no en el orden del enum.
+- **Editar un ítem**: `cantidadEditada` (entero mayor que cero; vacía o en cero vuelve a la anterior) y `nombreEditado` (recortado y cortado en `LARGO_MAXIMO_DEL_NOMBRE`; en blanco vuelve al anterior). El alta usa `cantidadEscrita` y `nombreEscrito`, las mismas cuentas. `esNombreDeNecesidad` es **gemela del `check` `necesidades_nombre_valido`**, y cuenta caracteres, no unidades de UTF-16, como `char_length`.
 
 ## La vista del cliente (ADR 0046)
 
@@ -94,6 +96,7 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
 - `private.topes_de_la_liquidacion`, `private.liquidacion_valida`, `private.reversion_valida` y el bloque de objetivos y la suma del mes de `private.liquidar`, en `20260911210000_topes_mensuales_y_perdido.sql`.
 - **`asientosDelLibro` y `saldosPorTesoro` contra la vista `public.libro_mayor`**, que es el estado vivo del esquema (`supabase/esquema.sql`), no el archivo de la migración: los dos difieren y el archivo está desactualizado (ADR 0013 y 0014).
 - **`validarRespuesta` contra `private.validar_respuesta` y `esLinkDeResena` contra el `check` de `ajustes.resena_link`**, en `20260921180000_opiniones_de_los_clientes.sql` (ADR 0057).
+- **`esNombreDeNecesidad` contra el `check` `necesidades_nombre_valido`** (`compararNombreDeNecesidad`, ADR 0060).
 
 `lineasDelLibro` **no tiene gemela en SQL y no la necesita**: es la forma sin partir de lo mismo, y
 `asientosDelLibro` es literalmente `lineasDelLibro(...).flatMap(asientosDeLaLinea)`. Nada en la base

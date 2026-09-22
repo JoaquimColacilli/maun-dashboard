@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-22.2',
+    lineas: [
+      'En «Lo que hace falta» tocás la cantidad o el nombre de algo que ya cargaste y lo cambiás ahí mismo, sin borrarlo. Las herramientas ahora también pueden llevar cantidad.',
+      'Hay una lista nueva, Materiales, antes de los herrajes: para los cortes de melamina, un tablón para la mesada, la pintura o un caño. Te sugiere los materiales que ya usaste.',
+      'En el celular los montos ya no se salen de sus tarjetas: la letra se achica lo justo para que entren enteros, con los centavos.',
+      'Los costos estimados que cargás sin señal ya no se pierden si cerrás la app antes de que vuelva.',
+    ],
+  },
+  {
     version: '2026-09-22',
     lineas: [
       'En la página de tu cliente, el casillero del relevamiento pasó a ser una (i) al lado del paso en curso: le explica si el número todavía puede cambiar o si ya sale de las medidas.',
