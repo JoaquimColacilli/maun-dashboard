@@ -60,6 +60,12 @@ el cliente (`/proyectos/:id/vista-cliente`). Esa pantalla llama a `public.vista_
 que es **security invoker**: la RLS decide, y un trabajo de otro taller no existe. Desde el enlace,
 `public.vista_compartida(text)` resuelve el token y llama exactamente a la misma función.
 
+**Corregido el 2026-09-21 por el [ADR 0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md).**
+«La misma pantalla» es el mismo contenido, del mismo componente y de la misma función, pero no el
+mismo armazón: desde la app se ve adentro del marco, con la barra de navegación (flotante abajo en el
+celular), con «Volver» y el QR arriba, y scrolleando en `main#contenido`, que reserva la holgura
+medida del ADR 0025. La del enlace fluye en el documento y no tiene barra (ADR 0050).
+
 No hay dos implementaciones del payload. Si las hubiera, tarde o temprano él muestra una cosa en su
 teléfono y el cliente ve otra. Los derivados de presentación —el camino de hitos, qué va en cifra
 grande, la línea de tiempo— viven una sola vez en `@maun/domain` (`vistaDelCliente`), que es puro y

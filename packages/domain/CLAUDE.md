@@ -48,17 +48,28 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 ## La vista del cliente (ADR 0046)
 
 `vistaDelCliente(trabajo, hoy)` es el único cálculo de la pantalla que ve el cliente: el camino de
-cinco hitos, la línea de tiempo curada, hace cuánto que está en esta etapa, qué sigue, y **qué se lee
-primero**. Recibe el payload que armó la base y no puede filtrar nada, porque lo que no puede ver no
-le llega.
+hitos, el casillero del relevamiento, la línea de tiempo curada, qué sigue, y **qué se lee primero**.
+Recibe el payload que armó la base y no puede filtrar nada, porque lo que no puede ver no le llega.
+**Es el único lugar donde una etapa interna se traduce a lo que ve el cliente** (ADR 0058): la base
+manda el dato crudo y la pantalla dibuja. El test «qué ve el cliente en cada etapa del trabajo» lo
+fija caso por caso; una etapa o una variante nueva entra ahí.
 
+- **El camino tiene cinco hitos, o seis con el estimativo adelante** (ADR 0058): solo en los trabajos
+  que lo tuvieron (`tuvoEstimativo`: la etapa actual o `fechas.estimativo`). **Compará por paso, nunca
+  por posición**: `llegoAl(vista, 'aprobado')`, no `hitoIndex >= 1`, porque con el estimativo el
+  índice se corre uno.
+- **El casillero del relevamiento lo decide `relevamientoDelTrabajo`** con la etapa, el día y la
+  marca de la visita, y no existe donde no hace falta medir. La tabla de qué muestra en cada caso
+  está en el ADR 0058. Nunca promete un día que ya pasó, y la visita de hoy no se da por hecha sin la
+  marca.
 - **El foco se invierte solo y no es configurable**: hasta la entrega manda la etapa y el saldo va
   completo en la fila de abajo; desde la entrega con saldo pendiente, manda el saldo. Es
-  `foco: 'saldo' | 'estado'` y sale de `hitoIndex >= entregado && saldo > 0`.
+  `foco: 'saldo' | 'estado'` y sale de haber llegado a la entrega con `saldo > 0`.
 - **Los hitos que faltan no llevan fecha**: prometer un día de «pagado» sería inventarlo.
 - **Los eventos no llevan el importe adentro del texto**: va en `monto`, y el formateo no vive acá.
 - **Sin porcentajes de avance**: nadie sabe si un mueble está al 60%.
-- **La vista del cliente no dice nunca cuánto hace que pasó algo** (corrección del ADR 0046). Ni «Hace N días», ni «hace N días que no hay novedades»: el cliente ve la fecha y qué sigue. Los «hace N días» son de la app del dueño, que los usa para su lista de pendientes. `vistaCliente.test.ts` lo exige sobre el JSON entero de `vistaDelCliente`.
+- **La vista del cliente no dice nunca cuánto hace que pasó algo** (corrección del ADR 0046). Ni «Hace N días», ni «hace N días que no hay novedades»: el cliente ve la fecha y qué sigue. Los «hace N días» son de la app del dueño, que los usa para su lista de pendientes. `vistaCliente.test.ts` lo exige sobre el JSON entero de `vistaDelCliente`, y exige que «lo próximo» no tenga ni un dígito en ninguna etapa.
+- **Lo que agregue una versión nueva al payload, leelo tolerando que falte** (`trabajo.fechas as Partial<…>`, `trabajo.visita as … | undefined`): el objeto puede venir de la versión anterior.
 - **`cobro` son los datos para transferirle al taller** (alias, CBU o CVU, titular y CUIT, ADR 0048): llegan del payload, y `hayComoTransferir` dice si alcanza para mostrar el bloque. El titular y el CUIT solos no alcanzan: con eso no se transfiere.
 - **No tiene gemela en SQL**, como `calcularSena`: la base arma el payload, no la presentación.
 

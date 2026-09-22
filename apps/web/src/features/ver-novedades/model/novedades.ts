@@ -7,10 +7,10 @@ export const NOVEDADES: readonly Novedad[] = [
   {
     version: '2026-09-21.2',
     lineas: [
-      'Cuando entregás un trabajo, desde su ficha le pedís la opinión al cliente: le llega un enlace por WhatsApp, lo contesta sin cuenta en un par de minutos y, si no contesta, se lo recordás una sola vez.',
-      'En Opiniones ves qué tan conformes quedaron, lo que te escribieron y cada respuesta entera. Las preguntas las cambiás ahí mismo, y a un trabajo le podés sumar hasta tres propias.',
+      'Desde la ficha de un trabajo entregado le pedís la opinión al cliente por WhatsApp, con hasta tres preguntas propias: la contesta sin cuenta y, si no, se la recordás una vez.',
+      'En Opiniones ves qué tan conformes quedaron y cada respuesta entera, y cambiás las preguntas. Si cargás en Ajustes tu enlace de reseñas de Google, se lo pedimos a todos por igual.',
       'Cuando llega una opinión que no leíste, te aparece en Inicio. En el celular, tocando tu foto abrís Opiniones, Diezmo, Agenda y Ajustes.',
-      'Si cargás en Ajustes tu enlace de reseñas de Google, al terminar la encuesta se lo pedimos a todos tus clientes por igual.',
+      'Tu cliente ve en su página el estimativo que le mandaste, sin el número, y un casillero de relevamiento técnico: en blanco mientras falta medir, con el día si lo agendaste, y tildado cuando fuiste.',
     ],
   },
   {

@@ -61,3 +61,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0055](0055-lo-que-se-guarda-en-el-aparato-y-lo-que-no.md)                  | Lo que se guarda en el aparato, y lo que no                  | Aceptada             |
 | [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                   | Aceptada             |
 | [0057](0057-las-opiniones-de-los-clientes.md)                               | Las opiniones: la primera vez que alguien de afuera escribe  | Aceptada             |
+| [0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md)    | El estimativo y el relevamiento en el camino del cliente     | Aceptada             |
