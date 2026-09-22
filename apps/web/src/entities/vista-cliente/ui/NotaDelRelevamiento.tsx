@@ -92,7 +92,7 @@ function PasoConLaNota({
 }: {
   nota: NotaDelRelevamiento;
   className: string;
-  children: (rotulo: (texto: string) => ReactNode) => ReactNode;
+  children: (boton: ReactNode) => ReactNode;
 }) {
   const enCelular = useAnchoDePantalla() === 'movil';
   const [abierta, setAbierta] = useState(false);
@@ -150,7 +150,7 @@ function PasoConLaNota({
         porEncima.current = false;
         setAbierta(!abierta);
       }}
-      className="relative ml-1.5 inline-flex size-[23px] flex-none items-center justify-center rounded-pill border-[1.5px] border-border bg-paper align-[-5px] text-text-2 after:absolute after:-inset-2.5 after:rounded-pill hover:border-ink hover:text-ink aria-expanded:border-ink aria-expanded:bg-surface aria-expanded:text-ink"
+      className="relative inline-flex size-[23px] flex-none items-center justify-center rounded-pill border-[1.5px] border-border bg-paper text-text-2 after:absolute after:-inset-2.5 after:rounded-pill hover:border-ink hover:text-ink aria-expanded:border-ink aria-expanded:bg-surface aria-expanded:text-ink"
     >
       <Icono nombre="info" tamano={14} />
     </button>
@@ -164,12 +164,7 @@ function PasoConLaNota({
         if (!enCelular) cerrar();
       }}
     >
-      {children((texto) => (
-        <>
-          {texto}
-          {elBoton}
-        </>
-      ))}
+      {children(elBoton)}
       {flotante && (
         <div
           id={id}
@@ -188,12 +183,12 @@ function PasoConLaNota({
 export interface PasoDelCaminoProps {
   nota: NotaDelRelevamiento | null;
   className: string;
-  children: (rotulo: (texto: string) => ReactNode) => ReactNode;
+  children: (boton: ReactNode) => ReactNode;
 }
 
 export function PasoDelCamino({ nota, className, children }: PasoDelCaminoProps) {
   if (nota === null) {
-    return <li className={className}>{children((texto) => texto)}</li>;
+    return <li className={className}>{children(null)}</li>;
   }
   return (
     <PasoConLaNota nota={nota} className={className}>
