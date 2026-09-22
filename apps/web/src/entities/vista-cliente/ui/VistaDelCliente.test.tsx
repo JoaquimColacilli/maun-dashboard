@@ -301,16 +301,19 @@ describe('el estimativo y el relevamiento en el camino', () => {
     });
   }
 
-  it('sin medir, una sola (i), pegada al rótulo del paso en curso, y el resumen abajo del titular', () => {
+  it('sin medir, una sola (i), al lado de la fecha del paso en curso, y el resumen abajo del titular', () => {
     dibujar(sinMedir());
 
     const camino = screen.getByRole('region', { name: 'En qué anda' });
-    const [estimativo] = within(camino).getAllByRole('listitem');
+    const estimativo = within(camino).getAllByRole('listitem')[0] as HTMLElement;
     expect(screen.getAllByRole('button', { name: LA_NOTA })).toHaveLength(1);
-    const boton = within(estimativo as HTMLElement).getByRole('button', { name: PUEDE_CAMBIAR });
+    const boton = within(estimativo).getByRole('button', { name: PUEDE_CAMBIAR });
     expect(boton).toHaveAttribute('aria-expanded', 'false');
-    expect(boton.previousSibling?.textContent).toBe('Te pasamos un número estimado');
+    expect(boton.previousSibling?.textContent).toBe('mar 15 sep');
     expect(boton.nextSibling).toBeNull();
+    expect(within(estimativo).getByText('Te pasamos un número estimado')).not.toContainElement(
+      boton,
+    );
     expect(screen.getByRole('region', { name: 'Tu mueble' })).toHaveTextContent(
       'Número estimado, falta ir a medir',
     );
@@ -374,7 +377,12 @@ describe('el estimativo y el relevamiento en el camino', () => {
 
     const camino = screen.getByRole('region', { name: 'En qué anda' });
     const presupuesto = within(camino).getAllByRole('listitem')[1] as HTMLElement;
-    fireEvent.click(within(presupuesto).getByRole('button', { name: DE_DONDE_SALE }));
+    const boton = within(presupuesto).getByRole('button', { name: DE_DONDE_SALE });
+    expect(boton.previousSibling).toBeNull();
+    expect(boton.parentElement?.previousElementSibling).toHaveTextContent(
+      'Estamos preparando tu presupuesto',
+    );
+    fireEvent.click(boton);
     const hoja = screen.getByRole('dialog', {
       name: 'El número ya está tomado de las medidas reales',
     });

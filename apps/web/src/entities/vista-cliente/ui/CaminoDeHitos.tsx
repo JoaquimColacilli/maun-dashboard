@@ -35,7 +35,7 @@ export function CaminoDeHitos({ hitos, nota, hoy }: CaminoDeHitosProps) {
           nota={hito.estado === 'actual' ? nota : null}
           className="relative grid grid-cols-[18px_minmax(0,1fr)] items-stretch gap-x-3 @xl:flex @xl:flex-col @xl:gap-2.5"
         >
-          {(rotulo) => (
+          {(boton) => (
             <>
               <div className="flex flex-col items-center @xl:relative @xl:h-[18px] @xl:flex-row @xl:items-center">
                 <span
@@ -63,11 +63,12 @@ export function CaminoDeHitos({ hitos, nota, hoy }: CaminoDeHitosProps) {
                         : 'text-label text-text-3'
                   }`}
                 >
-                  {rotulo(hito.texto)}
+                  {hito.texto}
                 </span>
-                {hito.fecha !== null && (
-                  <span className="text-label text-text-3 tabular-nums">
-                    {fechaLarga(hito.fecha, hoy)}
+                {(hito.fecha !== null || boton !== null) && (
+                  <span className="flex flex-wrap items-center gap-x-1.5 text-label text-text-3 tabular-nums @xl:-mr-3">
+                    {hito.fecha !== null && fechaLarga(hito.fecha, hoy)}
+                    {boton}
                   </span>
                 )}
               </div>
