@@ -1,7 +1,11 @@
 # 0045. Los costos estimados son columnas, lo que hace falta es una tabla, y mover en la agenda escribe el trabajo
 
-- Estado: aceptada
+- Estado: aceptada, corregida
 - Fecha: 2026-09-18
+- Corregida el 2026-09-22 por el [ADR 0060](0060-materiales-la-edicion-en-la-fila-y-el-monto-que-entra.md):
+  lo que hace falta suma los materiales como tercer tipo, las herramientas también pueden llevar
+  cantidad, y la cantidad y el nombre de un ítem se editan en su fila, así que un nombre mal escrito ya
+  no se corrige sacándolo y volviéndolo a cargar.
 - Sigue al [0042](0042-lo-hecho-de-los-trabajos-y-las-marcas.md) en el umbral de «un conjunto chico y
   fijo de valores sobre un trabajo son columnas», al [0015](0015-proyectos-el-agregado-que-se-guarda-entero.md)
   y al [0043](0043-las-opciones-de-presupuesto-y-la-sena.md) en cómo se escribe una hija nueva, y al

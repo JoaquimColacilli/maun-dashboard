@@ -53,9 +53,11 @@ import {
 import {
   Avatar,
   Button,
+  caracteresDe,
   ConSalida,
   FilaDeAcciones,
   Icono,
+  MontoQueEntra,
   Pagina,
   type NombreDeIcono,
 } from '@/shared/ui';
@@ -136,12 +138,14 @@ function Tarjeta({
   saldo,
   meta,
   frase,
+  caracteres,
   alElegir,
 }: {
   tesoro: DatosDelTesoro;
   saldo: Money;
   meta: Money;
   frase?: FraseDelDiezmo;
+  caracteres: number;
   alElegir: () => void;
 }) {
   const enNegativo = saldo < 0 && frase === undefined;
@@ -155,13 +159,13 @@ function Tarjeta({
     <button
       type="button"
       onClick={alElegir}
-      className={`@container flex min-h-[118px] flex-col justify-between gap-3 rounded-panel p-3.5 text-left ${
+      className={`@container flex min-h-[118px] min-w-0 flex-col justify-between gap-3 rounded-panel p-3 text-left @min-[20rem]:p-3.5 ${
         enNegativo
           ? 'border border-negativo-borde bg-negativo-bg text-negativo-texto'
           : tesoro.fondo
       }`}
     >
-      <span className="flex w-full items-center justify-between gap-2">
+      <span className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <span
           className={`flex items-center gap-2 text-label font-semibold ${enNegativo ? 'text-negativo-texto' : tesoro.texto}`}
         >
@@ -169,24 +173,24 @@ function Tarjeta({
           {tesoro.nombre}
         </span>
         {enNegativo && (
-          <span className="rounded-control border border-current px-1.5 text-badge font-semibold">
+          <span className="rounded-control border border-current px-1.5 text-badge font-semibold whitespace-nowrap">
             en negativo
           </span>
         )}
       </span>
-      <span className="flex flex-col gap-0.5">
+      <span className="flex min-w-0 flex-col gap-0.5">
         {frase === undefined ? (
-          <span className="text-body-lg font-semibold whitespace-nowrap tabular-nums @min-[8.5rem]:text-money-lg @min-[13rem]:text-money-lg-desktop">
+          <MontoQueEntra caracteres={caracteres} className="font-semibold">
             {formatearPesos(saldo)}
-          </span>
+          </MontoQueEntra>
         ) : frase.importe === null ? (
           <span className="text-body-lg leading-tight font-semibold">{encabezado(frase)}</span>
         ) : (
           <>
             <span className="text-label leading-tight font-medium">{encabezado(frase)}</span>
-            <span className="text-body-lg font-semibold whitespace-nowrap tabular-nums @min-[8.5rem]:text-money-lg @min-[13rem]:text-money-lg-desktop">
+            <MontoQueEntra caracteres={caracteres} className="font-semibold">
               {frase.importe}
-            </span>
+            </MontoQueEntra>
           </>
         )}
         <span className={`text-meta ${enNegativo ? 'text-negativo-texto/80' : 'text-text-2'}`}>
@@ -356,6 +360,16 @@ export function InicioPage() {
     .filter((proyecto) => proyecto.estado === 'en_curso' && proyecto.entrega_estimada !== null)
     .sort((a, b) => (a.entrega_estimada ?? '').localeCompare(b.entrega_estimada ?? ''))[0];
 
+  const caracteresDeLasTarjetas = caracteresDe(
+    ...TESOROS_EN_ORDEN.flatMap((id) =>
+      id === 'diezmo'
+        ? frase.importe === null
+          ? []
+          : [frase.importe]
+        : [formatearPesos(saldos[id])],
+    ),
+  );
+
   const irA = (ruta: string) => () => {
     void navegar(ruta);
   };
@@ -387,7 +401,7 @@ export function InicioPage() {
         )}
       </header>
 
-      <section aria-label="Tesoros" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+      <section aria-label="Tesoros" className="@container grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         {TESOROS_EN_ORDEN.map((id) => (
           <Tarjeta
             key={id}
@@ -395,6 +409,7 @@ export function InicioPage() {
             saldo={saldos[id]}
             meta={metaCocos}
             frase={id === 'diezmo' ? frase : undefined}
+            caracteres={caracteresDeLasTarjetas}
             alElegir={irA(id === 'diezmo' ? RUTA_DE_DIEZMO : rutaDeFinanzasDelTesoro(id))}
           />
         ))}
@@ -448,18 +463,18 @@ export function InicioPage() {
                   día {diaDelMes(hoy)} de {diasDelMes(mes)}
                 </span>
               </div>
-              <dl className="grid grid-cols-1 gap-2 @min-[19rem]:grid-cols-3 @min-[19rem]:gap-3">
+              <dl className="grid grid-cols-1 gap-2 @min-[28rem]:grid-cols-3 @min-[28rem]:gap-3">
                 {estadisticas.map((estadistica) => {
                   const vs = comparacion(estadistica.valor, estadistica.previo, mes);
                   return (
                     <div
                       key={estadistica.etiqueta}
-                      className="flex min-w-0 items-baseline justify-between gap-3 @min-[19rem]:block"
+                      className="flex min-w-0 items-baseline justify-between gap-3 @min-[28rem]:block"
                     >
                       <dt className="text-meta leading-tight text-text-2">
                         {estadistica.etiqueta}
                       </dt>
-                      <dd className="text-right @min-[19rem]:mt-0.5 @min-[19rem]:text-left">
+                      <dd className="text-right @min-[28rem]:mt-0.5 @min-[28rem]:text-left">
                         <span className="block text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
                           {formatearPesos(estadistica.valor)}
                         </span>
@@ -531,27 +546,29 @@ export function InicioPage() {
 
             <section
               aria-label="Proyección de Cocos"
-              className="mt-4.5 flex items-center gap-3.5 rounded-panel border border-hairline px-4 py-3.5"
+              className="@container mt-4.5 rounded-panel border border-hairline px-4 py-3.5"
             >
-              <div className="min-w-0 flex-1">
-                <div className="text-label text-text-2">Cocos en un año</div>
-                <div className="mt-0.5 text-money-lg font-semibold text-cocos tabular-nums">
-                  {formatearPesos(
-                    proyeccionCocos(
-                      saldos.cocos,
-                      ajustes?.tasa_cocos_anual_bp ?? 0,
-                      DIAS_DE_PROYECCION,
-                    ),
-                  )}
+              <div className="flex flex-col gap-2.5 @min-[24rem]:flex-row @min-[24rem]:items-center @min-[24rem]:gap-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-label text-text-2">Cocos en un año</div>
+                  <div className="mt-0.5 text-money-lg font-semibold whitespace-nowrap text-cocos tabular-nums">
+                    {formatearPesos(
+                      proyeccionCocos(
+                        saldos.cocos,
+                        ajustes?.tasa_cocos_anual_bp ?? 0,
+                        DIAS_DE_PROYECCION,
+                      ),
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-meta text-text-3">
+                    con la tasa que cargaste, sin aportes nuevos
+                  </div>
                 </div>
-                <div className="mt-0.5 text-meta text-text-3">
-                  con la tasa que cargaste, sin aportes nuevos
-                </div>
-              </div>
-              <div className="flex-none text-right">
-                <div className="text-meta text-text-2">falta para la meta</div>
-                <div className="text-body font-semibold tabular-nums">
-                  {formatearPesos(Math.max(0, metaCocos - saldos.cocos))}
+                <div className="min-w-0 @min-[24rem]:flex-none @min-[24rem]:text-right">
+                  <div className="text-meta text-text-2">falta para la meta</div>
+                  <div className="text-body font-semibold whitespace-nowrap tabular-nums">
+                    {formatearPesos(Math.max(0, metaCocos - saldos.cocos))}
+                  </div>
                 </div>
               </div>
             </section>

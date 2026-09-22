@@ -1,22 +1,28 @@
-import { faseDe } from '@maun/domain';
+import {
+  cantidadEscrita,
+  cuentaDeLoQueHaceFalta,
+  faseDe,
+  nombreEscrito,
+  segmentosDeLoQueHaceFalta,
+  type SegmentoDeLoQueHaceFalta,
+} from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 import {
   catalogoDelTaller,
   conUnaNecesidadDeVuelta,
+  conUnaNecesidadEditada,
   conUnaNecesidadMas,
   conUnaNecesidadTildada,
-  cuantasListas,
   guardadoDeLoQueHaceFalta,
-  LISTAS_DEL_TRABAJO,
+  listaDelTipo,
   MUTACION_DE_PROYECTO,
   necesidadesDelProyecto,
-  necesidadesPorTipo,
+  nombreConCantidad,
   sinUnaNecesidad,
   type Necesidad,
   type Proyecto,
-  type TipoDeLaLista,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { mensajeDeSincronizacion, type NecesidadParaGuardar } from '@/shared/api';
@@ -24,47 +30,36 @@ import { avisarEnPantalla, metaDeAvisos, uuidv7 } from '@/shared/lib';
 import { BloquePlegable, Icono } from '@/shared/ui';
 
 import { CampoDeNecesidad } from './CampoDeNecesidad';
-
-const CANTIDAD_MAXIMA = 999;
-
-function conCantidad(necesidad: Necesidad): string {
-  return necesidad.cantidad === null
-    ? necesidad.nombre
-    : `${String(necesidad.cantidad)} ${necesidad.nombre}`;
-}
+import { FilaDeNecesidad } from './FilaDeNecesidad';
 
 interface ListaProps {
-  lista: TipoDeLaLista;
+  segmento: SegmentoDeLoQueHaceFalta<Necesidad>;
   todas: readonly Necesidad[];
   bloqueado: boolean;
   alCambiar: (quedan: readonly NecesidadParaGuardar[], aviso?: () => void) => void;
 }
 
-function Lista({ lista, todas, bloqueado, alCambiar }: ListaProps) {
+function Lista({ segmento, todas, bloqueado, alCambiar }: ListaProps) {
+  const lista = listaDelTipo(segmento.tipo);
   const replica = useReplicaDelTaller();
   const [nombre, setNombre] = useState('');
   const [cantidad, setCantidad] = useState('');
   const campo = useRef<HTMLDivElement>(null);
 
-  const delTipo = necesidadesPorTipo(todas, lista.tipo);
+  const delTipo = segmento.items;
   const catalogo = catalogoDelTaller(replica, lista.tipo);
-  const listas = cuantasListas(delTipo);
+  const listas = segmento.listos;
 
   function agregar(desdeElCatalogo?: string): void {
-    const escrito = (desdeElCatalogo ?? nombre).trim();
+    const escrito = nombreEscrito(desdeElCatalogo ?? nombre);
     if (escrito === '' || bloqueado) return;
-    const numero = Number(cantidad.trim());
-    const cuantos =
-      lista.conCantidad && cantidad.trim() !== '' && Number.isInteger(numero) && numero > 0
-        ? Math.min(numero, CANTIDAD_MAXIMA)
-        : null;
 
     alCambiar(
       conUnaNecesidadMas(todas, {
         id: uuidv7(),
         tipo: lista.tipo,
         nombre: escrito,
-        cantidad: cuantos,
+        cantidad: cantidadEscrita(cantidad),
       }),
     );
     setNombre('');
@@ -77,7 +72,7 @@ function Lista({ lista, todas, bloqueado, alCambiar }: ListaProps) {
       avisarEnPantalla({
         clave: `necesidad:${necesidad.id}`,
         tono: 'hecho',
-        texto: `Saqué ${conCantidad(necesidad)} de la lista.`,
+        texto: `Saqué ${nombreConCantidad(necesidad)} de la lista.`,
         accion: {
           etiqueta: 'Deshacer',
           alTocar: () => {
@@ -106,80 +101,46 @@ function Lista({ lista, todas, bloqueado, alCambiar }: ListaProps) {
       ) : (
         <ul className="list-none">
           {delTipo.map((necesidad) => (
-            <li
+            <FilaDeNecesidad
               key={necesidad.id}
-              data-necesidad={necesidad.id}
-              data-listo={String(necesidad.listo)}
-              className="flex items-center gap-2.5 border-t border-hairline-soft"
-            >
-              <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2.5 py-1">
-                <input
-                  type="checkbox"
-                  checked={necesidad.listo}
-                  disabled={bloqueado}
-                  aria-label={`${lista.listo}: ${conCantidad(necesidad)}`}
-                  onChange={(evento) => {
-                    alCambiar(conUnaNecesidadTildada(todas, necesidad.id, evento.target.checked));
-                  }}
-                  className="size-5 flex-none accent-ink"
-                />
-                <span className="flex min-w-0 items-baseline gap-1.5">
-                  {necesidad.cantidad !== null && (
-                    <span
-                      className={`flex-none text-body font-semibold tabular-nums ${
-                        necesidad.listo ? 'text-text-3' : 'text-ink'
-                      }`}
-                    >
-                      {necesidad.cantidad}
-                    </span>
-                  )}
-                  <span
-                    className={`min-w-0 text-body ${
-                      necesidad.listo ? 'text-text-3 line-through' : 'text-ink'
-                    }`}
-                  >
-                    {necesidad.nombre}
-                  </span>
-                </span>
-              </label>
-              <button
-                type="button"
-                disabled={bloqueado}
-                aria-label={`Sacar ${conCantidad(necesidad)} de la lista`}
-                onClick={() => {
-                  quitar(necesidad);
-                }}
-                className="flex size-10 flex-none items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
-              >
-                <Icono nombre="trash-2" tamano={16} />
-              </button>
-            </li>
+              necesidad={necesidad}
+              lista={lista}
+              bloqueado={bloqueado}
+              alTildar={(listo) => {
+                alCambiar(conUnaNecesidadTildada(todas, necesidad.id, listo));
+              }}
+              alEditar={(cambios) => {
+                alCambiar(conUnaNecesidadEditada(todas, necesidad.id, cambios));
+              }}
+              alQuitar={() => {
+                quitar(necesidad);
+              }}
+            />
           ))}
         </ul>
       )}
 
       {!bloqueado && (
         <div ref={campo} className="mt-2 flex items-start gap-2">
-          {lista.conCantidad && (
-            <input
-              type="text"
-              inputMode="numeric"
-              value={cantidad}
-              aria-label={lista.cuantos}
-              placeholder="6"
-              maxLength={3}
-              onChange={(evento) => {
-                setCantidad(evento.target.value.replace(/\D/g, ''));
-              }}
-              onKeyDown={(evento) => {
-                if (evento.key === 'Enter') {
-                  evento.preventDefault();
-                  agregar();
-                }
-              }}
-              className="h-11 w-14 flex-none rounded-field border border-border bg-paper px-2 text-center text-body-lg text-ink tabular-nums"
-            />
-          )}
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={cantidad}
+            aria-label={lista.cuantos}
+            placeholder={lista.ejemploDeCantidad}
+            maxLength={3}
+            onChange={(evento) => {
+              setCantidad(evento.target.value.replace(/\D/g, ''));
+            }}
+            onKeyDown={(evento) => {
+              if (evento.key === 'Enter') {
+                evento.preventDefault();
+                agregar();
+              }
+            }}
+            className="h-11 w-14 flex-none rounded-field border border-border bg-paper px-2 text-center text-body-lg text-ink tabular-nums"
+          />
           <div
             className="flex min-w-0 flex-1"
             onKeyDown={(evento) => {
@@ -249,14 +210,13 @@ export function LoQueHaceFalta({ proyecto, abiertoAlPrincipio }: LoQueHaceFaltaP
 
   const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
   const bloqueado = proyecto.estado === 'cobrado' || proyecto.estado === 'perdido';
-  const cuantas = todas.length;
-  const listas = cuantasListas(todas);
+  const { cuantas, listas } = cuentaDeLoQueHaceFalta(todas);
 
   return (
     <BloquePlegable
       titulo="Lo que hace falta"
       abiertoAlPrincipio={abiertoAlPrincipio ?? (enSeguimiento || proyecto.estado === 'en_curso')}
-      ayuda="Los herrajes que hay que pedir y las herramientas que hay que tener el día que lo hagas. Se te sugieren los que ya usaste."
+      ayuda="Los materiales y los herrajes que hay que pedir, y las herramientas que hay que tener el día que lo hagas. Se te sugieren los que ya usaste."
       resumen={
         cuantas === 0
           ? undefined
@@ -265,10 +225,10 @@ export function LoQueHaceFalta({ proyecto, abiertoAlPrincipio }: LoQueHaceFaltaP
             : `${String(listas)} de ${String(cuantas)}`
       }
     >
-      {LISTAS_DEL_TRABAJO.map((lista) => (
+      {segmentosDeLoQueHaceFalta(todas).map((segmento) => (
         <Lista
-          key={lista.tipo}
-          lista={lista}
+          key={segmento.tipo}
+          segmento={segmento}
           todas={todas}
           bloqueado={bloqueado}
           alCambiar={alCambiar}

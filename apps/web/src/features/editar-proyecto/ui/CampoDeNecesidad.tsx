@@ -1,4 +1,4 @@
-import type { NombreDelCatalogo } from '@maun/domain';
+import { LARGO_MAXIMO_DEL_NOMBRE, type NombreDelCatalogo } from '@maun/domain';
 import { useCombobox } from 'downshift';
 import { useMemo } from 'react';
 
@@ -56,7 +56,11 @@ export function CampoDeNecesidad({
         {etiqueta}
       </label>
       <input
-        {...combobox.getInputProps({ placeholder, autoComplete: 'off' })}
+        {...combobox.getInputProps({
+          placeholder,
+          autoComplete: 'off',
+          maxLength: LARGO_MAXIMO_DEL_NOMBRE,
+        })}
         className="h-11 w-full min-w-0 rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
       />
       <ul

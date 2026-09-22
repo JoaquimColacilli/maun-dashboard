@@ -9,9 +9,11 @@ export interface BloqueDeLaSenaProps {
 
 function Numero({ clave, valor, tono = '' }: { clave: string; valor: string; tono?: string }) {
   return (
-    <div className="min-w-0">
+    <div className="flex min-w-0 items-baseline justify-between gap-3 @min-[28rem]:block">
       <dt className="text-meta text-text-2">{clave}</dt>
-      <dd className={`mt-0.5 text-body-lg font-semibold tabular-nums whitespace-nowrap ${tono}`}>
+      <dd
+        className={`text-body-lg font-semibold tabular-nums whitespace-nowrap @min-[28rem]:mt-0.5 ${tono}`}
+      >
         {valor}
       </dd>
     </div>
@@ -34,7 +36,10 @@ export function BloqueDeLaSena({ sena, propia }: BloqueDeLaSenaProps) {
   const deQuien = propia ? 'de este trabajo' : 'del taller';
 
   return (
-    <section aria-label="Seña para confirmar" className="rounded-panel bg-surface-3 px-4 py-3.5">
+    <section
+      aria-label="Seña para confirmar"
+      className="@container rounded-panel bg-surface-3 px-4 py-3.5"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-section font-semibold">Seña para confirmar</h2>
         <span className="text-meta text-text-3">
@@ -42,7 +47,7 @@ export function BloqueDeLaSena({ sena, propia }: BloqueDeLaSenaProps) {
         </span>
       </div>
 
-      <dl className="mt-2.5 grid grid-cols-3 gap-x-3">
+      <dl className="mt-2.5 grid grid-cols-1 gap-1.5 @min-[28rem]:grid-cols-3 @min-[28rem]:gap-x-3">
         <Numero clave="Seña" valor={formatearPesos(sena.esperada)} />
         <Numero clave="Cobrado" valor={formatearPesos(sena.cobrado)} tono="text-hogar" />
         {sena.situacion === 'falta' ? (

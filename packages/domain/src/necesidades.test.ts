@@ -1,12 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CANTIDAD_MAXIMA,
+  cantidadEditada,
+  cantidadEscrita,
   catalogoDeNecesidades,
   claveDelNombre,
+  cuentaDeLoQueHaceFalta,
+  esNombreDeNecesidad,
+  LARGO_MAXIMO_DEL_NOMBRE,
+  nombreEditado,
+  nombreEscrito,
+  segmentosDeLoQueHaceFalta,
   sugerenciasDeNecesidad,
   SUGERENCIAS_MAXIMAS,
   TIPOS_DE_NECESIDAD,
   type NecesidadUsada,
+  type ParaContar,
+  type TipoDeNecesidad,
 } from './necesidades.ts';
 
 function usada(
@@ -19,6 +30,157 @@ function usada(
 
 const nombres = (catalogo: readonly { nombre: string }[]) =>
   catalogo.map((entrada) => entrada.nombre);
+
+function item(tipo: TipoDeNecesidad, listo = false, id = ''): ParaContar & { id: string } {
+  return { id, tipo, listo };
+}
+
+describe('los tres segmentos de lo que hace falta', () => {
+  it('son materiales, herrajes y herramientas, en ese orden: los materiales primero', () => {
+    expect(TIPOS_DE_NECESIDAD).toEqual(['material', 'herraje', 'herramienta']);
+  });
+
+  it('salen siempre los tres y en ese orden, aunque alguno esté vacío', () => {
+    const segmentos = segmentosDeLoQueHaceFalta([item('herramienta'), item('herraje')]);
+    expect(segmentos.map((segmento) => segmento.tipo)).toEqual(TIPOS_DE_NECESIDAD);
+    expect(segmentos.map((segmento) => segmento.items.length)).toEqual([0, 1, 1]);
+  });
+
+  it('cada ítem cae en el segmento de su tipo, en el orden en que venía', () => {
+    const [materiales, herrajes, herramientas] = segmentosDeLoQueHaceFalta([
+      item('herraje', false, 'bisagras'),
+      item('material', false, 'melamina'),
+      item('herraje', true, 'pistones'),
+      item('material', true, 'laca'),
+      item('herramienta', false, 'sierra'),
+    ]);
+    expect(materiales?.items.map((cosa) => cosa.id)).toEqual(['melamina', 'laca']);
+    expect(herrajes?.items.map((cosa) => cosa.id)).toEqual(['bisagras', 'pistones']);
+    expect(herramientas?.items.map((cosa) => cosa.id)).toEqual(['sierra']);
+  });
+
+  it('cada segmento cuenta sus listos', () => {
+    const segmentos = segmentosDeLoQueHaceFalta([
+      item('material', true),
+      item('material'),
+      item('material', true),
+      item('herraje'),
+    ]);
+    expect(segmentos.map((segmento) => [segmento.items.length, segmento.listos])).toEqual([
+      [3, 2],
+      [1, 0],
+      [0, 0],
+    ]);
+  });
+});
+
+describe('la cuenta del encabezado', () => {
+  it('sin nada cargado es cero de cero', () => {
+    expect(cuentaDeLoQueHaceFalta([])).toEqual({ cuantas: 0, listas: 0 });
+  });
+
+  it('suma los materiales con los herrajes y las herramientas', () => {
+    const cuenta = cuentaDeLoQueHaceFalta([
+      item('material'),
+      item('material', true),
+      item('material'),
+      item('herraje'),
+      item('herraje', true),
+      item('herraje'),
+      item('herraje'),
+      item('herramienta'),
+      item('herramienta'),
+    ]);
+    expect(cuenta).toEqual({ cuantas: 9, listas: 2 });
+  });
+
+  it('es la suma de los segmentos: el encabezado y las subsecciones no pueden decir otra cosa', () => {
+    const items = [item('material', true), item('herraje'), item('herramienta', true)];
+    const segmentos = segmentosDeLoQueHaceFalta(items);
+    const cuenta = cuentaDeLoQueHaceFalta(items);
+    expect(cuenta.cuantas).toBe(segmentos.reduce((suma, s) => suma + s.items.length, 0));
+    expect(cuenta.listas).toBe(segmentos.reduce((suma, s) => suma + s.listos, 0));
+  });
+});
+
+describe('la cantidad que se escribe', () => {
+  it('es un entero mayor que cero', () => {
+    expect(cantidadEscrita('6')).toBe(6);
+    expect(cantidadEscrita(' 12 ')).toBe(12);
+  });
+
+  it('vacía, en cero o con algo que no es un número, no hay cantidad', () => {
+    expect(cantidadEscrita('')).toBeNull();
+    expect(cantidadEscrita('0')).toBeNull();
+    expect(cantidadEscrita('000')).toBeNull();
+    expect(cantidadEscrita('-3')).toBeNull();
+    expect(cantidadEscrita('2,5')).toBeNull();
+    expect(cantidadEscrita('dos')).toBeNull();
+  });
+
+  it('se topea en el máximo', () => {
+    expect(cantidadEscrita('5000')).toBe(CANTIDAD_MAXIMA);
+  });
+});
+
+describe('editar la cantidad de algo ya cargado', () => {
+  it('toma el número nuevo', () => {
+    expect(cantidadEditada('6', 4)).toBe(6);
+    expect(cantidadEditada('3', null)).toBe(3);
+  });
+
+  it('vacía o en cero vuelve a la de antes: para sacar un ítem está el tacho, no el número', () => {
+    expect(cantidadEditada('', 4)).toBe(4);
+    expect(cantidadEditada('0', 4)).toBe(4);
+    expect(cantidadEditada('', null)).toBeNull();
+    expect(cantidadEditada('0', null)).toBeNull();
+  });
+});
+
+describe('el nombre que se escribe', () => {
+  it('se recorta de los dos lados y junta los espacios de más, saltos de línea incluidos', () => {
+    expect(nombreEscrito('  Bisagras   Cazoleta\n35 ')).toBe('Bisagras Cazoleta 35');
+  });
+
+  it('se corta en el largo máximo, contado en caracteres y no en unidades de UTF-16', () => {
+    expect(Array.from(nombreEscrito('ñ'.repeat(200)))).toHaveLength(LARGO_MAXIMO_DEL_NOMBRE);
+    expect(Array.from(nombreEscrito('🔩'.repeat(200)))).toHaveLength(LARGO_MAXIMO_DEL_NOMBRE);
+  });
+
+  it('si el corte deja un espacio al final, se va', () => {
+    const escrito = `${'a'.repeat(LARGO_MAXIMO_DEL_NOMBRE - 1)} b`;
+    expect(nombreEscrito(escrito)).toBe('a'.repeat(LARGO_MAXIMO_DEL_NOMBRE - 1));
+  });
+
+  it('lo que sale siempre lo acepta la base', () => {
+    for (const escrito of ['Bisagras', ` ${'x'.repeat(300)} `, '🔩'.repeat(130), 'a b']) {
+      expect(esNombreDeNecesidad(nombreEscrito(escrito))).toBe(true);
+    }
+  });
+});
+
+describe('editar el nombre de algo ya cargado', () => {
+  it('toma el nombre nuevo, recortado', () => {
+    expect(nombreEditado('  Bisagras Cazoleta 35 Cierre Suave ', 'bisagras')).toBe(
+      'Bisagras Cazoleta 35 Cierre Suave',
+    );
+  });
+
+  it('no puede quedar vacío: en blanco vuelve al de antes', () => {
+    expect(nombreEditado('', 'Bisagras')).toBe('Bisagras');
+    expect(nombreEditado('   ', 'Bisagras')).toBe('Bisagras');
+  });
+});
+
+describe('el nombre que acepta la base', () => {
+  it('es el check de la tabla: no en blanco y hasta el largo máximo', () => {
+    expect(esNombreDeNecesidad('Bisagras')).toBe(true);
+    expect(esNombreDeNecesidad('')).toBe(false);
+    expect(esNombreDeNecesidad('   ')).toBe(false);
+    expect(esNombreDeNecesidad('a'.repeat(LARGO_MAXIMO_DEL_NOMBRE))).toBe(true);
+    expect(esNombreDeNecesidad('a'.repeat(LARGO_MAXIMO_DEL_NOMBRE + 1))).toBe(false);
+  });
+});
 
 describe('la clave de un nombre', () => {
   it('ignora mayúsculas, acentos y espacios de más', () => {
@@ -44,6 +206,37 @@ describe('el catálogo sale de lo que ya usó', () => {
     ];
     expect(nombres(catalogoDeNecesidades(usadas, 'herraje'))).toEqual(['Bisagras']);
     expect(nombres(catalogoDeNecesidades(usadas, 'herramienta'))).toEqual(['Sierra Circular']);
+  });
+
+  it('cada segmento tiene su catálogo: escribiendo un material no aparece una herramienta', () => {
+    const usadas = [
+      usada('Laca poliuretánica', '2026-09-02', 'material'),
+      usada('Lijadora de banda', '2026-09-03', 'herramienta'),
+      usada('Lija 120', '2026-09-04', 'material'),
+      usada('Lengüeta', '2026-09-05', 'herraje'),
+    ];
+    expect(nombres(sugerenciasDeNecesidad(catalogoDeNecesidades(usadas, 'material'), 'l'))).toEqual(
+      ['Lija 120', 'Laca poliuretánica'],
+    );
+    expect(
+      nombres(sugerenciasDeNecesidad(catalogoDeNecesidades(usadas, 'herramienta'), 'l')),
+    ).toEqual(['Lijadora de banda']);
+    expect(nombres(sugerenciasDeNecesidad(catalogoDeNecesidades(usadas, 'herraje'), 'l'))).toEqual([
+      'Lengüeta',
+    ]);
+  });
+
+  it('el mismo nombre en dos segmentos son dos entradas, una en cada catálogo', () => {
+    const usadas = [
+      usada('Cinta de embalar', '2026-09-01', 'material'),
+      usada('Cinta de embalar', '2026-09-02', 'herramienta'),
+    ];
+    expect(catalogoDeNecesidades(usadas, 'material')).toEqual([
+      { nombre: 'Cinta de embalar', veces: 1, ultimaVez: '2026-09-01' },
+    ]);
+    expect(catalogoDeNecesidades(usadas, 'herramienta')).toEqual([
+      { nombre: 'Cinta de embalar', veces: 1, ultimaVez: '2026-09-02' },
+    ]);
   });
 
   it('junta el mismo nombre escrito distinto y lo cuenta una vez por fila', () => {

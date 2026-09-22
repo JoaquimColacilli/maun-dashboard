@@ -48,7 +48,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0042](0042-lo-hecho-de-los-trabajos-y-las-marcas.md)                       | Lo hecho de los trabajos se queda; sus marcas son columnas   | Aceptada             |
 | [0043](0043-las-opciones-de-presupuesto-y-la-sena.md)                       | Las opciones de presupuesto y la seña como porcentaje        | Aceptada             |
 | [0044](0044-la-validacion-tardia-no-reabre-la-sesion.md)                    | La validación que llega tarde no reabre la sesión            | Aceptada             |
-| [0045](0045-los-costos-estimados-lo-que-hace-falta-y-mover-en-la-agenda.md) | Costos estimados, lo que hace falta y mover en la agenda     | Aceptada             |
+| [0045](0045-los-costos-estimados-lo-que-hace-falta-y-mover-en-la-agenda.md) | Costos estimados, lo que hace falta y mover en la agenda     | Aceptada, corregida  |
 | [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md)            | La vista del cliente: una lista blanca en la base            | Aceptada, corregida  |
 | [0047](0047-la-sena-se-carga-al-aprobar.md)                                 | La seña se carga al aprobar, en el mismo guardado            | Aceptada             |
 | [0048](0048-los-datos-para-transferir.md)                                   | Los datos para transferir, en los ajustes del taller         | Aceptada             |
@@ -63,3 +63,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0057](0057-las-opiniones-de-los-clientes.md)                               | Las opiniones: la primera vez que alguien de afuera escribe  | Aceptada             |
 | [0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md)    | El estimativo y el relevamiento en el camino del cliente     | Aceptada, corregida  |
 | [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)             | La nota del relevamiento reemplaza al casillero              | Aceptada             |
+| [0060](0060-materiales-la-edicion-en-la-fila-y-el-monto-que-entra.md)       | Materiales, editar en la fila y el monto que entra           | Aceptada             |

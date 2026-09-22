@@ -9,6 +9,7 @@ import {
   compararLibroMayor,
   compararLinkDeResena,
   compararLiquidaciones,
+  compararNombreDeNecesidad,
   compararPagosPorDelante,
   compararRangos,
   compararSeed,
@@ -37,6 +38,10 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
 
   it('el enlace de reseña lo aceptan y lo rechazan igual el check de la base y el dominio', async () => {
     expect(await enTransaccionConRollback(compararLinkDeResena)).toEqual([]);
+  });
+
+  it('el nombre de lo que hace falta lo aceptan y lo rechazan igual el check de la base y el dominio', async () => {
+    expect(await enTransaccionConRollback(compararNombreDeNecesidad)).toEqual([]);
   });
 
   it('una respuesta a la encuesta la aceptan o la rechazan igual las dos, y por el mismo motivo', async () => {

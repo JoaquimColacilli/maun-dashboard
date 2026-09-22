@@ -234,6 +234,11 @@
   --dur-corte: 500ms;
   --dur-corte-stagger: 400ms;
 
+  /* Lo que ocupa, como mucho, cada carácter de un monto formateado en IBM Plex Sans semibold con
+     cifras tabulares: medido entre 0,509 y 0,515 em para «$ 1.506.291,84», «$ 12.345.678,90» y
+     «-$ 12.345.678,90». Lo usa text-monto-que-entra; si cambia la letra, se vuelve a medir. */
+  --em-por-caracter-de-monto: 0.53;
+
   --tap-min: 44px;
   --field-h: 48px;
   --button-h: 44px;
@@ -307,6 +312,20 @@
     --op-neutro: #6e6c68;
     --op-mal: #e59268;
   }
+}
+
+/* Un monto que entra entero en su caja, sin redondear, sin cortar y sin puntos suspensivos: la letra
+   sale del ancho del contenedor más cercano (100cqi) dividido por lo que ocupa el monto, entre un
+   mínimo y un máximo. --caracteres lo pone quien dibuja el monto (MontoQueEntra); --monto-minimo y
+   --monto-maximo, la caja que lo contiene. Un solo renglón y cifras tabulares (ADR 0060). */
+@utility text-monto-que-entra {
+  font-size: clamp(
+    var(--monto-minimo, var(--text-label)),
+    calc(100cqi / (var(--caracteres, 16) * var(--em-por-caracter-de-monto))),
+    var(--monto-maximo, var(--text-money-lg-desktop))
+  );
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

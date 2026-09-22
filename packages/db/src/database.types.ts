@@ -1613,7 +1613,7 @@ export type Database = {
       origen_contacto: 'referido' | 'redes' | 'volvio' | 'cartel' | 'otro';
       rol_household: 'titular' | 'miembro';
       tesoro: 'hogar' | 'maun' | 'diezmo' | 'cocos';
-      tipo_de_necesidad: 'herraje' | 'herramienta';
+      tipo_de_necesidad: 'herraje' | 'herramienta' | 'material';
       tipo_de_pregunta: 'escala5' | 'sitalvezno' | 'una' | 'varias' | 'texto';
       tipo_movimiento:
         'ingreso' | 'gasto' | 'transferencia' | 'pago_diezmo' | 'aporte_cocos' | 'ajuste';
@@ -1758,7 +1758,7 @@ export const Constants = {
       origen_contacto: ['referido', 'redes', 'volvio', 'cartel', 'otro'],
       rol_household: ['titular', 'miembro'],
       tesoro: ['hogar', 'maun', 'diezmo', 'cocos'],
-      tipo_de_necesidad: ['herraje', 'herramienta'],
+      tipo_de_necesidad: ['herraje', 'herramienta', 'material'],
       tipo_de_pregunta: ['escala5', 'sitalvezno', 'una', 'varias', 'texto'],
       tipo_movimiento: [
         'ingreso',

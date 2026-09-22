@@ -7,7 +7,7 @@ import {
 
 import { urlDelArchivo } from '@/shared/api';
 import { diaYMesCorto, fechaLarga, formatearPesos } from '@/shared/lib';
-import { Icono, Pagina } from '@/shared/ui';
+import { Icono, MontoQueEntra, Pagina } from '@/shared/ui';
 
 import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
@@ -120,11 +120,12 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               <>
                 <div className="mt-3 flex flex-col gap-0.5">
                   <span className="text-body text-text-2">{etiquetaDelSaldo}</span>
-                  <span
-                    className={`text-money-xl leading-tight font-semibold tabular-nums ${tonoDelSaldo}`}
+                  <MontoQueEntra
+                    tamano="destacado"
+                    className={`leading-tight font-semibold ${tonoDelSaldo}`}
                   >
                     {textoDelSaldo}
-                  </span>
+                  </MontoQueEntra>
                 </div>
                 <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
                   <span className="flex items-baseline gap-2">

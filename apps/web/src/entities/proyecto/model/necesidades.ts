@@ -2,6 +2,7 @@ import {
   catalogoDeNecesidades,
   claveDelNombre,
   sugerenciasDeNecesidad,
+  TIPOS_DE_NECESIDAD,
   type NombreDelCatalogo,
   type TipoDeNecesidad,
 } from '@maun/domain';
@@ -19,13 +20,24 @@ export interface TipoDeLaLista {
   listo: string;
   listos: string;
   placeholder: string;
+  ejemploDeCantidad: string;
   ayuda: string;
-  conCantidad: boolean;
 }
 
-export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
-  {
-    tipo: 'herraje',
+const TEXTOS_DE_CADA_LISTA: Record<TipoDeNecesidad, Omit<TipoDeLaLista, 'tipo'>> = {
+  material: {
+    titulo: 'Materiales necesarios',
+    agregar: 'Agregar el material',
+    campo: 'Qué material hace falta',
+    cuantos: 'Cuántos materiales',
+    listo: 'Listo',
+    listos: 'listos',
+    placeholder: 'Placas de melamina, tablón, laca…',
+    ejemploDeCantidad: '3',
+    ayuda:
+      'Lo que hay que comprar o encargar: cortes, tablones, pintura. La medida va en el nombre.',
+  },
+  herraje: {
     titulo: 'Herrajes necesarios',
     agregar: 'Agregar el herraje',
     campo: 'Qué herraje hace falta',
@@ -33,11 +45,10 @@ export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
     listo: 'Listo',
     listos: 'listos',
     placeholder: 'Bisagras, pistones, tiradores…',
+    ejemploDeCantidad: '6',
     ayuda: 'Lo que hay que pedir para este trabajo. La cantidad es opcional.',
-    conCantidad: true,
   },
-  {
-    tipo: 'herramienta',
+  herramienta: {
     titulo: 'Herramientas necesarias',
     agregar: 'Agregar la herramienta',
     campo: 'Qué herramienta hace falta',
@@ -45,26 +56,30 @@ export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
     listo: 'Lista',
     listos: 'listas',
     placeholder: 'Sierra circular, lijadora de banda…',
-    ayuda: 'Lo que hay que tener a mano el día que lo hagas.',
-    conCantidad: false,
+    ejemploDeCantidad: '1',
+    ayuda: 'Lo que hay que tener a mano el día que lo hagas. La cantidad es opcional.',
   },
-];
+};
+
+export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = TIPOS_DE_NECESIDAD.map((tipo) => ({
+  tipo,
+  ...TEXTOS_DE_CADA_LISTA[tipo],
+}));
+
+export function listaDelTipo(tipo: TipoDeNecesidad): TipoDeLaLista {
+  return { tipo, ...TEXTOS_DE_CADA_LISTA[tipo] };
+}
+
+export function nombreConCantidad(necesidad: Pick<Necesidad, 'nombre' | 'cantidad'>): string {
+  return necesidad.cantidad === null
+    ? necesidad.nombre
+    : `${String(necesidad.cantidad)} ${necesidad.nombre}`;
+}
 
 export function necesidadesDelProyecto(replica: Replica, proyectoId: string): Necesidad[] {
   return filasDe(replica, 'necesidades')
     .filter((necesidad) => necesidad.proyecto_id === proyectoId)
     .sort((una, otra) => (una.id < otra.id ? -1 : 1));
-}
-
-export function necesidadesPorTipo(
-  necesidades: readonly Necesidad[],
-  tipo: TipoDeNecesidad,
-): Necesidad[] {
-  return necesidades.filter((necesidad) => necesidad.tipo === tipo);
-}
-
-export function cuantasListas(necesidades: readonly Necesidad[]): number {
-  return necesidades.filter((necesidad) => necesidad.listo).length;
 }
 
 // El catálogo no es una tabla: son los nombres distintos que ya usó en todo el taller, sacados de las
@@ -124,6 +139,18 @@ export function conUnaNecesidadTildada(
 ): NecesidadParaGuardar[] {
   return comoViajan(necesidades).map((necesidad) =>
     necesidad.id === id ? { ...necesidad, listo } : necesidad,
+  );
+}
+
+export function conUnaNecesidadEditada(
+  necesidades: readonly Necesidad[],
+  id: string,
+  cambios: { nombre: string; cantidad: number | null },
+): NecesidadParaGuardar[] {
+  return comoViajan(necesidades).map((necesidad) =>
+    necesidad.id === id && necesidad.borrado !== true
+      ? { ...necesidad, nombre: cambios.nombre, cantidad: cambios.cantidad }
+      : necesidad,
   );
 }
 
