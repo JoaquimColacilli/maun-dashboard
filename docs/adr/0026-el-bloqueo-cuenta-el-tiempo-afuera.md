@@ -103,6 +103,9 @@ la contraseña.
   `skipWaiting()`, dentro del mensaje `SKIP_WAITING`, y ningún `clientsClaim()`. La recarga del paquete
   (`controlling` → `location.reload()`) solo sale después de tocar «Actualizar» en el aviso. La rama de
   `autoUpdate` está en el bundle pero no corre.
+  - **Actualizado por el 0061**: el paquete ya no registra nada. La recarga la hace
+    `aplicarLaVersionNueva()`, una sola vez y solo después de tocar «Actualizar» (o si otra pestaña
+    que mostraba el aviso aplicó la versión, como antes).
 - **React Router** trae en el vendor un `location.reload()` para cuando falla la carga de un módulo de
   ruta. Es del modo framework; este router no usa `lazy` en sus rutas, así que no se alcanza.
 

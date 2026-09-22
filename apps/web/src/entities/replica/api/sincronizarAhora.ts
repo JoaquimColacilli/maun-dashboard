@@ -1,7 +1,13 @@
 import { onlineManager, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { calcularEstadoSync, claveDeReplica, reanudarCola, type EstadoSync } from '@/shared/lib';
+import {
+  buscarVersionNueva,
+  calcularEstadoSync,
+  claveDeReplica,
+  reanudarCola,
+  type EstadoSync,
+} from '@/shared/lib';
 
 export const TOPE_DE_LA_SINCRONIZACION_MS = 10_000;
 
@@ -58,5 +64,8 @@ export async function sincronizarAhora(
 
 export function useSincronizarAhora(usuarioId: string): () => Promise<DesenlaceDeLaSincronizacion> {
   const queryClient = useQueryClient();
-  return useCallback(() => sincronizarAhora(queryClient, usuarioId), [queryClient, usuarioId]);
+  return useCallback(() => {
+    void buscarVersionNueva();
+    return sincronizarAhora(queryClient, usuarioId);
+  }, [queryClient, usuarioId]);
 }

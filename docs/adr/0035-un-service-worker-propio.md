@@ -6,6 +6,9 @@
   ([0036](0036-avisos-por-dispositivo-fuera-de-la-replica.md)).
 - Corregido por el [0037](0037-tocar-un-aviso-vuelve-sin-pedir-la-huella.md) en qué hace tocar la
   notificación.
+- Corregido por el [0061](0061-el-aviso-de-version-sale-del-registro.md) en quién registra el service
+  worker y cómo se entera la app de una versión nueva: ya no es `registerType: 'prompt'` con el
+  registro de vite-plugin-pwa, sino un módulo propio. El `SKIP_WAITING` sigue siendo el mismo mensaje.
 
 ## Contexto
 

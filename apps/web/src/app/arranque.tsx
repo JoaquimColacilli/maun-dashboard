@@ -5,6 +5,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { EnvInvalidoError, leerEnv } from '@/shared/config';
+import { esUnaPaginaPublica, vigilarLaVersionNueva } from '@/shared/lib';
 
 import { App } from './App';
 
@@ -23,6 +24,8 @@ export function arrancar(raiz: HTMLElement): void {
     if (error instanceof EnvInvalidoError) mostrarErrorDeArranque(raiz, error.message);
     throw error;
   }
+
+  if (!esUnaPaginaPublica(globalThis.location.pathname)) vigilarLaVersionNueva();
 
   createRoot(raiz).render(
     <StrictMode>

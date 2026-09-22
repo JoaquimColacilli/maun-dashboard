@@ -2,6 +2,9 @@
 
 Estado: aceptada, 2026-09-19. Corrige al [0013](0013-shell-navegacion-e-inicio.md) en el alcance
 del anclaje de la raíz, y al [0035](0035-un-service-worker-propio.md) en el respaldo de navegación.
+Actualizado por el [0061](0061-el-aviso-de-version-sale-del-registro.md): quien registra el service
+worker ya no es `AvisoActualizacion` sino el módulo de la versión nueva, que `arrancar()` no prende
+en `/v/` ni en `/o/`. El cliente sigue sin registrar nada.
 
 ## Contexto
 

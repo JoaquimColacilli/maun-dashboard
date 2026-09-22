@@ -16,7 +16,7 @@ El taller tiene mala señal y el dueño carga pagos y gastos desde el celular en
 - **Toda mutación de la cola lleva `scope: { id: 'salida' }`** (`COLA_DE_SALIDA`). `resumePausedMutations()` arranca las pausadas con `Promise.all`, o sea en paralelo: el orden lo da el scope, y el scope se persiste con la mutación (ADR 0012).
 - **Se persiste toda mutación pendiente, no solo la pausada** (`shouldDehydrateMutation`), y al restaurar se continúan primero las que quedaron a mitad de envío. El default de la librería guarda solo lo pausado, y una mutación que salió con señal mala no lo está.
 - La UI muestra siempre el estado real: sin conexión, cambios pendientes o sincronizado. Nunca dice que guardó algo que está en cola.
-- El service worker se actualiza con `registerType: 'prompt'`: la app avisa y el usuario decide cuándo recargar, para no cortar un formulario a medio cargar.
+- El service worker se actualiza con `registerType: 'prompt'`: la app avisa y el usuario decide cuándo recargar, para no cortar un formulario a medio cargar. (Desde el ADR 0061 el aviso sale de un módulo propio y ya no del registro de vite-plugin-pwa; la decisión de avisar y no recargar solo sigue igual.)
 
 ## Alternativas descartadas
 

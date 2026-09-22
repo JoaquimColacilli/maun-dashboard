@@ -10,7 +10,8 @@
     "typecheck": "tsc -b",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:version": "playwright test --config playwright.version.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "catalog:",
@@ -26,7 +27,6 @@
     "react-hook-form": "catalog:",
     "react-router": "catalog:",
     "uqr": "catalog:",
-    "workbox-window": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -50,6 +50,7 @@
     "vite-plugin-pwa": "catalog:",
     "vitest": "catalog:",
     "workbox-precaching": "catalog:",
-    "workbox-routing": "catalog:"
+    "workbox-routing": "catalog:",
+    "workbox-window": "catalog:"
   }
 }

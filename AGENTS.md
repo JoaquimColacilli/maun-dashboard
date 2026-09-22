@@ -31,7 +31,7 @@ Las dependencias van en una sola dirección: `apps/web` usa `ui`, `domain` y `db
 ```sh
 pnpm install
 pnpm dev                          # levanta apps/web
-pnpm verify                       # turbo: lint, typecheck, test y build (obligatorio antes de pushear)
+pnpm verify                       # turbo: lint, typecheck, test, build y el arnés del aviso de versión (obligatorio antes de pushear)
 pnpm e2e                          # Playwright (una vez: pnpm --filter @maun/web exec playwright install chromium)
 pnpm format                       # prettier --write
 pnpm --filter @maun/<paquete> <script>

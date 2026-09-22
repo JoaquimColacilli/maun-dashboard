@@ -5,6 +5,14 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-22.3',
+    lineas: [
+      'El aviso de «Hay una versión nueva» ya no espera a que cierres la app del todo: aparece al volver a la app, al volver la señal y al tirar hacia abajo para actualizar.',
+      'Si tirás hacia abajo mientras se baja una versión nueva, no la cortás: el aviso aparece apenas termina, aunque sigas tirando.',
+      'En la compu, con la app abierta todo el día, se entera sola de las versiones nuevas, sin recargar la página.',
+    ],
+  },
+  {
     version: '2026-09-22.2',
     lineas: [
       'En «Lo que hace falta» tocás la cantidad o el nombre de algo que ya cargaste y lo cambiás ahí mismo, sin borrarlo. Las herramientas ahora también pueden llevar cantidad.',

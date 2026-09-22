@@ -6,6 +6,7 @@ export interface SesionDePrueba {
   entorno: EntornoDePrueba;
   accessToken: string;
   usuarioId: string;
+  guardada: string;
 }
 
 async function pedir(
@@ -47,7 +48,7 @@ export async function iniciarSesionDePrueba(): Promise<SesionDePrueba> {
       'La cuenta de prueba no pudo iniciar sesión. Revisá E2E_EMAIL y E2E_PASSWORD, y que el mail esté confirmado.',
     );
   }
-  return { entorno, accessToken, usuarioId };
+  return { entorno, accessToken, usuarioId, guardada: JSON.stringify(cuerpo) };
 }
 
 export async function vaciarClientes({ entorno, accessToken }: SesionDePrueba): Promise<number> {

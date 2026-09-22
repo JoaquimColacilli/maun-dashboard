@@ -65,6 +65,12 @@ export {
   type ResultadoDeLaHuella,
 } from './huella';
 export { useVueltaPorUnAviso } from './vuelta-por-un-aviso';
+export {
+  aplicarLaVersionNueva,
+  buscarVersionNueva,
+  useVersionNueva,
+  vigilarLaVersionNueva,
+} from './version-nueva';
 export { esCelular, esMedidaDeCelular, useAnchoDePantalla, type AnchoDePantalla } from './pantalla';
 export { useAltoVisible, useVentanaVisible, type VentanaVisible } from './teclado';
 export { useScrollPorPantalla } from './scroll';
