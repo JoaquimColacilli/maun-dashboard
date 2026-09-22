@@ -10,7 +10,8 @@
     "typecheck": "tsc -b",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:version": "playwright test --config playwright.version.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "catalog:",
