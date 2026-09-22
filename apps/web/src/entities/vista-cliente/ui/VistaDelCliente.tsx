@@ -7,7 +7,7 @@ import {
 
 import { urlDelArchivo } from '@/shared/api';
 import { diaYMesCorto, fechaLarga, formatearPesos } from '@/shared/lib';
-import { Icono, MontoQueEntra, Pagina } from '@/shared/ui';
+import { Icono, MontoQueEntra, Pagina, PrincipalYApoyo } from '@/shared/ui';
 
 import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
@@ -108,70 +108,77 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
         <span className="min-w-0 font-display text-lema leading-tight">{trabajo.taller}</span>
       </header>
 
-      <div className="mt-4 grid grid-cols-1 items-start gap-x-11 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <div className="@container min-w-0">
-          <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
-            <span className="text-body text-text-2">{trabajo.cliente}</span>
-            <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
-              {trabajo.trabajo}
-            </h1>
+      <PrincipalYApoyo
+        apoyoPrimero
+        separacion="gap-y-0"
+        className="mt-4"
+        apoyo={
+          <div className="@container">
+            <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
+              <span className="text-body text-text-2">{trabajo.cliente}</span>
+              <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
+                {trabajo.trabajo}
+              </h1>
 
-            {vista.foco === 'saldo' ? (
-              <>
-                <div className="mt-3 flex flex-col gap-0.5">
-                  <span className="text-body text-text-2">{etiquetaDelSaldo}</span>
-                  <MontoQueEntra
-                    tamano="destacado"
-                    className={`leading-tight font-semibold ${tonoDelSaldo}`}
-                  >
-                    {textoDelSaldo}
-                  </MontoQueEntra>
-                </div>
-                <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
-                  <span className="flex items-baseline gap-2">
-                    <span className="text-text-2">Vale</span>
-                    <span className="font-semibold tabular-nums">
-                      {trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
+              {vista.foco === 'saldo' ? (
+                <>
+                  <div className="mt-3 flex flex-col gap-0.5">
+                    <span className="text-body text-text-2">{etiquetaDelSaldo}</span>
+                    <MontoQueEntra
+                      tamano="destacado"
+                      className={`leading-tight font-semibold ${tonoDelSaldo}`}
+                    >
+                      {textoDelSaldo}
+                    </MontoQueEntra>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
+                    <span className="flex items-baseline gap-2">
+                      <span className="text-text-2">Vale</span>
+                      <span className="font-semibold tabular-nums">
+                        {trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="flex items-baseline gap-2">
-                    <span className="text-text-2">Pagaste</span>
-                    <span className="font-semibold tabular-nums">
-                      {formatearPesos(vista.pagado)}
+                    <span className="flex items-baseline gap-2">
+                      <span className="text-text-2">Pagaste</span>
+                      <span className="font-semibold tabular-nums">
+                        {formatearPesos(vista.pagado)}
+                      </span>
                     </span>
-                  </span>
-                </div>
-                <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
-                  <span className="text-body-lg font-semibold">{etapa?.texto}</span>
-                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mt-3 flex flex-col gap-1">
-                  <span className="text-money-xl leading-tight font-semibold text-pretty">
-                    {etapa?.texto}
-                  </span>
-                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
-                </div>
-                <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
-                  <Cifra
-                    clave={etiquetaDelSaldo}
-                    valor={textoDelSaldo}
-                    grande
-                    tono={tonoDelSaldo}
-                  />
-                  <Cifra
-                    clave="Vale"
-                    valor={trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
-                  />
-                  <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
-                </div>
-              </>
-            )}
-          </section>
-
-          <section aria-label="En qué anda" className="mt-7">
+                  </div>
+                  <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
+                    <span className="text-body-lg font-semibold">{etapa?.texto}</span>
+                    {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mt-3 flex flex-col gap-1">
+                    <span className="text-money-xl leading-tight font-semibold text-pretty">
+                      {etapa?.texto}
+                    </span>
+                    {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+                    <Cifra
+                      clave={etiquetaDelSaldo}
+                      valor={textoDelSaldo}
+                      grande
+                      tono={tonoDelSaldo}
+                    />
+                    <Cifra
+                      clave="Vale"
+                      valor={trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
+                    />
+                    <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+        }
+      >
+        <div className="@container">
+          <section aria-label="En qué anda" className="mt-7 @min-[52rem]/apoyo:mt-0">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
             <CaminoDeHitos hitos={vista.hitos} nota={nota} hoy={hoy} />
             {vista.sigue !== '' && (
@@ -252,10 +259,8 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             </div>
             <p className="mt-2.5 text-label leading-normal text-text-3">{textoDelPie}</p>
           </section>
-        </div>
 
-        <div className="min-w-0">
-          <section aria-label="Fotos y planos" className="mt-8 lg:mt-0">
+          <section aria-label="Fotos y planos" className="mt-8">
             <div className="mb-3 flex items-baseline justify-between gap-2.5">
               <h2 className="text-section font-semibold">Fotos y planos</h2>
               {trabajo.archivos.length > 0 && (
@@ -381,7 +386,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             trabajo. Si algo no coincide, escribile al taller.
           </p>
         </div>
-      </div>
+      </PrincipalYApoyo>
     </Pagina>
   );
 }
