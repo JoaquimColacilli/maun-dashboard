@@ -5,7 +5,7 @@ import {
   aviso,
   conElArnes,
   entrarConLaSesion,
-  esperarElAviso,
+  momentoDelAviso,
   tallerVacio,
 } from './apoyo';
 
@@ -21,11 +21,13 @@ test('con la app quieta, el aviso aparece cuando hay una versión nueva', async 
   await expect(aviso(page)).toHaveCount(0);
 
   arnes.publicar('b');
-  const desde = Date.now();
   await page.goto('/');
 
-  const tardo = await esperarElAviso(page, desde);
-  console.log(`${testInfo.project.name}: el aviso apareció a los ${String(tardo)} ms de abrir`);
+  const tardo = await momentoDelAviso(page);
+  await expect(aviso(page)).toBeVisible();
+  console.log(
+    `${testInfo.project.name}: el aviso apareció a los ${String(tardo)} ms de empezar a abrir`,
+  );
   expect(arnes.pedidosDelServiceWorker()).toBeGreaterThan(0);
   expect(arnes.pedidosDeLoNuevo()).toBeGreaterThan(0);
 });

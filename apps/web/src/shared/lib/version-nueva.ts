@@ -4,6 +4,12 @@ export const URL_DEL_SERVICE_WORKER = '/sw.js';
 
 export const PEDIDO_DE_ACTUALIZAR = 'SKIP_WAITING';
 
+export const ESPERA_ENTRE_CHEQUEOS_SOLOS_MS = 60_000;
+
+export const CADA_CUANTO_PREGUNTA_SOLA_MS = 60 * 60_000;
+
+export type MotivoDelChequeo = 'a-mano' | 'arranque' | 'vuelta' | 'red' | 'hora';
+
 export interface TrabajadorDeLaVersion extends EventTarget {
   readonly state: ServiceWorkerState;
   postMessage(mensaje: unknown): void;
@@ -21,30 +27,43 @@ export interface EntornoDeLaVersion {
   registrar: () => Promise<RegistroDeLaVersion>;
   alCargar: (accion: () => void) => void;
   alCambiarElControlador: (accion: () => void) => void;
+  alVolverAVerse: (accion: () => void) => void;
+  alVolverLaRed: (accion: () => void) => void;
+  cadaTanto: (accion: () => void, milisegundos: number) => void;
+  seVe: () => boolean;
   hayRed: () => boolean;
+  ahora: () => number;
   recargar: () => void;
 }
 
 export interface VigiaDeLaVersion {
   lista: () => TrabajadorDeLaVersion | null;
   suscribir: (avisar: () => void) => () => void;
-  buscar: () => Promise<void>;
+  buscar: (motivo: MotivoDelChequeo) => Promise<void>;
   aplicar: () => void;
 }
 
-export type DecisionDelChequeo = 'preguntar' | 'sumarse' | 'no';
+export type DecisionDelChequeo = 'preguntar' | 'sumarse' | 'no' | 'cuando-haya-red';
 
 export interface SituacionDelChequeo {
+  motivo: MotivoDelChequeo;
   hayRegistro: boolean;
   hayUnoEnCurso: boolean;
   seEstaBajando: boolean;
   hayRed: boolean;
+  quedoUnoPendiente: boolean;
+  desdeElUltimo: number | null;
 }
 
 export function decidirElChequeo(situacion: SituacionDelChequeo): DecisionDelChequeo {
   if (situacion.hayUnoEnCurso) return 'sumarse';
-  if (!situacion.hayRegistro || situacion.seEstaBajando || !situacion.hayRed) return 'no';
-  return 'preguntar';
+  if (!situacion.hayRegistro || situacion.seEstaBajando) return 'no';
+  if (!situacion.hayRed) return 'cuando-haya-red';
+  if (situacion.motivo === 'a-mano') return 'preguntar';
+  if (situacion.motivo === 'red' && situacion.quedoUnoPendiente) return 'preguntar';
+  const recien =
+    situacion.desdeElUltimo !== null && situacion.desdeElUltimo < ESPERA_ENTRE_CHEQUEOS_SOLOS_MS;
+  return recien ? 'no' : 'preguntar';
 }
 
 export function versionLista(registro: RegistroDeLaVersion): TrabajadorDeLaVersion | null {
@@ -58,6 +77,8 @@ export function crearVigiaDeLaVersion(entorno: EntornoDeLaVersion): VigiaDeLaVer
   let registro: RegistroDeLaVersion | null = null;
   let lista: TrabajadorDeLaVersion | null = null;
   let enCurso: Promise<void> | null = null;
+  let ultimoIntento: number | null = null;
+  let quedoUnoPendiente = false;
   let huboUnaLista = false;
   let recargando = false;
 
@@ -95,21 +116,31 @@ export function crearVigiaDeLaVersion(entorno: EntornoDeLaVersion): VigiaDeLaVer
     recalcular();
   };
 
-  const buscar = (): Promise<void> => {
+  const buscar = (motivo: MotivoDelChequeo): Promise<void> => {
     const actual = registro;
+    const ahora = entorno.ahora();
     const decision = decidirElChequeo({
+      motivo,
       hayRegistro: actual !== null,
       hayUnoEnCurso: enCurso !== null,
       seEstaBajando: actual !== null && actual.installing !== null,
       hayRed: entorno.hayRed(),
+      quedoUnoPendiente,
+      desdeElUltimo: ultimoIntento === null ? null : ahora - ultimoIntento,
     });
     if (decision === 'sumarse' && enCurso !== null) return enCurso;
+    if (decision === 'cuando-haya-red') quedoUnoPendiente = true;
     if (decision !== 'preguntar' || actual === null) return Promise.resolve();
+    ultimoIntento = ahora;
     const chequeo = actual
       .update()
       .then(
-        () => undefined,
-        () => undefined,
+        () => {
+          quedoUnoPendiente = false;
+        },
+        () => {
+          quedoUnoPendiente = true;
+        },
       )
       .finally(() => {
         enCurso = null;
@@ -121,11 +152,26 @@ export function crearVigiaDeLaVersion(entorno: EntornoDeLaVersion): VigiaDeLaVer
 
   entorno.registroActual().then(conocer, () => undefined);
   entorno.alCargar(() => {
-    entorno.registrar().then(conocer, () => undefined);
+    entorno.registrar().then(
+      (encontrado) => {
+        conocer(encontrado);
+        void buscar('arranque');
+      },
+      () => undefined,
+    );
   });
   entorno.alCambiarElControlador(() => {
     if (huboUnaLista) recargarUnaVez();
   });
+  entorno.alVolverAVerse(() => {
+    void buscar('vuelta');
+  });
+  entorno.alVolverLaRed(() => {
+    void buscar('red');
+  });
+  entorno.cadaTanto(() => {
+    if (entorno.seVe()) void buscar('hora');
+  }, CADA_CUANTO_PREGUNTA_SOLA_MS);
 
   return {
     lista: () => lista,
@@ -166,7 +212,20 @@ function entornoDelNavegador(): EntornoDeLaVersion {
     alCambiarElControlador: (accion) => {
       trabajadores.addEventListener('controllerchange', accion);
     },
+    alVolverAVerse: (accion) => {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') accion();
+      });
+    },
+    alVolverLaRed: (accion) => {
+      window.addEventListener('online', accion);
+    },
+    cadaTanto: (accion, milisegundos) => {
+      setInterval(accion, milisegundos);
+    },
+    seVe: () => document.visibilityState === 'visible',
     hayRed: () => navigator.onLine,
+    ahora: () => Date.now(),
     recargar: () => {
       globalThis.location.reload();
     },
@@ -185,7 +244,7 @@ export function vigilarLaVersionNueva(): void {
 }
 
 export function buscarVersionNueva(): Promise<void> {
-  return vigiaActual()?.buscar() ?? Promise.resolve();
+  return vigiaActual()?.buscar('a-mano') ?? Promise.resolve();
 }
 
 export function aplicarLaVersionNueva(): void {

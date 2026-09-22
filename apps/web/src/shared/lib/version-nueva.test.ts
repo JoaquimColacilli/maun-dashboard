@@ -2,13 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import WORKER from '../../../sw/sw.ts?raw';
 import {
+  CADA_CUANTO_PREGUNTA_SOLA_MS,
   crearVigiaDeLaVersion,
   decidirElChequeo,
+  ESPERA_ENTRE_CHEQUEOS_SOLOS_MS,
   PEDIDO_DE_ACTUALIZAR,
   URL_DEL_SERVICE_WORKER,
   versionLista,
   type EntornoDeLaVersion,
   type RegistroDeLaVersion,
+  type SituacionDelChequeo,
   type TrabajadorDeLaVersion,
 } from './version-nueva';
 
@@ -74,7 +77,11 @@ class RegistroFalso extends EventTarget implements RegistroDeLaVersion {
 interface EntornoFalso extends EntornoDeLaVersion {
   cargar: () => void;
   cambiarElControlador: () => void;
+  volverAVerse: () => void;
+  ocultarse: () => void;
   cortarLaRed: () => void;
+  volverLaRed: () => void;
+  pasar: (milisegundos: number) => void;
   readonly recargas: () => number;
   readonly registros: () => number;
 }
@@ -82,9 +89,14 @@ interface EntornoFalso extends EntornoDeLaVersion {
 function entornoFalso(registro: RegistroFalso, { yaRegistrada = true } = {}): EntornoFalso {
   const alCargar: (() => void)[] = [];
   const alCambiar: (() => void)[] = [];
+  const alVolver: (() => void)[] = [];
+  const alVolverLaRed: (() => void)[] = [];
+  const periodicas: { accion: () => void; cada: number; proxima: number }[] = [];
   let recargas = 0;
   let registros = 0;
   let red = true;
+  let visible = true;
+  let reloj = 1_000_000;
   return {
     registroActual: () => Promise.resolve(yaRegistrada ? registro : undefined),
     registrar: () => {
@@ -97,10 +109,18 @@ function entornoFalso(registro: RegistroFalso, { yaRegistrada = true } = {}): En
     alCambiarElControlador: (accion) => {
       alCambiar.push(accion);
     },
-    hayRed: () => red,
-    cortarLaRed: () => {
-      red = false;
+    alVolverAVerse: (accion) => {
+      alVolver.push(accion);
     },
+    alVolverLaRed: (accion) => {
+      alVolverLaRed.push(accion);
+    },
+    cadaTanto: (accion, cada) => {
+      periodicas.push({ accion, cada, proxima: reloj + cada });
+    },
+    seVe: () => visible,
+    hayRed: () => red,
+    ahora: () => reloj,
     recargar: () => {
       recargas += 1;
     },
@@ -109,6 +129,31 @@ function entornoFalso(registro: RegistroFalso, { yaRegistrada = true } = {}): En
     },
     cambiarElControlador: () => {
       for (const accion of alCambiar) accion();
+    },
+    volverAVerse: () => {
+      visible = true;
+      for (const accion of alVolver) accion();
+    },
+    ocultarse: () => {
+      visible = false;
+    },
+    cortarLaRed: () => {
+      red = false;
+    },
+    volverLaRed: () => {
+      red = true;
+      for (const accion of alVolverLaRed) accion();
+    },
+    pasar: (milisegundos) => {
+      const hasta = reloj + milisegundos;
+      for (const periodica of periodicas) {
+        while (periodica.proxima <= hasta) {
+          reloj = periodica.proxima;
+          periodica.accion();
+          periodica.proxima += periodica.cada;
+        }
+      }
+      reloj = hasta;
     },
     recargas: () => recargas,
     registros: () => registros,
@@ -269,26 +314,76 @@ describe('el vigía de la versión nueva', () => {
 });
 
 describe('cuándo se pregunta si hay una versión nueva', () => {
-  const tranquila = { hayRegistro: true, hayUnoEnCurso: false, seEstaBajando: false, hayRed: true };
+  const tranquila: SituacionDelChequeo = {
+    motivo: 'vuelta',
+    hayRegistro: true,
+    hayUnoEnCurso: false,
+    seEstaBajando: false,
+    hayRed: true,
+    quedoUnoPendiente: false,
+    desdeElUltimo: null,
+  };
+  const HACE_UN_RATO = ESPERA_ENTRE_CHEQUEOS_SOLOS_MS - 1;
 
   it('con todo en calma, pregunta', () => {
     expect(decidirElChequeo(tranquila)).toBe('preguntar');
   });
 
-  it('si ya hay uno en curso, se suma a ese: nunca dos a la vez', () => {
+  it('si ya hay uno en curso, se suma a ese: nunca dos a la vez, tampoco el de tirar', () => {
     expect(decidirElChequeo({ ...tranquila, hayUnoEnCurso: true })).toBe('sumarse');
+    expect(decidirElChequeo({ ...tranquila, motivo: 'a-mano', hayUnoEnCurso: true })).toBe(
+      'sumarse',
+    );
   });
 
   it('mientras se baja una versión, no pregunta: no suma nada y le compite a la descarga', () => {
     expect(decidirElChequeo({ ...tranquila, seEstaBajando: true })).toBe('no');
+    expect(decidirElChequeo({ ...tranquila, motivo: 'a-mano', seEstaBajando: true })).toBe('no');
   });
 
-  it('sin señal no sale a la red', () => {
-    expect(decidirElChequeo({ ...tranquila, hayRed: false })).toBe('no');
+  it('sin señal no sale a la red: queda para cuando vuelva', () => {
+    expect(decidirElChequeo({ ...tranquila, hayRed: false })).toBe('cuando-haya-red');
+    expect(decidirElChequeo({ ...tranquila, motivo: 'a-mano', hayRed: false })).toBe(
+      'cuando-haya-red',
+    );
   });
 
   it('antes de conocer el registro no hay a quién preguntarle', () => {
     expect(decidirElChequeo({ ...tranquila, hayRegistro: false })).toBe('no');
+  });
+
+  it('los automáticos, como mucho uno por minuto', () => {
+    for (const motivo of ['arranque', 'vuelta', 'red', 'hora'] as const) {
+      expect(decidirElChequeo({ ...tranquila, motivo, desdeElUltimo: HACE_UN_RATO })).toBe('no');
+      expect(
+        decidirElChequeo({ ...tranquila, motivo, desdeElUltimo: ESPERA_ENTRE_CHEQUEOS_SOLOS_MS }),
+      ).toBe('preguntar');
+    }
+  });
+
+  it('el de tirar no tiene ese límite', () => {
+    expect(decidirElChequeo({ ...tranquila, motivo: 'a-mano', desdeElUltimo: 0 })).toBe(
+      'preguntar',
+    );
+  });
+
+  it('al volver la red, pregunta aunque haga menos de un minuto si quedó uno sin hacer', () => {
+    expect(
+      decidirElChequeo({
+        ...tranquila,
+        motivo: 'red',
+        desdeElUltimo: HACE_UN_RATO,
+        quedoUnoPendiente: true,
+      }),
+    ).toBe('preguntar');
+    expect(
+      decidirElChequeo({
+        ...tranquila,
+        motivo: 'vuelta',
+        desdeElUltimo: HACE_UN_RATO,
+        quedoUnoPendiente: true,
+      }),
+    ).toBe('no');
   });
 });
 
@@ -298,9 +393,82 @@ describe('preguntar', () => {
     const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
     await enCalma();
 
-    await vigia.buscar();
+    await vigia.buscar('a-mano');
 
     expect(registro.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('pregunta sola cuando terminó de cargar la página, después de registrar', async () => {
+    const registro = new RegistroFalso();
+    const entorno = entornoFalso(registro);
+    crearVigiaDeLaVersion(entorno);
+    await enCalma();
+    expect(registro.update).not.toHaveBeenCalled();
+
+    entorno.cargar();
+    await enCalma();
+
+    expect(entorno.registros()).toBe(1);
+    expect(registro.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('volver a la app muchas veces seguidas pregunta como mucho una vez por minuto', async () => {
+    const registro = new RegistroFalso();
+    const entorno = entornoFalso(registro);
+    crearVigiaDeLaVersion(entorno);
+    entorno.cargar();
+    await enCalma();
+
+    for (let vez = 0; vez < 5; vez += 1) {
+      entorno.pasar(5_000);
+      entorno.volverAVerse();
+      await enCalma();
+    }
+    expect(registro.update).toHaveBeenCalledTimes(1);
+
+    entorno.pasar(ESPERA_ENTRE_CHEQUEOS_SOLOS_MS);
+    entorno.volverAVerse();
+    await enCalma();
+    expect(registro.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('una vez por hora mientras se ve, y nunca mientras está oculta', async () => {
+    const registro = new RegistroFalso();
+    const entorno = entornoFalso(registro);
+    crearVigiaDeLaVersion(entorno);
+    entorno.cargar();
+    await enCalma();
+
+    entorno.pasar(CADA_CUANTO_PREGUNTA_SOLA_MS);
+    await enCalma();
+    expect(registro.update).toHaveBeenCalledTimes(2);
+
+    entorno.ocultarse();
+    entorno.pasar(3 * CADA_CUANTO_PREGUNTA_SOLA_MS);
+    await enCalma();
+    expect(registro.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('lo que quedó sin preguntar por falta de señal se pregunta cuando vuelve, aunque haga menos de un minuto', async () => {
+    const registro = new RegistroFalso();
+    const entorno = entornoFalso(registro);
+    const vigia = crearVigiaDeLaVersion(entorno);
+    entorno.cargar();
+    await enCalma();
+    entorno.cortarLaRed();
+
+    await vigia.buscar('a-mano');
+    expect(registro.update).toHaveBeenCalledTimes(1);
+
+    entorno.pasar(5_000);
+    entorno.volverLaRed();
+    await enCalma();
+    expect(registro.update).toHaveBeenCalledTimes(2);
+
+    entorno.pasar(5_000);
+    entorno.volverLaRed();
+    await enCalma();
+    expect(registro.update).toHaveBeenCalledTimes(2);
   });
 
   it('diez pedidos seguidos mientras el primero no terminó salen como uno solo', async () => {
@@ -317,7 +485,7 @@ describe('preguntar', () => {
     const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
     await enCalma();
 
-    const pedidos = Array.from({ length: 10 }, () => vigia.buscar());
+    const pedidos = Array.from({ length: 10 }, () => vigia.buscar('a-mano'));
     terminar();
     await Promise.all(pedidos);
 
@@ -330,7 +498,7 @@ describe('preguntar', () => {
     await enCalma();
     registro.empezarAInstalar();
 
-    await vigia.buscar();
+    await vigia.buscar('a-mano');
 
     expect(registro.update).not.toHaveBeenCalled();
   });
@@ -342,20 +510,25 @@ describe('preguntar', () => {
     await enCalma();
     entorno.cortarLaRed();
 
-    await vigia.buscar();
+    await vigia.buscar('a-mano');
 
     expect(registro.update).not.toHaveBeenCalled();
   });
 
-  it('si no puede bajar el script, el rechazo queda adentro y el siguiente pedido vuelve a preguntar', async () => {
+  it('si no puede bajar el script, el rechazo queda adentro, no reintenta solo y al volver la red pregunta', async () => {
     const registro = new RegistroFalso();
     registro.update.mockRejectedValueOnce(new TypeError('Failed to update a ServiceWorker'));
-    const vigia = crearVigiaDeLaVersion(entornoFalso(registro));
+    const entorno = entornoFalso(registro);
+    const vigia = crearVigiaDeLaVersion(entorno);
     await enCalma();
 
-    await expect(vigia.buscar()).resolves.toBeUndefined();
-    await vigia.buscar();
+    await expect(vigia.buscar('a-mano')).resolves.toBeUndefined();
+    entorno.pasar(5_000);
+    await enCalma();
+    expect(registro.update).toHaveBeenCalledTimes(1);
 
+    entorno.volverLaRed();
+    await enCalma();
     expect(registro.update).toHaveBeenCalledTimes(2);
   });
 
@@ -363,7 +536,7 @@ describe('preguntar', () => {
     const registro = new RegistroFalso();
     const vigia = crearVigiaDeLaVersion(entornoFalso(registro, { yaRegistrada: false }));
 
-    await vigia.buscar();
+    await vigia.buscar('a-mano');
 
     expect(registro.update).not.toHaveBeenCalled();
   });

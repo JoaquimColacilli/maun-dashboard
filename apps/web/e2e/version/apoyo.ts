@@ -86,9 +86,22 @@ export function aviso(page: Page): Locator {
   return page.getByRole('status').filter({ hasText: 'Hay una versión nueva' });
 }
 
-export async function esperarElAviso(page: Page, desde: number): Promise<number> {
-  await expect(aviso(page)).toBeVisible(HASTA_EL_AVISO);
-  return Date.now() - desde;
+export async function momentoDelAviso(page: Page): Promise<number> {
+  const manija = await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('[role="status"]')].some((estado) =>
+        estado.textContent.includes('Hay una versión nueva'),
+      )
+        ? performance.now()
+        : null,
+    undefined,
+    { polling: 50, timeout: HASTA_EL_AVISO.timeout },
+  );
+  return Math.round(Number(await manija.jsonValue()));
+}
+
+export function ahoraEnLaPagina(page: Page): Promise<number> {
+  return page.evaluate(() => performance.now());
 }
 
 export async function conLaBEsperando(page: Page, arnes: Arnes): Promise<void> {
@@ -128,4 +141,28 @@ export async function contarLosRegistros(page: Page): Promise<void> {
 
 export function registrosDelDocumento(page: Page): Promise<number> {
   return page.evaluate(() => (window as unknown as VentanaQueCuenta).registrosDelServiceWorker);
+}
+
+type VentanaConChequeos = Window & { chequeosDeLaApp: number[] };
+
+export async function contarLosChequeosDeLaApp(context: BrowserContext): Promise<void> {
+  await context.addInitScript(() => {
+    const ventana = window as unknown as VentanaConChequeos;
+    ventana.chequeosDeLaApp = [];
+    const prototipo = ServiceWorkerRegistration.prototype;
+    const original: unknown = Object.getOwnPropertyDescriptor(prototipo, 'update')?.value;
+    if (typeof original !== 'function') return;
+    Object.defineProperty(prototipo, 'update', {
+      configurable: true,
+      writable: true,
+      value: function (this: ServiceWorkerRegistration) {
+        ventana.chequeosDeLaApp.push(performance.now());
+        return Reflect.apply(original, this, []) as Promise<ServiceWorkerRegistration>;
+      },
+    });
+  });
+}
+
+export function chequeosDeLaApp(page: Page): Promise<number[]> {
+  return page.evaluate(() => (window as unknown as VentanaConChequeos).chequeosDeLaApp);
 }
