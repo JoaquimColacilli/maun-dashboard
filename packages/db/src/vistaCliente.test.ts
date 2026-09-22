@@ -12,6 +12,7 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
     estado: 'en_curso',
     precio_centavos: 124_000_000,
     fechas: {
+      estimativo: '2026-07-24',
       presupuesto: '2026-08-01',
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
@@ -19,6 +20,7 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       entregado: null,
       cobro: null,
     },
+    visita: { dia: '2026-07-28', hecha: true },
     pago: {
       instancia: 'sena',
       formas: ['transferencia', 'efectivo'],
@@ -63,6 +65,7 @@ describe('leer la vista del cliente', () => {
       estado: 'en_curso',
       precio: 124_000_000,
       fechas: {
+        estimativo: '2026-07-24',
         presupuesto: '2026-08-01',
         aprobado: '2026-08-04',
         inicio: '2026-08-24',
@@ -70,6 +73,7 @@ describe('leer la vista del cliente', () => {
         entregado: null,
         cobro: null,
       },
+      visita: { dia: '2026-07-28', hecha: true },
       pago: {
         instancia: 'sena',
         formas: ['transferencia', 'efectivo'],
@@ -106,6 +110,7 @@ describe('leer la vista del cliente', () => {
         pagos: [],
         archivos: [],
         fechas: {
+          estimativo: null,
           presupuesto: null,
           aprobado: null,
           inicio: null,
@@ -113,10 +118,31 @@ describe('leer la vista del cliente', () => {
           entregado: null,
           cobro: null,
         },
+        visita: { dia: null, hecha: false },
       }),
     );
     expect(vacio.precio).toBeNull();
     expect(vacio.pagos).toEqual([]);
+    expect(vacio.fechas.estimativo).toBeNull();
+    expect(vacio.visita).toEqual({ dia: null, hecha: false });
+  });
+
+  it('una respuesta de antes, sin el día del estimativo ni la visita, se lee como que no hubo', () => {
+    const vieja = leerVistaDelCliente(
+      respuesta({
+        fechas: {
+          presupuesto: '2026-08-01',
+          aprobado: null,
+          inicio: null,
+          entrega_pautada: null,
+          entregado: null,
+          cobro: null,
+        },
+        visita: undefined,
+      }),
+    );
+    expect(vieja.fechas.estimativo).toBeNull();
+    expect(vieja.visita).toEqual({ dia: null, hecha: false });
   });
 
   it('un PDF viene sin medidas', () => {
@@ -151,6 +177,11 @@ describe('leer la vista del cliente', () => {
       respuesta({ precio_centavos: '124' }),
       respuesta({ fechas: null }),
       respuesta({ fechas: { presupuesto: 1 } }),
+      respuesta({ fechas: { estimativo: 20260724 } }),
+      respuesta({ visita: 'mañana' }),
+      respuesta({ visita: { dia: '2026-07-28' } }),
+      respuesta({ visita: { dia: '2026-07-28', hecha: 'sí' } }),
+      respuesta({ visita: { dia: 28, hecha: true } }),
       respuesta({ pagos: null }),
       respuesta({ pagos: [{ id: 'p1', fecha: '2026-08-04', concepto: 'Seña' }] }),
       respuesta({ pagos: [{ id: 1, fecha: '2026-08-04', concepto: 'x', monto_centavos: 1 }] }),

@@ -1,6 +1,4 @@
-import { HITOS, type VistaDelCliente } from '@maun/domain';
-
-const APROBADO = HITOS.findIndex((hito) => hito.id === 'aprobado');
+import { llegoAl, type VistaDelCliente } from '@maun/domain';
 
 export const SIN_PAGOS_APROBADO =
   'Todavía no hay ningún pago registrado. Lo primero es la seña: apenas el taller la anote, la vas a ver acá.';
@@ -14,7 +12,7 @@ export const NO_QUEDA_NADA = 'Gracias. No queda nada pendiente.';
 
 export function sinPagosTodavia(vista: VistaDelCliente): string {
   if (vista.trabajo.pagos.length > 0) return '';
-  return vista.hitoIndex >= APROBADO ? SIN_PAGOS_APROBADO : '';
+  return llegoAl(vista, 'aprobado') ? SIN_PAGOS_APROBADO : '';
 }
 
 // El pie solo manda a hablar con el taller cuando arriba no quedó ninguna forma concreta de pagar:

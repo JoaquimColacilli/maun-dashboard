@@ -22,6 +22,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
     estado: 'en_curso',
     precio: centavos(124_000_000),
     fechas: {
+      estimativo: null,
       presupuesto: '2026-08-01',
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
@@ -29,6 +30,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
+    visita: { dia: null, hecha: false },
     pago: {
       instancia: 'saldo',
       formas: ['efectivo'],
@@ -74,6 +76,7 @@ describe('la vista del cliente', () => {
       trabajo({
         estado: 'entregado',
         fechas: {
+          estimativo: null,
           presupuesto: '2026-08-01',
           aprobado: '2026-08-04',
           inicio: '2026-08-24',
@@ -110,6 +113,7 @@ describe('la vista del cliente', () => {
       trabajo({
         pagos: [],
         fechas: {
+          estimativo: null,
           presupuesto: '2026-08-01',
           aprobado: null,
           inicio: '2026-09-01',

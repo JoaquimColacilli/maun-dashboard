@@ -833,7 +833,7 @@ END, false))
 comment on table public.proyectos is 'Leads y proyectos: la misma fila avanza de seguimiento a obra y a cobrado, o se cierra como perdido. Liquidar (cobrar o cerrar como perdido) congela la distribución (ADR 0003 y 0011).';
 comment on column public.proyectos.titulo is 'El trabajo, en pocas palabras: "Placard 3 puertas con interior en melamina".';
 comment on column public.proyectos.presupuesto_centavos is 'Presupuesto acordado. Null mientras el lead no tiene presupuesto. La distribución NO se calcula sobre esto sino sobre lo cobrado.';
-comment on column public.proyectos.fecha_visita is 'Visita de relevamiento, en la etapa de seguimiento.';
+comment on column public.proyectos.fecha_visita is 'Visita de relevamiento, en la etapa de seguimiento. Viaja a la vista del cliente: es el día que dice el casillero del relevamiento. La hora, visita_hora, no viaja (ADR 0058).';
 comment on column public.proyectos.ultimo_contacto is 'Último contacto con el cliente, en la etapa de seguimiento.';
 comment on column public.proyectos.entrega_estimada is 'Entrega prometida. La app la propone a 21 días hábiles del inicio.';
 comment on column public.proyectos.fecha_entrega is 'Entrega real.';
@@ -863,7 +863,7 @@ comment on column public.proyectos.presupuesto_diseno is 'Tarea de presupuestar:
 comment on column public.proyectos.presupuesto_despiece is 'Tarea de presupuestar: el despiece está hecho.';
 comment on column public.proyectos.presupuesto_cotizacion is 'Tarea de presupuestar: la cotización está hecha (madera y herrajes, flete, ayudante).';
 comment on column public.proyectos.presupuesto_pdf is 'Tarea de presupuestar: el PDF del presupuesto está armado. Con las cuatro tildadas, la app sugiere marcar que se mandó; el estado lo cambia el dueño.';
-comment on column public.proyectos.visita_hecha is 'La visita de relevamiento ya pasó. Lo anota «Ya fui a relevar» y se corrige desde la hoja del contacto; mover la visita a un día que todavía no llegó lo apaga. No sale de la etapa: cambiar de etapa, aprobar o perder el contacto no lo toca, y la agenda muestra la visita tachada en su día (ADR 0042).';
+comment on column public.proyectos.visita_hecha is 'La visita de relevamiento ya pasó. Lo anota «Ya fui a relevar» y se corrige desde la hoja del contacto; mover la visita a un día que todavía no llegó lo apaga. No sale de la etapa: cambiar de etapa, aprobar o perder el contacto no lo toca, y la agenda muestra la visita tachada en su día (ADR 0042). Viaja a la vista del cliente: es lo que tilda el casillero del relevamiento (ADR 0058).';
 comment on column public.proyectos.visita_importante is 'Marca de importante de la visita en la agenda: el círculo que el dueño hace en su cuaderno. Una columna por evento derivado; el umbral para pasar a una tabla de marcas está en el ADR 0042.';
 comment on column public.proyectos.entrega_importante is 'Marca de importante de la entrega en la agenda. La entrega entregada la conserva.';
 comment on column public.proyectos.presupuesto_importante is 'Marca de importante del vencimiento del presupuesto en la agenda.';
@@ -4205,6 +4205,7 @@ declare
   v_cbu text;
   v_link text;
   v_hay_como_transferir boolean;
+  v_precio bigint;
   v_pagado bigint;
   v_ahora record;
   v_despues record;
@@ -4235,6 +4236,13 @@ begin
   v_link := nullif(v_ajustes.cobro_link, '');
   v_hay_como_transferir := v_alias is not null or v_cbu is not null or v_link is not null;
 
+  -- Con el estimativo como etapa actual, el número que se le pasó es aproximado y no está guardado:
+  -- lo que haya en presupuesto_centavos es otro número, y no viaja.
+  v_precio := case
+    when v_p.estado = 'presupuesto_estimativo' then null
+    else v_p.presupuesto_centavos
+  end;
+
   select coalesce(sum(g.monto_centavos), 0) into v_pagado
   from public.pagos g
   where g.household_id = v_p.household_id
@@ -4242,13 +4250,13 @@ begin
     and g.deleted_at is null;
 
   select * into v_ahora from private.pagos_por_delante(
-    v_p.presupuesto_centavos,
+    v_precio,
     v_pagado,
     coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
   ) where orden = 1;
 
   select * into v_despues from private.pagos_por_delante(
-    v_p.presupuesto_centavos,
+    v_precio,
     v_pagado,
     coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
   ) where orden = 2;
@@ -4291,7 +4299,7 @@ begin
     'trabajo', v_p.titulo,
     'direccion', v_p.direccion_entrega,
     'estado', v_p.estado,
-    'precio_centavos', v_p.presupuesto_centavos,
+    'precio_centavos', v_precio,
     -- El pago que toca ahora y, si hay otro después, cuánto es y cómo se paga. Los importes salen
     -- de lo que ya está guardado; el porcentaje de seña sigue sin viajar, que es lo que dejó
     -- abierto el ADR 0048.
@@ -4312,6 +4320,13 @@ begin
       'link', case when v_por_transferencia then v_link end
     ),
     'fechas', jsonb_build_object(
+      'estimativo', (
+        select min(c.ocurrio_el)
+        from public.cambios_de_estado c
+        where c.household_id = v_p.household_id
+          and c.proyecto_id = v_p.id
+          and c.hacia = 'presupuesto_estimativo'
+      ),
       'presupuesto', (
         select min(c.ocurrio_el)
         from public.cambios_de_estado c
@@ -4330,6 +4345,11 @@ begin
       'entrega_pautada', v_p.entrega_estimada,
       'entregado', v_p.fecha_entrega,
       'cobro', case when v_p.estado = 'cobrado' then v_p.fecha_cobro end
+    ),
+    -- La visita para medir: el día acordado o en que se fue, y si ya se fue. La hora no viaja.
+    'visita', jsonb_build_object(
+      'dia', v_p.fecha_visita,
+      'hecha', v_p.visita_hecha
     ),
     'pagos', (
       select coalesce(
@@ -4378,4 +4398,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053 y 0054).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Del estimativo viaja el día, nunca un importe, y mientras el trabajo está en esa etapa tampoco viaja el precio. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054 y 0058).';

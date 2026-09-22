@@ -1,7 +1,7 @@
 -- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su huella y su dirección
 -- (ADR 0052), el registro de los cambios de etapa, los datos para transferir (ADR 0048), el título
--- que alimenta la vista previa del enlace (ADR 0049) y cómo te paga, la forma de cobro por trabajo y
--- por instancia de pago (ADR 0053).
+-- que alimenta la vista previa del enlace (ADR 0049), cómo te paga, la forma de cobro por trabajo y
+-- por instancia de pago (ADR 0053), y el estimativo y la visita para medir (ADR 0058).
 --
 -- Los dos tests que importan son los primeros: toda columna de proyectos y toda columna de ajustes
 -- están clasificadas, y agregar una columna a cualquiera de las dos rompe este archivo hasta que
@@ -10,7 +10,7 @@
 -- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
 -- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(99);
+select plan(111);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -20,13 +20,15 @@ select tests.guardar('household_b', private.crear_household('Taller de Beto', te
 
 -- Toda columna de proyectos está clasificada ---------------------------------------------------------------
 
--- Las diez que viajan, aunque sea con otro nombre: titulo es «trabajo», presupuesto_centavos es
--- «precio», direccion_entrega es «direccion», las cuatro fechas arman el camino, y cobro_sena y
--- cobro_saldo deciden «pago», que es cómo puede pagar lo que le toca. Ojo con esas dos: no viaja su
--- valor crudo, viaja el de la instancia que toca, pasado por private.formas_de_cobro(). Todas las
--- demás no salen de la base, y eso incluye los costos estimados, el margen que se deriva de ellos,
--- las tareas de presupuestar, las notas de obra, la distribución congelada, las marcas de la agenda
--- y sena_bp, que es el porcentaje y sigue sin viajar: lo que viaja es el importe que falta.
+-- Las doce que viajan, aunque sea con otro nombre: titulo es «trabajo», presupuesto_centavos es
+-- «precio», direccion_entrega es «direccion», las cuatro fechas arman el camino, fecha_visita y
+-- visita_hecha son «visita», que es el casillero del relevamiento, y cobro_sena y cobro_saldo
+-- deciden «pago», que es cómo puede pagar lo que le toca. Ojo con esas dos: no viaja su valor
+-- crudo, viaja el de la instancia que toca, pasado por private.formas_de_cobro(). Todas las demás
+-- no salen de la base, y eso incluye los costos estimados, el margen que se deriva de ellos, las
+-- tareas de presupuestar, las notas de obra, la distribución congelada, las marcas de la agenda, la
+-- hora de la visita, el vencimiento del presupuesto y sena_bp, que es el porcentaje y sigue sin
+-- viajar: lo que viaja es el importe que falta.
 select set_eq(
   $$
     select a.attname::text
@@ -37,10 +39,11 @@ select set_eq(
     -- Viajan
     'titulo', 'estado', 'presupuesto_centavos', 'direccion_entrega',
     'fecha_inicio', 'entrega_estimada', 'fecha_entrega', 'fecha_cobro',
+    'fecha_visita', 'visita_hecha',
     'cobro_sena', 'cobro_saldo',
     -- No viajan
     'id', 'household_id', 'cliente_id', 'descripcion', 'forma_pago', 'comprobante',
-    'fecha_visita', 'ultimo_contacto', 'notas', 'vencimiento_presupuesto',
+    'ultimo_contacto', 'notas', 'vencimiento_presupuesto',
     'created_at', 'updated_at', 'deleted_at', 'version',
     'dist_cobrado_centavos', 'dist_gastos_centavos', 'dist_diezmo_bp',
     'dist_tope_sueldo_centavos', 'dist_tope_fijos_centavos', 'dist_diezmo_centavos',
@@ -50,7 +53,7 @@ select set_eq(
     'reapertura_objetivo_sueldo_centavos', 'reapertura_objetivo_fijos_centavos',
     'reapertura_sueldo_mensual', 'reapertura_fecha_cobro',
     'presupuesto_diseno', 'presupuesto_despiece', 'presupuesto_cotizacion', 'presupuesto_pdf',
-    'visita_hecha', 'visita_importante', 'entrega_importante', 'presupuesto_importante',
+    'visita_importante', 'entrega_importante', 'presupuesto_importante',
     'sena_bp', 'entrega_hora', 'visita_hora',
     'costo_madera_centavos', 'costo_herrajes_centavos', 'costo_flete_centavos',
     'costo_ayudante_centavos'
@@ -95,13 +98,14 @@ insert into public.clientes (id, nombre, telefono, notas)
 
 insert into public.proyectos (
   id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
-  fecha_visita, fecha_inicio, entrega_estimada, direccion_entrega, notas, sena_bp
+  fecha_visita, ultimo_contacto, vencimiento_presupuesto, fecha_inicio, entrega_estimada,
+  direccion_entrega, notas, sena_bp
 ) values (
   'aaaaaaaa-0000-7000-8000-000000000010', 'aaaaaaaa-0000-7000-8000-000000000001',
   'Placard 3 puertas', 'Melamina blanca con herrajes Blum', 'en_curso', 124000000,
   'cuotas', 'factura_b',
-  '2026-07-20', '2026-08-24', '2026-10-02', 'Olazábal 1240, Ituzaingó',
-  'OJO: el cliente regatea, no bajar de 900', 4321
+  '2026-07-20', '2026-07-13', '2026-07-27', '2026-08-24', '2026-10-02',
+  'Olazábal 1240, Ituzaingó', 'OJO: el cliente regatea, no bajar de 900', 4321
 );
 
 update public.proyectos set
@@ -154,7 +158,7 @@ where household_id = tests.id('household_a');
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')) $$,
-  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'pago', 'cobro', 'fechas', 'pagos', 'archivos'],
+  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'pago', 'cobro', 'fechas', 'visita', 'pagos', 'archivos'],
   'la vista devuelve exactamente estos campos y ninguno más'
 );
 
@@ -172,8 +176,14 @@ select set_eq(
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'fechas') $$,
-  array['presupuesto', 'aprobado', 'inicio', 'entrega_pautada', 'entregado', 'cobro'],
-  'las fechas que viajan son exactamente seis'
+  array['estimativo', 'presupuesto', 'aprobado', 'inicio', 'entrega_pautada', 'entregado', 'cobro'],
+  'las fechas que viajan son exactamente siete'
+);
+
+select set_eq(
+  $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'visita') $$,
+  array['dia', 'hecha'],
+  'de la visita para medir viajan el día y si ya se fue: la hora no'
 );
 
 select set_eq(
@@ -214,14 +224,14 @@ select is_empty(
         '189000000', 'Con frentes laqueados',
         '11-5555-0001', 'Paga tarde',
         'factura_b', 'cuotas',
-        '2026-07-20', '4321',
+        '2026-07-13', '2026-07-27', '4321',
         '777777', '888888', '999999', '6543', '1717'
       ]) as v (aguja)
       where %L like '%%' || v.aguja || '%%'
     $$,
     public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')::text
   ),
-  'en el JSON entero no aparece ni un costo, ni un gasto, ni un herraje, ni las notas, ni la opción que no aprobó, ni un dato del cliente que no sea su nombre, ni nada de los ajustes que no sea el cobro'
+  'en el JSON entero no aparece ni un costo, ni un gasto, ni un herraje, ni las notas, ni la opción que no aprobó, ni un dato del cliente que no sea su nombre, ni el último contacto, ni el vencimiento del presupuesto, ni nada de los ajustes que no sea el cobro'
 );
 
 
@@ -1157,6 +1167,130 @@ select is(
 update public.ajustes set cobro_alias = 'taller.maun.ok', cobro_cbu = '0110001312345678901233'
   where household_id = tests.id('household_a');
 
+
+-- El estimativo y la visita para medir (ADR 0058) ------------------------------------------------------------
+
+-- Un trabajo que vuelve de «Presupuesto enviado» a estimativo, con la visita agendada. Conserva su
+-- presupuesto_centavos, con un número elegido para reconocerse dentro del JSON entero: mientras la
+-- etapa es el estimativo, ni ese número ni la seña que sale de él pueden viajar.
+
+insert into public.proyectos (
+  id, cliente_id, titulo, estado, presupuesto_centavos, fecha_visita, visita_hora
+) values (
+  'aaaaaaaa-0000-7000-8000-000000000050', 'aaaaaaaa-0000-7000-8000-000000000001',
+  'Rack de living', 'presupuesto_enviado', 314159265, '2026-10-06', '09:30'
+);
+
+update public.proyectos set estado = 'presupuesto_estimativo'
+  where id = 'aaaaaaaa-0000-7000-8000-000000000050';
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050') -> 'precio_centavos',
+  'null'::jsonb,
+  'en la etapa del estimativo el precio no viaja, aunque haya uno guardado'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050') -> 'pago',
+  jsonb_build_object(
+    'instancia', 'sena',
+    'formas', jsonb_build_array('transferencia', 'efectivo'),
+    'monto_centavos', null,
+    'siguiente', jsonb_build_object(
+      'instancia', 'saldo',
+      'formas', jsonb_build_array('transferencia', 'efectivo'),
+      'monto_centavos', null
+    )
+  ),
+  'y los pagos que vienen salen sin importe, como en un trabajo sin presupuesto'
+);
+
+select is_empty(
+  format(
+    $$
+      select v.aguja
+      from unnest(array['314159265', '157079633', '157079632', '09:30']) as v (aguja)
+      where %L like '%%' || v.aguja || '%%'
+    $$,
+    public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050')::text
+  ),
+  'en el JSON entero no aparece ningún importe del trabajo en estimativo, ni el guardado ni su seña, ni la hora de la visita'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050') #>> '{fechas,estimativo}',
+  ((now() at time zone 'America/Argentina/Buenos_Aires')::date)::text,
+  'del estimativo viaja el día en que entró a esa etapa, con la hora del taller'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050') -> 'visita',
+  jsonb_build_object('dia', '2026-10-06', 'hecha', false),
+  'la visita agendada viaja con su día y sin tildar'
+);
+
+insert into public.enlaces_publicos (id, proyecto_id, token_hash)
+  values (
+    'aaaaaaaa-0000-7000-8000-000000000500',
+    'aaaaaaaa-0000-7000-8000-000000000050',
+    encode(sha256(convert_to('el-token-del-rack-de-living', 'UTF8')), 'hex')
+  );
+
+select set_config(
+  'tests.payload_del_estimativo',
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050')::text,
+  true
+);
+
+select tests.entrar_como_anon();
+
+select is(
+  public.vista_compartida('el-token-del-rack-de-living')::text,
+  current_setting('tests.payload_del_estimativo'),
+  'por el link se ve exactamente lo mismo que desde la app, con el estimativo y la visita'
+);
+
+select tests.salir();
+select tests.entrar_como(tests.id('ana'));
+
+-- «Ya fui a relevar»: pasa a presupuestar con el día en que fue y la marca puesta.
+update public.proyectos set
+  estado = 'a_presupuestar',
+  fecha_visita = '2026-09-20',
+  visita_hecha = true
+where id = 'aaaaaaaa-0000-7000-8000-000000000050';
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050') -> 'visita',
+  jsonb_build_object('dia', '2026-09-20', 'hecha', true),
+  'después de ir a medir, la visita viaja tildada y con el día en que se fue'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000050') #>> '{fechas,estimativo}',
+  ((now() at time zone 'America/Argentina/Buenos_Aires')::date)::text,
+  'y el día del estimativo sigue viajando: el camino lo muestra como un paso ya hecho'
+);
+
+-- La base manda lo que está guardado y nada más. Que una visita del pasado en un trabajo aprobado
+-- se vea tildada aunque nadie la haya marcado lo decide vistaDelCliente(), en el dominio.
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'visita',
+  jsonb_build_object('dia', '2026-07-20', 'hecha', false),
+  'la visita viaja tal como está guardada: qué casillero ve el cliente se decide en el dominio'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') -> 'visita',
+  jsonb_build_object('dia', null, 'hecha', false),
+  'un trabajo sin visita la manda vacía'
+);
+
+select is(
+  public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000041') #> '{fechas,estimativo}',
+  'null'::jsonb,
+  'y uno que nunca pasó por el estimativo no tiene ese día'
+);
 
 
 -- El rol anónimo no gana nada con esto ---------------------------------------------------------------------------

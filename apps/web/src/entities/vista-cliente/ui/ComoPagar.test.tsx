@@ -50,6 +50,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}, pago: Pago = {}): Tra
     estado: 'en_curso',
     precio: centavos(124_000_000),
     fechas: {
+      estimativo: null,
       presupuesto: '2026-08-01',
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
@@ -57,6 +58,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}, pago: Pago = {}): Tra
       entregado: null,
       cobro: null,
     },
+    visita: { dia: null, hecha: false },
     pago: {
       instancia: pago.instancia === undefined ? 'sena' : pago.instancia,
       formas: pago.formas ?? ['transferencia', 'efectivo'],
