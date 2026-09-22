@@ -103,7 +103,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
   const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
 
   return (
-    <Pagina>
+    <Pagina ancho="ficha">
       <header className="flex items-center justify-between gap-3 border-b border-hairline pb-3.5">
         <span className="min-w-0 font-display text-lema leading-tight">{trabajo.taller}</span>
       </header>

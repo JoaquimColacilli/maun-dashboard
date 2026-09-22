@@ -241,7 +241,7 @@ export function PantallaDeProyecto({
       }
     >
       <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
-        <div className="mx-auto grid w-full max-w-content grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
+        <div className="ms-(--inicio-de-la-pagina) me-auto grid w-full max-w-formulario grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
           <Button
             variant="terciario"
             className="justify-self-start"
@@ -264,7 +264,7 @@ export function PantallaDeProyecto({
         className="flex min-h-0 flex-1 flex-col"
       >
         <div
-          className={`mx-auto min-h-0 w-full max-w-content flex-1 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop) lg:py-6 ${
+          className={`ms-(--inicio-de-la-pagina) me-auto min-h-0 w-full max-w-formulario flex-1 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop) lg:py-6 ${
             enCelular
               ? 'overflow-y-auto'
               : '[&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
@@ -581,7 +581,7 @@ export function PantallaDeProyecto({
         </div>
 
         <footer className="flex-none border-t border-hairline bg-paper md:sticky md:bottom-0 md:z-20">
-          <div className="@container/barra mx-auto flex w-full max-w-content flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
+          <div className="@container/barra ms-(--inicio-de-la-pagina) me-auto flex w-full max-w-formulario flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
             {rechazo !== null && (
               <p role="alert" className="basis-full text-label font-medium text-alerta">
                 {mensajeDeSincronizacion(rechazo, {

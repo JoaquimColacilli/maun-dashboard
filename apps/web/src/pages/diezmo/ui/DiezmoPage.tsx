@@ -51,7 +51,7 @@ export function DiezmoPage() {
     estado.generado <= 0 ? 100 : Math.min(100, Math.round((estado.pagado / estado.generado) * 100));
 
   return (
-    <Pagina className="gap-4">
+    <Pagina ancho="ficha" className="gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Diezmo</h1>
         <Link

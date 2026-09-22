@@ -14,7 +14,7 @@ export interface PantallaDeLaVistaProps {
 
 function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accion?: ReactNode }) {
   return (
-    <Pagina>
+    <Pagina ancho="ficha">
       <div className="flex min-h-[60vh] items-center">
         <div className="flex max-w-[420px] flex-col items-start gap-3.5">
           <span className="font-display text-lema text-text-2">Taller MAUN</span>
@@ -29,7 +29,7 @@ function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accio
 
 function Esqueleto() {
   return (
-    <Pagina>
+    <Pagina ancho="ficha">
       <div aria-busy="true" className="flex flex-col gap-5">
         <span className="sr-only" role="status">
           Abriendo tu mueble
