@@ -110,6 +110,7 @@ export function FormularioDeConfiguracion({
     <form noValidate className="flex flex-col gap-3" onSubmit={enviar}>
       <Campo
         etiqueta="Nombre del taller"
+        className="max-w-(--campo-largo)"
         value={nombre}
         maxLength={LARGO_DEL_NOMBRE}
         error={error?.campo === 'nombre' ? error.mensaje : undefined}
@@ -119,6 +120,7 @@ export function FormularioDeConfiguracion({
       />
       <MoneyInput
         etiqueta="Sueldo que te asignás"
+        className="max-w-(--campo-medio)"
         ayuda="Lo que cada trabajo cobrado transfiere al hogar."
         value={sueldo}
         error={error?.campo === 'sueldo' ? error.mensaje : undefined}
@@ -126,6 +128,7 @@ export function FormularioDeConfiguracion({
       />
       <MoneyInput
         etiqueta="Costos fijos por mes"
+        className="max-w-(--campo-medio)"
         ayuda="Alquiler, servicios y todo lo que se paga aunque no entre trabajo."
         value={fijos}
         error={error?.campo === 'fijos' ? error.mensaje : undefined}
@@ -133,6 +136,7 @@ export function FormularioDeConfiguracion({
       />
       <MoneyInput
         etiqueta="Meta de Cocos"
+        className="max-w-(--campo-medio)"
         ayuda="A cuánto querés llegar en el ahorro invertido."
         value={meta}
         error={error?.campo === 'meta' ? error.mensaje : undefined}
@@ -140,6 +144,7 @@ export function FormularioDeConfiguracion({
       />
       <Campo
         etiqueta="Seña que pedís (%)"
+        className="max-w-(--campo-corto)"
         inputMode="decimal"
         ayuda="Qué parte del presupuesto pedís para confirmar un trabajo. Lo normal es la mitad, y en un trabajo puntual la podés cambiar."
         value={sena}
@@ -150,6 +155,7 @@ export function FormularioDeConfiguracion({
       />
       <Campo
         etiqueta="Tasa anual de Cocos (%)"
+        className="max-w-(--campo-corto)"
         inputMode="decimal"
         ayuda="Solo sirve para proyectar. Si no la sabés, dejala en 0."
         value={tasa}

@@ -142,6 +142,7 @@ export function FormularioDePerfil() {
       )}
       <Campo
         etiqueta="Tu nombre"
+        className="max-w-(--campo-largo)"
         value={nombre}
         autoComplete="name"
         onChange={(evento) => {
