@@ -260,6 +260,13 @@ dominio (gemela, atada por el comparador), porque se vuelve un enlace en una pá
 - **Borrar o archivar**: ver arriba. El showcase siempre archiva.
 - **El enlace de la reseña se carga en una sección nueva de Ajustes**: el showcase no dice dónde.
 - **Pedirla necesita señal** y la pantalla lo dice; el showcase no dibuja ese caso.
+- **Resultados y Preguntas tienen el mismo ancho y el mismo encabezado** (`PaginaDeOpiniones`), a
+  pedido de Joaquim después de usarlas: en el showcase Preguntas es más angosta y, en el celular,
+  sus pestañas van al lado del título mientras que las de Resultados bajan, así que cambiar de
+  pestaña movía los márgenes y las pestañas. Ahora las dos miden lo que Resultados, las pestañas van
+  siempre debajo del título en el celular y a la derecha desde tablet, y el formulario de una
+  pregunta tiene su propio tope para no estirarse. `opiniones.spec.ts` mide que al cambiar de
+  pestaña no se mueva nada.
 - **Toda fila de dos botones es una `FilaDeAcciones`** (ADR 0033): entran los dos a lo ancho o bajan
   los dos, cada uno a ancho completo. El showcase los deja con el ancho de su texto, uno al lado del
   otro o partidos: «Agregar una pregunta» y «Verla como la ve el cliente», «Guardar la pregunta» y

@@ -190,6 +190,28 @@ test('Resultados se abre sin señal, con lo último que se sincronizó', async (
   await context.setOffline(false);
 });
 
+test('Resultados y Preguntas tienen los mismos márgenes: cambiar de pestaña no mueve nada', async ({
+  page,
+}) => {
+  await page.goto('/opiniones');
+  const pestanas = page.getByRole('navigation', { name: 'Opiniones' });
+  await expect(titulo(page, 'Resultados')).toBeVisible(CARGA);
+  const enResultados = await pestanas.boundingBox();
+  const tituloDeResultados = await titulo(page, 'Resultados').boundingBox();
+
+  await pestanas.getByRole('link', { name: 'Preguntas' }).click();
+  await expect(titulo(page, 'Preguntas')).toBeVisible();
+  const enPreguntas = await pestanas.boundingBox();
+  const tituloDePreguntas = await titulo(page, 'Preguntas').boundingBox();
+
+  expect(tituloDePreguntas?.x).toBe(tituloDeResultados?.x);
+  expect(enPreguntas?.x).toBeCloseTo(enResultados?.x ?? 0, 0);
+  expect((enPreguntas?.x ?? 0) + (enPreguntas?.width ?? 0)).toBeCloseTo(
+    (enResultados?.x ?? 0) + (enResultados?.width ?? 0),
+    0,
+  );
+});
+
 test('la encuesta pública le pregunta a la base como anónima aunque el dueño tenga la sesión abierta', async ({
   page,
 }) => {

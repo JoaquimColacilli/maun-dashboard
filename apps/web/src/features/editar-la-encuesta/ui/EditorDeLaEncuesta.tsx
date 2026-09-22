@@ -486,7 +486,7 @@ export function EditorDeLaEncuesta() {
         <h2 id="de-un-trabajo" className="mb-1 text-body-lg font-semibold">
           Preguntas de un trabajo puntual
         </h2>
-        <p className="mb-3 text-label leading-relaxed text-text-3">
+        <p className="mb-3 max-w-[560px] text-label leading-relaxed text-text-3">
           Se agregan desde el trabajo, no desde acá, y se suman solo a esa encuesta. No entran en el
           promedio general: una pregunta que contestó una persona no es una estadística.
         </p>

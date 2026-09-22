@@ -110,7 +110,7 @@ export function EditorDeUnaPregunta({
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-1 pb-5 pl-10">
+    <div className="flex max-w-[760px] flex-col gap-4 pt-1 pb-5 pl-10">
       <div className="flex flex-col gap-1.75 text-label text-text-2">
         <label htmlFor={`${id}-texto`}>Qué se pregunta</label>
         <textarea

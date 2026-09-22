@@ -14,9 +14,9 @@ import {
   rutaDelProyecto,
   useEstadoSync,
 } from '@/shared/lib';
-import { Button, ConSalida, FilaDeAcciones, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, FilaDeAcciones, Icono } from '@/shared/ui';
 
-import { EncabezadoDeOpiniones } from './EncabezadoDeOpiniones';
+import { PaginaDeOpiniones } from './EncabezadoDeOpiniones';
 import {
   EnElTiempo,
   LoQueEscribieron,
@@ -158,9 +158,7 @@ export function ResultadosPage() {
   }
 
   return (
-    <Pagina className="pb-10 [&>*]:max-w-[1080px]">
-      <EncabezadoDeOpiniones seccion="resultados" />
-
+    <PaginaDeOpiniones seccion="resultados">
       {estadoSync.tipo === 'sin-conexion' && (
         <div className="mt-3.5 flex items-center gap-2 rounded-panel bg-ink px-3 py-2.25 text-label leading-snug text-paper">
           <Icono nombre="cloud-off" tamano={14} />
@@ -187,6 +185,6 @@ export function ResultadosPage() {
       <ConSalida valor={abierta}>
         {(respuestaId) => <FichaDeLaRespuesta respuestaId={respuestaId} alCerrar={cerrar} />}
       </ConSalida>
-    </Pagina>
+    </PaginaDeOpiniones>
   );
 }

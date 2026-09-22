@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { RUTA_DE_OPINIONES, RUTA_DE_PREGUNTAS } from '@/shared/lib';
+import { Pagina } from '@/shared/ui';
 
 type Seccion = 'resultados' | 'preguntas';
 
@@ -13,7 +15,7 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
   const actual = SECCIONES.find((opcion) => opcion.id === seccion);
 
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
+    <header className="flex flex-col items-start gap-3 md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
         <span className="text-label text-text-2">Opiniones</span>
         <h1 className="mt-0.5 font-display text-h1 leading-tight lg:text-h1-lg">
@@ -40,5 +42,20 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
         })}
       </nav>
     </header>
+  );
+}
+
+export function PaginaDeOpiniones({
+  seccion,
+  children,
+}: {
+  seccion: Seccion;
+  children: ReactNode;
+}) {
+  return (
+    <Pagina className="pb-10 [&>*]:max-w-[1080px]">
+      <EncabezadoDeOpiniones seccion={seccion} />
+      {children}
+    </Pagina>
   );
 }
