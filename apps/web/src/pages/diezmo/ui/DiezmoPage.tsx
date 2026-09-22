@@ -21,7 +21,7 @@ import {
   rutaDeMovimientoNuevo,
   rutaDelMovimiento,
 } from '@/shared/lib';
-import { ConSalida, Icono, Pagina } from '@/shared/ui';
+import { ConSalida, Icono, MontoQueEntra, Pagina } from '@/shared/ui';
 
 const RUTA_DEL_PAGO = rutaDeMovimientoNuevo({ clase: 'pago_diezmo' });
 
@@ -68,7 +68,7 @@ export function DiezmoPage() {
         <div className="flex min-w-0 flex-col gap-5 xl:sticky xl:top-5 xl:col-start-2 xl:row-start-1">
           <section
             aria-label="Estado del diezmo"
-            className="flex flex-col gap-1 rounded-panel bg-diezmo-tint px-5 py-5"
+            className="@container flex flex-col gap-1 rounded-panel bg-diezmo-tint px-5 py-5"
           >
             <span className="flex items-center gap-2 text-label font-semibold text-diezmo">
               <Icono nombre="church" tamano={16} />
@@ -81,9 +81,9 @@ export function DiezmoPage() {
             ) : (
               <span className="flex flex-wrap items-baseline gap-x-2">
                 <span className="text-body-lg font-semibold">{frase.antes}</span>
-                <span className="text-money-xl leading-tight font-semibold tabular-nums">
+                <MontoQueEntra tamano="destacado" className="leading-tight font-semibold">
                   {frase.importe}
-                </span>
+                </MontoQueEntra>
                 {frase.despues !== '' && (
                   <span className="text-body-lg font-semibold">{frase.despues}</span>
                 )}

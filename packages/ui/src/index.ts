@@ -11,6 +11,8 @@ export type { FilaDeAccionesProps } from './components/FilaDeAcciones.tsx';
 export { Icono } from './components/Icono.tsx';
 export type { IconoProps, NombreDeIcono } from './components/Icono.tsx';
 export { MoneyInput } from './components/MoneyInput.tsx';
+export { caracteresDe, MontoQueEntra } from './components/MontoQueEntra.tsx';
+export type { MontoQueEntraProps, TamanoDelMonto } from './components/MontoQueEntra.tsx';
 export type { MoneyInputProps } from './components/MoneyInput.tsx';
 export { Pagina } from './components/Pagina.tsx';
 export type { PaginaProps } from './components/Pagina.tsx';
