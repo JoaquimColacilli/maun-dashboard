@@ -59,7 +59,9 @@ export function ComoPagar({ trabajo }: ComoPagarProps) {
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-section font-semibold">{como.titulo}</h2>
-        {como.mercadoPago && <LogoDeMercadoPago />}
+        {como.mercadoPago && (
+          <LogoDeMercadoPago decorativo={como.link !== null} className="-my-1" />
+        )}
       </div>
 
       <div className="mt-1.5">

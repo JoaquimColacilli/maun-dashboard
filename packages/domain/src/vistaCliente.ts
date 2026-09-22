@@ -1,4 +1,3 @@
-import { esCuentaDeMercadoPago } from './cobro.ts';
 import type { EstadoProyecto } from './estados.ts';
 import { diasEntre } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
@@ -168,7 +167,6 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
   const transferencia = pideTransferencia && hayComoTransferir(cobro);
   const efectivo = ofrece(formas, 'efectivo');
   const link = transferencia ? cobro.link : null;
-  const cuenta = transferencia ? cobro.cbu : null;
 
   return {
     instancia,
@@ -176,7 +174,7 @@ export function comoPagar(trabajo: TrabajoDelCliente): ComoPagar | null {
     montoParaPegar: monto === null ? null : montoParaPegar(monto),
     transferencia,
     link,
-    mercadoPago: link !== null || (cuenta !== null && esCuentaDeMercadoPago(cuenta)),
+    mercadoPago: transferencia,
     efectivo,
     faltanLosDatos: pideTransferencia && !transferencia,
     titulo: TITULO,

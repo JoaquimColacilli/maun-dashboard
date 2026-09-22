@@ -731,27 +731,35 @@ describe('el link de Mercado Pago del taller', () => {
     expect(como?.pasos).toBe(PASOS_PARA_TRANSFERIR);
   });
 
-  it('con link, la cuenta es de Mercado Pago aunque el CBU sea de un banco', () => {
+  it('el logo de Mercado Pago va siempre que el pago se ofrezca por transferencia, con link', () => {
     expect(conCobro(CON_LINK, ['transferencia'])?.mercadoPago).toBe(true);
   });
 
-  it('sin link y con un CBU de banco, no', () => {
-    expect(conCobro({ ...CON_LINK, link: null }, ['transferencia'])?.mercadoPago).toBe(false);
+  it('y sin link también: depende de la forma de cobro, no del link', () => {
+    expect(conCobro({ ...CON_LINK, link: null }, ['transferencia'])?.mercadoPago).toBe(true);
   });
 
-  it('sin link pero con un CVU de Mercado Pago, sí', () => {
-    const cobro = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
-    expect(conCobro(cobro, ['transferencia'])?.mercadoPago).toBe(true);
+  it('no mira de qué entidad es la cuenta: con un CVU de Mercado Pago o un CBU de banco, igual', () => {
+    const conCvu = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
+    const conCbu = { ...CON_LINK, link: null, cbu: '0110001312345678901233' };
+    expect(conCobro(conCvu, ['transferencia'])?.mercadoPago).toBe(true);
+    expect(conCobro(conCbu, ['transferencia'])?.mercadoPago).toBe(true);
   });
 
-  it('en efectivo no hay cuenta que mirar, así que tampoco es de Mercado Pago', () => {
+  it('con transferencia y efectivo a elegir, también va', () => {
+    expect(conCobro(CON_LINK, ['transferencia', 'efectivo'])?.mercadoPago).toBe(true);
+  });
+
+  it('en efectivo, no', () => {
     const cobro = { ...CON_LINK, link: null, cbu: '0000003100012345678907' };
     expect(conCobro(cobro, ['efectivo'])?.mercadoPago).toBe(false);
   });
 
-  it('sin ningún dato cargado, tampoco', () => {
+  it('por transferencia pero sin ningún dato cargado, tampoco: no hay datos a los que acompañar', () => {
     const vacio = { alias: null, cbu: null, titular: null, cuit: null, link: null };
-    expect(conCobro(vacio, ['transferencia'])?.mercadoPago).toBe(false);
+    const como = conCobro(vacio, ['transferencia']);
+    expect(como?.faltanLosDatos).toBe(true);
+    expect(como?.mercadoPago).toBe(false);
   });
 
   it('no viaja si ese pago es en efectivo, igual que la cuenta', () => {
