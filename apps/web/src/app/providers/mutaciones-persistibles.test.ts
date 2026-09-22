@@ -1,9 +1,23 @@
 import 'fake-indexeddb/auto';
 
-import { onlineManager, QueryClient, type Mutation } from '@tanstack/react-query';
+import {
+  onlineManager,
+  QueryClient,
+  type Mutation,
+  type MutationOptions,
+} from '@tanstack/react-query';
 import { persistQueryClientRestore } from '@tanstack/react-query-persist-client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as agenda from '@/entities/agenda';
+import * as archivo from '@/entities/archivo';
+import * as cliente from '@/entities/cliente';
+import * as enlace from '@/entities/enlace';
+import * as movimiento from '@/entities/movimiento';
+import * as opinion from '@/entities/opinion';
+import * as proyecto from '@/entities/proyecto';
+import * as sesion from '@/entities/sesion';
+import * as configurarTaller from '@/features/configurar-taller';
 import {
   CLAVE_DE_PROYECTO,
   conUnaNecesidadEditada,
@@ -189,6 +203,50 @@ async function editarSinSenalYCerrar(): Promise<void> {
   olvidar();
   abierta.clear();
 }
+
+const MODULOS_CON_MUTACIONES = {
+  agenda,
+  archivo,
+  cliente,
+  enlace,
+  movimiento,
+  opinion,
+  proyecto,
+  sesion,
+  configurarTaller,
+};
+
+type MutacionExportada = [string, MutationOptions<unknown, unknown, never>];
+
+function mutacionesExportadas(): MutacionExportada[] {
+  return Object.values(MODULOS_CON_MUTACIONES).flatMap((modulo) =>
+    Object.entries(modulo).flatMap(([nombre, valor]: [string, unknown]): MutacionExportada[] =>
+      nombre.startsWith('MUTACION_') &&
+      typeof valor === 'object' &&
+      valor !== null &&
+      'mutationKey' in valor
+        ? [[nombre, valor as MutationOptions<unknown, unknown, never>]]
+        : [],
+    ),
+  );
+}
+
+describe('el registro de las mutaciones', () => {
+  it('toda mutación que exporta la app tiene su mutationFn registrada para reanudar la cola', () => {
+    const registrado = crearQueryClient();
+    const mutaciones = mutacionesExportadas();
+    expect(mutaciones.length).toBeGreaterThan(25);
+
+    const sinRegistrar = mutaciones
+      .filter(
+        ([, mutacion]) =>
+          mutacion.mutationKey === undefined ||
+          registrado.getMutationDefaults(mutacion.mutationKey).mutationFn !== mutacion.mutationFn,
+      )
+      .map(([nombre]) => nombre);
+    expect(sinRegistrar).toEqual([]);
+  });
+});
 
 beforeEach(() => {
   vi.mocked(guardarElProyecto).mockReset();
