@@ -18,7 +18,7 @@ import { Link } from 'react-router';
 import { iniciales } from '@/entities/cliente';
 import { BORDE_DEL_POLO, Carita, cuantasRespuestas } from '@/entities/opinion';
 import { diaYMes, haceCuanto, rutaDelProyecto } from '@/shared/lib';
-import { Icono } from '@/shared/ui';
+import { Icono, Tablero } from '@/shared/ui';
 
 import {
   BarraDivergente,
@@ -149,7 +149,11 @@ export function LoQueEscribieron({
           escalas y listo.
         </p>
       ) : (
-        <ul className="mt-3 grid list-none grid-cols-1 gap-5.5 p-0 @4xl:grid-cols-2 @4xl:gap-x-8 @4xl:gap-y-6.5">
+        <Tablero
+          tarjetaMinima="27rem"
+          como="ul"
+          className="mt-3 list-none grid-cols-1 gap-5.5 p-0 @min-[56rem]/tablero:gap-x-8 @min-[56rem]/tablero:gap-y-6.5"
+        >
           {comentarios.map((comentario) => (
             <UnComentario
               key={`${comentario.respuestaId}-${comentario.pregunta}`}
@@ -158,7 +162,7 @@ export function LoQueEscribieron({
               alAbrir={alAbrir}
             />
           ))}
-        </ul>
+        </Tablero>
       )}
     </section>
   );
