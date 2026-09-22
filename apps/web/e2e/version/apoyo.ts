@@ -90,3 +90,42 @@ export async function esperarElAviso(page: Page, desde: number): Promise<number>
   await expect(aviso(page)).toBeVisible(HASTA_EL_AVISO);
   return Date.now() - desde;
 }
+
+export async function conLaBEsperando(page: Page, arnes: Arnes): Promise<void> {
+  arnes.publicar('b');
+  await page.goto('/');
+  await expect(aviso(page)).toBeVisible(HASTA_EL_AVISO);
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const registro = await navigator.serviceWorker.getRegistration();
+        return registro?.waiting !== null && registro?.waiting !== undefined;
+      }),
+    )
+    .toBe(true);
+}
+
+export async function sinTransicionEnCurso(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => !(document as unknown as { activeViewTransition?: unknown }).activeViewTransition,
+  );
+}
+
+type VentanaQueCuenta = Window & { registrosDelServiceWorker: number };
+
+export async function contarLosRegistros(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const ventana = window as unknown as VentanaQueCuenta;
+    ventana.registrosDelServiceWorker = 0;
+    const contenedor = navigator.serviceWorker;
+    const registrar = contenedor.register.bind(contenedor);
+    contenedor.register = (...argumentos) => {
+      ventana.registrosDelServiceWorker += 1;
+      return registrar(...argumentos);
+    };
+  });
+}
+
+export function registrosDelDocumento(page: Page): Promise<number> {
+  return page.evaluate(() => (window as unknown as VentanaQueCuenta).registrosDelServiceWorker);
+}

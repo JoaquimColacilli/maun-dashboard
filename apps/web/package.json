@@ -27,7 +27,6 @@
     "react-hook-form": "catalog:",
     "react-router": "catalog:",
     "uqr": "catalog:",
-    "workbox-window": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -51,6 +50,7 @@
     "vite-plugin-pwa": "catalog:",
     "vitest": "catalog:",
     "workbox-precaching": "catalog:",
-    "workbox-routing": "catalog:"
+    "workbox-routing": "catalog:",
+    "workbox-window": "catalog:"
   }
 }

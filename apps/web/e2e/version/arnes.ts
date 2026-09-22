@@ -85,6 +85,8 @@ export interface Arnes {
   retenerLoNuevo: () => void;
   soltarLoNuevo: () => void;
   fallarLoNuevoUnaVez: () => void;
+  retenerLosChequeos: () => void;
+  soltarLosChequeos: () => void;
   pedidosDelServiceWorker: () => number;
   entregasDeLoNuevo: () => number;
   pedidosDeLoNuevo: () => number;
@@ -109,13 +111,21 @@ export async function levantarArnes(): Promise<Arnes> {
   let publicada: Version = 'a';
   let demora: Demora = { tipo: 'ninguna' };
   let fallarUnaVez = false;
+  let chequeosRetenidos = false;
   let entregas = 0;
   const pedidos: PedidoAlArnes[] = [];
   const retenidos = new Set<() => void>();
+  const chequeosEnEspera = new Set<() => void>();
 
   const soltar = () => {
     for (const seguir of retenidos) seguir();
     retenidos.clear();
+  };
+
+  const soltarChequeos = () => {
+    chequeosRetenidos = false;
+    for (const seguir of chequeosEnEspera) seguir();
+    chequeosEnEspera.clear();
   };
 
   const esperarLaDemora = async (): Promise<void> => {
@@ -132,8 +142,13 @@ export async function levantarArnes(): Promise<Arnes> {
 
   const atender = async (pedido: IncomingMessage, respuesta: ServerResponse): Promise<void> => {
     const ruta = decodeURIComponent(new URL(pedido.url ?? '/', ORIGEN_DEL_ARNES).pathname);
+    pedidos.push({ ruta, version: publicada, cuando: Date.now() });
+    if (ruta === '/sw.js' && chequeosRetenidos) {
+      await new Promise<void>((resolver) => {
+        chequeosEnEspera.add(resolver);
+      });
+    }
     const version = publicada;
-    pedidos.push({ ruta, version, cuando: Date.now() });
     const archivos = builds[version];
     const encontrado = archivos.get(ruta);
     const servida = encontrado === undefined ? '/index.html' : ruta;
@@ -199,6 +214,10 @@ export async function levantarArnes(): Promise<Arnes> {
     fallarLoNuevoUnaVez: () => {
       fallarUnaVez = true;
     },
+    retenerLosChequeos: () => {
+      chequeosRetenidos = true;
+    },
+    soltarLosChequeos: soltarChequeos,
     pedidosDelServiceWorker: () => pedidos.filter((pedido) => pedido.ruta === '/sw.js').length,
     entregasDeLoNuevo: () => entregas,
     pedidosDeLoNuevo: () =>
@@ -209,10 +228,12 @@ export async function levantarArnes(): Promise<Arnes> {
       fallarUnaVez = false;
       entregas = 0;
       soltar();
+      soltarChequeos();
       pedidos.length = 0;
     },
     cerrar: async () => {
       soltar();
+      soltarChequeos();
       for (const conexion of conexiones) conexion.destroy();
       await new Promise<void>((resolver) => {
         servidor.close(() => {
