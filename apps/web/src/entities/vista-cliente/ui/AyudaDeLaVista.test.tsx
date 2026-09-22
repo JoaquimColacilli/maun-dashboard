@@ -1,4 +1,4 @@
-import { HITOS } from '@maun/domain';
+import { HITO_DEL_ESTIMATIVO, HITOS, RELEVAMIENTO } from '@maun/domain';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,7 +31,7 @@ describe('la ayuda de la vista del cliente', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('El enlace y la pantalla');
-    expect(screen.getByText('1 de 6')).toBeInTheDocument();
+    expect(screen.getByText('1 de 7')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Atrás' })).toBeDisabled();
   });
 
@@ -39,21 +39,26 @@ describe('la ayuda de la vista del cliente', () => {
     abrir();
 
     tocar('Siguiente');
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Antes del presupuesto');
+
+    tocar('Siguiente');
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent(
       'El presupuesto y la aprobación',
     );
 
     tocar('Atrás');
+    tocar('Atrás');
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('El enlace y la pantalla');
   });
 
-  it('explica los cinco pasos con el mismo nombre que le muestra la pantalla al cliente', () => {
+  it('explica cada paso y el casillero con el mismo nombre que le muestra la pantalla al cliente', () => {
     abrir();
 
     const leido = screen.getByRole('dialog').textContent;
-    for (const hito of HITOS) {
+    for (const hito of [HITO_DEL_ESTIMATIVO, ...HITOS]) {
       expect(leido).toContain(hito.etiqueta);
     }
+    expect(leido).toContain(RELEVAMIENTO);
   });
 
   it('deja ver una lámina por vez', () => {
