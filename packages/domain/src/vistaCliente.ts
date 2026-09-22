@@ -525,13 +525,15 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
   const hitoActual = hitoDelTrabajo(trabajo, saldado, hoy);
   const camino = tuvoEstimativo(trabajo) ? [HITO_DEL_ESTIMATIVO, ...HITOS] : HITOS;
   const hitoIndex = camino.findIndex((hito) => hito.id === hitoActual);
+  const llegoAlFinal = hitoIndex === camino.length - 1;
   const fechaDe = fechasDeLosHitos(trabajo, saldado);
   const relevamiento = relevamientoDelTrabajo(trabajo, hoy);
 
   const hitos: HitoDeLaVista[] = camino.map((hito, indice) => ({
     id: hito.id,
     etiqueta: hito.etiqueta,
-    estado: indice < hitoIndex ? 'pasado' : indice === hitoIndex ? 'actual' : 'futuro',
+    estado:
+      indice < hitoIndex || llegoAlFinal ? 'pasado' : indice === hitoIndex ? 'actual' : 'futuro',
     fecha: indice <= hitoIndex ? fechaDe[hito.id] : null,
     texto:
       indice === hitoIndex

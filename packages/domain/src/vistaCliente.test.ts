@@ -237,7 +237,25 @@ describe('el camino', () => {
       }),
       HOY,
     );
-    expect(vista.hitos[4]).toMatchObject({ estado: 'actual', fecha: '2026-09-17' });
+    expect(vista.hitos[4]).toMatchObject({ estado: 'pasado', fecha: '2026-09-17' });
+  });
+
+  it('al llegar al final el camino queda completo: todo tildado, nada en curso, y el titular dice que está saldado', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'cobrado',
+        fechas: { ...trabajo().fechas, entregado: '2026-09-16', cobro: '2026-09-18' },
+        pagos: [pago('p1', '2026-08-04', 124_000_000)],
+      }),
+      HOY,
+    );
+    expect(vista.hitos.map((hito) => hito.estado)).toEqual(HITOS.map(() => 'pasado'));
+    expect(vista.hitos.some((hito) => hito.estado === 'actual')).toBe(false);
+    expect(vista.hitos[vista.hitoIndex]).toMatchObject({
+      id: 'pagado',
+      fecha: '2026-09-18',
+      texto: 'Listo, está saldado',
+    });
   });
 
   it('y con fecha de cobro, esa manda', () => {
@@ -825,6 +843,10 @@ const CON_ESTIMATIVO = (
     ? [['estimativo', 'actual'], ...HITOS.map((hito) => [hito.id, 'futuro'] as const)]
     : [['estimativo', 'pasado'], ...SIN_ESTIMATIVO(actual)];
 
+const COMPLETO: readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] = HITOS.map(
+  (hito) => [hito.id, 'pasado'] as const,
+);
+
 const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
   {
     nombre: 'contacto: se prepara el presupuesto y falta ir a medir, sin día todavía',
@@ -990,22 +1012,36 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
     sigue: SIGUE.entregado,
   },
   {
-    nombre: 'entregado y saldado',
+    nombre: 'entregado y saldado: el camino queda completo, sin ningún paso en curso',
     cambios: { estado: 'entregado', pagos: [pago('p1', '2026-09-16', 124_000_000)] },
-    camino: SIN_ESTIMATIVO('pagado'),
+    camino: COMPLETO,
     titular: 'Listo, está saldado',
     relevamiento: null,
     nota: null,
     sigue: '',
   },
   {
-    nombre: 'cobrado',
+    nombre: 'cobrado: el camino queda completo, sin ningún paso en curso',
     cambios: {
       estado: 'cobrado',
       fechas: fechas({ cobro: '2026-09-17' }),
       pagos: [pago('p1', '2026-09-17', 124_000_000)],
     },
-    camino: SIN_ESTIMATIVO('pagado'),
+    camino: COMPLETO,
+    titular: 'Listo, está saldado',
+    relevamiento: null,
+    nota: null,
+    sigue: '',
+  },
+  {
+    nombre:
+      'cobrado después de un estimativo: el camino entero queda completo, estimativo incluido',
+    cambios: {
+      estado: 'cobrado',
+      fechas: fechas({ estimativo: '2026-08-20', cobro: '2026-09-17' }),
+      pagos: [pago('p1', '2026-09-17', 124_000_000)],
+    },
+    camino: [['estimativo', 'pasado'], ...COMPLETO],
     titular: 'Listo, está saldado',
     relevamiento: null,
     nota: null,

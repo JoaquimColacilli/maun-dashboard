@@ -1,6 +1,6 @@
 # 0046. La vista del cliente: una lista blanca en la base, no una pantalla que esconde
 
-Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md).
+Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso.
 
 ## Contexto
 
@@ -70,6 +70,15 @@ No hay dos implementaciones del payload. Si las hubiera, tarde o temprano él mu
 teléfono y el cliente ve otra. Los derivados de presentación —el camino de hitos, qué va en cifra
 grande, la línea de tiempo— viven una sola vez en `@maun/domain` (`vistaDelCliente`), que es puro y
 no puede filtrar nada que no le hayan pasado.
+
+**Corregido el 2026-09-22: el camino de un trabajo terminado queda completo.** Con el trabajo
+entregado y sin saldo, o cobrado, el último paso («Pagado») era el paso actual, y el camino pinta el
+actual con el ámbar de lo que está en curso: el cliente leía «Listo, está saldado» con el último punto
+hueco, como si faltara algo. Un trabajo terminado no tiene nada en curso. Al llegar al último paso,
+`vistaDelCliente` los marca todos como `pasado` y el camino queda tildado de punta a punta, que es lo
+que decía el diseño del escenario terminado («el camino queda completo»). El titular sigue saliendo
+de ese paso: «Listo, está saldado». `CaminoDeHitos` pinta la línea hasta el último paso alcanzado, no
+hasta el actual, porque en ese caso no hay ninguno.
 
 **Corregido el 2026-09-19.** Una cosa no puede ser la misma en las dos pantallas: cuánto hace que
 pasó algo. La app del dueño lo dice en todos lados —«Presupuesto enviado hace 9 días, sin

@@ -108,6 +108,34 @@ describe('la vista del cliente', () => {
     ).toBeInTheDocument();
   });
 
+  it('entregado y pagado, el camino queda completo: los cinco pasos tildados y ninguno en curso', () => {
+    dibujar(
+      trabajo({
+        estado: 'cobrado',
+        fechas: {
+          estimativo: null,
+          presupuesto: '2026-08-01',
+          aprobado: '2026-08-04',
+          inicio: '2026-08-24',
+          entregaPautada: '2026-09-16',
+          entregado: '2026-09-16',
+          cobro: '2026-09-17',
+        },
+        pagos: [
+          { id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: centavos(40_000_000) },
+          { id: 'p2', fecha: '2026-09-17', concepto: 'Saldo final', monto: centavos(84_000_000) },
+        ],
+      }),
+    );
+
+    const camino = screen.getByRole('region', { name: 'En qué anda' });
+    const pasos = within(camino).getAllByRole('listitem');
+    expect(pasos).toHaveLength(5);
+    expect(pasos.filter((paso) => paso.querySelector('svg.lucide-check') !== null)).toHaveLength(5);
+    expect(pasos[4]).toHaveTextContent('Listo, está saldado');
+    expect(pasos[4]).toHaveTextContent('jue 17 sep');
+  });
+
   it('cuando hace días que no pasa nada, no se lo cuenta: dice qué sigue', () => {
     const dibujada = dibujar(
       trabajo({
