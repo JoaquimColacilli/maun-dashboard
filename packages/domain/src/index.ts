@@ -31,11 +31,16 @@ export {
 export {
   catalogoDeNecesidades,
   claveDelNombre,
+  cuentaDeLoQueHaceFalta,
+  segmentosDeLoQueHaceFalta,
   sugerenciasDeNecesidad,
   SUGERENCIAS_MAXIMAS,
   TIPOS_DE_NECESIDAD,
+  type CuentaDeLoQueHaceFalta,
   type NecesidadUsada,
   type NombreDelCatalogo,
+  type ParaContar,
+  type SegmentoDeLoQueHaceFalta,
   type TipoDeNecesidad,
 } from './necesidades.ts';
 

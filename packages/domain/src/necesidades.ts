@@ -1,8 +1,47 @@
-export const TIPOS_DE_NECESIDAD = ['herraje', 'herramienta'] as const;
+export const TIPOS_DE_NECESIDAD = ['material', 'herraje', 'herramienta'] as const;
 
 export type TipoDeNecesidad = (typeof TIPOS_DE_NECESIDAD)[number];
 
 export const SUGERENCIAS_MAXIMAS = 6;
+
+export interface ParaContar {
+  tipo: TipoDeNecesidad;
+  listo: boolean;
+}
+
+export interface SegmentoDeLoQueHaceFalta<T extends ParaContar> {
+  tipo: TipoDeNecesidad;
+  items: T[];
+  listos: number;
+}
+
+export interface CuentaDeLoQueHaceFalta {
+  cuantas: number;
+  listas: number;
+}
+
+export function segmentosDeLoQueHaceFalta<T extends ParaContar>(
+  items: readonly T[],
+): SegmentoDeLoQueHaceFalta<T>[] {
+  return TIPOS_DE_NECESIDAD.map((tipo) => {
+    const delTipo = items.filter((item) => item.tipo === tipo);
+    return {
+      tipo,
+      items: delTipo,
+      listos: delTipo.filter((item) => item.listo).length,
+    };
+  });
+}
+
+export function cuentaDeLoQueHaceFalta(items: readonly ParaContar[]): CuentaDeLoQueHaceFalta {
+  return segmentosDeLoQueHaceFalta(items).reduce<CuentaDeLoQueHaceFalta>(
+    (cuenta, segmento) => ({
+      cuantas: cuenta.cuantas + segmento.items.length,
+      listas: cuenta.listas + segmento.listos,
+    }),
+    { cuantas: 0, listas: 0 },
+  );
+}
 
 export interface NecesidadUsada {
   tipo: TipoDeNecesidad;
