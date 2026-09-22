@@ -3,7 +3,9 @@
 Estado: aceptada, 2026-09-21. Completa al [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md)
 (la lista blanca suma dos datos y el camino, un paso optativo) y corrige lo que ese ADR decía de la
 entrada desde la app. Usa el embudo del [0038](0038-el-embudo-del-seguimiento.md) tal como está, sin
-tocarlo.
+tocarlo. Corregida el 2026-09-22: el casillero del relevamiento pasó a ser una (i) con una nota en
+el paso en curso ([ADR 0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)); cuándo se
+da por hecha la visita sigue siendo lo de acá.
 
 ## Contexto
 

@@ -1,7 +1,12 @@
-import { comoPagar, type ArchivoDelCliente, type VistaDelCliente as Vista } from '@maun/domain';
+import {
+  comoPagar,
+  notaDelRelevamiento,
+  type ArchivoDelCliente,
+  type VistaDelCliente as Vista,
+} from '@maun/domain';
 
 import { urlDelArchivo } from '@/shared/api';
-import { fechaLarga, formatearPesos } from '@/shared/lib';
+import { diaYMesCorto, fechaLarga, formatearPesos } from '@/shared/lib';
 import { Icono, Pagina } from '@/shared/ui';
 
 import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
@@ -83,6 +88,12 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
         ? `Entrega pautada para el ${fechaLarga(trabajo.fechas.entregaPautada, hoy)}`
         : '';
 
+  const nota = notaDelRelevamiento(vista, {
+    larga: (fecha) => fechaLarga(fecha, hoy),
+    corta: diaYMesCorto,
+  });
+  const bajada = [nota?.resumen ?? '', entrega].filter((parte) => parte !== '').join(' · ');
+
   const visuales = trabajo.archivos.filter(esImagen);
   const documentos = trabajo.archivos.filter((archivo) => !esImagen(archivo));
 
@@ -131,7 +142,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                 </div>
                 <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
                   <span className="text-body-lg font-semibold">{etapa?.texto}</span>
-                  {entrega !== '' && <span className="text-body text-text-2">{entrega}</span>}
+                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
                 </div>
               </>
             ) : (
@@ -140,7 +151,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                   <span className="text-money-xl leading-tight font-semibold text-pretty">
                     {etapa?.texto}
                   </span>
-                  {entrega !== '' && <span className="text-body text-text-2">{entrega}</span>}
+                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
                 </div>
                 <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
                   <Cifra
@@ -161,7 +172,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
 
           <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
-            <CaminoDeHitos hitos={vista.hitos} relevamiento={vista.relevamiento} hoy={hoy} />
+            <CaminoDeHitos hitos={vista.hitos} nota={nota} hoy={hoy} />
             {vista.sigue !== '' && (
               <p className="mt-3.5 text-body leading-relaxed text-text-2">{vista.sigue}</p>
             )}

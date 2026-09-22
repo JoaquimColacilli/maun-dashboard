@@ -48,7 +48,7 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 ## La vista del cliente (ADR 0046)
 
 `vistaDelCliente(trabajo, hoy)` es el único cálculo de la pantalla que ve el cliente: el camino de
-hitos, el casillero del relevamiento, la línea de tiempo curada, qué sigue, y **qué se lee primero**.
+hitos, el relevamiento, la línea de tiempo curada, qué sigue, y **qué se lee primero**.
 Recibe el payload que armó la base y no puede filtrar nada, porque lo que no puede ver no le llega.
 **Es el único lugar donde una etapa interna se traduce a lo que ve el cliente** (ADR 0058): la base
 manda el dato crudo y la pantalla dibuja. El test «qué ve el cliente en cada etapa del trabajo» lo
@@ -58,10 +58,12 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
   que lo tuvieron (`tuvoEstimativo`: la etapa actual o `fechas.estimativo`). **Compará por paso, nunca
   por posición**: `llegoAl(vista, 'aprobado')`, no `hitoIndex >= 1`, porque con el estimativo el
   índice se corre uno.
-- **El casillero del relevamiento lo decide `relevamientoDelTrabajo`** con la etapa, el día y la
-  marca de la visita, y no existe donde no hace falta medir. La tabla de qué muestra en cada caso
-  está en el ADR 0058. Nunca promete un día que ya pasó, y la visita de hoy no se da por hecha sin la
-  marca.
+- **Si la visita está pendiente o hecha lo decide `relevamientoDelTrabajo`** con la etapa, el día y
+  la marca de la visita, y no existe donde no hace falta medir. La tabla de cada caso está en el ADR 0058. Nunca promete un día que ya pasó, y la visita de hoy no se da por hecha sin la marca.
+- **La nota de la (i) la arma `notaDelRelevamiento(vista, formatos)`** (ADR 0059): solo en los pasos
+  del presupuesto, y con el texto, las líneas y el resumen del titular ya escritos. Las fechas llegan
+  formateadas por `formatos`, porque el formateo no vive acá. Sin estimativo y sin medir no hay nota:
+  no hay número que pueda cambiar.
 - **El foco se invierte solo y no es configurable**: hasta la entrega manda la etapa y el saldo va
   completo en la fila de abajo; desde la entrega con saldo pendiente, manda el saldo. Es
   `foco: 'saldo' | 'estado'` y sale de haber llegado a la entrega con `saldo > 0`.
