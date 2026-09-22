@@ -126,10 +126,9 @@ async function agregarNecesidad(
   });
   await expect(boton).toBeEnabled();
   await boton.click();
-  await expect(bloque.locator(`[data-necesidad]`).filter({ hasText: nombre })).toHaveCount(
-    1,
-    CARGA,
-  );
+  await expect(
+    bloque.getByRole('textbox', { name: `Nombre de ${nombre}`, exact: true }),
+  ).toHaveCount(1, CARGA);
 }
 
 test.describe('los costos estimados de cotizar', () => {
@@ -227,10 +226,9 @@ test.describe('lo que hace falta para el trabajo', () => {
         CARGA,
       )
       .toBe(true);
-    await expect(loQueHaceFalta(page).getByText('Bisagras')).toHaveCSS(
-      'text-decoration-line',
-      'line-through',
-    );
+    await expect(
+      loQueHaceFalta(page).getByRole('textbox', { name: 'Nombre de Bisagras', exact: true }),
+    ).toHaveCSS('text-decoration-line', 'line-through');
 
     // El mismo trabajo pasa a obra: el pasaje guarda el agregado sin mandar lo que hace falta, así
     // que la base no lo toca y las dos listas siguen ahí.
@@ -592,7 +590,12 @@ test.describe('sin señal', () => {
     await expect(reabierta.getByRole('heading', { level: 1, name: 'E2E Sin señal' })).toBeVisible(
       CARGA,
     );
-    await expect(loQueHaceFalta(reabierta).getByText('Bisagras sin señal')).toBeVisible(CARGA);
+    await expect(
+      loQueHaceFalta(reabierta).getByRole('textbox', {
+        name: 'Nombre de Bisagras sin señal',
+        exact: true,
+      }),
+    ).toHaveValue('Bisagras sin señal', CARGA);
     await expect(indicadorDeSync(reabierta)).toContainText('1 cambio');
 
     await context.setOffline(false);

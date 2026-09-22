@@ -19,8 +19,8 @@ export interface TipoDeLaLista {
   listo: string;
   listos: string;
   placeholder: string;
+  ejemploDeCantidad: string;
   ayuda: string;
-  conCantidad: boolean;
 }
 
 export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
@@ -33,8 +33,8 @@ export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
     listo: 'Listo',
     listos: 'listos',
     placeholder: 'Bisagras, pistones, tiradores…',
+    ejemploDeCantidad: '6',
     ayuda: 'Lo que hay que pedir para este trabajo. La cantidad es opcional.',
-    conCantidad: true,
   },
   {
     tipo: 'herramienta',
@@ -45,10 +45,16 @@ export const LISTAS_DEL_TRABAJO: readonly TipoDeLaLista[] = [
     listo: 'Lista',
     listos: 'listas',
     placeholder: 'Sierra circular, lijadora de banda…',
-    ayuda: 'Lo que hay que tener a mano el día que lo hagas.',
-    conCantidad: false,
+    ejemploDeCantidad: '1',
+    ayuda: 'Lo que hay que tener a mano el día que lo hagas. La cantidad es opcional.',
   },
 ];
+
+export function nombreConCantidad(necesidad: Pick<Necesidad, 'nombre' | 'cantidad'>): string {
+  return necesidad.cantidad === null
+    ? necesidad.nombre
+    : `${String(necesidad.cantidad)} ${necesidad.nombre}`;
+}
 
 export function necesidadesDelProyecto(replica: Replica, proyectoId: string): Necesidad[] {
   return filasDe(replica, 'necesidades')
@@ -124,6 +130,18 @@ export function conUnaNecesidadTildada(
 ): NecesidadParaGuardar[] {
   return comoViajan(necesidades).map((necesidad) =>
     necesidad.id === id ? { ...necesidad, listo } : necesidad,
+  );
+}
+
+export function conUnaNecesidadEditada(
+  necesidades: readonly Necesidad[],
+  id: string,
+  cambios: { nombre: string; cantidad: number | null },
+): NecesidadParaGuardar[] {
+  return comoViajan(necesidades).map((necesidad) =>
+    necesidad.id === id && necesidad.borrado !== true
+      ? { ...necesidad, nombre: cambios.nombre, cantidad: cambios.cantidad }
+      : necesidad,
   );
 }
 

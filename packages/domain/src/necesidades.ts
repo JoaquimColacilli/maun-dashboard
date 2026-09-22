@@ -4,6 +4,35 @@ export type TipoDeNecesidad = (typeof TIPOS_DE_NECESIDAD)[number];
 
 export const SUGERENCIAS_MAXIMAS = 6;
 
+export const CANTIDAD_MAXIMA = 999;
+
+export const LARGO_MAXIMO_DEL_NOMBRE = 120;
+
+export function cantidadEscrita(escrito: string): number | null {
+  const limpio = escrito.trim();
+  if (!/^\d+$/.test(limpio)) return null;
+  const numero = Number(limpio);
+  return numero > 0 ? Math.min(numero, CANTIDAD_MAXIMA) : null;
+}
+
+export function cantidadEditada(escrito: string, anterior: number | null): number | null {
+  return cantidadEscrita(escrito) ?? anterior;
+}
+
+export function nombreEscrito(escrito: string): string {
+  const limpio = escrito.replace(/\s+/g, ' ').trim();
+  return Array.from(limpio).slice(0, LARGO_MAXIMO_DEL_NOMBRE).join('').trim();
+}
+
+export function nombreEditado(escrito: string, anterior: string): string {
+  const nombre = nombreEscrito(escrito);
+  return nombre === '' ? anterior : nombre;
+}
+
+export function esNombreDeNecesidad(nombre: string): boolean {
+  return nombre.trim() !== '' && Array.from(nombre).length <= LARGO_MAXIMO_DEL_NOMBRE;
+}
+
 export interface ParaContar {
   tipo: TipoDeNecesidad;
   listo: boolean;

@@ -6,12 +6,14 @@ import {
   catalogoDelTaller,
   comoViajan,
   conUnaNecesidadDeVuelta,
+  conUnaNecesidadEditada,
   conUnaNecesidadMas,
   conUnaNecesidadTildada,
   cuantasListas,
   LISTAS_DEL_TRABAJO,
   necesidadesDelProyecto,
   necesidadesPorTipo,
+  nombreConCantidad,
   sinUnaNecesidad,
   sugerenciasParaEscribir,
   type Necesidad,
@@ -43,12 +45,15 @@ function conFilas(filas: readonly Necesidad[]): Replica {
 const NOMBRES = (entradas: readonly { nombre: string }[]) => entradas.map((e) => e.nombre);
 
 describe('las dos listas del trabajo', () => {
-  it('son las dos que él escribe a mano, y solo los herrajes llevan cantidad', () => {
+  it('son las dos que él escribe a mano, y las dos llevan cantidad opcional', () => {
     expect(LISTAS_DEL_TRABAJO.map((lista) => lista.titulo)).toEqual([
       'Herrajes necesarios',
       'Herramientas necesarias',
     ]);
-    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.conCantidad)).toEqual([true, false]);
+    expect(LISTAS_DEL_TRABAJO.map((lista) => lista.cuantos)).toEqual([
+      'Cuántos herrajes',
+      'Cuántas herramientas',
+    ]);
   });
 
   it('cada una habla en su género: no dice «agregar el herramienta»', () => {
@@ -151,6 +156,32 @@ describe('los cambios viajan con la lista entera', () => {
     const quedan = conUnaNecesidadTildada(filas, 'n1', true);
     expect(quedan[0]).toMatchObject({ id: 'n1', listo: true });
     expect(quedan[1]).toMatchObject({ id: 'n2', listo: false });
+  });
+
+  it('editar una le cambia el nombre y la cantidad, y no la tilda ni la destilda', () => {
+    const tildadas = [
+      necesidad({ id: 'n1', nombre: 'bisagras', cantidad: 4, listo: true }),
+      necesidad({ id: 'n2', nombre: 'Tarugos' }),
+    ];
+    const quedan = conUnaNecesidadEditada(tildadas, 'n1', {
+      nombre: 'Bisagras Cazoleta 35',
+      cantidad: 6,
+    });
+    expect(quedan).toEqual([
+      { id: 'n1', tipo: 'herraje', nombre: 'Bisagras Cazoleta 35', cantidad: 6, listo: true },
+      { id: 'n2', tipo: 'herraje', nombre: 'Tarugos', cantidad: null, listo: false },
+    ]);
+  });
+
+  it('a una que no tenía cantidad se le puede poner, y las demás viajan como estaban', () => {
+    const quedan = conUnaNecesidadEditada(filas, 'n2', { nombre: 'Tarugos', cantidad: 20 });
+    expect(quedan[0]).toEqual(comoViajan(filas)[0]);
+    expect(quedan[1]).toMatchObject({ id: 'n2', cantidad: 20 });
+  });
+
+  it('el nombre con su cantidad es lo que dicen la casilla y el tacho', () => {
+    expect(nombreConCantidad({ nombre: 'Bisagras', cantidad: 6 })).toBe('6 Bisagras');
+    expect(nombreConCantidad({ nombre: 'Tarugos', cantidad: null })).toBe('Tarugos');
   });
 
   it('sacar una la manda marcada de baja, con su id solo', () => {

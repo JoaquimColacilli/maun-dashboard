@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CANTIDAD_MAXIMA,
+  cantidadEditada,
+  cantidadEscrita,
   catalogoDeNecesidades,
   claveDelNombre,
   cuentaDeLoQueHaceFalta,
+  esNombreDeNecesidad,
+  LARGO_MAXIMO_DEL_NOMBRE,
+  nombreEditado,
+  nombreEscrito,
   segmentosDeLoQueHaceFalta,
   sugerenciasDeNecesidad,
   SUGERENCIAS_MAXIMAS,
@@ -93,6 +100,85 @@ describe('la cuenta del encabezado', () => {
     const cuenta = cuentaDeLoQueHaceFalta(items);
     expect(cuenta.cuantas).toBe(segmentos.reduce((suma, s) => suma + s.items.length, 0));
     expect(cuenta.listas).toBe(segmentos.reduce((suma, s) => suma + s.listos, 0));
+  });
+});
+
+describe('la cantidad que se escribe', () => {
+  it('es un entero mayor que cero', () => {
+    expect(cantidadEscrita('6')).toBe(6);
+    expect(cantidadEscrita(' 12 ')).toBe(12);
+  });
+
+  it('vacía, en cero o con algo que no es un número, no hay cantidad', () => {
+    expect(cantidadEscrita('')).toBeNull();
+    expect(cantidadEscrita('0')).toBeNull();
+    expect(cantidadEscrita('000')).toBeNull();
+    expect(cantidadEscrita('-3')).toBeNull();
+    expect(cantidadEscrita('2,5')).toBeNull();
+    expect(cantidadEscrita('dos')).toBeNull();
+  });
+
+  it('se topea en el máximo', () => {
+    expect(cantidadEscrita('5000')).toBe(CANTIDAD_MAXIMA);
+  });
+});
+
+describe('editar la cantidad de algo ya cargado', () => {
+  it('toma el número nuevo', () => {
+    expect(cantidadEditada('6', 4)).toBe(6);
+    expect(cantidadEditada('3', null)).toBe(3);
+  });
+
+  it('vacía o en cero vuelve a la de antes: para sacar un ítem está el tacho, no el número', () => {
+    expect(cantidadEditada('', 4)).toBe(4);
+    expect(cantidadEditada('0', 4)).toBe(4);
+    expect(cantidadEditada('', null)).toBeNull();
+    expect(cantidadEditada('0', null)).toBeNull();
+  });
+});
+
+describe('el nombre que se escribe', () => {
+  it('se recorta de los dos lados y junta los espacios de más, saltos de línea incluidos', () => {
+    expect(nombreEscrito('  Bisagras   Cazoleta\n35 ')).toBe('Bisagras Cazoleta 35');
+  });
+
+  it('se corta en el largo máximo, contado en caracteres y no en unidades de UTF-16', () => {
+    expect(Array.from(nombreEscrito('ñ'.repeat(200)))).toHaveLength(LARGO_MAXIMO_DEL_NOMBRE);
+    expect(Array.from(nombreEscrito('🔩'.repeat(200)))).toHaveLength(LARGO_MAXIMO_DEL_NOMBRE);
+  });
+
+  it('si el corte deja un espacio al final, se va', () => {
+    const escrito = `${'a'.repeat(LARGO_MAXIMO_DEL_NOMBRE - 1)} b`;
+    expect(nombreEscrito(escrito)).toBe('a'.repeat(LARGO_MAXIMO_DEL_NOMBRE - 1));
+  });
+
+  it('lo que sale siempre lo acepta la base', () => {
+    for (const escrito of ['Bisagras', ` ${'x'.repeat(300)} `, '🔩'.repeat(130), 'a b']) {
+      expect(esNombreDeNecesidad(nombreEscrito(escrito))).toBe(true);
+    }
+  });
+});
+
+describe('editar el nombre de algo ya cargado', () => {
+  it('toma el nombre nuevo, recortado', () => {
+    expect(nombreEditado('  Bisagras Cazoleta 35 Cierre Suave ', 'bisagras')).toBe(
+      'Bisagras Cazoleta 35 Cierre Suave',
+    );
+  });
+
+  it('no puede quedar vacío: en blanco vuelve al de antes', () => {
+    expect(nombreEditado('', 'Bisagras')).toBe('Bisagras');
+    expect(nombreEditado('   ', 'Bisagras')).toBe('Bisagras');
+  });
+});
+
+describe('el nombre que acepta la base', () => {
+  it('es el check de la tabla: no en blanco y hasta el largo máximo', () => {
+    expect(esNombreDeNecesidad('Bisagras')).toBe(true);
+    expect(esNombreDeNecesidad('')).toBe(false);
+    expect(esNombreDeNecesidad('   ')).toBe(false);
+    expect(esNombreDeNecesidad('a'.repeat(LARGO_MAXIMO_DEL_NOMBRE))).toBe(true);
+    expect(esNombreDeNecesidad('a'.repeat(LARGO_MAXIMO_DEL_NOMBRE + 1))).toBe(false);
   });
 });
 

@@ -9,7 +9,9 @@ import {
   estaLiquidado,
   esLinkDeMercadoPago,
   esLinkDeResena,
+  esNombreDeNecesidad,
   formasDeCobro,
+  LARGO_MAXIMO_DEL_NOMBRE,
   pagosPorDelante,
   puedeCambiarEstado,
   puedeLiquidar,
@@ -448,6 +450,57 @@ export async function compararLinkDeResena(cliente: pg.Client): Promise<string[]
     return ts === fila.pasa
       ? []
       : [`link de reseña ${JSON.stringify(valor)}: SQL ${String(fila.pasa)}, TS ${String(ts)}`];
+  });
+}
+
+const NOMBRES_DE_NECESIDAD_A_PROBAR: readonly string[] = [
+  '',
+  '   ',
+  'Bisagras',
+  ' Tarugos ',
+  'a'.repeat(LARGO_MAXIMO_DEL_NOMBRE - 1),
+  'a'.repeat(LARGO_MAXIMO_DEL_NOMBRE),
+  'a'.repeat(LARGO_MAXIMO_DEL_NOMBRE + 1),
+  'ñ'.repeat(LARGO_MAXIMO_DEL_NOMBRE),
+  'ñ'.repeat(LARGO_MAXIMO_DEL_NOMBRE + 1),
+  '🔩'.repeat(LARGO_MAXIMO_DEL_NOMBRE),
+  '🔩'.repeat(LARGO_MAXIMO_DEL_NOMBRE + 1),
+];
+
+export async function compararNombreDeNecesidad(cliente: pg.Client): Promise<string[]> {
+  const { rows: definicion } = await cliente.query<{ def: string }>(
+    `select pg_get_constraintdef(c.oid) as def
+     from pg_constraint c
+     where c.conrelid = 'public.necesidades'::regclass and c.conname = 'necesidades_nombre_valido'`,
+  );
+  const cruda = definicion[0]?.def;
+  if (cruda === undefined) return ['no existe el check necesidades_nombre_valido en la base'];
+
+  const expresion = cruda
+    .replace(/^CHECK\s*\(/, '')
+    .replace(/\)$/, '')
+    .replaceAll('nombre', 'c.valor');
+
+  const { rows } = await cliente.query<{ pasa: boolean }>(
+    `select coalesce((${expresion}), false) as pasa
+     from unnest($1::text[]) with ordinality as c (valor, orden)
+     order by c.orden`,
+    [NOMBRES_DE_NECESIDAD_A_PROBAR],
+  );
+  if (rows.length !== NOMBRES_DE_NECESIDAD_A_PROBAR.length) {
+    return [
+      `el check del nombre de lo que hace falta devolvió ${String(rows.length)} filas para ${String(NOMBRES_DE_NECESIDAD_A_PROBAR.length)} casos`,
+    ];
+  }
+
+  return rows.flatMap((fila, i) => {
+    const valor = NOMBRES_DE_NECESIDAD_A_PROBAR[i] ?? '';
+    const ts = esNombreDeNecesidad(valor);
+    return ts === fila.pasa
+      ? []
+      : [
+          `nombre de lo que hace falta de ${String(Array.from(valor).length)} caracteres ${JSON.stringify(valor.slice(0, 12))}: SQL ${String(fila.pasa)}, TS ${String(ts)}`,
+        ];
   });
 }
 
@@ -1951,6 +2004,7 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararFormasDeCobro(cliente)),
     ...(await compararLinkDeCobro(cliente)),
     ...(await compararLinkDeResena(cliente)),
+    ...(await compararNombreDeNecesidad(cliente)),
     ...(await compararValidacionDeRespuestas(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),

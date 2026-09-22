@@ -29,9 +29,16 @@ export {
 } from './costos.ts';
 
 export {
+  CANTIDAD_MAXIMA,
+  cantidadEditada,
+  cantidadEscrita,
   catalogoDeNecesidades,
   claveDelNombre,
   cuentaDeLoQueHaceFalta,
+  esNombreDeNecesidad,
+  LARGO_MAXIMO_DEL_NOMBRE,
+  nombreEditado,
+  nombreEscrito,
   segmentosDeLoQueHaceFalta,
   sugerenciasDeNecesidad,
   SUGERENCIAS_MAXIMAS,
