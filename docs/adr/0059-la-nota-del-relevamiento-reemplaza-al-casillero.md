@@ -3,6 +3,7 @@
 Estado: aceptada, 2026-09-22. Corrige la parte del casillero del
 [0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md); el resto de ese ADR (el
 estimativo como paso, «lo próximo», la lista blanca y la entrada desde la app) sigue igual.
+Corregida el mismo día: la (i) va al lado de la fecha del paso, no después del rótulo.
 
 ## Contexto
 
@@ -13,11 +14,12 @@ de abajo del titular.
 
 ## Decisión
 
-- **Una sola (i) en toda la pantalla, en el flujo del rótulo del paso en curso, después de la última
-  palabra.** No se pega la última palabra al botón: en la PC las columnas miden unos 110 px y
-  «presupuesto» con la (i) no entra, así que el par se salía a la columna siguiente, debajo del paso
-  de al lado (lo mostró la captura). Suelto, si no entra en el renglón baja al siguiente, adentro de
-  su columna. El titular grande no lleva otra.
+- **Una sola (i) en toda la pantalla, a la derecha de la fecha del paso en curso**, en la línea de
+  abajo del rótulo. Si el paso todavía no tiene fecha (el presupuesto en preparación), va sola en esa
+  línea, alineada con el texto. Primero iba después de la última palabra del rótulo, pero en la PC
+  las columnas miden unos 110 px: no entraba, bajaba sola a otro renglón corrida por su margen y el
+  dueño la vio mal. La línea de la fecha usa también el espacio entre columnas, para que «mar 22 sep»
+  y la (i) entren juntas. El titular grande no lleva otra.
 - **Existe solo en los pasos del presupuesto** (el estimativo y el presupuesto): desde que se aprueba
   ya no condiciona nada. Dos estados, con el texto que escribió el dueño: «El número todavía puede
   cambiar», con el día que quedamos en ir, y «El número ya está tomado de las medidas reales», con el
