@@ -5,6 +5,13 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-22',
+    lineas: [
+      'En la página de tu cliente, el casillero del relevamiento pasó a ser una (i) al lado del paso en curso: le explica si el número todavía puede cambiar o si ya sale de las medidas.',
+      'Debajo del título lo lee sin tocar nada: «Número estimado, falta ir a medir» o el día en que fuiste a medir.',
+    ],
+  },
+  {
     version: '2026-09-21.2',
     lineas: [
       'Desde la ficha de un trabajo entregado le pedís la opinión al cliente por WhatsApp, con hasta tres preguntas propias: la contesta sin cuenta y, si no, se la recordás una vez.',
