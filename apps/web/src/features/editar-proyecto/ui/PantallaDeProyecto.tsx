@@ -44,7 +44,7 @@ import {
   useAnchoDePantalla,
   uuidv7,
 } from '@/shared/lib';
-import { Button, Campo, Icono, MoneyInput } from '@/shared/ui';
+import { Button, Campo, Icono, MoneyInput, SeccionesEnFilas } from '@/shared/ui';
 
 import { FilasDeOpciones } from './FilasDeOpciones';
 import { FilasDinamicas } from './FilasDinamicas';
@@ -264,315 +264,320 @@ export function PantallaDeProyecto({
         className="flex min-h-0 flex-1 flex-col"
       >
         <div
-          className={`mx-auto grid min-h-0 w-full max-w-content flex-1 grid-cols-1 gap-6 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:grid-cols-2 lg:gap-x-12 lg:px-(--page-pad-desktop) lg:py-6 ${
+          className={`mx-auto min-h-0 w-full max-w-content flex-1 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop) lg:py-6 ${
             enCelular
               ? 'overflow-y-auto'
-              : 'content-start [&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
+              : '[&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
           }`}
         >
-          <div className="@container/datos flex min-w-0 flex-col gap-5">
-            <ClienteCombobox
-              clientes={clientes}
-              elegidoId={clienteId === '' ? null : clienteId}
-              alElegir={(elegido) => {
-                setValue('cliente_id', elegido?.id ?? '', { shouldValidate: true });
-                if (elegido === null) return;
-                if (direccion.trim() === '') {
-                  setValue('direccion_entrega', elegido.direccion, { shouldDirty: true });
-                }
-              }}
-              error={errors.cliente_id?.message}
-            />
-
-            <Campo
-              {...register('titulo')}
-              etiqueta="Trabajo"
-              placeholder="Placard 3 puertas, mesada de cocina…"
-              error={errors.titulo?.message}
-            />
-
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
-                Presupuesto
-              </label>
-              <div
-                className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
-                  errors.presupuesto ? 'border-alerta' : 'border-border'
-                } ${hayOpciones ? 'bg-surface' : ''}`}
-              >
-                <span aria-hidden className="text-money-lg text-text-3">
-                  $
-                </span>
-                {hayOpciones ? (
-                  <output
-                    id={`${idCampos}-presupuesto`}
-                    className="min-w-0 flex-1 text-money-lg font-semibold text-text-2"
-                  >
-                    {presupuestoEfectivo === null
-                      ? 'Sin definir'
-                      : formatearPesos(presupuestoEfectivo)}
-                  </output>
-                ) : (
-                  <Controller
-                    control={control}
-                    name="presupuesto"
-                    render={({ field }) => (
-                      <MoneyInput
-                        ref={field.ref}
-                        name={field.name}
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        id={`${idCampos}-presupuesto`}
-                        placeholder="0"
-                        className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
-                      />
-                    )}
-                  />
-                )}
-              </div>
-              {errors.presupuesto ? (
-                <span role="alert" className="text-label font-medium text-alerta">
-                  {errors.presupuesto.message}
-                </span>
-              ) : (
-                <span className="text-meta text-text-3">
-                  {hayOpciones
-                    ? 'Sale de la opción que tildes, abajo. Para escribirlo a mano, sacá las opciones.'
-                    : 'Dejalo vacío mientras no esté presupuestado.'}
-                </span>
-              )}
-            </div>
-
-            <Campo
-              {...register('sena')}
-              etiqueta="Seña propia (%)"
-              inputMode="decimal"
-              placeholder="La del taller"
-              ayuda="Dejalo vacío para pedir la seña de siempre. Completalo solo si a este le pedís otra."
-              error={errors.sena?.message}
-            />
-
-            <fieldset className="flex flex-col gap-1.5">
-              <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-              <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm/datos:grid-cols-4">
-                {FORMAS_EN_ORDEN.map((forma) => (
-                  <BotonDeOpcion
-                    key={forma}
-                    elegido={formaDePago === forma}
-                    etiqueta={FORMA_DE_PAGO[forma]}
-                    alElegir={() => {
-                      setValue('forma_pago', forma, { shouldDirty: true });
-                    }}
-                  />
-                ))}
-              </div>
-            </fieldset>
-
-            <div
-              data-fila="fechas"
-              className="grid grid-cols-1 gap-4 @sm/datos:grid-cols-2 @sm/datos:gap-x-3 @sm/datos:gap-y-1.5"
-            >
-              <Campo
-                {...register('fecha_inicio')}
-                etiqueta="Fecha de inicio"
-                type="date"
-                error={errors.fecha_inicio?.message}
-                contenedor={FECHA_ALINEADA}
+          <SeccionesEnFilas separacion="gap-6">
+            <div className="@container/datos flex min-w-0 flex-col gap-5">
+              <ClienteCombobox
+                clientes={clientes}
+                elegidoId={clienteId === '' ? null : clienteId}
+                alElegir={(elegido) => {
+                  setValue('cliente_id', elegido?.id ?? '', { shouldValidate: true });
+                  if (elegido === null) return;
+                  if (direccion.trim() === '') {
+                    setValue('direccion_entrega', elegido.direccion, { shouldDirty: true });
+                  }
+                }}
+                error={errors.cliente_id?.message}
               />
-              <Campo
-                {...register('entrega_estimada', {
-                  onChange: () => {
-                    setEntregaAuto(false);
-                  },
-                })}
-                etiqueta="Entrega estimada"
-                type="date"
-                ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
-                contenedor={FECHA_ALINEADA}
-              />
-              <Campo
-                {...register('entrega_hora')}
-                etiqueta="Hora de la entrega"
-                type="time"
-                ayuda="Opcional. Con hora, la entrega cae en su renglón del día en la agenda."
-                contenedor={FECHA_ALINEADA}
-              />
-            </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${idCampos}-estado`} className="text-label text-text-2">
-                Estado
-              </label>
-              <select
-                {...register('estado')}
-                id={`${idCampos}-estado`}
-                disabled={liquidado}
-                className="h-field rounded-field border border-border bg-paper px-3 text-body-lg text-ink disabled:text-text-3"
-              >
-                {opcionesDeEstado.map((estado) => (
-                  <option key={estado} value={estado}>
-                    {ESTADO[estado].etiqueta}
-                  </option>
-                ))}
-              </select>
-              {liquidado && (
-                <span className="text-meta text-text-3">
-                  Un proyecto {ESTADO[proyecto.estado].etiqueta.toLowerCase()} tiene la distribución
-                  congelada: su estado se cambia reabriéndolo.
-                </span>
-              )}
-            </div>
+              <Campo
+                {...register('titulo')}
+                etiqueta="Trabajo"
+                placeholder="Placard 3 puertas, mesada de cocina…"
+                error={errors.titulo?.message}
+              />
 
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor={`${idCampos}-direccion`}
-                className="flex items-center justify-between gap-2 text-label text-text-2"
-              >
-                Dirección de entrega
-                {cliente !== undefined && direccion.trim() !== cliente.direccion.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setValue('direccion_entrega', cliente.direccion, { shouldDirty: true });
-                    }}
-                    className="min-h-tap px-1 underline underline-offset-3"
-                  >
-                    Usar la del cliente
-                  </button>
-                )}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  {...register('direccion_entrega')}
-                  id={`${idCampos}-direccion`}
-                  placeholder="Calle y número, localidad"
-                  className="h-field min-w-0 flex-1 rounded-field border border-border bg-paper px-3.5 text-body-lg text-ink"
-                />
-                <a
-                  href={enlaceDeMapa(direccion, '') ?? '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Abrir la dirección en el mapa"
-                  aria-disabled={direccion.trim() === '' ? true : undefined}
-                  className={`flex size-field flex-none items-center justify-center rounded-field border border-border ${
-                    direccion.trim() === '' ? 'pointer-events-none text-text-3' : 'hover:bg-surface'
-                  }`}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
+                  Presupuesto
+                </label>
+                <div
+                  className={`flex h-15 max-w-(--campo-medio) items-center gap-1.5 rounded-field border px-3.5 ${
+                    errors.presupuesto ? 'border-alerta' : 'border-border'
+                  } ${hayOpciones ? 'bg-surface' : ''}`}
                 >
-                  <Icono nombre="map-pin" tamano={18} />
-                </a>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor={`${idCampos}-comprobante`}
-                className="flex items-baseline justify-between gap-2 text-label text-text-2"
-              >
-                Comprobante a emitir
-                {comprobanteAuto && cliente !== undefined && (
+                  <span aria-hidden className="text-money-lg text-text-3">
+                    $
+                  </span>
+                  {hayOpciones ? (
+                    <output
+                      id={`${idCampos}-presupuesto`}
+                      className="min-w-0 flex-1 text-money-lg font-semibold text-text-2"
+                    >
+                      {presupuestoEfectivo === null
+                        ? 'Sin definir'
+                        : formatearPesos(presupuestoEfectivo)}
+                    </output>
+                  ) : (
+                    <Controller
+                      control={control}
+                      name="presupuesto"
+                      render={({ field }) => (
+                        <MoneyInput
+                          ref={field.ref}
+                          name={field.name}
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          id={`${idCampos}-presupuesto`}
+                          placeholder="0"
+                          className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+                        />
+                      )}
+                    />
+                  )}
+                </div>
+                {errors.presupuesto ? (
+                  <span role="alert" className="text-label font-medium text-alerta">
+                    {errors.presupuesto.message}
+                  </span>
+                ) : (
                   <span className="text-meta text-text-3">
-                    Por {CONDICION[cliente.condicion_fiscal].etiqueta.toLowerCase()}
+                    {hayOpciones
+                      ? 'Sale de la opción que tildes, abajo. Para escribirlo a mano, sacá las opciones.'
+                      : 'Dejalo vacío mientras no esté presupuestado.'}
                   </span>
                 )}
-              </label>
-              <select
-                {...register('comprobante', {
-                  onChange: () => {
-                    setComprobanteAuto(false);
-                  },
-                })}
-                id={`${idCampos}-comprobante`}
-                className="h-field rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
+              </div>
+
+              <Campo
+                {...register('sena')}
+                etiqueta="Seña propia (%)"
+                className="max-w-(--campo-corto)"
+                inputMode="decimal"
+                placeholder="La del taller"
+                ayuda="Dejalo vacío para pedir la seña de siempre. Completalo solo si a este le pedís otra."
+                error={errors.sena?.message}
+              />
+
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
+                <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm/datos:grid-cols-4">
+                  {FORMAS_EN_ORDEN.map((forma) => (
+                    <BotonDeOpcion
+                      key={forma}
+                      elegido={formaDePago === forma}
+                      etiqueta={FORMA_DE_PAGO[forma]}
+                      alElegir={() => {
+                        setValue('forma_pago', forma, { shouldDirty: true });
+                      }}
+                    />
+                  ))}
+                </div>
+              </fieldset>
+
+              <div
+                data-fila="fechas"
+                className="grid max-w-(--campo-largo) grid-cols-1 gap-4 @sm/datos:grid-cols-2 @sm/datos:gap-x-3 @sm/datos:gap-y-1.5"
               >
-                {COMPROBANTES_EN_ORDEN.map((comprobante) => (
-                  <option key={comprobante} value={comprobante}>
-                    {COMPROBANTE[comprobante]}
-                  </option>
-                ))}
-              </select>
+                <Campo
+                  {...register('fecha_inicio')}
+                  etiqueta="Fecha de inicio"
+                  type="date"
+                  error={errors.fecha_inicio?.message}
+                  contenedor={FECHA_ALINEADA}
+                />
+                <Campo
+                  {...register('entrega_estimada', {
+                    onChange: () => {
+                      setEntregaAuto(false);
+                    },
+                  })}
+                  etiqueta="Entrega estimada"
+                  type="date"
+                  ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
+                  contenedor={FECHA_ALINEADA}
+                />
+                <Campo
+                  {...register('entrega_hora')}
+                  etiqueta="Hora de la entrega"
+                  type="time"
+                  ayuda="Opcional. Con hora, la entrega cae en su renglón del día en la agenda."
+                  contenedor={FECHA_ALINEADA}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${idCampos}-estado`} className="text-label text-text-2">
+                  Estado
+                </label>
+                <select
+                  {...register('estado')}
+                  id={`${idCampos}-estado`}
+                  disabled={liquidado}
+                  className="h-field max-w-(--campo-medio) rounded-field border border-border bg-paper px-3 text-body-lg text-ink disabled:text-text-3"
+                >
+                  {opcionesDeEstado.map((estado) => (
+                    <option key={estado} value={estado}>
+                      {ESTADO[estado].etiqueta}
+                    </option>
+                  ))}
+                </select>
+                {liquidado && (
+                  <span className="text-meta text-text-3">
+                    Un proyecto {ESTADO[proyecto.estado].etiqueta.toLowerCase()} tiene la
+                    distribución congelada: su estado se cambia reabriéndolo.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={`${idCampos}-direccion`}
+                  className="flex items-center justify-between gap-2 text-label text-text-2"
+                >
+                  Dirección de entrega
+                  {cliente !== undefined && direccion.trim() !== cliente.direccion.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValue('direccion_entrega', cliente.direccion, { shouldDirty: true });
+                      }}
+                      className="min-h-tap px-1 underline underline-offset-3"
+                    >
+                      Usar la del cliente
+                    </button>
+                  )}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    {...register('direccion_entrega')}
+                    id={`${idCampos}-direccion`}
+                    placeholder="Calle y número, localidad"
+                    className="h-field min-w-0 flex-1 rounded-field border border-border bg-paper px-3.5 text-body-lg text-ink"
+                  />
+                  <a
+                    href={enlaceDeMapa(direccion, '') ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Abrir la dirección en el mapa"
+                    aria-disabled={direccion.trim() === '' ? true : undefined}
+                    className={`flex size-field flex-none items-center justify-center rounded-field border border-border ${
+                      direccion.trim() === ''
+                        ? 'pointer-events-none text-text-3'
+                        : 'hover:bg-surface'
+                    }`}
+                  >
+                    <Icono nombre="map-pin" tamano={18} />
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor={`${idCampos}-comprobante`}
+                  className="flex items-baseline justify-between gap-2 text-label text-text-2"
+                >
+                  Comprobante a emitir
+                  {comprobanteAuto && cliente !== undefined && (
+                    <span className="text-meta text-text-3">
+                      Por {CONDICION[cliente.condicion_fiscal].etiqueta.toLowerCase()}
+                    </span>
+                  )}
+                </label>
+                <select
+                  {...register('comprobante', {
+                    onChange: () => {
+                      setComprobanteAuto(false);
+                    },
+                  })}
+                  id={`${idCampos}-comprobante`}
+                  className="h-field max-w-(--campo-medio) rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
+                >
+                  {COMPROBANTES_EN_ORDEN.map((comprobante) => (
+                    <option key={comprobante} value={comprobante}>
+                      {COMPROBANTE[comprobante]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${idCampos}-notas`} className="text-label text-text-2">
+                  Notas de obra
+                </label>
+                <textarea
+                  {...register('notas')}
+                  id={`${idCampos}-notas`}
+                  rows={3}
+                  placeholder="Medidas, qué falta, qué hablar con el cliente…"
+                  className="rounded-field border border-border bg-paper px-3.5 py-2.5 text-body-lg text-ink"
+                />
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${idCampos}-notas`} className="text-label text-text-2">
-                Notas de obra
-              </label>
-              <textarea
-                {...register('notas')}
-                id={`${idCampos}-notas`}
-                rows={3}
-                placeholder="Medidas, qué falta, qué hablar con el cliente…"
-                className="rounded-field border border-border bg-paper px-3.5 py-2.5 text-body-lg text-ink"
+            <div className="flex min-w-0 flex-col gap-7">
+              {liquidado && (
+                <div
+                  role="alert"
+                  className="rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2"
+                >
+                  <p>
+                    Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()} y su reparto
+                    quedó cerrado: sus pagos y sus gastos no se tocan.
+                  </p>
+                  <Button
+                    variant="secundario"
+                    size="chico"
+                    className="mt-2"
+                    onClick={() => {
+                      reabrirParaEditar(proyecto);
+                    }}
+                  >
+                    <Icono nombre="arrow-left-right" tamano={16} />
+                    {proyecto.estado === 'perdido'
+                      ? 'Reactivarlo para poder cargarlo'
+                      : 'Reabrir el cobro para corregirlo'}
+                  </Button>
+                  <p className="mt-1.5 text-meta text-text-3">
+                    {proyecto.estado === 'perdido'
+                      ? 'Los campos se desbloquean acá mismo. Al guardar te llevo a cerrarlo de nuevo, con la seña repartida contando lo que cargaste.'
+                      : 'Los campos se desbloquean acá mismo. Al guardar te llevo a cobrarlo de nuevo, con el reparto rehecho.'}
+                  </p>
+                </div>
+              )}
+              <FilasDeOpciones
+                control={control}
+                register={register}
+                errores={errors}
+                campos={opciones}
+                bloqueado={false}
+              />
+              <FilasDinamicas
+                lista="pagos"
+                titulo="Pagos recibidos"
+                etiquetaDelDetalle="Concepto"
+                placeholderDelDetalle="Seña, adelanto, saldo…"
+                textoDeAgregar="Agregar un pago"
+                ayuda="Lo que te pagó el cliente por este trabajo. Entra a la caja del taller."
+                vacio="Todavía no cobraste nada de este trabajo. La seña suele ir primero."
+                control={control}
+                register={register}
+                errores={errors}
+                campos={pagos}
+                bloqueado={liquidado}
+              />
+              <FilasDinamicas
+                lista="gastos"
+                titulo="Gastos e insumos"
+                etiquetaDelDetalle="Descripción"
+                placeholderDelDetalle="Melamina, herrajes, flete…"
+                textoDeAgregar="Agregar un gasto"
+                ayuda="Materiales y compras de este mueble. Se descuentan de la ganancia."
+                vacio="Todavía no cargaste gastos para este mueble."
+                control={control}
+                register={register}
+                errores={errors}
+                campos={gastos}
+                bloqueado={liquidado}
               />
             </div>
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-7">
-            {liquidado && (
-              <div
-                role="alert"
-                className="rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2"
-              >
-                <p>
-                  Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()} y su reparto
-                  quedó cerrado: sus pagos y sus gastos no se tocan.
-                </p>
-                <Button
-                  variant="secundario"
-                  size="chico"
-                  className="mt-2"
-                  onClick={() => {
-                    reabrirParaEditar(proyecto);
-                  }}
-                >
-                  <Icono nombre="arrow-left-right" tamano={16} />
-                  {proyecto.estado === 'perdido'
-                    ? 'Reactivarlo para poder cargarlo'
-                    : 'Reabrir el cobro para corregirlo'}
-                </Button>
-                <p className="mt-1.5 text-meta text-text-3">
-                  {proyecto.estado === 'perdido'
-                    ? 'Los campos se desbloquean acá mismo. Al guardar te llevo a cerrarlo de nuevo, con la seña repartida contando lo que cargaste.'
-                    : 'Los campos se desbloquean acá mismo. Al guardar te llevo a cobrarlo de nuevo, con el reparto rehecho.'}
-                </p>
-              </div>
-            )}
-            <FilasDeOpciones
-              control={control}
-              register={register}
-              errores={errors}
-              campos={opciones}
-              bloqueado={false}
-            />
-            <FilasDinamicas
-              lista="pagos"
-              titulo="Pagos recibidos"
-              etiquetaDelDetalle="Concepto"
-              placeholderDelDetalle="Seña, adelanto, saldo…"
-              textoDeAgregar="Agregar un pago"
-              ayuda="Lo que te pagó el cliente por este trabajo. Entra a la caja del taller."
-              vacio="Todavía no cobraste nada de este trabajo. La seña suele ir primero."
-              control={control}
-              register={register}
-              errores={errors}
-              campos={pagos}
-              bloqueado={liquidado}
-            />
-            <FilasDinamicas
-              lista="gastos"
-              titulo="Gastos e insumos"
-              etiquetaDelDetalle="Descripción"
-              placeholderDelDetalle="Melamina, herrajes, flete…"
-              textoDeAgregar="Agregar un gasto"
-              ayuda="Materiales y compras de este mueble. Se descuentan de la ganancia."
-              vacio="Todavía no cargaste gastos para este mueble."
-              control={control}
-              register={register}
-              errores={errors}
-              campos={gastos}
-              bloqueado={liquidado}
-            />
-          </div>
+          </SeccionesEnFilas>
         </div>
 
         <footer className="flex-none border-t border-hairline bg-paper md:sticky md:bottom-0 md:z-20">
