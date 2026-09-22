@@ -34,6 +34,17 @@
 }
 
 @layer components {
+  .papel-rayado {
+    background-color: var(--paper-notas);
+    background-image: repeating-linear-gradient(
+      transparent 0 27px,
+      var(--paper-notas-line) 27px 28px
+    );
+    background-position: 0 9px;
+    background-attachment: local;
+    line-height: 28px;
+  }
+
   .capa-del-dia {
     inset: 0;
     margin: auto;

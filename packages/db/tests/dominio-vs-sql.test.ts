@@ -7,12 +7,14 @@ import {
   compararGuardadoDeProyecto,
   compararLibroDelSeed,
   compararLibroMayor,
+  compararLinkDeResena,
   compararLiquidaciones,
   compararPagosPorDelante,
   compararRangos,
   compararSeed,
   compararTopes,
   compararTransiciones,
+  compararValidacionDeRespuestas,
 } from '../scripts/comparacion.ts';
 import { enTransaccionConRollback } from '../scripts/pgtap.ts';
 
@@ -31,6 +33,14 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
 
   it('el valor por defecto de las formas de cobro es el mismo en las dos', async () => {
     expect(await enTransaccionConRollback(compararFormasDeCobro)).toEqual([]);
+  });
+
+  it('el enlace de reseña lo aceptan y lo rechazan igual el check de la base y el dominio', async () => {
+    expect(await enTransaccionConRollback(compararLinkDeResena)).toEqual([]);
+  });
+
+  it('una respuesta a la encuesta la aceptan o la rechazan igual las dos, y por el mismo motivo', async () => {
+    expect(await enTransaccionConRollback(compararValidacionDeRespuestas)).toEqual([]);
   });
 
   it('las dos rechazan exactamente los mismos importes fuera de rango', async () => {

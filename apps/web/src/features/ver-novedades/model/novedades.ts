@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-21.2',
+    lineas: [
+      'Desde la ficha de un trabajo entregado le pedís la opinión al cliente por WhatsApp, con hasta tres preguntas propias: la contesta sin cuenta y, si no, se la recordás una vez.',
+      'En Opiniones ves qué tan conformes quedaron y cada respuesta entera, y cambiás las preguntas. Si cargás en Ajustes tu enlace de reseñas de Google, se lo pedimos a todos por igual.',
+      'Cuando llega una opinión que no leíste, te aparece en Inicio. En el celular, tocando tu foto abrís Opiniones, Diezmo, Agenda y Ajustes.',
+      'Tu cliente ve en su página el estimativo que le mandaste, sin el número, y un casillero de relevamiento técnico: en blanco mientras falta medir, con el día si lo agendaste, y tildado cuando fuiste.',
+    ],
+  },
+  {
     version: '2026-09-21',
     lineas: [
       'En Inicio, «Sueldo del mes» se mide contra el sueldo que cargaste, aunque en el mes hayas cobrado varios trabajos. Antes sumaba un sueldo por cada cobro.',

@@ -116,8 +116,12 @@ self.addEventListener('notificationclick', (evento) => {
 
 const VISTA_PUBLICA = /^\/v\//;
 
+const ENCUESTA_PUBLICA = /^\/o\//;
+
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 registerRoute(
-  new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [VISTA_PUBLICA] }),
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+    denylist: [VISTA_PUBLICA, ENCUESTA_PUBLICA],
+  }),
 );

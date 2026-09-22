@@ -1,3 +1,4 @@
+import { HITO_DEL_ESTIMATIVO, RELEVAMIENTO } from '@maun/domain';
 import { useState } from 'react';
 
 import { useAnchoDePantalla } from '@/shared/lib';
@@ -55,6 +56,40 @@ const LAMINAS: readonly Lamina[] = [
     ],
   },
   {
+    id: 'antes',
+    titulo: 'Antes del presupuesto',
+    filas: [
+      {
+        clave: 'estimativo',
+        icono: 'send',
+        titulo: HITO_DEL_ESTIMATIVO.etiqueta,
+        texto:
+          'Solo si le mandaste un estimativo: le aparece como un paso antes del presupuesto, con el día que tocaste «Mandé el estimativo». El número no lo ve nunca.',
+      },
+      {
+        clave: 'relevamiento',
+        icono: 'pencil-ruler',
+        titulo: RELEVAMIENTO,
+        texto:
+          'Un casillero adentro del paso del presupuesto, solo si hay que ir a medir. En blanco mientras falta, con el día de la visita si ya está agendada; tildado cuando tocás «Ya fui a relevar».',
+      },
+      {
+        clave: 'sin-medir',
+        icono: 'route',
+        titulo: 'Si no hace falta medir',
+        texto:
+          'Pasalo a «A presupuestar» sin cargar la visita y el casillero no aparece. Mientras está en contacto o con el estimativo enviado, él lee que falta ir a medir.',
+      },
+      {
+        clave: 'sin-nada',
+        icono: 'message-circle',
+        titulo: 'Sin nada mandado todavía',
+        texto:
+          'El enlace igual funciona: ve el trabajo y el camino entero, con el primer paso en curso.',
+      },
+    ],
+  },
+  {
     id: 'presupuesto',
     titulo: 'El presupuesto y la aprobación',
     filas: [
@@ -63,7 +98,7 @@ const LAMINAS: readonly Lamina[] = [
         paso: 1,
         titulo: 'Presupuesto enviado',
         texto:
-          'Está marcado desde el arranque: es donde empieza todo trabajo. La fecha aparece el día que ponés el contacto en «Presupuesto enviado».',
+          'Es el primer paso de todo trabajo que no tuvo estimativo. La fecha aparece el día que ponés el contacto en «Presupuesto enviado».',
       },
       {
         clave: 'paso-2',
@@ -71,13 +106,6 @@ const LAMINAS: readonly Lamina[] = [
         titulo: 'Aprobado, seña cobrada',
         texto:
           'Se marca cuando pasás el trabajo a Proyectos. La seña que cargues ahí le aparece en «Lo que pagaste».',
-      },
-      {
-        clave: 'antes',
-        icono: 'message-circle',
-        titulo: 'Antes del presupuesto',
-        texto:
-          'Si todavía no se lo mandaste, el enlace igual funciona: ve el trabajo y el camino entero, con el primer paso en curso.',
       },
     ],
     pie: 'Si la fecha de inicio que cargaste al aprobar es de hoy o de antes, el camino salta derecho al paso 3.',

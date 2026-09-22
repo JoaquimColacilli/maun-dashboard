@@ -13,9 +13,13 @@ export { limpiarDatosLocales } from './cache/limpieza';
 export { copiar, seleccionarEnPantalla, type ComoQuedo } from './copiar';
 export {
   diaDelMes,
+  diaLocal,
   diasDelMes,
   diasHasta,
+  diaYMes,
+  diaYMesCorto,
   fechaLarga,
+  haceCuanto,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
@@ -93,6 +97,7 @@ export {
 } from './push';
 export {
   CLAVE_DE_LOS_ENLACES,
+  enlaceDeLaEncuesta,
   enlaceDelCliente,
   hashDelToken,
   olvidarLosTokens,
@@ -102,9 +107,18 @@ export {
   tokenNuevo,
 } from './enlaces';
 export {
+  esLaEncuestaPublica,
   esLaVistaPublica,
+  esUnaPaginaPublica,
+  PREFIJO_DE_LA_ENCUESTA_PUBLICA,
+  RUTA_DE_LA_ENCUESTA_PUBLICA,
   PARAMETRO_DE_TESORO,
   PREFIJO_DE_LA_VISTA_PUBLICA,
+  PARAMETRO_DE_RESPUESTA,
+  RUTA_DE_OPINIONES,
+  RUTA_DE_PREGUNTAS,
+  rutaDeLaPregunta,
+  rutaDeLaRespuesta,
   rutaDeAprobacion,
   rutaDeCompartir,
   rutaDeLaVistaDelCliente,

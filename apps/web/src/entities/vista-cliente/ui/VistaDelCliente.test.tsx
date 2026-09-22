@@ -22,6 +22,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
     estado: 'en_curso',
     precio: centavos(124_000_000),
     fechas: {
+      estimativo: null,
       presupuesto: '2026-08-01',
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
@@ -29,6 +30,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
+    visita: { dia: null, hecha: false },
     pago: {
       instancia: 'saldo',
       formas: ['efectivo'],
@@ -74,6 +76,7 @@ describe('la vista del cliente', () => {
       trabajo({
         estado: 'entregado',
         fechas: {
+          estimativo: null,
           presupuesto: '2026-08-01',
           aprobado: '2026-08-04',
           inicio: '2026-08-24',
@@ -110,6 +113,7 @@ describe('la vista del cliente', () => {
       trabajo({
         pagos: [],
         fechas: {
+          estimativo: null,
           presupuesto: '2026-08-01',
           aprobado: null,
           inicio: '2026-09-01',
@@ -199,5 +203,126 @@ describe('la vista del cliente', () => {
     const entrada = screen.getByRole('region', { name: 'Tu mueble' });
     expect(entrada).toHaveTextContent('Falta el presupuesto');
     expect(entrada).toHaveTextContent('—');
+  });
+});
+
+function fechas(cambios: Partial<TrabajoDelCliente['fechas']>): TrabajoDelCliente['fechas'] {
+  return {
+    estimativo: null,
+    presupuesto: null,
+    aprobado: null,
+    inicio: null,
+    entregaPautada: null,
+    entregado: null,
+    cobro: null,
+    ...cambios,
+  };
+}
+
+function pasosDelCamino(): string[] {
+  const camino = screen.getByRole('region', { name: 'En qué anda' });
+  return within(camino)
+    .getAllByRole('listitem')
+    .map((paso) => paso.textContent);
+}
+
+describe('el estimativo y el relevamiento en el camino', () => {
+  it('con el estimativo mandado, es el paso actual y va antes de los otros cinco', () => {
+    dibujar(
+      trabajo({
+        estado: 'presupuesto_estimativo',
+        precio: null,
+        pagos: [],
+        fechas: fechas({ estimativo: '2026-09-15' }),
+      }),
+    );
+
+    const entrada = screen.getByRole('region', { name: 'Tu mueble' });
+    expect(within(entrada).getByText('Te pasamos un número estimado')).toBeInTheDocument();
+    expect(entrada).toHaveTextContent('Falta el presupuesto');
+    const pasos = pasosDelCamino();
+    expect(pasos).toHaveLength(6);
+    expect(pasos[0]).toContain('Te pasamos un número estimado');
+    expect(pasos[0]).toContain('mar 15 sep');
+    expect(pasos[1]).toContain('Te vamos a pasar el presupuesto');
+  });
+
+  it('sin estimativo el camino sigue siendo de cinco pasos', () => {
+    dibujar(trabajo());
+
+    expect(pasosDelCamino()).toHaveLength(5);
+    expect(screen.queryByText('Te pasamos un número estimado')).not.toBeInTheDocument();
+  });
+
+  it('en ningún lado aparece un importe del estimativo: lo único en pesos es lo que pagó, cero', () => {
+    const dibujada = dibujar(
+      trabajo({
+        estado: 'presupuesto_estimativo',
+        precio: null,
+        pagos: [],
+        pago: { instancia: 'sena', formas: ['efectivo'], monto: null, siguiente: null },
+        fechas: fechas({ estimativo: '2026-09-15' }),
+      }),
+    );
+
+    const texto = dibujada.container.textContent.replace(/\s+/g, ' ');
+    const importes = texto.match(/\$ ?[\d.,]+/g) ?? [];
+    expect(importes.length).toBeGreaterThan(0);
+    expect(importes.every((importe) => importe.replace(' ', '') === '$0')).toBe(true);
+  });
+
+  it('el relevamiento pendiente queda en blanco, dice qué falta y el día que quedaron', () => {
+    dibujar(
+      trabajo({
+        estado: 'presupuesto_estimativo',
+        precio: null,
+        pagos: [],
+        fechas: fechas({ estimativo: '2026-09-15' }),
+        visita: { dia: '2026-09-22', hecha: false },
+      }),
+    );
+
+    const presupuesto = pasosDelCamino()[1];
+    expect(presupuesto).toContain('Relevamiento técnico');
+    expect(presupuesto).toContain('Falta ir a medir para poder presupuestarte.');
+    expect(presupuesto).toContain('Quedamos en ir el mar 22 sep');
+    expect(
+      screen.getByText(
+        'Si seguimos adelante, lo próximo es ir a medir para pasarte el presupuesto.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('sin día acordado no promete ninguno', () => {
+    dibujar(trabajo({ estado: 'relevamiento', precio: null, pagos: [], fechas: fechas({}) }));
+
+    const presupuesto = pasosDelCamino()[0];
+    expect(presupuesto).toContain('Falta ir a medir para poder presupuestarte.');
+    expect(presupuesto).not.toContain('Quedamos en ir');
+  });
+
+  it('el relevamiento hecho queda tildado con su día, y entra en lo que fue pasando', () => {
+    dibujar(
+      trabajo({
+        estado: 'a_presupuestar',
+        precio: null,
+        pagos: [],
+        fechas: fechas({ estimativo: '2026-09-02' }),
+        visita: { dia: '2026-09-10', hecha: true },
+      }),
+    );
+
+    const presupuesto = pasosDelCamino()[1];
+    expect(presupuesto).toContain('Ya fuimos a medir.');
+    expect(presupuesto).toContain('jue 10 sep');
+    const historia = screen.getByRole('region', { name: 'Lo que fue pasando' });
+    expect(within(historia).getByText('Fuimos a medir')).toBeInTheDocument();
+    expect(within(historia).getByText('Te pasamos un número estimado')).toBeInTheDocument();
+  });
+
+  it('donde no hace falta medir, el casillero no existe', () => {
+    dibujar(trabajo({ estado: 'a_presupuestar', precio: null, pagos: [], fechas: fechas({}) }));
+
+    expect(screen.queryByText('Relevamiento técnico')).not.toBeInTheDocument();
   });
 });

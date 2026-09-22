@@ -4,7 +4,8 @@ import { diasEntre } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
 import { montoParaPegar, ofrece, type FormaDeCobro, type InstanciaDePago } from './pagos.ts';
 
-export type HitoDelTrabajo = 'presupuesto' | 'aprobado' | 'fabricacion' | 'entregado' | 'pagado';
+export type HitoDelTrabajo =
+  'estimativo' | 'presupuesto' | 'aprobado' | 'fabricacion' | 'entregado' | 'pagado';
 
 export type EstadoDelHito = 'pasado' | 'actual' | 'futuro';
 
@@ -29,6 +30,7 @@ export interface ArchivoDelCliente {
 }
 
 export interface FechasDelTrabajo {
+  estimativo: string | null;
   presupuesto: string | null;
   aprobado: string | null;
   inicio: string | null;
@@ -58,6 +60,11 @@ export interface PagoPendiente {
   siguiente: PagoOfrecido | null;
 }
 
+export interface VisitaDelTrabajo {
+  dia: string | null;
+  hecha: boolean;
+}
+
 export interface TrabajoDelCliente {
   taller: string;
   cliente: string;
@@ -66,6 +73,7 @@ export interface TrabajoDelCliente {
   estado: EstadoProyecto;
   precio: Money | null;
   fechas: FechasDelTrabajo;
+  visita: VisitaDelTrabajo;
   pago: PagoPendiente;
   cobro: CobroDelTaller;
   pagos: readonly PagoDelCliente[];
@@ -195,6 +203,15 @@ export interface EventoDelCliente {
   monto: Money | null;
 }
 
+export type EstadoDelRelevamiento = 'pendiente' | 'hecho';
+
+export interface RelevamientoDeLaVista {
+  estado: EstadoDelRelevamiento;
+  texto: string;
+  detalle: string;
+  fecha: string | null;
+}
+
 export interface VistaDelCliente {
   trabajo: TrabajoDelCliente;
   pagado: Money;
@@ -203,12 +220,25 @@ export interface VistaDelCliente {
   hitoActual: HitoDelTrabajo;
   hitoIndex: number;
   hitos: readonly HitoDeLaVista[];
+  relevamiento: RelevamientoDeLaVista | null;
   eventos: readonly EventoDelCliente[];
   sigue: string;
   foco: FocoDeLaVista;
 }
 
-export const HITOS: readonly { id: HitoDelTrabajo; etiqueta: string; futuro: string }[] = [
+interface HitoDelCamino {
+  id: HitoDelTrabajo;
+  etiqueta: string;
+  futuro: string;
+}
+
+export const HITO_DEL_ESTIMATIVO: HitoDelCamino = {
+  id: 'estimativo',
+  etiqueta: 'Te pasamos un número estimado',
+  futuro: 'Te pasamos un número estimado',
+};
+
+export const HITOS: readonly HitoDelCamino[] = [
   { id: 'presupuesto', etiqueta: 'Presupuesto enviado', futuro: 'Te vamos a pasar el presupuesto' },
   {
     id: 'aprobado',
@@ -220,7 +250,13 @@ export const HITOS: readonly { id: HitoDelTrabajo; etiqueta: string; futuro: str
   { id: 'pagado', etiqueta: 'Pagado', futuro: 'Cuando esté saldado' },
 ];
 
+const ORDEN_DE_LOS_HITOS: readonly HitoDelTrabajo[] = [
+  'estimativo',
+  ...HITOS.map((hito) => hito.id),
+];
+
 const EN_CURSO: Readonly<Record<HitoDelTrabajo, string>> = {
+  estimativo: 'Te pasamos un número estimado',
   presupuesto: 'Estamos preparando tu presupuesto',
   aprobado: 'Recibimos la seña y ya estás en la cola del taller',
   fabricacion: 'Lo estamos fabricando',
@@ -228,7 +264,10 @@ const EN_CURSO: Readonly<Record<HitoDelTrabajo, string>> = {
   pagado: 'Listo, está saldado',
 };
 
-const SIGUE: Readonly<Record<HitoDelTrabajo, string>> = {
+export const PRESUPUESTO_MANDADO = 'Te pasamos el presupuesto';
+
+export const SIGUE: Readonly<Record<HitoDelTrabajo, string>> = {
+  estimativo: 'Si seguimos adelante, lo próximo que vas a ver acá es el presupuesto.',
   presupuesto: 'Lo próximo que vas a ver acá es el presupuesto.',
   aprobado: 'Lo próximo que vas a ver acá es el arranque de la fabricación.',
   fabricacion: 'Lo próximo que vas a ver acá es la entrega.',
@@ -236,8 +275,64 @@ const SIGUE: Readonly<Record<HitoDelTrabajo, string>> = {
   pagado: '',
 };
 
-function indiceDelHito(hito: HitoDelTrabajo): number {
-  return HITOS.findIndex((uno) => uno.id === hito);
+export const SIGUE_CON_EL_PRESUPUESTO_MANDADO = 'Lo próximo es que lo apruebes y dejes la seña.';
+
+export const SIGUE_FALTA_MEDIR: Readonly<Record<'estimativo' | 'presupuesto', string>> = {
+  estimativo: 'Si seguimos adelante, lo próximo es ir a medir para pasarte el presupuesto.',
+  presupuesto: 'Lo próximo es ir a medir, para poder pasarte el presupuesto.',
+};
+
+export const RELEVAMIENTO = 'Relevamiento técnico';
+
+export const FALTA_MEDIR = 'Falta ir a medir para poder presupuestarte.';
+
+export const YA_FUIMOS_A_MEDIR = 'Ya fuimos a medir.';
+
+export const QUEDAMOS_EN_IR = 'Quedamos en ir el';
+
+const ESPERAN_LA_VISITA: readonly EstadoProyecto[] = [
+  'contacto',
+  'presupuesto_estimativo',
+  'relevamiento',
+];
+
+const TODAVIA_ANTES_DE_LA_VISITA: readonly EstadoProyecto[] = ['contacto', 'relevamiento'];
+
+const SIN_VISITA: VisitaDelTrabajo = { dia: null, hecha: false };
+
+function posicionDelHito(hito: HitoDelTrabajo): number {
+  return ORDEN_DE_LOS_HITOS.indexOf(hito);
+}
+
+export function llegoAl(vista: VistaDelCliente, hito: HitoDelTrabajo): boolean {
+  return posicionDelHito(vista.hitoActual) >= posicionDelHito(hito);
+}
+
+function fechaDelEstimativo(trabajo: TrabajoDelCliente): string | null {
+  return (trabajo.fechas as Partial<FechasDelTrabajo>).estimativo ?? null;
+}
+
+export function tuvoEstimativo(trabajo: TrabajoDelCliente): boolean {
+  return trabajo.estado === 'presupuesto_estimativo' || fechaDelEstimativo(trabajo) !== null;
+}
+
+export function relevamientoDelTrabajo(
+  trabajo: TrabajoDelCliente,
+  hoy: string,
+): RelevamientoDeLaVista | null {
+  const visita = (trabajo.visita as VisitaDelTrabajo | undefined) ?? SIN_VISITA;
+  const dia = visita.dia;
+  const yaPaso = dia !== null && dia < hoy && !TODAVIA_ANTES_DE_LA_VISITA.includes(trabajo.estado);
+  if (visita.hecha || yaPaso) {
+    return { estado: 'hecho', texto: RELEVAMIENTO, detalle: YA_FUIMOS_A_MEDIR, fecha: dia };
+  }
+  if (dia === null && !ESPERAN_LA_VISITA.includes(trabajo.estado)) return null;
+  return {
+    estado: 'pendiente',
+    texto: RELEVAMIENTO,
+    detalle: FALTA_MEDIR,
+    fecha: dia !== null && dia >= hoy ? dia : null,
+  };
 }
 
 function hitoDelTrabajo(trabajo: TrabajoDelCliente, saldado: boolean, hoy: string): HitoDelTrabajo {
@@ -247,7 +342,29 @@ function hitoDelTrabajo(trabajo: TrabajoDelCliente, saldado: boolean, hoy: strin
     const inicio = trabajo.fechas.inicio;
     return inicio !== null && diasEntre(inicio, hoy) >= 0 ? 'fabricacion' : 'aprobado';
   }
+  if (trabajo.estado === 'presupuesto_estimativo') return 'estimativo';
   return 'presupuesto';
+}
+
+function textoEnCurso(hito: HitoDelTrabajo, trabajo: TrabajoDelCliente): string {
+  if (hito === 'presupuesto' && trabajo.estado === 'presupuesto_enviado') {
+    return PRESUPUESTO_MANDADO;
+  }
+  return EN_CURSO[hito];
+}
+
+function loQueSigue(
+  hito: HitoDelTrabajo,
+  trabajo: TrabajoDelCliente,
+  relevamiento: RelevamientoDeLaVista | null,
+): string {
+  if (hito === 'presupuesto' && trabajo.estado === 'presupuesto_enviado') {
+    return SIGUE_CON_EL_PRESUPUESTO_MANDADO;
+  }
+  if ((hito === 'estimativo' || hito === 'presupuesto') && relevamiento?.estado === 'pendiente') {
+    return SIGUE_FALTA_MEDIR[hito];
+  }
+  return SIGUE[hito];
 }
 
 function fechasDeLosHitos(
@@ -257,6 +374,7 @@ function fechasDeLosHitos(
   const primerPago = trabajo.pagos[0];
   const ultimoPago = trabajo.pagos[trabajo.pagos.length - 1];
   return {
+    estimativo: fechaDelEstimativo(trabajo),
     presupuesto: trabajo.fechas.presupuesto,
     aprobado: trabajo.fechas.aprobado ?? primerPago?.fecha ?? null,
     fabricacion: trabajo.fechas.inicio,
@@ -279,11 +397,39 @@ interface EventoOrdenable extends EventoDelCliente {
   orden: number;
 }
 
+export const TE_PASAMOS_EL_ESTIMATIVO = 'Te pasamos un número estimado';
+
+export const FUIMOS_A_MEDIR = 'Fuimos a medir';
+
 function eventosDelTrabajo(
   trabajo: TrabajoDelCliente,
   saldado: boolean,
+  relevamiento: RelevamientoDeLaVista | null,
 ): readonly EventoDelCliente[] {
   const eventos: EventoOrdenable[] = [];
+
+  const estimativo = fechaDelEstimativo(trabajo);
+  if (estimativo !== null) {
+    eventos.push({
+      id: 'estimativo',
+      fecha: estimativo,
+      texto: TE_PASAMOS_EL_ESTIMATIVO,
+      hito: 'estimativo',
+      monto: null,
+      orden: -2,
+    });
+  }
+
+  if (relevamiento?.estado === 'hecho' && relevamiento.fecha !== null) {
+    eventos.push({
+      id: 'relevamiento',
+      fecha: relevamiento.fecha,
+      texto: FUIMOS_A_MEDIR,
+      hito: 'presupuesto',
+      monto: null,
+      orden: -1,
+    });
+  }
 
   if (trabajo.fechas.presupuesto !== null) {
     eventos.push({
@@ -335,7 +481,7 @@ function eventosDelTrabajo(
     .sort((uno, otro) => {
       const porFecha = diasEntre(uno.fecha, otro.fecha);
       if (porFecha !== 0) return porFecha;
-      const porHito = indiceDelHito(otro.hito) - indiceDelHito(uno.hito);
+      const porHito = posicionDelHito(otro.hito) - posicionDelHito(uno.hito);
       return porHito === 0 ? otro.orden - uno.orden : porHito;
     })
     .map((evento) => ({
@@ -353,19 +499,26 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
   const saldado = saldo !== null && saldo <= 0;
 
   const hitoActual = hitoDelTrabajo(trabajo, saldado, hoy);
-  const hitoIndex = indiceDelHito(hitoActual);
+  const camino = tuvoEstimativo(trabajo) ? [HITO_DEL_ESTIMATIVO, ...HITOS] : HITOS;
+  const hitoIndex = camino.findIndex((hito) => hito.id === hitoActual);
   const fechaDe = fechasDeLosHitos(trabajo, saldado);
+  const relevamiento = relevamientoDelTrabajo(trabajo, hoy);
 
-  const hitos: HitoDeLaVista[] = HITOS.map((hito, indice) => ({
+  const hitos: HitoDeLaVista[] = camino.map((hito, indice) => ({
     id: hito.id,
     etiqueta: hito.etiqueta,
     estado: indice < hitoIndex ? 'pasado' : indice === hitoIndex ? 'actual' : 'futuro',
     fecha: indice <= hitoIndex ? fechaDe[hito.id] : null,
     texto:
-      indice === hitoIndex ? EN_CURSO[hito.id] : indice < hitoIndex ? hito.etiqueta : hito.futuro,
+      indice === hitoIndex
+        ? textoEnCurso(hito.id, trabajo)
+        : indice < hitoIndex
+          ? hito.etiqueta
+          : hito.futuro,
   }));
 
-  const eventos = eventosDelTrabajo(trabajo, saldado);
+  const eventos = eventosDelTrabajo(trabajo, saldado, relevamiento);
+  const entregado = posicionDelHito(hitoActual) >= posicionDelHito('entregado');
 
   return {
     trabajo,
@@ -375,9 +528,9 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
     hitoActual,
     hitoIndex,
     hitos,
+    relevamiento,
     eventos,
-    sigue: SIGUE[hitoActual],
-    foco:
-      hitoIndex >= indiceDelHito('entregado') && saldo !== null && saldo > 0 ? 'saldo' : 'estado',
+    sigue: loQueSigue(hitoActual, trabajo, relevamiento),
+    foco: entregado && saldo !== null && saldo > 0 ? 'saldo' : 'estado',
   };
 }

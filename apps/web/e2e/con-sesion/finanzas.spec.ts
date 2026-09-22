@@ -527,6 +527,7 @@ test('finanzas y diezmo se recorren enteros con el teclado', async ({ page }) =>
   expect(recorrido.some((foco) => foco.includes('los números'))).toBe(true);
 
   await page.goto('/diezmo');
+  await expect(page.getByRole('link', { name: 'Registrar diezmo' })).toBeVisible();
   const enDiezmo = await recorrerConTab(page, 40);
   expect(enDiezmo.some((foco) => foco.includes('Registrar diezmo'))).toBe(true);
   expect(enDiezmo.some((foco) => foco.includes('Farmacia'))).toBe(false);

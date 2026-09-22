@@ -816,6 +816,135 @@ export async function visibilidadDelArchivo(
   return filas[0]?.visible_para_cliente;
 }
 
+export interface FilaDeEncuestaEnviada {
+  id: string;
+  proyecto_id: string;
+  token: string;
+  revocada_at: string | null;
+  recordada_at: string | null;
+}
+
+export async function encuestaPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+  token: string,
+): Promise<FilaDeEncuestaEnviada> {
+  const filas = (await pedir(entorno, '/rest/v1/encuestas_enviadas', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({
+      id: crypto.randomUUID(),
+      proyecto_id: proyectoId,
+      token_hash: hashDeToken(token),
+      token,
+    }),
+  })) as FilaDeEncuestaEnviada[];
+  const fila = filas[0];
+  if (fila === undefined) throw new Error('el alta de la encuesta no devolvió la fila');
+  return fila;
+}
+
+export async function encuestasDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDeEncuestaEnviada[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/encuestas_enviadas?select=id,proyecto_id,token,revocada_at,recordada_at&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as FilaDeEncuestaEnviada[];
+}
+
+export async function revocarEncuestaPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  id: string,
+): Promise<void> {
+  await pedir(entorno, `/rest/v1/encuestas_enviadas?id=eq.${id}`, {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ revocada_at: new Date().toISOString() }),
+  });
+}
+
+export async function contestarComoCliente(
+  { entorno }: SesionDePrueba,
+  token: string,
+  respuesta: unknown,
+): Promise<unknown> {
+  return pedir(entorno, '/rest/v1/rpc/contestar_encuesta', {
+    method: 'POST',
+    body: JSON.stringify({ p_token: token, p_respuesta: respuesta }),
+  });
+}
+
+export async function encuestaComoCliente(
+  { entorno }: SesionDePrueba,
+  token: string,
+): Promise<unknown> {
+  return pedir(entorno, '/rest/v1/rpc/encuesta_compartida', {
+    method: 'POST',
+    body: JSON.stringify({ p_token: token }),
+  });
+}
+
+export async function preguntasConTexto(
+  { entorno, accessToken }: SesionDePrueba,
+  texto: string,
+): Promise<{ id: string }[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/preguntas?select=id&deleted_at=is.null&texto=eq.${encodeURIComponent(texto)}`,
+    { accessToken },
+  )) as { id: string }[];
+}
+
+export async function borrarPreguntasConTexto(
+  { entorno, accessToken }: SesionDePrueba,
+  texto: string,
+): Promise<void> {
+  await pedir(
+    entorno,
+    `/rest/v1/preguntas?deleted_at=is.null&texto=eq.${encodeURIComponent(texto)}`,
+    {
+      method: 'PATCH',
+      accessToken,
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+    },
+  );
+}
+
+const ORDEN_DE_FABRICA: readonly (readonly [string, number])[] = [
+  ['¿Qué tan conforme quedaste con el mueble?', 10],
+  ['¿Y con los tiempos de entrega?', 20],
+  ['¿Cómo fue hablar con el taller mientras duró el trabajo?', 30],
+  ['¿Se lo recomendarías a alguien?', 40],
+  ['¿Qué podríamos hacer mejor?', 50],
+];
+
+export async function ordenarLaEncuestaBase({
+  entorno,
+  accessToken,
+}: SesionDePrueba): Promise<void> {
+  const vivas = (await pedir(
+    entorno,
+    '/rest/v1/preguntas?select=id,texto,orden&proyecto_id=is.null&deleted_at=is.null&archivada_at=is.null',
+    { accessToken },
+  )) as { id: string; texto: string; orden: number }[];
+  for (const [texto, orden] of ORDEN_DE_FABRICA) {
+    for (const fila of vivas.filter((viva) => viva.texto === texto && viva.orden !== orden)) {
+      await pedir(entorno, `/rest/v1/preguntas?id=eq.${fila.id}`, {
+        method: 'PATCH',
+        accessToken,
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ orden }),
+      });
+    }
+  }
+}
+
 export async function borrarProyectoPorRest(
   { entorno, accessToken }: SesionDePrueba,
   id: string,

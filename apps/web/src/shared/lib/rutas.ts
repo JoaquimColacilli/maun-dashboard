@@ -111,10 +111,36 @@ export function rutaDeLaVistaDelCliente(id: string): string {
   return `/proyectos/${id}/vista-cliente`;
 }
 
+export const RUTA_DE_OPINIONES = '/opiniones';
+
+export const RUTA_DE_PREGUNTAS = '/opiniones/preguntas';
+
+export const PARAMETRO_DE_RESPUESTA = 'respuesta';
+
+export function rutaDeLaRespuesta(id: string): string {
+  return `${RUTA_DE_OPINIONES}?${new URLSearchParams({ [PARAMETRO_DE_RESPUESTA]: id }).toString()}`;
+}
+
+export function rutaDeLaPregunta(id: string): string {
+  return `${RUTA_DE_OPINIONES}#pregunta-${id}`;
+}
+
 export const PREFIJO_DE_LA_VISTA_PUBLICA = '/v/';
 
 export const RUTA_DE_LA_VISTA_PUBLICA = `${PREFIJO_DE_LA_VISTA_PUBLICA}:token`;
 
 export function esLaVistaPublica(ruta: string): boolean {
   return ruta.startsWith(PREFIJO_DE_LA_VISTA_PUBLICA);
+}
+
+export const PREFIJO_DE_LA_ENCUESTA_PUBLICA = '/o/';
+
+export const RUTA_DE_LA_ENCUESTA_PUBLICA = `${PREFIJO_DE_LA_ENCUESTA_PUBLICA}:token`;
+
+export function esLaEncuestaPublica(ruta: string): boolean {
+  return ruta.startsWith(PREFIJO_DE_LA_ENCUESTA_PUBLICA);
+}
+
+export function esUnaPaginaPublica(ruta: string): boolean {
+  return esLaVistaPublica(ruta) || esLaEncuestaPublica(ruta);
 }

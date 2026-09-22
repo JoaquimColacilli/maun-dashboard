@@ -11,6 +11,7 @@ const LEEN_DE_LA_REPLICA = [
   '/clientes',
   '/clientes/:id',
   '/finanzas',
+  '/opiniones',
   '/diezmo',
 ];
 

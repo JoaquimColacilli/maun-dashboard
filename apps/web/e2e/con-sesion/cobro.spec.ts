@@ -230,7 +230,11 @@ test('un cobro rechazado con el formulario ya cerrado avisa igual y se ve en el 
       .getByRole('navigation', { name: 'Principal' })
       .getByRole('button', { name: 'Inicio' })
       .click();
-    await page.getByRole('link', { name: 'Ajustes y tu cuenta' }).click();
+    await page.getByRole('button', { name: /^Tu cuenta/ }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('link', { name: /^Ajustes/ })
+      .click();
     await expect(
       page.getByRole('region', { name: 'Lo que la base rechazó o ajustó' }),
     ).toContainText(titulo);

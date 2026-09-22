@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`) y la vista del cliente (`vistaCliente.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046 y las de los datos para transferir en el 0048.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`), la vista del cliente (`vistaCliente.ts`) y las opiniones de los clientes (`opiniones.ts` y `encuesta.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046, las de los datos para transferir en el 0048 y las de las opiniones en el 0057.
 
 ## Pureza (la aplican las herramientas)
 
@@ -48,19 +48,39 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 ## La vista del cliente (ADR 0046)
 
 `vistaDelCliente(trabajo, hoy)` es el único cálculo de la pantalla que ve el cliente: el camino de
-cinco hitos, la línea de tiempo curada, hace cuánto que está en esta etapa, qué sigue, y **qué se lee
-primero**. Recibe el payload que armó la base y no puede filtrar nada, porque lo que no puede ver no
-le llega.
+hitos, el casillero del relevamiento, la línea de tiempo curada, qué sigue, y **qué se lee primero**.
+Recibe el payload que armó la base y no puede filtrar nada, porque lo que no puede ver no le llega.
+**Es el único lugar donde una etapa interna se traduce a lo que ve el cliente** (ADR 0058): la base
+manda el dato crudo y la pantalla dibuja. El test «qué ve el cliente en cada etapa del trabajo» lo
+fija caso por caso; una etapa o una variante nueva entra ahí.
 
+- **El camino tiene cinco hitos, o seis con el estimativo adelante** (ADR 0058): solo en los trabajos
+  que lo tuvieron (`tuvoEstimativo`: la etapa actual o `fechas.estimativo`). **Compará por paso, nunca
+  por posición**: `llegoAl(vista, 'aprobado')`, no `hitoIndex >= 1`, porque con el estimativo el
+  índice se corre uno.
+- **El casillero del relevamiento lo decide `relevamientoDelTrabajo`** con la etapa, el día y la
+  marca de la visita, y no existe donde no hace falta medir. La tabla de qué muestra en cada caso
+  está en el ADR 0058. Nunca promete un día que ya pasó, y la visita de hoy no se da por hecha sin la
+  marca.
 - **El foco se invierte solo y no es configurable**: hasta la entrega manda la etapa y el saldo va
   completo en la fila de abajo; desde la entrega con saldo pendiente, manda el saldo. Es
-  `foco: 'saldo' | 'estado'` y sale de `hitoIndex >= entregado && saldo > 0`.
+  `foco: 'saldo' | 'estado'` y sale de haber llegado a la entrega con `saldo > 0`.
 - **Los hitos que faltan no llevan fecha**: prometer un día de «pagado» sería inventarlo.
 - **Los eventos no llevan el importe adentro del texto**: va en `monto`, y el formateo no vive acá.
 - **Sin porcentajes de avance**: nadie sabe si un mueble está al 60%.
-- **La vista del cliente no dice nunca cuánto hace que pasó algo** (corrección del ADR 0046). Ni «Hace N días», ni «hace N días que no hay novedades»: el cliente ve la fecha y qué sigue. Los «hace N días» son de la app del dueño, que los usa para su lista de pendientes. `vistaCliente.test.ts` lo exige sobre el JSON entero de `vistaDelCliente`.
+- **La vista del cliente no dice nunca cuánto hace que pasó algo** (corrección del ADR 0046). Ni «Hace N días», ni «hace N días que no hay novedades»: el cliente ve la fecha y qué sigue. Los «hace N días» son de la app del dueño, que los usa para su lista de pendientes. `vistaCliente.test.ts` lo exige sobre el JSON entero de `vistaDelCliente`, y exige que «lo próximo» no tenga ni un dígito en ninguna etapa.
+- **Lo que agregue una versión nueva al payload, leelo tolerando que falte** (`trabajo.fechas as Partial<…>`, `trabajo.visita as … | undefined`): el objeto puede venir de la versión anterior.
 - **`cobro` son los datos para transferirle al taller** (alias, CBU o CVU, titular y CUIT, ADR 0048): llegan del payload, y `hayComoTransferir` dice si alcanza para mostrar el bloque. El titular y el CUIT solos no alcanzan: con eso no se transfiere.
 - **No tiene gemela en SQL**, como `calcularSena`: la base arma el payload, no la presentación.
+
+## Las opiniones (ADR 0057)
+
+- **Los umbrales viven en `opiniones.ts` y en ningún otro lado**: `UMBRAL_BARRAS` (12: hasta 11, un punto por persona), `UMBRAL_EVOLUCION` y `UMBRAL_MESES` (12 respuestas **y** medio año para mostrar la evolución), `TOPE_PREGUNTAS` y `TOPE_PROPIAS`. Lo que se muestra lo decide `modoDeMostrar`, y la barra repartida es solo para las preguntas con polos. **Una pantalla no compara contra 12**: lee `resultado.modo` y `evolucion.conEvolucion`.
+- **`resumenDeOpiniones(datos, hoy)` es todo Resultados**, calculado en el aparato desde la réplica: la titular con su promedio y su cuenta, lo enviado y lo contestado, la distribución de cada pregunta, sus versiones anteriores aparte, las archivadas aparte, los comentarios, la evolución y lo que no se leyó. **Las propias de un trabajo no entran en ningún número general.**
+- **Un porcentaje nunca va solo** (`porcentaje`: «53% (9 de 17)») y un promedio lleva su cuenta (`promedio`, con un decimal solo si hace falta).
+- **`comoGuardar` decide qué es una versión nueva**: en el lugar si nadie la vio; se pregunta si ya la contestaron y cambió el texto; versión nueva sin preguntar si cambió cómo se contesta y ya salió. La base sostiene lo mismo (`MN013`, `MN014`). `sePuedeBorrar` repite la regla de borrado del trigger para que la pantalla no mande un borrado que la base rechazaría; **no la ata el comparador**: si cambia una, se cambia la otra a mano, y `26_opiniones.sql` y sus tests las cubren por separado.
+- **`validarRespuesta` (`encuesta.ts`) es gemela de `private.validar_respuesta`**, y el orden de las revisiones es parte de la regla: el motivo que devuelve tiene que ser el mismo que el de la base, caso por caso. Los largos se cuentan en puntos de código (`Array.from`), no en unidades de UTF-16, y los blancos que se recortan son los de ASCII, como en SQL.
+- `esLinkDeResena` es gemela del `check` de `ajustes.resena_link`.
 
 ## El CUIT
 
@@ -71,6 +91,7 @@ le llega.
 - `private.cascada` y `private.transicion_valida`, en la migración `20260911200100_cascada_estados_y_cobro.sql`.
 - `private.topes_de_la_liquidacion`, `private.liquidacion_valida`, `private.reversion_valida` y el bloque de objetivos y la suma del mes de `private.liquidar`, en `20260911210000_topes_mensuales_y_perdido.sql`.
 - **`asientosDelLibro` y `saldosPorTesoro` contra la vista `public.libro_mayor`**, que es el estado vivo del esquema (`supabase/esquema.sql`), no el archivo de la migración: los dos difieren y el archivo está desactualizado (ADR 0013 y 0014).
+- **`validarRespuesta` contra `private.validar_respuesta` y `esLinkDeResena` contra el `check` de `ajustes.resena_link`**, en `20260921180000_opiniones_de_los_clientes.sql` (ADR 0057).
 
 `lineasDelLibro` **no tiene gemela en SQL y no la necesita**: es la forma sin partir de lo mismo, y
 `asientosDelLibro` es literalmente `lineasDelLibro(...).flatMap(asientosDeLaLinea)`. Nada en la base

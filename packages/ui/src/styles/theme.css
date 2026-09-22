@@ -58,8 +58,15 @@
   --text-money-lg: 22px;
   --text-money-lg-desktop: 26px;
   --text-section: 15px;
+  --text-body-sm: 14px;
   --text-body: 15px;
   --text-body-lg: 16px;
+  --text-subtitulo: 17px;
+  --text-subtitulo-lg: 18px;
+  --text-firma: 19px;
+  --text-h2: 21px;
+  --text-cifra: 56px;
+  --text-cifra-lg: 68px;
   --text-label: 13px;
   --text-meta: 12px;
   --text-badge: 11px;
@@ -74,6 +81,7 @@
   --radius-panel: 6px;
   --radius-dialog: 8px;
   --radius-sheet: 12px;
+  --radius-telefono: 18px;
   --radius-pill: 999px;
 
   --shadow-*: initial;
@@ -145,6 +153,9 @@
   --color-ag-materiales: var(--ag-materiales);
   --color-ag-taller: var(--ag-taller);
   --color-ag-marca: var(--ag-marca);
+  --color-op-bien: var(--op-bien);
+  --color-op-neutro: var(--op-neutro);
+  --color-op-mal: var(--op-mal);
 
   --font-sans: var(--font-ui);
 
@@ -194,6 +205,12 @@
   --ag-materiales: #4e6b22;
   --ag-taller: #6a6660;
   --ag-marca: #c2185b;
+
+  /* Las opiniones: dos tintas con gris en el medio, y ninguna es un color de tesoro. El color nunca
+     va solo: la escala lleva carita y palabra, y la leyenda, forma. */
+  --op-bien: var(--color-ink);
+  --op-neutro: #9b9b9b;
+  --op-mal: #9a3b18;
   --celda-min: 96px;
   --tira-celda: 44px;
 
@@ -286,6 +303,9 @@
     --ag-materiales: #a6c86d;
     --ag-taller: #b3afa8;
     --ag-marca: #ff90b4;
+
+    --op-neutro: #6e6c68;
+    --op-mal: #e59268;
   }
 }
 

@@ -23,6 +23,11 @@ describe('seccionDeLaRuta', () => {
     expect(seccionDeLaRuta('/proyectos/5eed0000-0000-7000-8000-000000000001')).toBe('proyectos');
   });
 
+  it('Resultados y Preguntas son las dos partes de Opiniones', () => {
+    expect(seccionDeLaRuta('/opiniones')).toBe('opiniones');
+    expect(seccionDeLaRuta('/opiniones/preguntas')).toBe('opiniones');
+  });
+
   it('una ruta desconocida cae en Inicio en vez de dejar la barra sin nada marcado', () => {
     expect(seccionDeLaRuta('/lo-que-sea')).toBe('inicio');
   });
@@ -59,5 +64,13 @@ describe('destinoResaltado', () => {
 
   it('la barra del celular no cambió: cuatro destinos y ninguno es la Agenda', () => {
     expect(NAV_MOVIL).toEqual(['inicio', 'proyectos', 'clientes', 'finanzas']);
+  });
+
+  it('Opiniones entra en tablet y escritorio entre Finanzas y Diezmo, y en el celular se llega desde Inicio', () => {
+    expect(NAV_ESCRITORIO.slice(5, 8)).toEqual(['finanzas', 'opiniones', 'diezmo']);
+    expect(NAV_TABLET.slice(4, 7)).toEqual(['finanzas', 'opiniones', 'diezmo']);
+    expect(destinoResaltado('opiniones', NAV_ESCRITORIO)).toBe('opiniones');
+    expect(destinoResaltado('opiniones', NAV_TABLET)).toBe('opiniones');
+    expect(destinoResaltado('opiniones', NAV_MOVIL)).toBe('inicio');
   });
 });

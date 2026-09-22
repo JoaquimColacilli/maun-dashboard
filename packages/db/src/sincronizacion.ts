@@ -40,6 +40,7 @@ export const COLUMNAS_DE_AJUSTES = [
   'cobro_titular',
   'cobro_cuit',
   'cobro_link',
+  'resena_link',
 ] as const;
 
 export type ColumnaDeAjustes = (typeof COLUMNAS_DE_AJUSTES)[number];
@@ -643,6 +644,102 @@ export async function revocarEnlacePublico(
   const { data, error } = await cliente
     .from('enlaces_publicos')
     .update({ revocado_at: revocadoEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export const COLUMNAS_DE_PREGUNTA = [
+  'serie',
+  'numero',
+  'proyecto_id',
+  'orden',
+  'texto',
+  'tipo',
+  'escala',
+  'obligatoria',
+  'opciones',
+  'archivada_at',
+  'deleted_at',
+] as const;
+
+export type ColumnaDePregunta = (typeof COLUMNAS_DE_PREGUNTA)[number];
+
+export type PreguntaParaGuardar = Pick<FilaDe<'preguntas'>, ColumnaDePregunta> & { id: string };
+
+export async function guardarPregunta(
+  cliente: ClienteMaun,
+  pregunta: PreguntaParaGuardar,
+): Promise<FilaDe<'preguntas'>> {
+  const { data, error } = await cliente
+    .from('preguntas')
+    .upsert(pregunta, { onConflict: 'id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export interface EncuestaNueva {
+  id: string;
+  proyecto_id: string;
+  token_hash: string;
+  token: string;
+}
+
+export async function revocarEncuesta(
+  cliente: ClienteMaun,
+  id: string,
+  revocadaEn: string,
+): Promise<FilaDe<'encuestas_enviadas'>> {
+  const { data, error } = await cliente
+    .from('encuestas_enviadas')
+    .update({ revocada_at: revocadaEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function mandarEncuesta(
+  cliente: ClienteMaun,
+  nueva: EncuestaNueva,
+  revocar: { id: string; revocadaEn: string } | null,
+): Promise<FilaDe<'encuestas_enviadas'>[]> {
+  const revocada =
+    revocar === null ? [] : [await revocarEncuesta(cliente, revocar.id, revocar.revocadaEn)];
+
+  const { data, error } = await cliente.from('encuestas_enviadas').insert(nueva).select().single();
+  if (error) throw error;
+  return [...revocada, data];
+}
+
+export async function recordarEncuesta(
+  cliente: ClienteMaun,
+  id: string,
+  recordadaEn: string,
+): Promise<FilaDe<'encuestas_enviadas'>> {
+  const { data, error } = await cliente
+    .from('encuestas_enviadas')
+    .update({ recordada_at: recordadaEn })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function marcarRespuestaLeida(
+  cliente: ClienteMaun,
+  id: string,
+  leidaEn: string,
+): Promise<FilaDe<'respuestas'>> {
+  const { data, error } = await cliente
+    .from('respuestas')
+    .update({ leida_at: leidaEn })
     .eq('id', id)
     .select()
     .single();

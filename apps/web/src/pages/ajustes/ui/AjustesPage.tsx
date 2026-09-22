@@ -18,7 +18,11 @@ import { useSesionActiva } from '@/entities/sesion';
 import { AjusteDeHuella } from '@/features/activar-huella';
 import { AjusteDeCocos } from '@/features/ajustar-cocos';
 import { BotonSalir } from '@/features/cerrar-sesion';
-import { FormularioDeCobro, FormularioDeConfiguracion } from '@/features/configurar-taller';
+import {
+  FormularioDeCobro,
+  FormularioDeConfiguracion,
+  FormularioDeResena,
+} from '@/features/configurar-taller';
 import { FormularioDePerfil } from '@/features/editar-perfil';
 import { SelectorDeTema } from '@/features/elegir-tema';
 import { VersionDeLaApp } from '@/features/ver-novedades';
@@ -266,6 +270,21 @@ export function AjustesPage() {
                 él. Va después de tu alias, que es la forma que no te cuesta comisión.
               </p>
               <FormularioDeCobro ajustes={ajustes} />
+            </section>
+          )}
+
+          {ajustes && (
+            <section aria-labelledby="titulo-resenas" className={SECCION}>
+              <h2 id="titulo-resenas" className="text-section font-semibold">
+                Reseñas en Google
+              </h2>
+              <p className="text-body leading-relaxed text-text-2">
+                Cuando un cliente termina la encuesta, le pedimos que deje su opinión también en
+                Google. Se le pide a todos, contesten lo que contesten: pedírsela solo a los que
+                quedaron contentos va contra las reglas de Google, que pueden borrar las reseñas del
+                taller. Si no cargás el enlace, ese pedido no aparece.
+              </p>
+              <FormularioDeResena ajustes={ajustes} />
             </section>
           )}
 

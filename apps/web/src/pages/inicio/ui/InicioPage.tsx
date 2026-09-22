@@ -8,6 +8,7 @@ import {
   sueldoDelMes,
   type Money,
 } from '@maun/domain';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import {
@@ -18,6 +19,7 @@ import {
   type FraseDelDiezmo,
   type ResumenMensual,
 } from '@/entities/movimiento';
+import { novedadesDeOpiniones } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { LiquidacionesSinConfirmar } from '@/entities/proyecto';
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
@@ -48,9 +50,19 @@ import {
   rutaDelProyecto,
   useAnchoDePantalla,
 } from '@/shared/lib';
-import { Avatar, Button, FilaDeAcciones, Icono, Pagina, type NombreDeIcono } from '@/shared/ui';
+import {
+  Avatar,
+  Button,
+  ConSalida,
+  FilaDeAcciones,
+  Icono,
+  Pagina,
+  type NombreDeIcono,
+} from '@/shared/ui';
 
+import { HojaDelPerfil } from './HojaDelPerfil';
 import { HoyEnLaAgenda } from './HoyEnLaAgenda';
+import { UltimaOpinion } from './UltimaOpinion';
 
 const DIAS_DE_PROYECCION = 365;
 
@@ -260,18 +272,40 @@ function Acceso({
   );
 }
 
-function AccesoAAjustes() {
+function BotonDeLaCuenta({
+  abierta,
+  sinLeer,
+  alAbrir,
+}: {
+  abierta: boolean;
+  sinLeer: number;
+  alAbrir: () => void;
+}) {
   const { email, foto } = useSesionActiva();
   const nombre = useNombreDeLaPersona();
+  const nuevas = sinLeer === 1 ? '1 opinión nueva' : `${String(sinLeer)} opiniones nuevas`;
 
   return (
-    <Link
-      to="/ajustes"
-      aria-label="Ajustes y tu cuenta"
-      className="-mr-1 flex size-tap flex-none items-center justify-center rounded-pill"
+    <button
+      type="button"
+      aria-label={sinLeer > 0 ? `Tu cuenta. ${nuevas}` : 'Tu cuenta'}
+      aria-haspopup="dialog"
+      aria-expanded={abierta}
+      onClick={alAbrir}
+      className="relative -mr-1 flex size-tap flex-none items-center justify-center rounded-pill"
     >
-      <Avatar nombre={nombre.trim() === '' ? email : nombre} foto={foto} />
-    </Link>
+      <Avatar
+        nombre={nombre.trim() === '' ? email : nombre}
+        foto={foto}
+        className={abierta ? 'ring-2 ring-ink' : ''}
+      />
+      {sinLeer > 0 && (
+        <span
+          aria-hidden
+          className="absolute top-1 right-1 size-2.5 rounded-pill border-2 border-paper bg-op-mal"
+        />
+      )}
+    </button>
   );
 }
 
@@ -291,8 +325,12 @@ export function InicioPage() {
   const replica = useReplicaDelTaller();
   const navegar = useNavigate();
   const ancho = useAnchoDePantalla();
+  const sesion = useSesionActiva();
+  const nombreDeLaPersona = useNombreDeLaPersona();
+  const [perfil, setPerfil] = useState(false);
 
   const hoy = hoyLocal();
+  const novedades = useMemo(() => novedadesDeOpiniones(replica, hoy), [replica, hoy]);
   const mes = mesDeLaFecha(hoy);
   const ajustes = ajustesDe(replica);
   const saldos = saldosDeLaReplica(replica);
@@ -338,7 +376,13 @@ export function InicioPage() {
         {ancho === 'movil' && (
           <div className="flex flex-none items-center gap-1">
             <AccesoALaAgenda />
-            <AccesoAAjustes />
+            <BotonDeLaCuenta
+              abierta={perfil}
+              sinLeer={novedades.sinLeer}
+              alAbrir={() => {
+                setPerfil(true);
+              }}
+            />
           </div>
         )}
       </header>
@@ -355,6 +399,8 @@ export function InicioPage() {
           />
         ))}
       </section>
+
+      {novedades.ultima !== null && <UltimaOpinion ultima={novedades.ultima} />}
 
       {ancho === 'movil' && <HoyEnLaAgenda replica={replica} hoy={hoy} />}
 
@@ -512,6 +558,22 @@ export function InicioPage() {
           </div>
         </div>
       )}
+
+      <ConSalida valor={perfil}>
+        {() => (
+          <HojaDelPerfil
+            replica={replica}
+            hoy={hoy}
+            nombre={nombreDeLaPersona.trim()}
+            email={sesion.email}
+            foto={sesion.foto}
+            novedades={novedades}
+            alCerrar={() => {
+              setPerfil(false);
+            }}
+          />
+        )}
+      </ConSalida>
     </Pagina>
   );
 }

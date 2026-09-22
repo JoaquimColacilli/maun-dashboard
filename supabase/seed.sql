@@ -1,7 +1,8 @@
 -- Seed: un taller de prueba con datos realistas del rubro.
 --
 -- Todo vive en un household propio, identificable por su id: 5eed0000-0000-7000-8000-000000000001.
--- Los ids de todas las filas del seed empiezan con 5eed0000. Se borra entero con seed-borrar.sql,
+-- Los ids de las filas del seed empiezan con 5eed0000, salvo las preguntas de la encuesta base, que
+-- las escribe la misma función que a cualquier taller nuevo. Se borra entero con seed-borrar.sql,
 -- que borra ese household y nada más (la foreign key en cascada se lleva sus filas).
 --
 -- Es idempotente: arranca borrando el household del seed, así que correrlo dos veces deja lo mismo.
@@ -258,3 +259,15 @@ insert into public.movimientos (
   ('5eed0000-0000-7000-8000-000000050016', '5eed0000-0000-7000-8000-000000000001', '2026-09-05', 'ingreso', null, 'hogar', 42000000, 'Ingreso externo', 'Docencia del mes'),
   ('5eed0000-0000-7000-8000-000000050017', '5eed0000-0000-7000-8000-000000000001', '2026-09-08', 'gasto', 'hogar', null, 7430000, 'Servicios', 'Luz y gas'),
   ('5eed0000-0000-7000-8000-000000050018', '5eed0000-0000-7000-8000-000000000001', '2026-09-09', 'gasto', 'hogar', null, 8640000, 'Supermercado', 'Supermercado');
+
+
+-- Opiniones --------------------------------------------------------------------------------------
+-- La encuesta base, la misma que recibe cualquier taller nuevo, y una encuesta mandada al vanitory
+-- que nadie contestó: packages/db/tests/concurrencia.test.ts la usa para mandar dos respuestas a la
+-- vez, siempre en rollback.
+
+select private.sembrar_la_encuesta('5eed0000-0000-7000-8000-000000000001');
+
+insert into public.encuestas_enviadas (id, household_id, proyecto_id, token_hash, token) values
+  ('5eed0000-0000-7000-8000-000000060001', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020002',
+   encode(sha256(convert_to('5eed-encuesta-del-vanitory-0001', 'UTF8')), 'hex'), '5eed-encuesta-del-vanitory-0001');

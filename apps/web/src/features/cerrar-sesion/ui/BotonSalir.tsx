@@ -1,9 +1,6 @@
-import { useIsMutating, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-
-import { mensajeDeAcceso, salir } from '@/shared/api';
-import { limpiarDatosLocales } from '@/shared/lib';
 import { Button, type ButtonSize } from '@/shared/ui';
+
+import { avisoDePendientes, useSalir } from './useSalir';
 
 export interface BotonSalirProps {
   size?: ButtonSize;
@@ -11,41 +8,13 @@ export interface BotonSalirProps {
 }
 
 export function BotonSalir({ size = 'chico', className }: BotonSalirProps) {
-  const queryClient = useQueryClient();
-  const pendientes = useIsMutating();
-  const [confirmando, setConfirmando] = useState(false);
-  const [saliendo, setSaliendo] = useState(false);
-  const [error, setError] = useState('');
-
-  async function cerrar() {
-    setSaliendo(true);
-    setError('');
-    try {
-      await salir();
-    } catch (fallo) {
-      setError(mensajeDeAcceso(fallo));
-    } finally {
-      await limpiarDatosLocales(queryClient);
-      setSaliendo(false);
-    }
-  }
+  const { pendientes, confirmando, saliendo, error, confirmar, cerrar } = useSalir();
 
   if (pendientes > 0 && !confirmando) {
     return (
       <div className="flex flex-col items-start gap-2">
-        <p className="text-meta text-atencion">
-          {pendientes === 1
-            ? 'Hay 1 cambio sin sincronizar: si cerrás sesión, se pierde.'
-            : `Hay ${String(pendientes)} cambios sin sincronizar: si cerrás sesión, se pierden.`}
-        </p>
-        <Button
-          variant="secundario"
-          size={size}
-          className={className}
-          onClick={() => {
-            setConfirmando(true);
-          }}
-        >
+        <p className="text-meta text-atencion">{avisoDePendientes(pendientes)}</p>
+        <Button variant="secundario" size={size} className={className} onClick={confirmar}>
           Cerrar sesión igual
         </Button>
       </div>

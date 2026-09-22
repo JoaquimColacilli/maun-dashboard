@@ -2,7 +2,7 @@
 -- fijan las dos propiedades que sostienen esa promesa: que el taller aparece entero, y que si algo
 -- falla al crearlo no queda una cuenta de Auth sin taller.
 
-select plan(14);
+select plan(16);
 
 -- Sin confirmar el mail no hay taller -------------------------------------------------------------
 
@@ -75,6 +75,27 @@ select is(
   'los ajustes nacen en cero: los valores de referencia son de un taller y no de cualquiera, la app los pide'
 );
 
+-- La encuesta que se le manda al cliente nace escrita: el dueño no arranca de un editor vacío.
+select is(
+  (
+    select array_agg(p.tipo::text || ':' || p.obligatoria::text order by p.orden)
+    from public.preguntas p
+    where p.household_id = tests.id('taller')
+  ),
+  array['escala5:true', 'escala5:true', 'escala5:false', 'sitalvezno:true', 'texto:false'],
+  'y con la encuesta base escrita: cinco preguntas, en su orden'
+);
+
+select is(
+  (
+    select array_agg(p.texto)
+    from public.preguntas p
+    where p.household_id = tests.id('taller') and p.titular
+  ),
+  array['¿Qué tan conforme quedaste con el mueble?'],
+  'una sola es la del número de arriba de Resultados: la de qué tan conforme quedó'
+);
+
 select tests.guardar('confirmada', tests.crear_usuario('confirmada@maun.test', true));
 
 select is(
@@ -108,12 +129,12 @@ select is(
 
 -- Atomicidad: un fallo adentro del trigger no deja un usuario huérfano ----------------------------
 
--- Se fuerza el fallo en el último paso del alta (los ajustes) para que el rollback tenga que
--- llevarse también el household y la membresía. El not valid evita revisar las filas que ya están,
--- y la constraint desaparece unas líneas más abajo.
+-- Se fuerza el fallo en el último paso del alta (la encuesta base) para que el rollback tenga que
+-- llevarse también el household, la membresía y los ajustes. El not valid evita revisar las filas
+-- que ya están, y la constraint desaparece unas líneas más abajo.
 select set_config('tests.talleres', (select count(*)::text from public.households), true);
 
-alter table public.ajustes add constraint prueba_el_alta_falla check (false) not valid;
+alter table public.preguntas add constraint prueba_el_alta_falla check (false) not valid;
 
 select throws_ok(
   $$ select tests.crear_usuario('rompe@maun.test', true) $$,
@@ -131,9 +152,9 @@ select is(
 select is(
   (select count(*)::int from public.households),
   current_setting('tests.talleres')::int,
-  'ni queda un household huérfano: el household y la membresía se van con el alta'
+  'ni queda un household huérfano: el household, la membresía y los ajustes se van con el alta'
 );
 
-alter table public.ajustes drop constraint prueba_el_alta_falla;
+alter table public.preguntas drop constraint prueba_el_alta_falla;
 
 select * from finish();

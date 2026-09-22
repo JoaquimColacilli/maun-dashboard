@@ -8,6 +8,7 @@ import {
   esEstado,
   estaLiquidado,
   esLinkDeMercadoPago,
+  esLinkDeResena,
   formasDeCobro,
   pagosPorDelante,
   puedeCambiarEstado,
@@ -17,6 +18,7 @@ import {
   saldosPorTesoro,
   TESOROS,
   topesDeLaLiquidacion,
+  validarRespuesta,
   type AjustesDeLiquidacion,
   type Asiento,
   type Distribucion,
@@ -26,6 +28,7 @@ import {
   type FormaDeCobro,
   type Liquidacion,
   type LiquidacionRegistrada,
+  type PreguntaDeLaEncuesta,
   type Reapertura,
 } from '@maun/domain';
 import type pg from 'pg';
@@ -387,6 +390,251 @@ export async function compararLinkDeCobro(cliente: pg.Client): Promise<string[]>
     return ts === fila.pasa
       ? []
       : [`link de cobro ${JSON.stringify(valor)}: SQL ${String(fila.pasa)}, TS ${String(ts)}`];
+  });
+}
+
+const RESENAS_A_PROBAR: readonly string[] = [
+  '',
+  'https://g.page/r/CaMaunTaller/review',
+  'https://g.page/',
+  'https://g.page',
+  'https://search.google.com/local/writereview?placeid=ChIJ123',
+  'https://maps.google.com/?cid=123',
+  'https://www.google.com/maps/place/Taller',
+  'https://google.com/maps',
+  'https://maps.app.goo.gl/abc123',
+  'https://g.co/kgs/abc',
+  'http://g.page/r/x',
+  'g.page/r/x',
+  'https://G.PAGE/r/x',
+  'https://resenas-truchas.com/maun',
+  'https://g.page.otro.com/x',
+  'https://g.co.ar/x',
+  'https://g.page/con espacio',
+  'https://g.page/con\ttab',
+  `https://g.page/${'x'.repeat(285)}`,
+  `https://g.page/${'x'.repeat(286)}`,
+];
+
+export async function compararLinkDeResena(cliente: pg.Client): Promise<string[]> {
+  const { rows: definicion } = await cliente.query<{ def: string }>(
+    `select pg_get_constraintdef(c.oid) as def
+     from pg_constraint c
+     where c.conrelid = 'public.ajustes'::regclass and c.conname = 'ajustes_resena_link_formato'`,
+  );
+  const cruda = definicion[0]?.def;
+  if (cruda === undefined) return ['no existe el check ajustes_resena_link_formato en la base'];
+
+  const expresion = cruda
+    .replace(/^CHECK\s*\(/, '')
+    .replace(/\)$/, '')
+    .replaceAll('resena_link', 'c.valor');
+
+  const { rows } = await cliente.query<{ pasa: boolean }>(
+    `select (${expresion}) as pasa
+     from unnest($1::text[]) with ordinality as c (valor, orden)
+     order by c.orden`,
+    [RESENAS_A_PROBAR],
+  );
+  if (rows.length !== RESENAS_A_PROBAR.length) {
+    return [
+      `el check del link de reseña devolvió ${String(rows.length)} filas para ${String(RESENAS_A_PROBAR.length)} casos`,
+    ];
+  }
+
+  return rows.flatMap((fila, i) => {
+    const valor = RESENAS_A_PROBAR[i] ?? '';
+    const ts = valor === '' || esLinkDeResena(valor);
+    return ts === fila.pasa
+      ? []
+      : [`link de reseña ${JSON.stringify(valor)}: SQL ${String(fila.pasa)}, TS ${String(ts)}`];
+  });
+}
+
+const PREGUNTAS_A_VALIDAR: readonly PreguntaDeLaEncuesta[] = [
+  {
+    id: 'aaaaaaaa-0000-7000-8000-000000000001',
+    texto: '¿Qué tan conforme quedaste con el mueble?',
+    tipo: 'escala5',
+    escala: 'conformidad',
+    obligatoria: true,
+    opciones: null,
+    propia: false,
+  },
+  {
+    id: 'aaaaaaaa-0000-7000-8000-000000000002',
+    texto: '¿Se lo recomendarías a alguien?',
+    tipo: 'sitalvezno',
+    escala: null,
+    obligatoria: true,
+    opciones: null,
+    propia: false,
+  },
+  {
+    id: 'aaaaaaaa-0000-7000-8000-000000000003',
+    texto: '¿Cómo nos conociste?',
+    tipo: 'una',
+    escala: null,
+    obligatoria: false,
+    opciones: ['Me lo recomendaron', 'Por Instagram', 'Vi el cartel'],
+    propia: false,
+  },
+  {
+    id: 'aaaaaaaa-0000-7000-8000-000000000004',
+    texto: '¿Qué usás más?',
+    tipo: 'varias',
+    escala: null,
+    obligatoria: false,
+    opciones: ['El placard', 'La cómoda', 'El escritorio', 'La biblioteca'],
+    propia: false,
+  },
+  {
+    id: 'aaaaaaaa-0000-7000-8000-000000000005',
+    texto: '¿Qué podríamos hacer mejor?',
+    tipo: 'texto',
+    escala: null,
+    obligatoria: false,
+    opciones: null,
+    propia: false,
+  },
+  {
+    id: 'aaaaaaaa-0000-7000-8000-000000000006',
+    texto: '¿La altura te quedó cómoda?',
+    tipo: 'escala5',
+    escala: 'conformidad',
+    obligatoria: false,
+    opciones: null,
+    propia: true,
+  },
+];
+
+const ID_DE_RESPUESTA = '0192a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b';
+
+function idDeLaPregunta(indice: number): string {
+  return PREGUNTAS_A_VALIDAR[indice]?.id ?? '';
+}
+
+const VALORES_A_PROBAR: readonly unknown[] = [
+  1,
+  2,
+  3,
+  4,
+  5,
+  0,
+  -1,
+  6,
+  2.5,
+  5.0,
+  1e2,
+  '3',
+  true,
+  null,
+  {},
+  [],
+  [0],
+  [3],
+  [4],
+  [0, 0],
+  [0, 2, 3],
+  [1.5],
+  ['1'],
+  '',
+  ' \t\n\r\f\v',
+  String.fromCharCode(0xa0),
+  'Quedó impecable.',
+  '  Con blancos en las puntas.  \n',
+  'a'.repeat(2000),
+  `  ${'a'.repeat(2000)}\n`,
+  'a'.repeat(2001),
+  '👍'.repeat(2000),
+  '👍'.repeat(2001),
+];
+
+function renglonDePrueba(indice: number, valor: unknown): unknown {
+  return { pregunta: idDeLaPregunta(indice), valor };
+}
+
+function respuestasAValidar(): unknown[] {
+  const fijas: unknown[] = [
+    null,
+    [],
+    'respuesta',
+    7,
+    {},
+    { id: ID_DE_RESPUESTA },
+    { renglones: [] },
+    { id: ID_DE_RESPUESTA, renglones: [], extra: true },
+    { id: 7, renglones: [] },
+    { id: 'no-es-un-id', renglones: [] },
+    {
+      id: ID_DE_RESPUESTA.toUpperCase(),
+      renglones: [renglonDePrueba(0, 5), renglonDePrueba(1, 3)],
+    },
+    { id: ` ${ID_DE_RESPUESTA}`, renglones: [] },
+    { id: ID_DE_RESPUESTA, renglones: {} },
+    { id: ID_DE_RESPUESTA, renglones: 'renglones' },
+    { id: ID_DE_RESPUESTA, renglones: [null] },
+    { id: ID_DE_RESPUESTA, renglones: [[]] },
+    { id: ID_DE_RESPUESTA, renglones: [{ pregunta: idDeLaPregunta(0) }] },
+    { id: ID_DE_RESPUESTA, renglones: [{ valor: 5 }] },
+    { id: ID_DE_RESPUESTA, renglones: [{ pregunta: idDeLaPregunta(0), valor: 5, extra: 1 }] },
+    { id: ID_DE_RESPUESTA, renglones: [{ pregunta: 3, valor: 5 }] },
+    { id: ID_DE_RESPUESTA, renglones: [{ pregunta: 'otra', valor: 5 }] },
+    { id: ID_DE_RESPUESTA, renglones: [renglonDePrueba(0, 5), renglonDePrueba(0, 4)] },
+    { id: ID_DE_RESPUESTA, renglones: [renglonDePrueba(0, 5)] },
+    { id: ID_DE_RESPUESTA, renglones: [renglonDePrueba(1, 3), renglonDePrueba(0, 5)] },
+    { id: ID_DE_RESPUESTA, renglones: [] },
+  ];
+  const conObligatorias = VALORES_A_PROBAR.flatMap((valor) =>
+    [0, 1, 2, 3, 4, 5].map((indice) => ({
+      id: ID_DE_RESPUESTA,
+      renglones: [
+        ...(indice === 0 ? [] : [renglonDePrueba(0, 5)]),
+        ...(indice === 1 ? [] : [renglonDePrueba(1, 3)]),
+        renglonDePrueba(indice, valor),
+      ],
+    })),
+  );
+  const siguiente = generador(20_260_921);
+  const azar: unknown[] = [];
+  for (let i = 0; i < 1_500; i++) {
+    const renglones: unknown[] = [];
+    const cuantos = siguiente(8);
+    for (let j = 0; j < cuantos; j++) {
+      const indice = siguiente(PREGUNTAS_A_VALIDAR.length + 1);
+      const valor = VALORES_A_PROBAR[siguiente(VALORES_A_PROBAR.length)];
+      renglones.push(
+        indice === PREGUNTAS_A_VALIDAR.length
+          ? { pregunta: 'aaaaaaaa-0000-7000-8000-00000000ffff', valor }
+          : renglonDePrueba(indice, valor),
+      );
+    }
+    azar.push({ id: ID_DE_RESPUESTA, renglones });
+  }
+  return [...fijas, ...conObligatorias, ...azar];
+}
+
+export async function compararValidacionDeRespuestas(cliente: pg.Client): Promise<string[]> {
+  const respuestas = respuestasAValidar();
+  const { rows } = await cliente.query<{ motivo: string | null }>(
+    `select private.validar_respuesta($1::jsonb, c.respuesta) as motivo
+     from unnest($2::jsonb[]) with ordinality as c (respuesta, orden)
+     order by c.orden`,
+    [JSON.stringify(PREGUNTAS_A_VALIDAR), respuestas.map((respuesta) => JSON.stringify(respuesta))],
+  );
+  if (rows.length !== respuestas.length) {
+    return [
+      `la validación de SQL devolvió ${String(rows.length)} filas para ${String(respuestas.length)} respuestas`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const respuesta = respuestas[i];
+    const ts = validarRespuesta(PREGUNTAS_A_VALIDAR, respuesta);
+    return ts === fila.motivo
+      ? []
+      : [
+          `respuesta ${JSON.stringify(respuesta).slice(0, 160)}: SQL ${String(fila.motivo)}, TS ${String(ts)}`,
+        ];
   });
 }
 
@@ -1702,6 +1950,8 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararPagosPorDelante(cliente)),
     ...(await compararFormasDeCobro(cliente)),
     ...(await compararLinkDeCobro(cliente)),
+    ...(await compararLinkDeResena(cliente)),
+    ...(await compararValidacionDeRespuestas(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),
     ...(await compararTransiciones(cliente)),

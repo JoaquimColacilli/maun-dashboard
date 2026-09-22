@@ -6,7 +6,7 @@ select plan(18);
 
 select tables_are(
   'public',
-  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado'],
+  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado', 'preguntas', 'encuestas_enviadas', 'respuestas', 'renglones_de_respuesta'],
   'public tiene exactamente las tablas esperadas: una tabla nueva obliga a revisar esta suite'
 );
 
@@ -24,7 +24,7 @@ select set_eq(
     'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
     'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos',
     'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida', 'avisos_por_mandar',
-    'vista_del_cliente', 'vista_compartida', 'titulo_compartido'
+    'vista_del_cliente', 'vista_compartida', 'titulo_compartido', 'encuesta_compartida', 'contestar_encuesta'
   ],
   'public expone exactamente las funciones esperadas'
 );
@@ -86,10 +86,11 @@ select is_empty(
   'authenticated no borra físicamente ni trunca: los borrados son lógicos'
 );
 
--- Las puertas del rol anónimo, enumeradas. Son la vista del cliente entrando por el link y el
--- título que alimenta su vista previa, y no puede haber ninguna otra: en esta plataforma Postgres
--- le da execute a public y Supabase se lo da además a anon por default privileges, así que una
--- función nueva que se olvide el revoke le queda alcanzable a cualquiera sin sesión (ADR 0046).
+-- Las puertas del rol anónimo, enumeradas. Son la vista del cliente entrando por el link, el
+-- título que alimenta su vista previa, y las dos de la encuesta: la que la muestra y la que guarda
+-- lo que contestó (ADR 0057). No puede haber ninguna otra: en esta plataforma Postgres le da
+-- execute a public y Supabase se lo da además a anon por default privileges, así que una función
+-- nueva que se olvide el revoke le queda alcanzable a cualquiera sin sesión (ADR 0046).
 select set_eq(
   $$
     select p.oid::regprocedure::text
@@ -97,8 +98,8 @@ select set_eq(
     where p.pronamespace in ('public'::regnamespace, 'private'::regnamespace)
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   $$,
-  array['vista_compartida(text)', 'titulo_compartido(text)'],
-  'anon ejecuta exactamente dos funciones de la base: la del link del cliente y la del título que arma la vista previa'
+  array['vista_compartida(text)', 'titulo_compartido(text)', 'encuesta_compartida(text)', 'contestar_encuesta(text,jsonb)'],
+  'anon ejecuta exactamente cuatro funciones de la base: la del link del cliente, la del título de su vista previa, y las dos de la encuesta'
 );
 
 -- Y son las únicas que corren elevadas. Sin security definer no llegarían a ninguna tabla, porque
@@ -111,8 +112,8 @@ select set_eq(
       and p.prorettype <> 'event_trigger'::regtype
       and p.prosecdef
   $$,
-  array['vista_compartida(text)', 'titulo_compartido(text)'],
-  'las únicas funciones security definer de public son las dos del link: sin elevar no llegan a ninguna tabla'
+  array['vista_compartida(text)', 'titulo_compartido(text)', 'encuesta_compartida(text)', 'contestar_encuesta(text,jsonb)'],
+  'las únicas funciones security definer de public son las cuatro de los enlaces: sin elevar no llegan a ninguna tabla'
 );
 
 select is_empty(

@@ -22,6 +22,9 @@ comment on type public.comprobante is 'Comprobante a emitir al cliente.';
 create type public.condicion_fiscal as enum ('consumidor_final', 'monotributo', 'responsable_inscripto', 'exento');
 comment on type public.condicion_fiscal is 'Condición frente al IVA del cliente.';
 
+create type public.escala_de_pregunta as enum ('conformidad', 'tiempos', 'trato');
+comment on type public.escala_de_pregunta is 'Qué palabras lleva cada una de las cinco caritas de una pregunta de escala: conformidad (de «Nada conforme» a «Muy conforme»), tiempos (de «Llegó muy tarde» a «Llegó antes de lo pautado») o trato (de «Costaba mucho» a «Muy fácil»). Las palabras viven en @maun/domain; acá se guarda cuál juego lleva la pregunta.';
+
 create type public.estado_proyecto as enum ('contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'perdido', 'en_curso', 'entregado', 'cobrado');
 comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro: los primeros seis estados son de seguimiento (contacto, presupuesto estimativo, relevamiento, a presupuestar, presupuesto enviado y perdido), los últimos tres de obra. Las transiciones válidas viven en @maun/domain.';
 
@@ -42,6 +45,9 @@ comment on type public.tesoro is 'Las cuatro cajas: hogar (la familia), maun (el
 
 create type public.tipo_de_necesidad as enum ('herraje', 'herramienta');
 comment on type public.tipo_de_necesidad is 'Si lo que hace falta es un herraje (bisagras, pistones, tiradores, tarugos) o una herramienta (sierra circular, lijadora de banda, multitool). El dueño las nombró como dos listas distintas, pero las dos son «lo que necesito para este trabajo» y se repiten entre trabajos: una sola tabla con el tipo adentro (ADR 0045).';
+
+create type public.tipo_de_pregunta as enum ('escala5', 'sitalvezno', 'una', 'varias', 'texto');
+comment on type public.tipo_de_pregunta is 'Cómo se contesta una pregunta, y no hay otra forma: escala de cinco caritas, sí / tal vez / no, una opción entre varias, varias opciones, o texto libre. Son los tipos del diseño y ninguno más (ADR 0057).';
 
 create type public.tipo_movimiento as enum ('ingreso', 'gasto', 'transferencia', 'pago_diezmo', 'aporte_cocos', 'ajuste');
 comment on type public.tipo_movimiento is 'Tipo de un movimiento cargado a mano. Cada tipo fija qué lados (origen, destino) lleva: ver el check movimientos_forma_segun_tipo.';
@@ -69,6 +75,7 @@ create table public.ajustes (
   cobro_titular text not null default ''::text,
   cobro_cuit text not null default ''::text,
   cobro_link text not null default ''::text,
+  resena_link text not null default ''::text,
   constraint ajustes_cobro_alias_formato CHECK (cobro_alias = ''::text OR cobro_alias ~ '^[A-Za-z0-9.-]{6,20}$'::text),
   constraint ajustes_cobro_cbu_formato CHECK (cobro_cbu = ''::text OR cobro_cbu ~ '^[0-9]{22}$'::text),
   constraint ajustes_cobro_cuit_formato CHECK (cobro_cuit = ''::text OR cobro_cuit ~ '^[0-9]{2}-[0-9]{8}-[0-9]$'::text),
@@ -78,6 +85,7 @@ create table public.ajustes (
   constraint ajustes_household_key UNIQUE (household_id),
   constraint ajustes_importes_no_negativos CHECK (sueldo_mensual_centavos >= 0 AND costos_fijos_centavos >= 0 AND meta_cocos_centavos >= 0),
   constraint ajustes_pkey PRIMARY KEY (id),
+  constraint ajustes_resena_link_formato CHECK (resena_link = ''::text OR char_length(resena_link) <= 300 AND resena_link ~ '^https://(g\.page|search\.google\.com|maps\.google\.com|www\.google\.com|google\.com|maps\.app\.goo\.gl|g\.co)/[^[:space:]]*$'::text),
   constraint ajustes_sena_valida CHECK (sena_bp >= 0 AND sena_bp <= 10000),
   constraint ajustes_tasa_valida CHECK (tasa_cocos_anual_bp >= 0 AND tasa_cocos_anual_bp <= 100000)
 );
@@ -95,6 +103,7 @@ comment on column public.ajustes.cobro_cbu is 'El CBU o el CVU del taller, 22 d�
 comment on column public.ajustes.cobro_titular is 'A nombre de quién está la cuenta, o vacío. Está para que el cliente confirme contra lo que le muestra su banco antes de transferir.';
 comment on column public.ajustes.cobro_cuit is 'El CUIT del titular con guiones (NN-NNNNNNNN-N), o vacío. Mismo formato que public.clientes.cuit; el dígito verificador lo revisa la app.';
 comment on column public.ajustes.cobro_link is 'El link de Mercado Pago del taller para que el cliente le pague, o vacío. Lo pega el dueño: lo saca de su app, de Cobrar con QR o de Link de pago. La página del cliente lo muestra como código QR y como botón. No se deriva del alias ni del CVU porque no existe ningún link estándar que abra una billetera en «Transferir a este alias»: el QR interoperable del BCRA lo emite un PSP y es un QR de cobro. El check acota el host a Mercado Pago porque este texto se vuelve un enlace en una página pública. Cobrar por acá le cuesta comisión al taller; transferir al alias no (ADR 0051 y 0054).';
+comment on column public.ajustes.resena_link is 'El enlace del taller para dejarle una reseña en Google, o vacío. Lo pega el dueño, lo saca de su Perfil de Negocio. La encuesta se lo ofrece al final a todos los que contestan, contesten lo que contesten: filtrar a quién se le pide según lo que opinó está prohibido por las políticas de Google (ADR 0057). El check acota el host a Google porque este texto se vuelve un enlace en una página pública.';
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
 create policy ajustes_edicion on public.ajustes as permissive
@@ -106,7 +115,7 @@ create policy ajustes_lectura on public.ajustes as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
-grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit, cobro_link) on public.ajustes to authenticated;
+grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit, cobro_link, resena_link) on public.ajustes to authenticated;
 
 create table public.anotaciones (
   id uuid not null default private.uuidv7(),
@@ -285,6 +294,61 @@ grant select on public.clientes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.clientes to service_role;
 grant insert (id, nombre, zona, telefono, email, direccion, origen_contacto, origen_detalle, condicion_fiscal, cuit, razon_social, domicilio_fiscal, notas, deleted_at) on public.clientes to authenticated;
 grant update (id, nombre, zona, telefono, email, direccion, origen_contacto, origen_detalle, condicion_fiscal, cuit, razon_social, domicilio_fiscal, notas, deleted_at) on public.clientes to authenticated;
+
+create table public.encuestas_enviadas (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  proyecto_id uuid not null,
+  token_hash text not null,
+  token text not null,
+  preguntas jsonb not null default '[]'::jsonb,
+  enviada_at timestamp with time zone not null default now(),
+  recordada_at timestamp with time zone,
+  revocada_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint encuestas_enviadas_foto_es_una_lista CHECK (jsonb_typeof(preguntas) = 'array'::text),
+  constraint encuestas_enviadas_hash_valido CHECK (token_hash ~ '^[0-9a-f]{64}$'::text),
+  constraint encuestas_enviadas_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint encuestas_enviadas_household_id_key UNIQUE (household_id, id),
+  constraint encuestas_enviadas_pkey PRIMARY KEY (id),
+  constraint encuestas_enviadas_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint encuestas_enviadas_token_coincide CHECK (encode(sha256(convert_to(token, 'UTF8'::name)), 'hex'::text) = token_hash),
+  constraint encuestas_enviadas_token_formato CHECK (token ~ '^[A-Za-z0-9_-]{16,128}$'::text)
+);
+comment on table public.encuestas_enviadas is 'La encuesta que se le mandó a un trabajo: su enlace, cuándo se mandó, cuándo se recordó, si se dio de baja, y la foto de las preguntas base tal como estaban al mandarla. El cliente contesta lo que se le preguntó aunque el dueño edite la encuesta al otro día. Un solo enlace vivo por trabajo, y ninguno sin trabajo (ADR 0057).';
+comment on column public.encuestas_enviadas.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.encuestas_enviadas.token_hash is 'sha256 del token en hexadecimal: con esto resuelven el enlace las dos funciones públicas.';
+comment on column public.encuestas_enviadas.token is 'El token en claro, para que el dueño vea la dirección desde cualquiera de sus aparatos. Es la misma decisión que los enlaces de la vista del cliente (ADR 0052), y el check encuestas_enviadas_token_coincide ata su sha256 a token_hash. El rol anónimo no tiene ningún grant sobre esta tabla.';
+comment on column public.encuestas_enviadas.preguntas is 'La foto de la encuesta base al mandarla: id, texto, tipo, escala, obligatoria y opciones de cada pregunta, en su orden. La saca el trigger private.armar_la_encuesta() de las preguntas vigentes; el dueño no tiene grant sobre esta columna. Las preguntas propias del trabajo no están acá: se leen vivas hasta que el cliente contesta, y desde ahí no se tocan.';
+comment on column public.encuestas_enviadas.enviada_at is 'Cuándo se mandó. La pone el trigger: es el momento en que se creó el enlace.';
+comment on column public.encuestas_enviadas.recordada_at is 'Cuándo se le recordó al cliente, o null. Un solo recordatorio: el trigger conserva la primera marca y no deja borrarla.';
+comment on column public.encuestas_enviadas.revocada_at is 'Cuándo se dio de baja. Null es vivo. Una encuesta dada de baja no revive: el trigger conserva la primera marca.';
+comment on column public.encuestas_enviadas.deleted_at is 'Borrado lógico. Borrar el trabajo se la lleva.';
+CREATE INDEX encuestas_enviadas_household_actualizado ON public.encuestas_enviadas USING btree (household_id, updated_at);
+CREATE INDEX encuestas_enviadas_household_proyecto ON public.encuestas_enviadas USING btree (household_id, proyecto_id);
+CREATE UNIQUE INDEX encuestas_enviadas_token ON public.encuestas_enviadas USING btree (token_hash);
+CREATE UNIQUE INDEX encuestas_enviadas_una_viva_por_trabajo ON public.encuestas_enviadas USING btree (household_id, proyecto_id) WHERE ((revocada_at IS NULL) AND (deleted_at IS NULL));
+CREATE TRIGGER armar_la_encuesta BEFORE INSERT ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.armar_la_encuesta();
+CREATE TRIGGER cuidar_la_encuesta BEFORE UPDATE ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.cuidar_la_encuesta();
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.encuestas_enviadas enable row level security;
+create policy encuestas_enviadas_alta on public.encuestas_enviadas as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy encuestas_enviadas_edicion on public.encuestas_enviadas as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy encuestas_enviadas_lectura on public.encuestas_enviadas as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.encuestas_enviadas to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.encuestas_enviadas to service_role;
+grant insert (id, proyecto_id, token_hash, token) on public.encuestas_enviadas to authenticated;
+grant update (recordada_at, revocada_at) on public.encuestas_enviadas to authenticated;
 
 create table public.enlaces_publicos (
   id uuid not null default private.uuidv7(),
@@ -615,6 +679,74 @@ grant delete, insert, maintain, references, select, trigger, truncate, update on
 grant insert (id, proyecto_id, fecha, concepto, monto_centavos, deleted_at) on public.pagos to authenticated;
 grant update (id, proyecto_id, fecha, concepto, monto_centavos, deleted_at) on public.pagos to authenticated;
 
+create table public.preguntas (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  serie uuid not null,
+  numero integer not null default 1,
+  proyecto_id uuid,
+  titular boolean not null default false,
+  orden integer not null default 0,
+  texto text not null,
+  tipo tipo_de_pregunta not null,
+  escala escala_de_pregunta,
+  obligatoria boolean not null default false,
+  opciones text[],
+  cantidad_de_opciones smallint not null default 0,
+  archivada_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint preguntas_cantidad_de_opciones CHECK (cantidad_de_opciones = COALESCE(cardinality(opciones), 0)),
+  constraint preguntas_escala_segun_tipo CHECK ((tipo = 'escala5'::tipo_de_pregunta) = (escala IS NOT NULL)),
+  constraint preguntas_forma UNIQUE (household_id, id, tipo, cantidad_de_opciones),
+  constraint preguntas_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint preguntas_numero_valido CHECK (numero >= 1),
+  constraint preguntas_opciones_segun_tipo CHECK (COALESCE(
+CASE
+    WHEN tipo = ANY (ARRAY['una'::tipo_de_pregunta, 'varias'::tipo_de_pregunta]) THEN private.opciones_de_pregunta_validas(opciones)
+    ELSE opciones IS NULL
+END, false)),
+  constraint preguntas_pkey PRIMARY KEY (id),
+  constraint preguntas_primera_version CHECK ((numero = 1) = (serie = id)),
+  constraint preguntas_propias CHECK (proyecto_id IS NULL OR numero = 1 AND NOT titular AND NOT obligatoria AND archivada_at IS NULL),
+  constraint preguntas_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint preguntas_serie_numero UNIQUE (household_id, serie, numero),
+  constraint preguntas_texto_valido CHECK (btrim(texto) <> ''::text AND char_length(texto) <= 300)
+);
+comment on table public.preguntas is 'Las preguntas que se le hacen al cliente cuando termina un trabajo. Cada fila es una pregunta tal como se pregunta. La encuesta base del taller son las filas sin trabajo, la versión más nueva de cada serie, sin archivar, en su orden. Las propias de un trabajo tienen el trabajo puesto y se suman solo a esa encuesta (ADR 0057).';
+comment on column public.preguntas.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.preguntas.serie is 'La pregunta a lo largo de sus versiones. La primera versión tiene serie = id. Cambiarle el sentido a una pregunta con respuestas es una fila nueva de la misma serie, con numero + 1: las respuestas viejas siguen colgando de la versión que se contestó, no de la actual.';
+comment on column public.preguntas.numero is 'La versión dentro de la serie, desde 1. La vigente es la de número más alto.';
+comment on column public.preguntas.proyecto_id is 'Null: es de la encuesta base. Con valor: es una pregunta propia de ese trabajo, que nunca entra en el promedio general.';
+comment on column public.preguntas.titular is 'La pregunta cuyo promedio es «qué tan conformes quedaron», el número de arriba de Resultados. Viene sembrada en «¿Qué tan conforme quedaste?» y cada versión nueva la hereda de la anterior.';
+comment on column public.preguntas.orden is 'El lugar en la encuesta. Lo que vale es el de la versión vigente.';
+comment on column public.preguntas.escala is 'Solo en las de escala: qué palabras lleva cada carita.';
+comment on column public.preguntas.opciones is 'Solo en las de una o varias opciones: el texto de cada opción, en su orden. Lo que se guarda como respuesta es la posición.';
+comment on column public.preguntas.cantidad_de_opciones is 'Cuántas opciones tiene. La calcula el trigger desde opciones y el check lo ata; existe para que la foreign key de los renglones pueda exigir que la opción elegida exista.';
+comment on column public.preguntas.archivada_at is 'Cuándo se dejó de preguntar. Archivar no borra: la pregunta sale de la encuesta y lo que ya contestaron queda. Null es que se sigue preguntando.';
+comment on column public.preguntas.deleted_at is 'Borrado lógico. Lo usan la pregunta propia que el dueño saca antes de que el cliente conteste, la pregunta de la encuesta base que nadie llegó a ver (el trigger no deja borrar otra) y el borrado de un trabajo, que se lleva las suyas.';
+CREATE INDEX preguntas_household_actualizado ON public.preguntas USING btree (household_id, updated_at);
+CREATE INDEX preguntas_household_proyecto ON public.preguntas USING btree (household_id, proyecto_id);
+CREATE TRIGGER cuidar_la_pregunta BEFORE INSERT OR UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION private.cuidar_la_pregunta();
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.preguntas enable row level security;
+create policy preguntas_alta on public.preguntas as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy preguntas_edicion on public.preguntas as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy preguntas_lectura on public.preguntas as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.preguntas to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.preguntas to service_role;
+grant insert (id, serie, numero, proyecto_id, orden, texto, tipo, escala, obligatoria, opciones, archivada_at, deleted_at) on public.preguntas to authenticated;
+grant update (id, serie, numero, proyecto_id, orden, texto, tipo, escala, obligatoria, opciones, archivada_at, deleted_at) on public.preguntas to authenticated;
+
 create table public.proyectos (
   id uuid not null default private.uuidv7(),
   household_id uuid not null default private.household_actual(),
@@ -701,7 +833,7 @@ END, false))
 comment on table public.proyectos is 'Leads y proyectos: la misma fila avanza de seguimiento a obra y a cobrado, o se cierra como perdido. Liquidar (cobrar o cerrar como perdido) congela la distribución (ADR 0003 y 0011).';
 comment on column public.proyectos.titulo is 'El trabajo, en pocas palabras: "Placard 3 puertas con interior en melamina".';
 comment on column public.proyectos.presupuesto_centavos is 'Presupuesto acordado. Null mientras el lead no tiene presupuesto. La distribución NO se calcula sobre esto sino sobre lo cobrado.';
-comment on column public.proyectos.fecha_visita is 'Visita de relevamiento, en la etapa de seguimiento.';
+comment on column public.proyectos.fecha_visita is 'Visita de relevamiento, en la etapa de seguimiento. Viaja a la vista del cliente: es el día que dice el casillero del relevamiento. La hora, visita_hora, no viaja (ADR 0058).';
 comment on column public.proyectos.ultimo_contacto is 'Último contacto con el cliente, en la etapa de seguimiento.';
 comment on column public.proyectos.entrega_estimada is 'Entrega prometida. La app la propone a 21 días hábiles del inicio.';
 comment on column public.proyectos.fecha_entrega is 'Entrega real.';
@@ -731,7 +863,7 @@ comment on column public.proyectos.presupuesto_diseno is 'Tarea de presupuestar:
 comment on column public.proyectos.presupuesto_despiece is 'Tarea de presupuestar: el despiece está hecho.';
 comment on column public.proyectos.presupuesto_cotizacion is 'Tarea de presupuestar: la cotización está hecha (madera y herrajes, flete, ayudante).';
 comment on column public.proyectos.presupuesto_pdf is 'Tarea de presupuestar: el PDF del presupuesto está armado. Con las cuatro tildadas, la app sugiere marcar que se mandó; el estado lo cambia el dueño.';
-comment on column public.proyectos.visita_hecha is 'La visita de relevamiento ya pasó. Lo anota «Ya fui a relevar» y se corrige desde la hoja del contacto; mover la visita a un día que todavía no llegó lo apaga. No sale de la etapa: cambiar de etapa, aprobar o perder el contacto no lo toca, y la agenda muestra la visita tachada en su día (ADR 0042).';
+comment on column public.proyectos.visita_hecha is 'La visita de relevamiento ya pasó. Lo anota «Ya fui a relevar» y se corrige desde la hoja del contacto; mover la visita a un día que todavía no llegó lo apaga. No sale de la etapa: cambiar de etapa, aprobar o perder el contacto no lo toca, y la agenda muestra la visita tachada en su día (ADR 0042). Viaja a la vista del cliente: es lo que tilda el casillero del relevamiento (ADR 0058).';
 comment on column public.proyectos.visita_importante is 'Marca de importante de la visita en la agenda: el círculo que el dueño hace en su cuaderno. Una columna por evento derivado; el umbral para pasar a una tabla de marcas está en el ADR 0042.';
 comment on column public.proyectos.entrega_importante is 'Marca de importante de la entrega en la agenda. La entrega entregada la conserva.';
 comment on column public.proyectos.presupuesto_importante is 'Marca de importante del vencimiento del presupuesto en la agenda.';
@@ -767,6 +899,90 @@ grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
 grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora) on public.proyectos to authenticated;
 grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora, cobro_sena, cobro_saldo) on public.proyectos to authenticated;
+
+create table public.renglones_de_respuesta (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null,
+  respuesta_id uuid not null,
+  pregunta_id uuid not null,
+  tipo tipo_de_pregunta not null,
+  cantidad_de_opciones smallint not null,
+  pregunta_texto text not null,
+  valor_numero smallint,
+  valor_opciones smallint[],
+  valor_texto text,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint renglones_de_respuesta_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint renglones_de_respuesta_pkey PRIMARY KEY (id),
+  constraint renglones_de_respuesta_pregunta_fk FOREIGN KEY (household_id, pregunta_id, tipo, cantidad_de_opciones) REFERENCES preguntas(household_id, id, tipo, cantidad_de_opciones),
+  constraint renglones_de_respuesta_respuesta_fk FOREIGN KEY (household_id, respuesta_id) REFERENCES respuestas(household_id, id),
+  constraint renglones_de_respuesta_una_por_pregunta UNIQUE (respuesta_id, pregunta_id),
+  constraint renglones_de_respuesta_valor_segun_tipo CHECK (COALESCE(
+CASE tipo
+    WHEN 'escala5'::tipo_de_pregunta THEN valor_numero >= 1 AND valor_numero <= 5 AND valor_opciones IS NULL AND valor_texto IS NULL
+    WHEN 'sitalvezno'::tipo_de_pregunta THEN valor_numero >= 1 AND valor_numero <= 3 AND valor_opciones IS NULL AND valor_texto IS NULL
+    WHEN 'una'::tipo_de_pregunta THEN valor_numero >= 0 AND valor_numero < cantidad_de_opciones AND valor_opciones IS NULL AND valor_texto IS NULL
+    WHEN 'varias'::tipo_de_pregunta THEN valor_numero IS NULL AND valor_texto IS NULL AND private.opciones_elegidas_validas(valor_opciones, cantidad_de_opciones)
+    WHEN 'texto'::tipo_de_pregunta THEN valor_numero IS NULL AND valor_opciones IS NULL AND valor_texto ~ '[^ \t\n\r\f\v]'::text AND char_length(valor_texto) <= 2000
+    ELSE NULL::boolean
+END, false))
+);
+comment on table public.renglones_de_respuesta is 'Un renglón por pregunta contestada: a qué pregunta, con qué valor. La pregunta es la versión exacta que se contestó, así que cambiarle el sentido después no la mueve. Los escribe public.contestar_encuesta(); el dueño solo los lee.';
+comment on column public.renglones_de_respuesta.household_id is 'Sin default: la fila la escribe la función pública.';
+comment on column public.renglones_de_respuesta.tipo is 'El tipo de la pregunta contestada. La foreign key lo ata al de la pregunta.';
+comment on column public.renglones_de_respuesta.cantidad_de_opciones is 'Cuántas opciones tenía la pregunta. La foreign key lo ata al de la pregunta y el check no deja elegir una que no existe.';
+comment on column public.renglones_de_respuesta.pregunta_texto is 'El texto tal como se preguntó. Si después se redacta mejor, la respuesta sigue diciendo lo que el cliente leyó.';
+comment on column public.renglones_de_respuesta.valor_numero is 'Escala: de 1 a 5. Sí / tal vez / no: 3 es sí, 2 tal vez, 1 no. Una opción: la posición de la elegida, desde 0.';
+comment on column public.renglones_de_respuesta.valor_opciones is 'Varias opciones: las posiciones elegidas, desde 0, sin repetir.';
+comment on column public.renglones_de_respuesta.valor_texto is 'Texto libre, sin blancos al principio ni al final, hasta 2000 caracteres.';
+CREATE INDEX renglones_de_respuesta_household_actualizado ON public.renglones_de_respuesta USING btree (household_id, updated_at);
+CREATE INDEX renglones_de_respuesta_household_pregunta ON public.renglones_de_respuesta USING btree (household_id, pregunta_id, tipo, cantidad_de_opciones);
+CREATE INDEX renglones_de_respuesta_household_respuesta ON public.renglones_de_respuesta USING btree (household_id, respuesta_id);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON renglones_de_respuesta FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.renglones_de_respuesta enable row level security;
+create policy renglones_de_respuesta_lectura on public.renglones_de_respuesta as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.renglones_de_respuesta to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.renglones_de_respuesta to service_role;
+
+create table public.respuestas (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null,
+  encuesta_id uuid not null,
+  contestada_at timestamp with time zone not null default now(),
+  leida_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint respuestas_encuesta_fk FOREIGN KEY (household_id, encuesta_id) REFERENCES encuestas_enviadas(household_id, id),
+  constraint respuestas_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint respuestas_household_id_key UNIQUE (household_id, id),
+  constraint respuestas_pkey PRIMARY KEY (id),
+  constraint respuestas_una_por_encuesta UNIQUE (household_id, encuesta_id)
+);
+comment on table public.respuestas is 'Lo que contestó un cliente: una por encuesta enviada, y nunca otra. La escribe public.contestar_encuesta(), que corre elevada; el dueño no tiene grant de insert y lo único que escribe es leida_at (ADR 0057).';
+comment on column public.respuestas.household_id is 'Sin default: la fila la escribe la función pública, que no tiene sesión, y pone el household de la encuesta.';
+comment on column public.respuestas.contestada_at is 'Cuándo contestó. La pone la base.';
+comment on column public.respuestas.leida_at is 'Cuándo la leyó el dueño, o null si todavía no. Es del dueño y se escribe por la cola como cualquier otra cosa suya.';
+comment on column public.respuestas.deleted_at is 'Borrado lógico. Solo lo pone el borrado del trabajo.';
+CREATE INDEX respuestas_household_actualizado ON public.respuestas USING btree (household_id, updated_at);
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON respuestas FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.respuestas enable row level security;
+create policy respuestas_edicion on public.respuestas as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy respuestas_lectura on public.respuestas as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.respuestas to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.respuestas to service_role;
+grant update (leida_at) on public.respuestas to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -961,6 +1177,18 @@ AS $function$
     ),
     'enlaces_publicos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.enlaces_publicos t where t.deleted_at is null
+    ),
+    'preguntas', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.preguntas t where t.deleted_at is null
+    ),
+    'encuestas_enviadas', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.encuestas_enviadas t where t.deleted_at is null
+    ),
+    'respuestas', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.respuestas t where t.deleted_at is null
+    ),
+    'renglones_de_respuesta', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.renglones_de_respuesta t where t.deleted_at is null
     )
   )
 $function$;
@@ -1008,6 +1236,127 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha, la distribución que le mostró al usuario y el acumulado del mes que vio. Si ese acumulado no es el de la base, la liquidación se congela con el de la base y la app lo ve comparando dist_sueldo_previo_centavos contra lo que mandó.';
+
+CREATE OR REPLACE FUNCTION public.contestar_encuesta(p_token text, p_respuesta jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_encuesta public.encuestas_enviadas;
+  v_preguntas jsonb;
+  v_motivo text;
+  v_existente uuid;
+  v_id uuid;
+begin
+  if p_token is null or p_token !~ '^[A-Za-z0-9_-]{16,128}$' then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  -- Bloqueada mientras se guarda: dar de baja el enlace, borrar el trabajo o mandar otra encuesta
+  -- esperan a que termine, y si llegaron antes, esta vuelve a mirar la fila y ya no sirve. Sin
+  -- eso, un cliente que contesta en el mismo segundo en que el dueño genera otro enlace dejaría
+  -- dos respuestas para el mismo trabajo.
+  select * into v_encuesta
+  from public.encuestas_enviadas e
+  where e.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+    and e.revocada_at is null
+    and e.deleted_at is null
+  for share;
+
+  if not found then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  if not exists (
+    select 1 from public.proyectos p
+    where p.household_id = v_encuesta.household_id
+      and p.id = v_encuesta.proyecto_id
+      and p.deleted_at is null
+      and p.estado <> 'perdido'
+  ) then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  -- Ya contestada: no se pisa nada. Si es el mismo envío que vuelve (la respuesta del primero se
+  -- perdió en la red), se le contesta que quedó guardada; si es otro, que ya estaba.
+  select r.id into v_existente
+  from public.respuestas r
+  where r.household_id = v_encuesta.household_id and r.encuesta_id = v_encuesta.id;
+
+  if found then
+    return jsonb_build_object(
+      'estado',
+      case when v_existente::text = lower(p_respuesta ->> 'id') then 'guardada' else 'ya_contestada' end
+    );
+  end if;
+
+  -- Todo se valida acá, del lado de la base, y antes de escribir una sola fila: lo que no cumple
+  -- se rechaza entero. El tope de tamaño deja pasar once textos de 2000 caracteres de cuatro bytes.
+  if pg_column_size(p_respuesta) > 262144 then
+    raise exception '%', private.motivo_del_rechazo('forma') using errcode = 'MN011', detail = 'forma';
+  end if;
+
+  v_preguntas := private.preguntas_de_la_encuesta(v_encuesta);
+  v_motivo := private.validar_respuesta(v_preguntas, p_respuesta);
+
+  if v_motivo is not null then
+    raise exception '%', private.motivo_del_rechazo(v_motivo) using errcode = 'MN011', detail = v_motivo;
+  end if;
+
+  v_id := (p_respuesta ->> 'id')::uuid;
+
+  -- Dos envíos a la vez del mismo enlace: el segundo espera en el índice único al primero, y si el
+  -- primero se guarda, el segundo termina acá y contesta lo mismo que si hubiera llegado después.
+  begin
+    insert into public.respuestas (id, household_id, encuesta_id)
+    values (v_id, v_encuesta.household_id, v_encuesta.id);
+  exception
+    when unique_violation then
+      select r.id into v_existente
+      from public.respuestas r
+      where r.household_id = v_encuesta.household_id and r.encuesta_id = v_encuesta.id;
+
+      if not found then
+        raise;
+      end if;
+
+      return jsonb_build_object(
+        'estado', case when v_existente = v_id then 'guardada' else 'ya_contestada' end
+      );
+  end;
+
+  insert into public.renglones_de_respuesta (
+    household_id, respuesta_id, pregunta_id, tipo, cantidad_de_opciones, pregunta_texto,
+    valor_numero, valor_opciones, valor_texto
+  )
+  select
+    v_encuesta.household_id,
+    v_id,
+    (t.r ->> 'pregunta')::uuid,
+    (p ->> 'tipo')::public.tipo_de_pregunta,
+    case when jsonb_typeof(p -> 'opciones') = 'array' then jsonb_array_length(p -> 'opciones') else 0 end,
+    p ->> 'texto',
+    case when p ->> 'tipo' in ('escala5', 'sitalvezno', 'una') then (t.r -> 'valor')::numeric::smallint end,
+    case
+      when p ->> 'tipo' = 'varias' then (
+        select array_agg(e::numeric::smallint order by e::numeric)
+        from jsonb_array_elements(t.r -> 'valor') as e
+      )
+    end,
+    case
+      when p ->> 'tipo' = 'texto'
+        then regexp_replace(t.r ->> 'valor', '^[ \t\n\r\f\v]+|[ \t\n\r\f\v]+$', '', 'g')
+    end
+  from jsonb_array_elements(p_respuesta -> 'renglones') with ordinality as t (r, orden)
+  join jsonb_array_elements(v_preguntas) as p on p ->> 'id' = t.r ->> 'pregunta';
+
+  return jsonb_build_object('estado', 'guardada');
+end;
+$function$;
+-- execute: anon:EXECUTE, service_role:EXECUTE
+comment on function contestar_encuesta(text,jsonb) is 'Guarda lo que contestó el cliente que abrió un enlace, sin sesión. Es una de las dos únicas funciones que el rol anónimo puede ejecutar. PUEDE: insertar una respuesta y sus renglones para la encuesta de ese enlace, una sola vez. NO PUEDE: actualizar ni borrar nada; escribir en otra tabla; contestar dos veces (la segunda contesta ya_contestada y no pisa la primera); contestar una pregunta que no sea de ese enlace; devolver datos, ni de este trabajo ni de otro: devuelve solo {estado}. Antes de escribir valida del lado de la base que el enlace exista y esté vivo, que cada renglón conteste una pregunta de ese enlace con el tipo y el rango que pide, que no venga una pregunta dos veces ni una de más, que estén las obligatorias y que ningún texto pase de 2000 caracteres. Lo que no cumple se rechaza entero con MN011 y no se guarda media respuesta (ADR 0057).';
 
 CREATE OR REPLACE FUNCTION public.dar_de_baja_suscripcion(p_endpoint text)
  RETURNS boolean
@@ -1075,12 +1424,134 @@ begin
     ),
     'enlaces_publicos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.enlaces_publicos t where t.updated_at >= v_desde
+    ),
+    'preguntas', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.preguntas t where t.updated_at >= v_desde
+    ),
+    'encuestas_enviadas', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.encuestas_enviadas t where t.updated_at >= v_desde
+    ),
+    'respuestas', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.respuestas t where t.updated_at >= v_desde
+    ),
+    'renglones_de_respuesta', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.renglones_de_respuesta t where t.updated_at >= v_desde
     )
   );
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function delta(timestamp with time zone) is 'Filas del household cambiadas desde el cursor, incluidas las borradas (deleted_at no null), más el cursor siguiente. Aplica un solape de cinco minutos.';
+
+CREATE OR REPLACE FUNCTION public.encuesta_compartida(p_token text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_encuesta public.encuestas_enviadas;
+  v_proyecto public.proyectos;
+  v_respuesta public.respuestas;
+begin
+  -- Un token que no tiene la forma de un token no llega ni a consultarse.
+  if p_token is null or p_token !~ '^[A-Za-z0-9_-]{16,128}$' then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  select * into v_encuesta
+  from public.encuestas_enviadas e
+  where e.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+    and e.revocada_at is null
+    and e.deleted_at is null;
+
+  -- Inexistente, dado de baja, de un trabajo borrado o de uno perdido contestan exactamente lo
+  -- mismo, y lo mismo que la vista del cliente: el que tiene el enlace no se entera de nada.
+  if not found then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  select * into v_proyecto
+  from public.proyectos p
+  where p.household_id = v_encuesta.household_id
+    and p.id = v_encuesta.proyecto_id
+    and p.deleted_at is null
+    and p.estado <> 'perdido';
+
+  if not found then
+    raise exception 'Este link no funciona' using errcode = 'MN010';
+  end if;
+
+  select * into v_respuesta
+  from public.respuestas r
+  where r.household_id = v_encuesta.household_id
+    and r.encuesta_id = v_encuesta.id
+    and r.deleted_at is null;
+
+  -- Los campos van enumerados uno por uno, también los de cada pregunta: lo que el cliente ve se
+  -- decide acá. supabase/tests/27_encuesta_publica.sql falla apenas aparece una columna nueva en
+  -- cualquiera de las tablas que esta función lee, hasta que alguien decide si viaja.
+  return jsonb_build_object(
+    'taller', (select h.nombre from public.households h where h.id = v_encuesta.household_id),
+    -- Del cliente, solo la primera palabra del nombre: la encuesta le dice «Gracias, Marcela».
+    'cliente', (
+      select nullif(split_part(btrim(c.nombre), ' ', 1), '') from public.clientes c
+      where c.household_id = v_proyecto.household_id and c.id = v_proyecto.cliente_id
+    ),
+    'trabajo', v_proyecto.titulo,
+    'resena', (
+      select nullif(a.resena_link, '') from public.ajustes a
+      where a.household_id = v_encuesta.household_id
+    ),
+    'preguntas', (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', p -> 'id',
+            'texto', p -> 'texto',
+            'tipo', p -> 'tipo',
+            'escala', p -> 'escala',
+            'obligatoria', p -> 'obligatoria',
+            'opciones', p -> 'opciones',
+            'propia', p -> 'propia'
+          )
+          order by t.orden
+        ),
+        '[]'::jsonb
+      )
+      from jsonb_array_elements(private.preguntas_de_la_encuesta(v_encuesta)) with ordinality as t (p, orden)
+    ),
+    'contestada', case
+      when v_respuesta.id is null then null
+      else jsonb_build_object(
+        'fecha', (v_respuesta.contestada_at at time zone 'America/Argentina/Buenos_Aires')::date,
+        'renglones', (
+          select coalesce(
+            jsonb_agg(
+              jsonb_build_object(
+                'pregunta', g.pregunta_id,
+                'valor', case g.tipo
+                  when 'varias' then to_jsonb(g.valor_opciones)
+                  when 'texto' then to_jsonb(g.valor_texto)
+                  else to_jsonb(g.valor_numero)
+                end
+              )
+              order by g.id
+            ),
+            '[]'::jsonb
+          )
+          from public.renglones_de_respuesta g
+          where g.household_id = v_respuesta.household_id
+            and g.respuesta_id = v_respuesta.id
+            and g.deleted_at is null
+        )
+      )
+    end
+  );
+end;
+$function$;
+-- execute: anon:EXECUTE, service_role:EXECUTE
+comment on function encuesta_compartida(text) is 'La encuesta de un enlace, para el cliente que lo abre sin sesión. Es una de las dos únicas funciones que el rol anónimo puede ejecutar. PUEDE: resolver el token contra su sha256 y devolver el nombre del taller, la primera palabra del nombre del cliente, el título del trabajo, el enlace de reseña del taller, las preguntas de ese enlace (la foto que se tomó al mandarlo más las propias del trabajo, cada una con id, texto, tipo, escala, obligatoria, opciones y si es propia) y, si ya contestó, qué contestó y cuándo. NO PUEDE: devolver un importe, un pago, la etapa, la dirección, el teléfono ni ningún otro dato del cliente o del trabajo; devolver nada de otro trabajo ni de otro taller; escribir nada, ni siquiera una visita (es stable, y por eso la usa también la vista previa del enlace). Un enlace inválido, dado de baja, de un trabajo borrado o perdido contestan lo mismo, MN010, sin decir si existió (ADR 0057).';
 
 CREATE OR REPLACE FUNCTION public.estado_de_mis_avisos(p_endpoint text DEFAULT NULL::text)
  RETURNS jsonb
@@ -1596,6 +2067,88 @@ $function$;
 -- execute: solo el dueño
 comment on function private.anotar_el_cambio_de_estado() is 'Anota en public.cambios_de_estado cada vez que un trabajo cambia de etapa, venga de donde venga (el agregado, el cobro, la reapertura). Es security definer porque la app no tiene grant de insert sobre esa tabla: la historia no la escribe el cliente.';
 
+CREATE OR REPLACE FUNCTION private.armar_la_encuesta()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_estado public.estado_proyecto;
+  v_borrado timestamptz;
+  v_preguntas jsonb;
+begin
+  select p.estado, p.deleted_at into v_estado, v_borrado
+  from public.proyectos p
+  where p.household_id = new.household_id and p.id = new.proyecto_id;
+
+  -- Un trabajo que no es de este household lo rechaza la foreign key compuesta, que corre después.
+  if not found then
+    return new;
+  end if;
+
+  if v_borrado is not null then
+    raise exception 'El proyecto está borrado' using errcode = 'MN002';
+  end if;
+
+  -- El momento es cuando se entrega: antes no hay nada que opinar.
+  if v_estado not in ('entregado', 'cobrado') then
+    raise exception 'La opinión se le pide al cliente cuando el trabajo está entregado'
+      using errcode = 'MN015',
+            hint = 'Marcá el trabajo como entregado y pedísela desde ahí.';
+  end if;
+
+  if exists (
+    select 1
+    from public.respuestas r
+    join public.encuestas_enviadas e on e.household_id = r.household_id and e.id = r.encuesta_id
+    where e.household_id = new.household_id and e.proyecto_id = new.proyecto_id
+  ) then
+    raise exception 'Ese cliente ya contestó' using errcode = 'MN012';
+  end if;
+
+  -- La foto: las preguntas base vigentes, sin las archivadas, en su orden. De cada una va lo que
+  -- el cliente necesita para contestarla y nada más.
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', p.id,
+        'texto', p.texto,
+        'tipo', p.tipo,
+        'escala', p.escala,
+        'obligatoria', p.obligatoria,
+        'opciones', to_jsonb(p.opciones),
+        'propia', false
+      )
+      order by p.orden, p.serie
+    ),
+    '[]'::jsonb
+  ) into v_preguntas
+  from public.preguntas p
+  where p.household_id = new.household_id
+    and p.proyecto_id is null
+    and p.deleted_at is null
+    and p.archivada_at is null
+    and p.numero = (
+      select max(q.numero) from public.preguntas q
+      where q.household_id = p.household_id and q.serie = p.serie and q.deleted_at is null
+    );
+
+  if jsonb_array_length(v_preguntas) = 0 then
+    raise exception 'La encuesta no tiene preguntas'
+      using errcode = 'MN015',
+            hint = 'Volvé a preguntar al menos una en Opiniones › Preguntas.';
+  end if;
+
+  new.preguntas := v_preguntas;
+  new.enviada_at := now();
+  new.recordada_at := null;
+  new.revocada_at := null;
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.armar_la_encuesta() is 'Trigger del alta de una encuesta enviada: exige que el trabajo esté entregado o cobrado y que su cliente no haya contestado ya, y le saca la foto a la encuesta base vigente. Lo que el dueño manda es el id, el trabajo y el enlace; la foto, la fecha y los estados los pone la base.';
+
 CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -1742,17 +2295,70 @@ begin
     and proyecto_id = new.id
     and deleted_at is null;
 
-  -- Lo que agrega esta migración: un trabajo borrado no puede seguir abriéndose desde afuera.
   update public.enlaces_publicos
   set deleted_at = new.deleted_at
   where household_id = new.household_id
     and proyecto_id = new.id
     and deleted_at is null;
 
+  -- Lo que agrega esta migración: la encuesta que se le mandó, lo que contestó y sus preguntas
+  -- propias. El enlace deja de funcionar con el trabajo.
+  perform private.borrar_las_opiniones_del_trabajo(new.household_id, new.id, new.deleted_at);
+
   return null;
 end;
 $function$;
 -- execute: solo el dueño
+
+CREATE OR REPLACE FUNCTION private.borrar_las_opiniones_del_trabajo(p_household_id uuid, p_proyecto_id uuid, p_momento timestamp with time zone)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  -- Solo con el trabajo ya borrado. El dueño no tiene grant para borrar una respuesta ni un
+  -- renglón, y esta puerta no le abre ese camino para un trabajo vivo.
+  if not exists (
+    select 1 from public.proyectos p
+    where p.household_id = p_household_id and p.id = p_proyecto_id and p.deleted_at is not null
+  ) then
+    return;
+  end if;
+
+  -- La encuesta primero: si un cliente está guardando su respuesta, este update la espera, y los
+  -- dos que siguen ya ven lo que guardó.
+  update public.encuestas_enviadas e
+  set deleted_at = p_momento
+  where e.household_id = p_household_id and e.proyecto_id = p_proyecto_id and e.deleted_at is null;
+
+  update public.respuestas r
+  set deleted_at = p_momento
+  where r.household_id = p_household_id
+    and r.deleted_at is null
+    and r.encuesta_id in (
+      select e.id from public.encuestas_enviadas e
+      where e.household_id = p_household_id and e.proyecto_id = p_proyecto_id
+    );
+
+  update public.renglones_de_respuesta g
+  set deleted_at = p_momento
+  where g.household_id = p_household_id
+    and g.deleted_at is null
+    and g.respuesta_id in (
+      select r.id
+      from public.respuestas r
+      join public.encuestas_enviadas e on e.household_id = r.household_id and e.id = r.encuesta_id
+      where e.household_id = p_household_id and e.proyecto_id = p_proyecto_id
+    );
+
+  update public.preguntas p
+  set deleted_at = p_momento
+  where p.household_id = p_household_id and p.proyecto_id = p_proyecto_id and p.deleted_at is null;
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.borrar_las_opiniones_del_trabajo(uuid,uuid,timestamp with time zone) is 'Borra, con la marca del trabajo, lo que se le preguntó y lo que contestó el cliente de un trabajo que ya se borró. Es security definer porque el dueño no tiene grant para borrar respuestas: la llama private.borrar_hijos_de_proyecto(), y no hace nada si el trabajo está vivo.';
 
 CREATE OR REPLACE FUNCTION private.borrar_suscripcion_vencida(p_endpoint text)
  RETURNS boolean
@@ -1841,11 +2447,13 @@ begin
 
   insert into public.ajustes (household_id) values (v_household);
 
+  perform private.sembrar_la_encuesta(v_household);
+
   return v_household;
 end;
 $function$;
 -- execute: solo el dueño
-comment on function private.crear_household(text,uuid) is 'Crea un household con sus ajustes y, si se pasa un usuario, lo suma como titular. Solo la ejecuta el dueño de la base.';
+comment on function private.crear_household(text,uuid) is 'Crea un household con sus ajustes y su encuesta base y, si se pasa un usuario, lo suma como titular. Solo la ejecuta el dueño de la base.';
 
 CREATE OR REPLACE FUNCTION private.crear_taller_del_usuario()
  RETURNS trigger
@@ -1870,6 +2478,170 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.crear_taller_del_usuario() is 'Trigger de auth.users: a la cuenta que confirma su mail le crea el taller, la membresía de titular y los ajustes en cero. Idempotente: si ya tuvo taller, no hace nada.';
+
+CREATE OR REPLACE FUNCTION private.cuidar_la_encuesta()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  -- Un solo recordatorio: la primera marca queda. Dos es molestar a un cliente que ya pagó.
+  new.recordada_at := coalesce(old.recordada_at, new.recordada_at);
+  -- Lo dado de baja no revive.
+  new.revocada_at := coalesce(old.revocada_at, new.revocada_at);
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.cuidar_la_encuesta() is 'Trigger de encuestas_enviadas: el recordatorio y la baja se escriben una sola vez. Un reenvío con la misma marca no cambia nada, y uno con otra marca conserva la primera.';
+
+CREATE OR REPLACE FUNCTION private.cuidar_la_pregunta()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_ultima integer;
+begin
+  new.cantidad_de_opciones := coalesce(cardinality(new.opciones), 0);
+
+  if tg_op = 'INSERT' then
+    -- El alta que manda la cola es un upsert, y este trigger corre antes de saber si hay conflicto.
+    -- Si la fila ya existe, el insert termina en un update y las reglas se aplican ahí.
+    if exists (select 1 from public.preguntas p where p.id = new.id) then
+      return new;
+    end if;
+
+    if new.numero > 1 then
+      -- Una versión nueva parte la serie desde la vigente, y solo desde ella: dos aparatos que
+      -- versionan la misma pregunta sin señal no pueden dejar dos «versión 2».
+      select max(p.numero) into v_ultima
+      from public.preguntas p
+      where p.household_id = new.household_id and p.serie = new.serie;
+
+      if v_ultima is distinct from new.numero - 1 then
+        raise exception 'La pregunta cambió desde otro lado'
+          using errcode = 'MN014',
+                hint = 'Ya hay una versión más nueva de esta pregunta. Volvé a abrir Preguntas y cambiala ahí.';
+      end if;
+
+      -- La marca de titular la hereda de la versión anterior. El dueño no tiene grant sobre ella.
+      select p.titular into new.titular
+      from public.preguntas p
+      where p.household_id = new.household_id and p.serie = new.serie and p.numero = new.numero - 1;
+    end if;
+  else
+    -- El reenvío idéntico de una mutación que ya se aplicó pasa sin mirar nada más.
+    if private.es_reenvio(to_jsonb(old), to_jsonb(new)) then
+      return new;
+    end if;
+
+    if new.serie is distinct from old.serie
+      or new.numero is distinct from old.numero
+      or new.proyecto_id is distinct from old.proyecto_id
+      or new.titular is distinct from old.titular then
+      raise exception 'La serie, el número, el trabajo y la marca de titular de una pregunta no cambian'
+        using errcode = 'MN004';
+    end if;
+
+    -- De la encuesta base se borra solamente la pregunta que nadie vio: sin otra versión, sin estar
+    -- en la foto de una encuesta viva y sin respuestas. Todas las demás se archivan, y lo que
+    -- contestaron queda. La del número de arriba de Resultados no se borra nunca.
+    if old.proyecto_id is null and old.deleted_at is null and new.deleted_at is not null
+      and (
+        old.titular
+        or old.numero > 1
+        or exists (
+          select 1 from public.preguntas p
+          where p.household_id = old.household_id and p.serie = old.serie and p.id <> old.id
+        )
+        or exists (
+          select 1 from public.encuestas_enviadas e
+          where e.household_id = old.household_id
+            and e.deleted_at is null
+            and e.preguntas @> jsonb_build_array(jsonb_build_object('id', old.id))
+        )
+        or exists (
+          select 1 from public.renglones_de_respuesta g
+          where g.household_id = old.household_id and g.pregunta_id = old.id and g.deleted_at is null
+        )
+      ) then
+      raise exception 'Esa pregunta no se borra: se deja de preguntar'
+        using errcode = 'MN004',
+              hint = 'Archivala: sale de la encuesta y lo que ya contestaron queda.';
+    end if;
+
+    -- Solo se toca la versión vigente. Una edición que llega después de que otro aparato partió la
+    -- serie estaría cambiando una pregunta que ya no se hace.
+    select max(p.numero) into v_ultima
+    from public.preguntas p
+    where p.household_id = old.household_id and p.serie = old.serie;
+
+    if v_ultima > old.numero then
+      raise exception 'La pregunta cambió desde otro lado'
+        using errcode = 'MN014',
+              hint = 'Ya hay una versión más nueva de esta pregunta. Volvé a abrir Preguntas y cambiala ahí.';
+    end if;
+
+    -- Cómo se contesta una pregunta que ya salió no cambia: el cliente que la tiene abierta
+    -- contesta lo que recibió, y su respuesta tiene que poder leerse igual. Salió si está en la
+    -- foto de alguna encuesta, si alguien la contestó o, siendo propia, si su trabajo tiene un
+    -- enlace vivo. El texto sí se corrige en el lugar: eso es «solo la redacté mejor».
+    if (new.tipo, new.escala, new.opciones) is distinct from (old.tipo, old.escala, old.opciones)
+      and (
+        exists (
+          select 1 from public.encuestas_enviadas e
+          where e.household_id = old.household_id
+            and e.deleted_at is null
+            and (
+              e.preguntas @> jsonb_build_array(jsonb_build_object('id', old.id))
+              or (old.proyecto_id is not null and e.proyecto_id = old.proyecto_id and e.revocada_at is null)
+            )
+        )
+        or exists (
+          select 1 from public.renglones_de_respuesta g
+          where g.household_id = old.household_id and g.pregunta_id = old.id
+        )
+      ) then
+      raise exception 'Esa pregunta ya salió en una encuesta: cómo se contesta no cambia'
+        using errcode = 'MN013',
+              hint = 'Guardala como pregunta nueva: lo que ya contestaron queda aparte, con su texto.';
+    end if;
+  end if;
+
+  -- Un trabajo borrado no suma preguntas: sus hijos solo pueden quedar borrados, como los pagos.
+  if new.proyecto_id is not null
+    and new.deleted_at is null
+    and exists (
+      select 1 from public.proyectos p
+      where p.household_id = new.household_id and p.id = new.proyecto_id and p.deleted_at is not null
+    ) then
+    raise exception 'El proyecto está borrado' using errcode = 'MN002';
+  end if;
+
+  -- Las preguntas propias de un trabajo cuyo cliente ya contestó quedan como están, salvo que el
+  -- trabajo se esté borrando, que se las lleva.
+  if new.proyecto_id is not null
+    and exists (
+      select 1
+      from public.respuestas r
+      join public.encuestas_enviadas e on e.household_id = r.household_id and e.id = r.encuesta_id
+      where e.household_id = new.household_id and e.proyecto_id = new.proyecto_id
+    )
+    and not exists (
+      select 1 from public.proyectos p
+      where p.household_id = new.household_id and p.id = new.proyecto_id and p.deleted_at is not null
+    ) then
+    raise exception 'Ese cliente ya contestó: sus preguntas quedan como están'
+      using errcode = 'MN012',
+            hint = 'Para preguntarle algo más, escribile.';
+  end if;
+
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.cuidar_la_pregunta() is 'Trigger de preguntas: calcula cuántas opciones tiene, deja cambiar solo la versión vigente de una serie, no deja cambiar cómo se contesta una pregunta que ya salió en una encuesta, arma las versiones nuevas desde la vigente y congela las propias de un trabajo cuyo cliente ya contestó (ADR 0057).';
 
 CREATE OR REPLACE FUNCTION private.dar_de_baja_suscripcion(p_endpoint text)
  RETURNS boolean
@@ -2385,6 +3157,67 @@ $function$;
 -- execute: solo el dueño
 comment on function private.mantener_metadatos() is 'Trigger BEFORE INSERT OR UPDATE de toda tabla: updated_at y version los pone la base, nunca el cliente; id y household_id son inmutables; un update sin cambios es un no-op.';
 
+CREATE OR REPLACE FUNCTION private.motivo_del_rechazo(p_motivo text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select case p_motivo
+    when 'forma' then 'La respuesta no tiene la forma que espera la encuesta'
+    when 'ajena' then 'Vino una respuesta a una pregunta que no es de esta encuesta'
+    when 'repetida' then 'Vino dos veces la respuesta a la misma pregunta'
+    when 'tipo' then 'Una respuesta no es del tipo que pide su pregunta'
+    when 'rango' then 'Una respuesta está fuera de las opciones de su pregunta'
+    when 'vacio' then 'Vino una respuesta vacía'
+    when 'largo' then 'Un texto pasa de los 2000 caracteres que acepta la encuesta'
+    when 'obligatoria' then 'Falta contestar una pregunta obligatoria'
+    else 'La respuesta no sirve para esta encuesta'
+  end
+$function$;
+-- execute: solo el dueño
+comment on function private.motivo_del_rechazo(text) is 'El mensaje de cada motivo de private.validar_respuesta().';
+
+CREATE OR REPLACE FUNCTION private.opciones_de_pregunta_validas(p_opciones text[])
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    array_ndims(p_opciones) = 1
+    and cardinality(p_opciones) between 2 and 8
+    and (
+      select bool_and(o is not null and btrim(o) <> '' and char_length(o) <= 120)
+      from unnest(p_opciones) as o
+    )
+    and (select count(distinct o) = count(*) from unnest(p_opciones) as o),
+    false
+  )
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.opciones_de_pregunta_validas(text[]) is 'Las opciones de una pregunta de una o de varias opciones: entre dos y ocho, ninguna vacía ni repetida, de hasta 120 caracteres.';
+
+CREATE OR REPLACE FUNCTION private.opciones_elegidas_validas(p_elegidas smallint[], p_cantidad smallint)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    array_ndims(p_elegidas) = 1
+    and cardinality(p_elegidas) >= 1
+    and (
+      select bool_and(e is not null and e >= 0 and e < p_cantidad)
+      from unnest(p_elegidas) as e
+    )
+    and (select count(distinct e) = count(*) from unnest(p_elegidas) as e),
+    false
+  )
+$function$;
+-- execute: solo el dueño
+comment on function private.opciones_elegidas_validas(smallint[],smallint) is 'Lo que eligió el cliente en una pregunta de varias opciones: al menos una, ninguna repetida, y cada una adentro de las opciones que tenía la pregunta.';
+
 CREATE OR REPLACE FUNCTION private.pagos_por_delante(p_precio_centavos bigint, p_pagado_centavos bigint, p_sena_bp integer)
  RETURNS TABLE(orden integer, instancia text, monto_centavos bigint)
  LANGUAGE plpgsql
@@ -2461,6 +3294,37 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.pedir_los_avisos() is 'Le pide a la función de borde que mande los avisos que tocan. La llama pg_cron. Sin avisos_url y avisos_secreto en Vault devuelve null y no pide nada.';
+
+CREATE OR REPLACE FUNCTION private.preguntas_de_la_encuesta(p_encuesta encuestas_enviadas)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select p_encuesta.preguntas || coalesce(
+    (
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', p.id,
+          'texto', p.texto,
+          'tipo', p.tipo,
+          'escala', p.escala,
+          'obligatoria', p.obligatoria,
+          'opciones', to_jsonb(p.opciones),
+          'propia', true
+        )
+        order by p.orden, p.id
+      )
+      from public.preguntas p
+      where p.household_id = p_encuesta.household_id
+        and p.proyecto_id = p_encuesta.proyecto_id
+        and p.deleted_at is null
+    ),
+    '[]'::jsonb
+  )
+$function$;
+-- execute: solo el dueño
+comment on function private.preguntas_de_la_encuesta(encuestas_enviadas) is 'Lo que se le pregunta a un enlace: la foto de la encuesta base que se tomó al mandarlo, más las preguntas propias de su trabajo. Es la misma lista la que ve el cliente y la que valida el guardado.';
 
 CREATE OR REPLACE FUNCTION private.registrar_suscripcion(p_endpoint text, p_p256dh text, p_auth text, p_zona text)
  RETURNS jsonb
@@ -2630,6 +3494,47 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.ruta_del_archivo(uuid,uuid,uuid,text,boolean) is 'La ruta del binario en el bucket archivos, la misma que arma la app (ADR 0039). La vista del cliente la manda ya armada para que el navegador del cliente no tenga que conocer la convención.';
+
+CREATE OR REPLACE FUNCTION private.sembrar_la_encuesta(p_household_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_fila record;
+  v_id uuid;
+begin
+  if exists (
+    select 1 from public.preguntas p
+    where p.household_id = p_household_id and p.proyecto_id is null
+  ) then
+    return;
+  end if;
+
+  for v_fila in
+    select *
+    from (
+      values
+        (10, '¿Qué tan conforme quedaste con el mueble?', 'escala5', 'conformidad', true, true),
+        (20, '¿Y con los tiempos de entrega?', 'escala5', 'tiempos', true, false),
+        (30, '¿Cómo fue hablar con el taller mientras duró el trabajo?', 'escala5', 'trato', false, false),
+        (40, '¿Se lo recomendarías a alguien?', 'sitalvezno', null, true, false),
+        (50, '¿Qué podríamos hacer mejor?', 'texto', null, false, false)
+    ) as t (orden, texto, tipo, escala, obligatoria, titular)
+  loop
+    v_id := private.uuidv7();
+    insert into public.preguntas (
+      id, household_id, serie, numero, titular, orden, texto, tipo, escala, obligatoria
+    ) values (
+      v_id, p_household_id, v_id, 1, v_fila.titular, v_fila.orden, v_fila.texto,
+      v_fila.tipo::public.tipo_de_pregunta, v_fila.escala::public.escala_de_pregunta,
+      v_fila.obligatoria
+    );
+  end loop;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.sembrar_la_encuesta(uuid) is 'Le escribe al taller la encuesta base de fábrica, si no tiene ninguna: cinco preguntas, la primera la del titular. La llama private.crear_household() con cada taller nuevo. Solo la ejecuta el dueño de la base.';
 
 CREATE OR REPLACE FUNCTION private.suscripciones_para_probar(p_usuario uuid, p_endpoint text)
  RETURNS jsonb
@@ -3018,6 +3923,134 @@ $function$;
 -- execute: solo el dueño
 comment on function private.validar_proyecto() is 'Guarda de proyectos: un liquidado (cobrado o perdido) no cambia de estado editándolo, y con pagos o gastos no se borra (MN001); un borrado no revive (MN002); un proyecto vivo no cuelga de un cliente borrado (MN005); el estado solo sigue transiciones válidas (MN007). Deja pasar el reenvío idéntico de la cola.';
 
+CREATE OR REPLACE FUNCTION private.validar_respuesta(p_preguntas jsonb, p_respuesta jsonb)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+declare
+  v_renglon jsonb;
+  v_pregunta jsonb;
+  v_valor jsonb;
+  v_id text;
+  v_tipo text;
+  v_cantidad integer;
+  v_numero numeric;
+  v_elegidas numeric[];
+  v_texto text;
+  v_vistas text[] := array[]::text[];
+  v_obligatoria jsonb;
+begin
+  if p_respuesta is null or jsonb_typeof(p_respuesta) is distinct from 'object' then
+    return 'forma';
+  end if;
+  if (select array_agg(k order by k) from jsonb_object_keys(p_respuesta) as k)
+    is distinct from array['id', 'renglones'] then
+    return 'forma';
+  end if;
+  if jsonb_typeof(p_respuesta -> 'id') is distinct from 'string'
+    or (p_respuesta ->> 'id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    return 'forma';
+  end if;
+  if jsonb_typeof(p_respuesta -> 'renglones') is distinct from 'array' then
+    return 'forma';
+  end if;
+
+  for v_renglon in select r from jsonb_array_elements(p_respuesta -> 'renglones') as r loop
+    if jsonb_typeof(v_renglon) is distinct from 'object'
+      or (select array_agg(k order by k) from jsonb_object_keys(v_renglon) as k)
+        is distinct from array['pregunta', 'valor']
+      or jsonb_typeof(v_renglon -> 'pregunta') is distinct from 'string' then
+      return 'forma';
+    end if;
+
+    v_id := v_renglon ->> 'pregunta';
+    select p into v_pregunta
+    from jsonb_array_elements(p_preguntas) as p
+    where p ->> 'id' = v_id
+    limit 1;
+    if not found then
+      return 'ajena';
+    end if;
+    if v_id = any (v_vistas) then
+      return 'repetida';
+    end if;
+    v_vistas := v_vistas || v_id;
+
+    v_valor := v_renglon -> 'valor';
+    v_tipo := v_pregunta ->> 'tipo';
+    v_cantidad := case
+      when jsonb_typeof(v_pregunta -> 'opciones') = 'array' then jsonb_array_length(v_pregunta -> 'opciones')
+      else 0
+    end;
+
+    if v_tipo in ('escala5', 'sitalvezno', 'una') then
+      if jsonb_typeof(v_valor) is distinct from 'number' then
+        return 'tipo';
+      end if;
+      v_numero := v_valor::numeric;
+      if v_numero <> trunc(v_numero) then
+        return 'tipo';
+      end if;
+      if (v_tipo = 'escala5' and v_numero not between 1 and 5)
+        or (v_tipo = 'sitalvezno' and v_numero not between 1 and 3)
+        or (v_tipo = 'una' and (v_numero < 0 or v_numero >= v_cantidad)) then
+        return 'rango';
+      end if;
+    elsif v_tipo = 'varias' then
+      if jsonb_typeof(v_valor) is distinct from 'array' then
+        return 'tipo';
+      end if;
+      if exists (
+        select 1 from jsonb_array_elements(v_valor) as e
+        where case
+          when jsonb_typeof(e) = 'number' then e::numeric <> trunc(e::numeric)
+          else true
+        end
+      ) then
+        return 'tipo';
+      end if;
+      select coalesce(array_agg(e::numeric), array[]::numeric[]) into v_elegidas
+      from jsonb_array_elements(v_valor) as e;
+      if cardinality(v_elegidas) = 0 then
+        return 'vacio';
+      end if;
+      if exists (select 1 from unnest(v_elegidas) as x where x < 0 or x >= v_cantidad)
+        or (select count(distinct x) from unnest(v_elegidas) as x) <> cardinality(v_elegidas) then
+        return 'rango';
+      end if;
+    elsif v_tipo = 'texto' then
+      if jsonb_typeof(v_valor) is distinct from 'string' then
+        return 'tipo';
+      end if;
+      v_texto := v_valor #>> '{}';
+      if v_texto !~ '[^ \t\n\r\f\v]' then
+        return 'vacio';
+      end if;
+      if char_length(regexp_replace(v_texto, '^[ \t\n\r\f\v]+|[ \t\n\r\f\v]+$', '', 'g')) > 2000 then
+        return 'largo';
+      end if;
+    else
+      return 'ajena';
+    end if;
+  end loop;
+
+  for v_obligatoria in
+    select p from jsonb_array_elements(p_preguntas) as p
+    where (p -> 'obligatoria') = 'true'::jsonb
+  loop
+    if not ((v_obligatoria ->> 'id') = any (v_vistas)) then
+      return 'obligatoria';
+    end if;
+  end loop;
+
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.validar_respuesta(jsonb,jsonb) is 'Si una respuesta sirve para una lista de preguntas, y si no, por qué: forma (no es {id, renglones} con renglones {pregunta, valor}), ajena (contesta una pregunta que no es de la lista), repetida, tipo (el valor no es del tipo que pide la pregunta), rango (fuera de la escala o de las opciones), vacio, largo (texto de más de 2000 caracteres) u obligatoria (falta una). Devuelve null si sirve. El orden de las revisiones es parte de la regla: es gemela de validarRespuesta de @maun/domain y el comparador las ata caso por caso.';
+
 CREATE OR REPLACE FUNCTION private.validar_zona(p_zona text)
  RETURNS void
  LANGUAGE plpgsql
@@ -3172,6 +4205,7 @@ declare
   v_cbu text;
   v_link text;
   v_hay_como_transferir boolean;
+  v_precio bigint;
   v_pagado bigint;
   v_ahora record;
   v_despues record;
@@ -3202,6 +4236,13 @@ begin
   v_link := nullif(v_ajustes.cobro_link, '');
   v_hay_como_transferir := v_alias is not null or v_cbu is not null or v_link is not null;
 
+  -- Con el estimativo como etapa actual, el número que se le pasó es aproximado y no está guardado:
+  -- lo que haya en presupuesto_centavos es otro número, y no viaja.
+  v_precio := case
+    when v_p.estado = 'presupuesto_estimativo' then null
+    else v_p.presupuesto_centavos
+  end;
+
   select coalesce(sum(g.monto_centavos), 0) into v_pagado
   from public.pagos g
   where g.household_id = v_p.household_id
@@ -3209,13 +4250,13 @@ begin
     and g.deleted_at is null;
 
   select * into v_ahora from private.pagos_por_delante(
-    v_p.presupuesto_centavos,
+    v_precio,
     v_pagado,
     coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
   ) where orden = 1;
 
   select * into v_despues from private.pagos_por_delante(
-    v_p.presupuesto_centavos,
+    v_precio,
     v_pagado,
     coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
   ) where orden = 2;
@@ -3258,7 +4299,7 @@ begin
     'trabajo', v_p.titulo,
     'direccion', v_p.direccion_entrega,
     'estado', v_p.estado,
-    'precio_centavos', v_p.presupuesto_centavos,
+    'precio_centavos', v_precio,
     -- El pago que toca ahora y, si hay otro después, cuánto es y cómo se paga. Los importes salen
     -- de lo que ya está guardado; el porcentaje de seña sigue sin viajar, que es lo que dejó
     -- abierto el ADR 0048.
@@ -3279,6 +4320,13 @@ begin
       'link', case when v_por_transferencia then v_link end
     ),
     'fechas', jsonb_build_object(
+      'estimativo', (
+        select min(c.ocurrio_el)
+        from public.cambios_de_estado c
+        where c.household_id = v_p.household_id
+          and c.proyecto_id = v_p.id
+          and c.hacia = 'presupuesto_estimativo'
+      ),
       'presupuesto', (
         select min(c.ocurrio_el)
         from public.cambios_de_estado c
@@ -3297,6 +4345,11 @@ begin
       'entrega_pautada', v_p.entrega_estimada,
       'entregado', v_p.fecha_entrega,
       'cobro', case when v_p.estado = 'cobrado' then v_p.fecha_cobro end
+    ),
+    -- La visita para medir: el día acordado o en que se fue, y si ya se fue. La hora no viaja.
+    'visita', jsonb_build_object(
+      'dia', v_p.fecha_visita,
+      'hecha', v_p.visita_hecha
     ),
     'pagos', (
       select coalesce(
@@ -3345,4 +4398,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053 y 0054).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Del estimativo viaja el día, nunca un importe, y mientras el trabajo está en esa etapa tampoco viaja el precio. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054 y 0058).';

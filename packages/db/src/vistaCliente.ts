@@ -10,6 +10,7 @@ import type {
   PagoOfrecido,
   PagoPendiente,
   TrabajoDelCliente,
+  VisitaDelTrabajo,
 } from '@maun/domain';
 
 import type { ClienteMaun } from './cliente.ts';
@@ -149,6 +150,7 @@ function pagoPendiente(valor: unknown): PagoPendiente {
 function fechas(valor: unknown): FechasDelTrabajo {
   const crudas = objeto(valor, 'las fechas');
   return {
+    estimativo: fechaONada(crudas.estimativo, 'la fecha del estimativo'),
     presupuesto: fechaONada(crudas.presupuesto, 'la fecha del presupuesto'),
     aprobado: fechaONada(crudas.aprobado, 'la fecha de la aprobación'),
     inicio: fechaONada(crudas.inicio, 'la fecha de inicio'),
@@ -156,6 +158,17 @@ function fechas(valor: unknown): FechasDelTrabajo {
     entregado: fechaONada(crudas.entregado, 'la fecha de entrega'),
     cobro: fechaONada(crudas.cobro, 'la fecha de cobro'),
   };
+}
+
+const SIN_VISITA: VisitaDelTrabajo = { dia: null, hecha: false };
+
+function visita(valor: unknown): VisitaDelTrabajo {
+  if (valor === null || valor === undefined) return SIN_VISITA;
+  const cruda = objeto(valor, 'la visita para medir');
+  if (typeof cruda.hecha !== 'boolean') {
+    throw new RespuestaInvalidaError('La vista del cliente no devolvió si ya se fue a medir.');
+  }
+  return { dia: fechaONada(cruda.dia, 'el día de la visita'), hecha: cruda.hecha };
 }
 
 export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
@@ -171,6 +184,7 @@ export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
       return precio === null ? null : dinero(precio);
     })(),
     fechas: fechas(cuerpo.fechas),
+    visita: visita(cuerpo.visita),
     pago: pagoPendiente(cuerpo.pago),
     cobro: cobro(cuerpo.cobro),
     pagos: pagos(cuerpo.pagos),

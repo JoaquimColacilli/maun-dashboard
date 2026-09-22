@@ -296,6 +296,24 @@ async function contenidoTapado(page: Page): Promise<string[]> {
   });
 }
 
+async function finDeLaVistaTapado(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const fin = document.querySelector('[data-fin-de-la-vista]');
+    if (!fin) return ['no se encontró el final de la vista del cliente'];
+    const piezas = Array.from(document.querySelectorAll('[data-lo-que-flota-abajo] > *'))
+      .map((pieza) => pieza.getBoundingClientRect())
+      .filter((caja) => caja.width > 0 && caja.height > 0);
+    if (piezas.length === 0) return [];
+    const arriba = Math.min(...piezas.map((caja) => caja.top));
+    const abajo = fin.getBoundingClientRect().bottom;
+    return abajo <= arriba
+      ? []
+      : [
+          `el final de la vista del cliente termina en ${String(Math.round(abajo))} px y lo que flota abajo arranca en ${String(Math.round(arriba))} px`,
+        ];
+  });
+}
+
 test.beforeEach(async () => {
   sesion = await iniciarSesionDePrueba();
 });
@@ -327,6 +345,8 @@ test('al final del scroll nada del contenido queda debajo de lo que flota abajo,
     `/proyectos/${taller.contactoId}/aprobar`,
     '/proyectos/nuevo',
     `/proyectos/${taller.obraId}/editar`,
+    `/proyectos/${taller.obraId}/vista-cliente`,
+    `/proyectos/${taller.contactoId}/vista-cliente`,
   ];
 
   const resultado: Record<string, string[]> = {};
@@ -336,6 +356,9 @@ test('al final del scroll nada del contenido queda debajo de lo que flota abajo,
     await expect(
       page.getByRole('status').filter({ hasText: /Abriendo la app|Trayendo los datos/ }),
     ).toHaveCount(0, CARGA);
+    if (ruta.endsWith('/vista-cliente')) {
+      await expect(page.locator('[data-fin-de-la-vista]')).toBeAttached(CARGA);
+    }
     await page.waitForTimeout(800);
 
     for (const senal of ['con señal', 'sin señal'] as const) {
@@ -349,7 +372,10 @@ test('al final del scroll nada del contenido queda debajo de lo que flota abajo,
       for (const condicion of condiciones) {
         await aplicar(page, cdp, condicion);
         await alFinalDelScroll(page);
-        const tapados = await contenidoTapado(page);
+        const tapados = [
+          ...(await contenidoTapado(page)),
+          ...(ruta.endsWith('/vista-cliente') ? await finDeLaVistaTapado(page) : []),
+        ];
         const clave = `${String(indice + 1).padStart(2, '0')} ${ruta} (${senal}, ${condicion.nombre})`;
         if (tapados.length > 0) resultado[clave] = tapados;
         if (CAPTURADAS.has(condicion.codigo) || tapados.length > 0) {

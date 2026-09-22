@@ -6,3 +6,4 @@ export {
 } from './api/mutacion';
 export { FormularioDeCobro } from './ui/FormularioDeCobro';
 export { FormularioDeConfiguracion } from './ui/FormularioDeConfiguracion';
+export { FormularioDeResena } from './ui/FormularioDeResena';

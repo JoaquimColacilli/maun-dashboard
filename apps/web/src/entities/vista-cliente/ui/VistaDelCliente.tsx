@@ -161,7 +161,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
 
           <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
-            <CaminoDeHitos hitos={vista.hitos} hoy={hoy} />
+            <CaminoDeHitos hitos={vista.hitos} relevamiento={vista.relevamiento} hoy={hoy} />
             {vista.sigue !== '' && (
               <p className="mt-3.5 text-body leading-relaxed text-text-2">{vista.sigue}</p>
             )}

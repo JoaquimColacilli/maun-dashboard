@@ -4,11 +4,26 @@ import { centavos, type Money } from './money.ts';
 import type { FormaDeCobro } from './pagos.ts';
 import {
   comoPagar,
+  FALTA_MEDIR,
+  FUIMOS_A_MEDIR,
+  HITO_DEL_ESTIMATIVO,
   HITOS,
+  llegoAl,
   PASOS_PARA_TRANSFERIR,
+  PRESUPUESTO_MANDADO,
+  RELEVAMIENTO,
+  SIGUE,
+  SIGUE_CON_EL_PRESUPUESTO_MANDADO,
+  SIGUE_FALTA_MEDIR,
+  TE_PASAMOS_EL_ESTIMATIVO,
+  tuvoEstimativo,
   vistaDelCliente,
   hayComoTransferir,
+  YA_FUIMOS_A_MEDIR,
   type CobroDelTaller,
+  type EstadoDelHito,
+  type FechasDelTrabajo,
+  type HitoDelTrabajo,
   type PagoDelCliente,
   type TrabajoDelCliente,
 } from './vistaCliente.ts';
@@ -32,6 +47,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
     estado: 'en_curso',
     precio: centavos(124_000_000),
     fechas: {
+      estimativo: null,
       presupuesto: null,
       aprobado: null,
       inicio: null,
@@ -39,6 +55,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregado: null,
       cobro: null,
     },
+    visita: { dia: null, hecha: false },
     pago: { instancia: null, formas: [], monto: null, siguiente: null },
     cobro: { alias: null, cbu: null, titular: null, cuit: null, link: null },
     pagos: [],
@@ -125,9 +142,25 @@ describe('el hito en el que está el trabajo', () => {
 });
 
 describe('el camino', () => {
-  it('son siempre los cinco hitos, en orden', () => {
+  it('sin estimativo son los cinco hitos, en orden', () => {
     const vista = vistaDelCliente(trabajo(), HOY);
     expect(vista.hitos.map((hito) => hito.id)).toEqual(HITOS.map((hito) => hito.id));
+  });
+
+  it('con estimativo, el estimativo va primero y los otros cinco siguen igual', () => {
+    const vista = vistaDelCliente(
+      trabajo({ fechas: { ...trabajo().fechas, estimativo: '2026-08-20' } }),
+      HOY,
+    );
+    expect(vista.hitos.map((hito) => hito.id)).toEqual([
+      HITO_DEL_ESTIMATIVO.id,
+      ...HITOS.map((hito) => hito.id),
+    ]);
+    expect(vista.hitos[0]).toMatchObject({
+      estado: 'pasado',
+      fecha: '2026-08-20',
+      texto: 'Te pasamos un número estimado',
+    });
   });
 
   it('los que faltan no muestran fecha: dicen qué va a pasar', () => {
@@ -722,6 +755,21 @@ describe('un trabajo guardado por una versión vieja de la app', () => {
     expect(() => vistaDelCliente(comoLoGuardoLaVersionVieja, HOY)).not.toThrow();
   });
 
+  it('sin la fecha del estimativo ni la visita, dibuja el camino de siempre', () => {
+    const base = trabajo({ estado: 'relevamiento' });
+    const { visita: _visita, ...sinVisita } = base;
+    const { estimativo: _estimativo, ...fechasViejas } = base.fechas;
+    const comoLoGuardoLaVersionVieja = {
+      ...sinVisita,
+      fechas: fechasViejas,
+    } as unknown as TrabajoDelCliente;
+
+    const vista = vistaDelCliente(comoLoGuardoLaVersionVieja, HOY);
+    expect(vista.hitos.map((hito) => hito.id)).toEqual(HITOS.map((hito) => hito.id));
+    expect(vista.relevamiento).toMatchObject({ estado: 'pendiente', fecha: null });
+    expect(vista.eventos).toEqual([]);
+  });
+
   it('tampoco rompe si le falta la cuenta para transferir', () => {
     const { cobro: _cobro, ...viejo } = trabajo({
       pago: {
@@ -732,5 +780,354 @@ describe('un trabajo guardado por una versión vieja de la app', () => {
       },
     });
     expect(comoPagar(viejo as unknown as TrabajoDelCliente)).toBeNull();
+  });
+});
+
+function fechas(cambios: Partial<FechasDelTrabajo>): FechasDelTrabajo {
+  return { ...trabajo().fechas, ...cambios };
+}
+
+interface CasoDeEtapa {
+  nombre: string;
+  cambios: Partial<TrabajoDelCliente>;
+  camino: readonly (readonly [HitoDelTrabajo, EstadoDelHito])[];
+  titular: string;
+  relevamiento: { estado: 'pendiente' | 'hecho'; fecha: string | null } | null;
+  sigue: string;
+}
+
+const SIN_ESTIMATIVO = (
+  actual: HitoDelTrabajo,
+): readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] => {
+  const indice = HITOS.findIndex((hito) => hito.id === actual);
+  return HITOS.map(
+    (hito, cual) =>
+      [hito.id, cual < indice ? 'pasado' : cual === indice ? 'actual' : 'futuro'] as const,
+  );
+};
+
+const CON_ESTIMATIVO = (
+  actual: HitoDelTrabajo,
+): readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] =>
+  actual === 'estimativo'
+    ? [['estimativo', 'actual'], ...HITOS.map((hito) => [hito.id, 'futuro'] as const)]
+    : [['estimativo', 'pasado'], ...SIN_ESTIMATIVO(actual)];
+
+const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
+  {
+    nombre: 'contacto: se prepara el presupuesto y falta ir a medir, sin día todavía',
+    cambios: { estado: 'contacto', precio: null },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'pendiente', fecha: null },
+    sigue: SIGUE_FALTA_MEDIR.presupuesto,
+  },
+  {
+    nombre: 'contacto con la visita agendada: el casillero dice el día',
+    cambios: { estado: 'contacto', precio: null, visita: { dia: '2026-09-25', hecha: false } },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'pendiente', fecha: '2026-09-25' },
+    sigue: SIGUE_FALTA_MEDIR.presupuesto,
+  },
+  {
+    nombre:
+      'estimativo enviado antes de medir: es el paso actual y el relevamiento queda en blanco',
+    cambios: {
+      estado: 'presupuesto_estimativo',
+      precio: null,
+      fechas: fechas({ estimativo: '2026-09-15' }),
+    },
+    camino: CON_ESTIMATIVO('estimativo'),
+    titular: 'Te pasamos un número estimado',
+    relevamiento: { estado: 'pendiente', fecha: null },
+    sigue: SIGUE_FALTA_MEDIR.estimativo,
+  },
+  {
+    nombre: 'estimativo enviado después de medir: el relevamiento ya está tildado',
+    cambios: {
+      estado: 'presupuesto_estimativo',
+      precio: null,
+      fechas: fechas({ estimativo: '2026-09-15' }),
+      visita: { dia: '2026-09-12', hecha: false },
+    },
+    camino: CON_ESTIMATIVO('estimativo'),
+    titular: 'Te pasamos un número estimado',
+    relevamiento: { estado: 'hecho', fecha: '2026-09-12' },
+    sigue: SIGUE.estimativo,
+  },
+  {
+    nombre: 'relevamiento sin día: falta ir a medir y no se inventa una fecha',
+    cambios: { estado: 'relevamiento', precio: null },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'pendiente', fecha: null },
+    sigue: SIGUE_FALTA_MEDIR.presupuesto,
+  },
+  {
+    nombre: 'relevamiento con el día acordado',
+    cambios: { estado: 'relevamiento', precio: null, visita: { dia: '2026-09-22', hecha: false } },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'pendiente', fecha: '2026-09-22' },
+    sigue: SIGUE_FALTA_MEDIR.presupuesto,
+  },
+  {
+    nombre: 'relevamiento con el día ya pasado y sin marcar: sigue pendiente y no promete ese día',
+    cambios: { estado: 'relevamiento', precio: null, visita: { dia: '2026-09-16', hecha: false } },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'pendiente', fecha: null },
+    sigue: SIGUE_FALTA_MEDIR.presupuesto,
+  },
+  {
+    nombre: 'relevamiento tildado en la hoja del contacto: hecho, con su día',
+    cambios: { estado: 'relevamiento', precio: null, visita: { dia: '2026-09-16', hecha: true } },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'hecho', fecha: '2026-09-16' },
+    sigue: SIGUE.presupuesto,
+  },
+  {
+    nombre: 'a presupuestar después de medir, con un estimativo antes',
+    cambios: {
+      estado: 'a_presupuestar',
+      precio: null,
+      fechas: fechas({ estimativo: '2026-09-02' }),
+      visita: { dia: '2026-09-10', hecha: true },
+    },
+    camino: CON_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: { estado: 'hecho', fecha: '2026-09-10' },
+    sigue: SIGUE.presupuesto,
+  },
+  {
+    nombre: 'a presupuestar sin visita: no hizo falta medir y el casillero no existe',
+    cambios: { estado: 'a_presupuestar', precio: null },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: 'Estamos preparando tu presupuesto',
+    relevamiento: null,
+    sigue: SIGUE.presupuesto,
+  },
+  {
+    nombre: 'presupuesto enviado: lo dice en pasado y lo que sigue es aprobarlo',
+    cambios: {
+      estado: 'presupuesto_enviado',
+      fechas: fechas({ presupuesto: '2026-09-14' }),
+      visita: { dia: '2026-09-10', hecha: true },
+    },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: PRESUPUESTO_MANDADO,
+    relevamiento: { estado: 'hecho', fecha: '2026-09-10' },
+    sigue: SIGUE_CON_EL_PRESUPUESTO_MANDADO,
+  },
+  {
+    nombre: 'presupuesto enviado sin haber ido a medir: tampoco hay casillero',
+    cambios: { estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-14' }) },
+    camino: SIN_ESTIMATIVO('presupuesto'),
+    titular: PRESUPUESTO_MANDADO,
+    relevamiento: null,
+    sigue: SIGUE_CON_EL_PRESUPUESTO_MANDADO,
+  },
+  {
+    nombre: 'aprobado y sin empezar: la visita de antes queda tildada aunque no se haya marcado',
+    cambios: {
+      estado: 'en_curso',
+      fechas: fechas({ presupuesto: '2026-09-01', aprobado: '2026-09-05' }),
+      visita: { dia: '2026-08-28', hecha: false },
+    },
+    camino: SIN_ESTIMATIVO('aprobado'),
+    titular: 'Recibimos la seña y ya estás en la cola del taller',
+    relevamiento: { estado: 'hecho', fecha: '2026-08-28' },
+    sigue: SIGUE.aprobado,
+  },
+  {
+    nombre: 'en fabricación',
+    cambios: { estado: 'en_curso', fechas: fechas({ inicio: '2026-09-10' }) },
+    camino: SIN_ESTIMATIVO('fabricacion'),
+    titular: 'Lo estamos fabricando',
+    relevamiento: null,
+    sigue: SIGUE.fabricacion,
+  },
+  {
+    nombre: 'entregado con saldo',
+    cambios: {
+      estado: 'entregado',
+      fechas: fechas({ entregado: '2026-09-16' }),
+      pagos: [pago('p1', '2026-08-04', 40_000_000)],
+    },
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: 'Ya está instalado en tu casa',
+    relevamiento: null,
+    sigue: SIGUE.entregado,
+  },
+  {
+    nombre: 'entregado y saldado',
+    cambios: { estado: 'entregado', pagos: [pago('p1', '2026-09-16', 124_000_000)] },
+    camino: SIN_ESTIMATIVO('pagado'),
+    titular: 'Listo, está saldado',
+    relevamiento: null,
+    sigue: '',
+  },
+  {
+    nombre: 'cobrado',
+    cambios: {
+      estado: 'cobrado',
+      fechas: fechas({ cobro: '2026-09-17' }),
+      pagos: [pago('p1', '2026-09-17', 124_000_000)],
+    },
+    camino: SIN_ESTIMATIVO('pagado'),
+    titular: 'Listo, está saldado',
+    relevamiento: null,
+    sigue: '',
+  },
+];
+
+describe('qué ve el cliente en cada etapa del trabajo', () => {
+  for (const caso of CASOS_POR_ETAPA) {
+    it(caso.nombre, () => {
+      const vista = vistaDelCliente(trabajo(caso.cambios), HOY);
+
+      expect(vista.hitos.map((hito) => [hito.id, hito.estado])).toEqual(caso.camino);
+      expect(vista.hitos[vista.hitoIndex]?.texto).toBe(caso.titular);
+      if (caso.relevamiento === null) expect(vista.relevamiento).toBeNull();
+      else expect(vista.relevamiento).toMatchObject(caso.relevamiento);
+      expect(vista.sigue).toBe(caso.sigue);
+      expect(vista.sigue).not.toMatch(/\d/);
+    });
+  }
+
+  it('un estimativo de antes de que se guardaran los cambios de etapa igual aparece, sin fecha', () => {
+    const vista = vistaDelCliente(trabajo({ estado: 'presupuesto_estimativo', precio: null }), HOY);
+    expect(vista.hitos[0]).toMatchObject({ id: 'estimativo', estado: 'actual', fecha: null });
+    expect(vista.eventos).toEqual([]);
+  });
+
+  it('el estimativo nunca lleva un importe: ni en el camino ni en lo que fue pasando', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_estimativo',
+        precio: null,
+        fechas: fechas({ estimativo: '2026-09-15' }),
+      }),
+      HOY,
+    );
+    const delEstimativo = vista.eventos.find((evento) => evento.id === 'estimativo');
+    expect(delEstimativo).toMatchObject({ texto: TE_PASAMOS_EL_ESTIMATIVO, monto: null });
+    expect(JSON.stringify(vista.hitos)).not.toMatch(/\$|\d{4,}(?!-)/);
+  });
+});
+
+describe('el casillero del relevamiento', () => {
+  it('dice qué es y, mientras falta, qué falta para presupuestar', () => {
+    const vista = vistaDelCliente(trabajo({ estado: 'relevamiento', precio: null }), HOY);
+    expect(vista.relevamiento).toEqual({
+      estado: 'pendiente',
+      texto: RELEVAMIENTO,
+      detalle: FALTA_MEDIR,
+      fecha: null,
+    });
+  });
+
+  it('hecho sin día cargado queda tildado sin fecha, y no entra en lo que fue pasando', () => {
+    const vista = vistaDelCliente(
+      trabajo({ estado: 'a_presupuestar', precio: null, visita: { dia: null, hecha: true } }),
+      HOY,
+    );
+    expect(vista.relevamiento).toEqual({
+      estado: 'hecho',
+      texto: RELEVAMIENTO,
+      detalle: YA_FUIMOS_A_MEDIR,
+      fecha: null,
+    });
+    expect(vista.eventos.map((evento) => evento.id)).not.toContain('relevamiento');
+  });
+
+  it('la visita de hoy, sin marcar, todavía no se da por hecha: dice que quedamos en ir hoy', () => {
+    for (const estado of ['contacto', 'presupuesto_estimativo', 'a_presupuestar'] as const) {
+      const vista = vistaDelCliente(
+        trabajo({ estado, precio: null, visita: { dia: HOY, hecha: false } }),
+        HOY,
+      );
+      expect(vista.relevamiento).toMatchObject({ estado: 'pendiente', fecha: HOY });
+    }
+  });
+
+  it('marcada con «Ya fui a relevar», se tilda el mismo día', () => {
+    const vista = vistaDelCliente(
+      trabajo({ estado: 'a_presupuestar', precio: null, visita: { dia: HOY, hecha: true } }),
+      HOY,
+    );
+    expect(vista.relevamiento).toMatchObject({ estado: 'hecho', fecha: HOY });
+  });
+
+  it('una visita agendada después de presupuestar vuelve a mostrar el pendiente con su día', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        fechas: fechas({ presupuesto: '2026-09-14' }),
+        visita: { dia: '2026-09-24', hecha: false },
+      }),
+      HOY,
+    );
+    expect(vista.relevamiento).toMatchObject({ estado: 'pendiente', fecha: '2026-09-24' });
+  });
+});
+
+describe('lo que fue pasando, con el estimativo y el día que se fue a medir', () => {
+  it('los suma a la línea de tiempo, del más nuevo al más viejo', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        fechas: fechas({ estimativo: '2026-09-02', presupuesto: '2026-09-14' }),
+        visita: { dia: '2026-09-10', hecha: true },
+      }),
+      HOY,
+    );
+    expect(vista.eventos.map((evento) => [evento.texto, evento.fecha, evento.monto])).toEqual([
+      ['Te pasamos el presupuesto', '2026-09-14', null],
+      [FUIMOS_A_MEDIR, '2026-09-10', null],
+      [TE_PASAMOS_EL_ESTIMATIVO, '2026-09-02', null],
+    ]);
+  });
+
+  it('el mismo día, ir a medir va antes que el presupuesto y después del estimativo', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        fechas: fechas({ estimativo: '2026-09-10', presupuesto: '2026-09-10' }),
+        visita: { dia: '2026-09-10', hecha: true },
+      }),
+      HOY,
+    );
+    expect(vista.eventos.map((evento) => evento.id)).toEqual([
+      'presupuesto',
+      'relevamiento',
+      'estimativo',
+    ]);
+  });
+});
+
+describe('hasta dónde llegó el trabajo', () => {
+  it('compara por el paso, no por la posición: el estimativo no corre a los demás', () => {
+    const conEstimativo = vistaDelCliente(
+      trabajo({ estado: 'en_curso', fechas: fechas({ estimativo: '2026-08-01' }) }),
+      HOY,
+    );
+    expect(llegoAl(conEstimativo, 'aprobado')).toBe(true);
+    expect(llegoAl(conEstimativo, 'fabricacion')).toBe(false);
+
+    const enElEstimativo = vistaDelCliente(
+      trabajo({ estado: 'presupuesto_estimativo', precio: null }),
+      HOY,
+    );
+    expect(llegoAl(enElEstimativo, 'estimativo')).toBe(true);
+    expect(llegoAl(enElEstimativo, 'presupuesto')).toBe(false);
+  });
+
+  it('tuvo estimativo el que está en esa etapa o el que pasó por ella', () => {
+    expect(tuvoEstimativo(trabajo({ estado: 'presupuesto_estimativo' }))).toBe(true);
+    expect(tuvoEstimativo(trabajo({ fechas: fechas({ estimativo: '2026-08-01' }) }))).toBe(true);
+    expect(tuvoEstimativo(trabajo({ estado: 'a_presupuestar' }))).toBe(false);
   });
 });

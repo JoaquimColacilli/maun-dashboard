@@ -14,6 +14,10 @@ export const TABLAS_REPLICADAS = [
   'anotaciones',
   'archivos',
   'enlaces_publicos',
+  'preguntas',
+  'encuestas_enviadas',
+  'respuestas',
+  'renglones_de_respuesta',
 ] as const;
 
 export type TablaReplicada = (typeof TABLAS_REPLICADAS)[number];
