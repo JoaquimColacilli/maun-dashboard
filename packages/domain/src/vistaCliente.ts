@@ -207,9 +207,20 @@ export type EstadoDelRelevamiento = 'pendiente' | 'hecho';
 
 export interface RelevamientoDeLaVista {
   estado: EstadoDelRelevamiento;
-  texto: string;
-  detalle: string;
   fecha: string | null;
+}
+
+export interface NotaDelRelevamiento {
+  estado: EstadoDelRelevamiento;
+  etiqueta: string;
+  titulo: string;
+  lineas: readonly string[];
+  resumen: string;
+}
+
+export interface FormatosDeFecha {
+  larga: (fecha: string) => string;
+  corta: (fecha: string) => string;
 }
 
 export interface VistaDelCliente {
@@ -282,13 +293,33 @@ export const SIGUE_FALTA_MEDIR: Readonly<Record<'estimativo' | 'presupuesto', st
   presupuesto: 'Lo próximo es ir a medir, para poder pasarte el presupuesto.',
 };
 
-export const RELEVAMIENTO = 'Relevamiento técnico';
+export const NOTA_DEL_RELEVAMIENTO: Readonly<
+  Record<EstadoDelRelevamiento, { etiqueta: string; titulo: string }>
+> = {
+  pendiente: {
+    etiqueta: 'Por qué el número todavía puede cambiar',
+    titulo: 'El número todavía puede cambiar',
+  },
+  hecho: {
+    etiqueta: 'De dónde sale este número',
+    titulo: 'El número ya está tomado de las medidas reales',
+  },
+};
 
-export const FALTA_MEDIR = 'Falta ir a medir para poder presupuestarte.';
+export const FALTA_MEDIR_DEL_ESTIMADO: readonly string[] = [
+  'Lo que te pasamos es un estimado, sacado de lo que hablamos.',
+  'Para cerrarlo tenemos que ir a tu casa a tomar las medidas.',
+];
 
-export const YA_FUIMOS_A_MEDIR = 'Ya fuimos a medir.';
+export const SIN_FECHA_PARA_LA_VISITA = 'Todavía no tenemos fecha para la visita.';
 
-export const QUEDAMOS_EN_IR = 'Quedamos en ir el';
+export const CERRANDO_EL_PRESUPUESTO = 'Con esas medidas estamos cerrando el presupuesto final.';
+
+export const ARMAMOS_EL_PRESUPUESTO = 'Con esas medidas armamos el presupuesto final.';
+
+export const RESUMEN_FALTA_MEDIR = 'Número estimado, falta ir a medir';
+
+const HITOS_DEL_PRESUPUESTO: readonly HitoDelTrabajo[] = ['estimativo', 'presupuesto'];
 
 const ESPERAN_LA_VISITA: readonly EstadoProyecto[] = [
   'contacto',
@@ -323,16 +354,9 @@ export function relevamientoDelTrabajo(
   const visita = (trabajo.visita as VisitaDelTrabajo | undefined) ?? SIN_VISITA;
   const dia = visita.dia;
   const yaPaso = dia !== null && dia < hoy && !TODAVIA_ANTES_DE_LA_VISITA.includes(trabajo.estado);
-  if (visita.hecha || yaPaso) {
-    return { estado: 'hecho', texto: RELEVAMIENTO, detalle: YA_FUIMOS_A_MEDIR, fecha: dia };
-  }
+  if (visita.hecha || yaPaso) return { estado: 'hecho', fecha: dia };
   if (dia === null && !ESPERAN_LA_VISITA.includes(trabajo.estado)) return null;
-  return {
-    estado: 'pendiente',
-    texto: RELEVAMIENTO,
-    detalle: FALTA_MEDIR,
-    fecha: dia !== null && dia >= hoy ? dia : null,
-  };
+  return { estado: 'pendiente', fecha: dia !== null && dia >= hoy ? dia : null };
 }
 
 function hitoDelTrabajo(trabajo: TrabajoDelCliente, saldado: boolean, hoy: string): HitoDelTrabajo {
@@ -532,5 +556,38 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
     eventos,
     sigue: loQueSigue(hitoActual, trabajo, relevamiento),
     foco: entregado && saldo !== null && saldo > 0 ? 'saldo' : 'estado',
+  };
+}
+
+export function notaDelRelevamiento(
+  vista: VistaDelCliente,
+  formatos: FormatosDeFecha,
+): NotaDelRelevamiento | null {
+  const { relevamiento, trabajo } = vista;
+  if (relevamiento === null || !HITOS_DEL_PRESUPUESTO.includes(vista.hitoActual)) return null;
+  const { fecha } = relevamiento;
+  const mandado = trabajo.estado === 'presupuesto_enviado';
+
+  if (relevamiento.estado === 'hecho') {
+    return {
+      estado: 'hecho',
+      ...NOTA_DEL_RELEVAMIENTO.hecho,
+      lineas: [
+        fecha === null ? 'Ya fuimos a medir.' : `${FUIMOS_A_MEDIR} el ${formatos.larga(fecha)}.`,
+        mandado ? ARMAMOS_EL_PRESUPUESTO : CERRANDO_EL_PRESUPUESTO,
+      ],
+      resumen: fecha === null ? 'Ya fuimos a medir' : `Medido el ${formatos.corta(fecha)}`,
+    };
+  }
+
+  if (mandado || !tuvoEstimativo(trabajo)) return null;
+  return {
+    estado: 'pendiente',
+    ...NOTA_DEL_RELEVAMIENTO.pendiente,
+    lineas: [
+      ...FALTA_MEDIR_DEL_ESTIMADO,
+      fecha === null ? SIN_FECHA_PARA_LA_VISITA : `Quedamos en ir el ${formatos.larga(fecha)}.`,
+    ],
+    resumen: RESUMEN_FALTA_MEDIR,
   };
 }

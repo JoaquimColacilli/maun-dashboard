@@ -1,6 +1,6 @@
 import { centavos, vistaDelCliente, type TrabajoDelCliente } from '@maun/domain';
-import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SIN_PAGOS_APROBADO } from '../model/textos';
 import { VistaDelCliente } from './VistaDelCliente';
@@ -226,7 +226,27 @@ function pasosDelCamino(): string[] {
     .map((paso) => paso.textContent);
 }
 
+function conPantalla(ancho: 'celular' | 'escritorio'): void {
+  vi.stubGlobal('matchMedia', () => ({
+    matches: ancho === 'escritorio',
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
+}
+
+const PUEDE_CAMBIAR = 'Por qué el número todavía puede cambiar';
+const DE_DONDE_SALE = 'De dónde sale este número';
+const LA_NOTA = /Por qué el número|De dónde sale/;
+
 describe('el estimativo y el relevamiento en el camino', () => {
+  beforeEach(() => {
+    conPantalla('celular');
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('con el estimativo mandado, es el paso actual y va antes de los otros cinco', () => {
     dibujar(
       trabajo({
@@ -271,21 +291,30 @@ describe('el estimativo y el relevamiento en el camino', () => {
     expect(importes.every((importe) => importe.replace(' ', '') === '$0')).toBe(true);
   });
 
-  it('el relevamiento pendiente queda en blanco, dice qué falta y el día que quedaron', () => {
-    dibujar(
-      trabajo({
-        estado: 'presupuesto_estimativo',
-        precio: null,
-        pagos: [],
-        fechas: fechas({ estimativo: '2026-09-15' }),
-        visita: { dia: '2026-09-22', hecha: false },
-      }),
-    );
+  function sinMedir(): TrabajoDelCliente {
+    return trabajo({
+      estado: 'presupuesto_estimativo',
+      precio: null,
+      pagos: [],
+      fechas: fechas({ estimativo: '2026-09-15' }),
+      visita: { dia: '2026-09-22', hecha: false },
+    });
+  }
 
-    const presupuesto = pasosDelCamino()[1];
-    expect(presupuesto).toContain('Relevamiento técnico');
-    expect(presupuesto).toContain('Falta ir a medir para poder presupuestarte.');
-    expect(presupuesto).toContain('Quedamos en ir el mar 22 sep');
+  it('sin medir, una sola (i), pegada al rótulo del paso en curso, y el resumen abajo del titular', () => {
+    dibujar(sinMedir());
+
+    const camino = screen.getByRole('region', { name: 'En qué anda' });
+    const [estimativo] = within(camino).getAllByRole('listitem');
+    expect(screen.getAllByRole('button', { name: LA_NOTA })).toHaveLength(1);
+    const boton = within(estimativo as HTMLElement).getByRole('button', { name: PUEDE_CAMBIAR });
+    expect(boton).toHaveAttribute('aria-expanded', 'false');
+    expect(boton.previousSibling?.textContent).toBe('Te pasamos un número estimado');
+    expect(boton.nextSibling).toBeNull();
+    expect(screen.getByRole('region', { name: 'Tu mueble' })).toHaveTextContent(
+      'Número estimado, falta ir a medir',
+    );
+    expect(pasosDelCamino().join(' ')).not.toContain('Relevamiento técnico');
     expect(
       screen.getByText(
         'Si seguimos adelante, lo próximo es ir a medir para pasarte el presupuesto.',
@@ -293,15 +322,46 @@ describe('el estimativo y el relevamiento en el camino', () => {
     ).toBeInTheDocument();
   });
 
-  it('sin día acordado no promete ninguno', () => {
-    dibujar(trabajo({ estado: 'relevamiento', precio: null, pagos: [], fechas: fechas({}) }));
+  it('en el celular abre una hoja con el día que quedamos, y «Entendido» la cierra', () => {
+    dibujar(sinMedir());
 
-    const presupuesto = pasosDelCamino()[0];
-    expect(presupuesto).toContain('Falta ir a medir para poder presupuestarte.');
-    expect(presupuesto).not.toContain('Quedamos en ir');
+    const boton = screen.getByRole('button', { name: PUEDE_CAMBIAR });
+    fireEvent.click(boton);
+
+    const hoja = screen.getByRole('dialog', { name: 'El número todavía puede cambiar' });
+    expect(boton).toHaveAttribute('aria-expanded', 'true');
+    expect(hoja).toHaveTextContent('Lo que te pasamos es un estimado, sacado de lo que hablamos.');
+    expect(hoja).toHaveTextContent('Quedamos en ir el mar 22 sep.');
+    fireEvent.click(within(hoja).getByRole('button', { name: 'Entendido' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(boton).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('el relevamiento hecho queda tildado con su día, y entra en lo que fue pasando', () => {
+  it('en la PC abre al pasar el mouse, queda anclada al paso y cierra con Escape', () => {
+    conPantalla('escritorio');
+    dibujar(sinMedir());
+
+    const boton = screen.getByRole('button', { name: PUEDE_CAMBIAR });
+    const paso = boton.closest('li');
+    fireEvent.mouseEnter(boton);
+    expect(boton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const nota = document.getElementById(boton.getAttribute('aria-controls') ?? '');
+    expect(nota?.closest('li')).toBe(paso);
+    expect(nota).toHaveTextContent('Para cerrarlo tenemos que ir a tu casa a tomar las medidas.');
+
+    fireEvent.click(boton);
+    expect(boton).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(boton).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(boton);
+    expect(boton).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.mouseLeave(paso as HTMLElement);
+    expect(boton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('ya medido, la (i) dice de dónde sale el número y el resumen dice el día', () => {
     dibujar(
       trabajo({
         estado: 'a_presupuestar',
@@ -312,17 +372,34 @@ describe('el estimativo y el relevamiento en el camino', () => {
       }),
     );
 
-    const presupuesto = pasosDelCamino()[1];
-    expect(presupuesto).toContain('Ya fuimos a medir.');
-    expect(presupuesto).toContain('jue 10 sep');
+    const camino = screen.getByRole('region', { name: 'En qué anda' });
+    const presupuesto = within(camino).getAllByRole('listitem')[1] as HTMLElement;
+    fireEvent.click(within(presupuesto).getByRole('button', { name: DE_DONDE_SALE }));
+    const hoja = screen.getByRole('dialog', {
+      name: 'El número ya está tomado de las medidas reales',
+    });
+    expect(hoja).toHaveTextContent('Fuimos a medir el jue 10 sep.');
+    expect(screen.getByRole('region', { name: 'Tu mueble' })).toHaveTextContent('Medido el 10 sep');
     const historia = screen.getByRole('region', { name: 'Lo que fue pasando' });
     expect(within(historia).getByText('Fuimos a medir')).toBeInTheDocument();
     expect(within(historia).getByText('Te pasamos un número estimado')).toBeInTheDocument();
   });
 
-  it('donde no hace falta medir, el casillero no existe', () => {
-    dibujar(trabajo({ estado: 'a_presupuestar', precio: null, pagos: [], fechas: fechas({}) }));
+  it('sin estimativo no hay número que pueda cambiar, y sin medir tampoco hay (i)', () => {
+    dibujar(trabajo({ estado: 'relevamiento', precio: null, pagos: [], fechas: fechas({}) }));
 
-    expect(screen.queryByText('Relevamiento técnico')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: LA_NOTA })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Tu mueble' })).not.toHaveTextContent('Número');
+  });
+
+  it('desde que se aprueba, la (i) no está', () => {
+    dibujar(
+      trabajo({
+        fechas: fechas({ estimativo: '2026-08-01', presupuesto: '2026-08-05' }),
+        visita: { dia: '2026-08-03', hecha: true },
+      }),
+    );
+
+    expect(screen.queryByRole('button', { name: LA_NOTA })).not.toBeInTheDocument();
   });
 });

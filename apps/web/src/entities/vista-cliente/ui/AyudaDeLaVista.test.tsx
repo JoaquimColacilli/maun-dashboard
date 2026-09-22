@@ -1,4 +1,4 @@
-import { HITO_DEL_ESTIMATIVO, HITOS, RELEVAMIENTO } from '@maun/domain';
+import { HITO_DEL_ESTIMATIVO, HITOS, NOTA_DEL_RELEVAMIENTO } from '@maun/domain';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,14 +51,14 @@ describe('la ayuda de la vista del cliente', () => {
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('El enlace y la pantalla');
   });
 
-  it('explica cada paso y el casillero con el mismo nombre que le muestra la pantalla al cliente', () => {
+  it('explica cada paso y la nota con el mismo nombre que le muestra la pantalla al cliente', () => {
     abrir();
 
     const leido = screen.getByRole('dialog').textContent;
     for (const hito of [HITO_DEL_ESTIMATIVO, ...HITOS]) {
       expect(leido).toContain(hito.etiqueta);
     }
-    expect(leido).toContain(RELEVAMIENTO);
+    expect(leido).toContain(NOTA_DEL_RELEVAMIENTO.pendiente.titulo);
   });
 
   it('deja ver una lámina por vez', () => {

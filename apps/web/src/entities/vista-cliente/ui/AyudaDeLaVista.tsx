@@ -1,4 +1,4 @@
-import { HITO_DEL_ESTIMATIVO, RELEVAMIENTO } from '@maun/domain';
+import { HITO_DEL_ESTIMATIVO, NOTA_DEL_RELEVAMIENTO } from '@maun/domain';
 import { useState } from 'react';
 
 import { useAnchoDePantalla } from '@/shared/lib';
@@ -68,17 +68,17 @@ const LAMINAS: readonly Lamina[] = [
       },
       {
         clave: 'relevamiento',
-        icono: 'pencil-ruler',
-        titulo: RELEVAMIENTO,
+        icono: 'info',
+        titulo: NOTA_DEL_RELEVAMIENTO.pendiente.titulo,
         texto:
-          'Un casillero adentro del paso del presupuesto, solo si hay que ir a medir. En blanco mientras falta, con el día de la visita si ya está agendada; tildado cuando tocás «Ya fui a relevar».',
+          'Con el estimativo mandado y la visita pendiente, al lado del paso en curso le aparece una (i) que se lo explica, con el día de la visita si ya está agendada. Cuando tocás «Ya fui a relevar», le cuenta que el número sale de las medidas. Al aprobarlo, se va.',
       },
       {
         clave: 'sin-medir',
         icono: 'route',
         titulo: 'Si no hace falta medir',
         texto:
-          'Pasalo a «A presupuestar» sin cargar la visita y el casillero no aparece. Mientras está en contacto o con el estimativo enviado, él lee que falta ir a medir.',
+          'Pasalo a «A presupuestar» sin cargar la visita y la (i) no aparece. Mientras está en contacto o con el estimativo enviado, él lee que lo próximo es ir a medir.',
       },
       {
         clave: 'sin-nada',
