@@ -5,6 +5,12 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-22.4',
+    lineas: [
+      'En la página que ve tu cliente, un trabajo entregado y pagado muestra el camino completo, con todos los pasos tildados. Antes el último quedaba en amarillo, como si faltara algo.',
+    ],
+  },
+  {
     version: '2026-09-22.3',
     lineas: [
       'El aviso de «Hay una versión nueva» ya no espera a que cierres la app del todo: aparece al volver a la app, al volver la señal y al tirar hacia abajo para actualizar.',

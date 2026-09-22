@@ -60,6 +60,10 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
   que lo tuvieron (`tuvoEstimativo`: la etapa actual o `fechas.estimativo`). **Compará por paso, nunca
   por posición**: `llegoAl(vista, 'aprobado')`, no `hitoIndex >= 1`, porque con el estimativo el
   índice se corre uno.
+- **Al llegar al último paso, el camino queda completo** (corrección del ADR 0046): todos los hitos
+  van `pasado` y ninguno `actual`, y el titular sigue siendo el texto de `hitos[hitoIndex]` («Listo,
+  está saldado»). No dejes el último en `actual`: la pantalla pinta el actual en ámbar, como algo en
+  curso, y un trabajo terminado parecía a medio camino.
 - **Si la visita está pendiente o hecha lo decide `relevamientoDelTrabajo`** con la etapa, el día y
   la marca de la visita, y no existe donde no hace falta medir. La tabla de cada caso está en el ADR 0058. Nunca promete un día que ya pasó, y la visita de hoy no se da por hecha sin la marca.
 - **La nota de la (i) la arma `notaDelRelevamiento(vista, formatos)`** (ADR 0059): solo en los pasos
