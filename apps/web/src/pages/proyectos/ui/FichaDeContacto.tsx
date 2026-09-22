@@ -38,7 +38,7 @@ import {
   rutaDeCompartir,
   useAvisosDelProyecto,
 } from '@/shared/lib';
-import { Button, ConSalida, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
+import { Button, ConSalida, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
 
 function Dato({
   clave,
@@ -159,23 +159,29 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       )}
 
-      <div className="mt-4 grid items-start gap-5 lg:grid-cols-2 lg:gap-x-11">
-        <div className="flex min-w-0 flex-col gap-5">
-          <section aria-label={`Contactar a ${nombre}`}>
-            <AccionesDeContacto nombre={nombre} telefono={cliente?.telefono ?? ''} amplias />
-          </section>
+      <PrincipalYApoyo
+        apoyoPrimero
+        className="mt-4"
+        apoyo={
+          <div className="flex flex-col gap-5">
+            <section aria-label={`Contactar a ${nombre}`}>
+              <AccionesDeContacto nombre={nombre} telefono={cliente?.telefono ?? ''} amplias />
+            </section>
 
-          <AvanceDelContacto
-            proyecto={proyecto}
-            etapa={etapa}
-            situacion={situacion}
-            cobrado={resumen.cobrado}
-            conOpciones={opcionesDelProyecto(replica, proyecto.id).length > 0}
-            alAgendar={() => {
-              setEditando('visita');
-            }}
-          />
-
+            <AvanceDelContacto
+              proyecto={proyecto}
+              etapa={etapa}
+              situacion={situacion}
+              cobrado={resumen.cobrado}
+              conOpciones={opcionesDelProyecto(replica, proyecto.id).length > 0}
+              alAgendar={() => {
+                setEditando('visita');
+              }}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-5">
           <OpcionesDelTrabajo proyecto={proyecto} ofreceCargarLaPrimera />
 
           <BloqueDeLaSena
@@ -257,9 +263,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
               Cargar otro pago o un gasto
             </Link>
           </section>
-        </div>
 
-        <div className="flex min-w-0 flex-col gap-5">
           <LoQueHaceFalta proyecto={proyecto} />
 
           <NotasDelProyecto
@@ -289,7 +293,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             </Button>
           </section>
         </div>
-      </div>
+      </PrincipalYApoyo>
 
       <ConSalida valor={editando}>
         {(abierta) => (

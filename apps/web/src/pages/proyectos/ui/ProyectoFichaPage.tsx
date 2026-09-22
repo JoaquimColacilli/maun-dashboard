@@ -43,7 +43,7 @@ import {
   rutaDeCompartir,
   useAvisosDelProyecto,
 } from '@/shared/lib';
-import { Button, Icono, Pagina, PanelDeAvisos } from '@/shared/ui';
+import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 
@@ -273,52 +273,60 @@ export function ProyectoFichaPage() {
         </dl>
       </div>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2 lg:gap-x-11">
-        <div className="flex min-w-0 flex-col gap-5">
-          {(proyecto.estado === 'entregado' || proyecto.estado === 'cobrado') && (
-            <PedirLaOpinion proyecto={proyecto} cliente={cliente} />
-          )}
+      {(proyecto.estado === 'entregado' || proyecto.estado === 'cobrado') && (
+        <div className="mt-5">
+          <PedirLaOpinion proyecto={proyecto} cliente={cliente} />
+        </div>
+      )}
 
-          <BloqueDeLaSena
-            sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
-            propia={senaDelProyecto(proyecto) !== null}
-          />
+      <PrincipalYApoyo
+        apoyoPrimero
+        className="mt-5"
+        apoyo={
+          <div className="flex flex-col gap-5">
+            <BloqueDeLaSena
+              sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
+              propia={senaDelProyecto(proyecto) !== null}
+            />
 
-          <AvanceDeLaObra resumen={resumen} hoy={hoy} />
+            <AvanceDeLaObra resumen={resumen} hoy={hoy} />
 
-          {hayAcciones && (
-            <div className="flex flex-wrap gap-2.5">
-              {puedeCobrar(proyecto.estado) && (
-                <Button
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    void navegar(rutaDeCobro(proyecto.id));
-                  }}
-                >
-                  <Icono nombre="hand-coins" tamano={18} />
-                  {resumen.saldo !== null && resumen.saldo > 0
-                    ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
-                    : 'Cobrar y repartir'}
-                </Button>
-              )}
+            {hayAcciones && (
+              <div className="flex flex-wrap gap-2.5">
+                {puedeCobrar(proyecto.estado) && (
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      void navegar(rutaDeCobro(proyecto.id));
+                    }}
+                  >
+                    <Icono nombre="hand-coins" tamano={18} />
+                    {resumen.saldo !== null && resumen.saldo > 0
+                      ? `Cobrar el saldo de ${formatearPesos(resumen.saldo)}`
+                      : 'Cobrar y repartir'}
+                  </Button>
+                )}
 
-              {puedeCerrarPerdido(proyecto.estado) && (
-                <Button
-                  variant="secundario"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    void navegar(rutaDeCierre(proyecto.id));
-                  }}
-                >
-                  <Icono nombre="x" tamano={16} />
-                  Dar por perdido
-                </Button>
-              )}
+                {puedeCerrarPerdido(proyecto.estado) && (
+                  <Button
+                    variant="secundario"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      void navegar(rutaDeCierre(proyecto.id));
+                    }}
+                  >
+                    <Icono nombre="x" tamano={16} />
+                    Dar por perdido
+                  </Button>
+                )}
 
-              {liquidado && <BotonDeReversion proyecto={proyecto} />}
-            </div>
-          )}
-
+                {liquidado && <BotonDeReversion proyecto={proyecto} />}
+              </div>
+            )}
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-5">
           <OpcionesDelTrabajo proyecto={proyecto} />
 
           <section aria-label="Pagos recibidos">
@@ -437,9 +445,7 @@ export function ProyectoFichaPage() {
               provisoria={enVuelo !== undefined && despiece.modo === 'real'}
             />
           </div>
-        </div>
 
-        <div className="flex min-w-0 flex-col gap-5">
           <CostosDeCotizar proyecto={proyecto} abiertoAlPrincipio={!liquidado} />
 
           <LoQueHaceFalta proyecto={proyecto} />
@@ -484,7 +490,7 @@ export function ProyectoFichaPage() {
 
           <ArchivosDelTrabajo proyectoId={proyecto.id} />
         </div>
-      </div>
+      </PrincipalYApoyo>
     </Pagina>
   );
 }
