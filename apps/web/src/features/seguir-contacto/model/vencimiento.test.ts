@@ -20,6 +20,8 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     visitaHora: '',
     visitaHecha: false,
     sena: null,
+    diaDeLaSena: null,
+    senaEnLaApertura: true,
     notas: '',
     vencimiento: '',
     ...extra,

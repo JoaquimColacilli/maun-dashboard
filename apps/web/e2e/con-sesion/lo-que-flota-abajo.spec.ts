@@ -5,6 +5,7 @@ import {
   contactoPorRpc,
   crearCliente,
   guardarProyectoPorRpc,
+  hoyEnElTaller,
   iniciarSesionDePrueba,
   vaciarTaller,
   type SesionDePrueba,
@@ -108,7 +109,7 @@ async function sembrar(): Promise<Taller> {
     await crearCliente(sesion, `E2E Cliente ${String(indice + 1)}`);
   }
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyEnElTaller();
   const obraId = crypto.randomUUID();
   await guardarProyectoPorRpc(sesion, {
     proyecto: {

@@ -156,6 +156,27 @@ const PARA_TODOS: Readonly<Record<string, (contexto: ContextoDelRechazo) => Rech
       'Tildá la que te aprobaron, y si querés escribir el presupuesto a mano, sacá las opciones primero. Solo se puede tildar una.',
     codigo: '',
   }),
+  MN016: (contexto) => ({
+    titulo:
+      contexto.operacion === 'cobro' || contexto.operacion === 'cierre'
+        ? 'Falta el día del cobro.'
+        : 'A un pago le falta el día.',
+    queHacer:
+      'No se guardó nada. Poné el día en que entró la plata y volvé a guardarlo: la fecha no se inventa.',
+    codigo: '',
+  }),
+  MN017: () => ({
+    titulo: 'Esa fecha todavía no llegó.',
+    queHacer:
+      'No se guardó nada. Poné el día en que entró la plata, que tiene que ser hoy o antes, y volvé a guardarlo.',
+    codigo: '',
+  }),
+  MN018: () => ({
+    titulo: 'Esa plata no es de antes de que empezaras con la app.',
+    queHacer:
+      'Solo lo que entró antes de la apertura puede estar en tus saldos de arranque. Destildá esa opción, o revisá la fecha, y volvé a guardarlo.',
+    codigo: '',
+  }),
   MN008: (contexto) => ({
     titulo: 'Esta app quedó vieja y no saca la misma cuenta que el servidor.',
     queHacer:

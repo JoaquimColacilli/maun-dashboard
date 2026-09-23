@@ -8,12 +8,14 @@ import {
   pagosDelProyecto,
   type Proyecto,
 } from '@/entities/proyecto';
+import { CasillaDeLaApertura } from '@/entities/movimiento';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { filasDe, mensajeDeSincronizacion } from '@/shared/api';
-import { formatearPesos, hoyLocal, metaDeAvisos, uuidv7 } from '@/shared/lib';
+import { aperturaDeLaReplica, filasDe, mensajeDeSincronizacion } from '@/shared/api';
+import { formatearPesos, hoyEnElTaller, metaDeAvisos, uuidv7 } from '@/shared/lib';
 import { Button, Campo, FilaDeAcciones, Hoja, MoneyInput } from '@/shared/ui';
 
 import {
+  diaDeLaSena,
   erroresDelContacto,
   etiquetaDeLaVisita,
   hayCambiosEnElContacto,
@@ -46,7 +48,8 @@ export function HojaDeContacto({
   const replica = useReplicaDelTaller();
   const idCampos = useId();
   const cuerpo = useRef<HTMLDivElement>(null);
-  const hoy = hoyLocal();
+  const hoy = hoyEnElTaller();
+  const apertura = aperturaDeLaReplica(replica);
 
   const clientes = filasDe(replica, 'clientes');
   const pagos = proyecto === undefined ? [] : pagosDelProyecto(replica, proyecto.id);
@@ -105,7 +108,7 @@ export function HojaDeContacto({
 
   function enviar(evento: SyntheticEvent<HTMLFormElement>): void {
     evento.preventDefault();
-    const encontrados = erroresDelContacto(valores, telefonoVisible);
+    const encontrados = erroresDelContacto(valores, telefonoVisible, hoy);
     setErrores(encontrados);
     if (Object.values(encontrados).some((mensaje) => mensaje !== undefined)) return;
 
@@ -125,6 +128,7 @@ export function HojaDeContacto({
       sena,
       idDeSenaNueva: alAbrir.current.idDeSenaNueva,
       hoy,
+      apertura,
     });
 
     if (!hayQueGuardar(proyecto, pedido)) {
@@ -248,6 +252,34 @@ export function HojaDeContacto({
                   }}
                   ayuda="Lo que te dejó en la visita. Entra a la caja del taller."
                 />
+              )}
+
+              {pagos.length <= 1 && (valores.sena ?? 0) > 0 && (
+                <div className="flex flex-col gap-1">
+                  <Campo
+                    etiqueta="Día de la seña"
+                    type="date"
+                    max={hoy}
+                    value={diaDeLaSena(valores, hoy)}
+                    onChange={(evento) => {
+                      cambiar('diaDeLaSena', evento.target.value);
+                    }}
+                    error={errores.diaDeLaSena}
+                    ayuda={
+                      errores.diaDeLaSena === undefined && valores.diaDeLaSena === null
+                        ? 'El de la visita si ya fue, y si no, hoy. Cambialo si te la dio otro día.'
+                        : undefined
+                    }
+                  />
+                  <CasillaDeLaApertura
+                    fecha={diaDeLaSena(valores, hoy)}
+                    apertura={apertura}
+                    marcada={valores.senaEnLaApertura}
+                    alCambiar={(marcada) => {
+                      cambiar('senaEnLaApertura', marcada);
+                    }}
+                  />
+                </div>
               )}
             </div>
 

@@ -15,7 +15,9 @@ import {
   type Proyecto,
   type SituacionDelContacto,
 } from '@/entities/proyecto';
+import { useReplicaDelTaller } from '@/entities/replica';
 import {
+  aperturaDeLaReplica,
   mensajeDeSincronizacion,
   type CambiosDeProyecto,
   type PagoParaGuardar,
@@ -68,6 +70,7 @@ export function AvanceDelContacto({
   alAgendar,
 }: AvanceDelContactoProps) {
   const navegar = useNavigate();
+  const apertura = aperturaDeLaReplica(useReplicaDelTaller());
   const guardar = useMutation({
     ...MUTACION_DE_PROYECTO,
     meta: metaDeAvisos('contactoAvanzado', { errorEnPantalla: true, sujeto: proyecto.titulo }),
@@ -136,6 +139,7 @@ export function AvanceDelContacto({
         <FormularioDelRelevamiento
           proyecto={proyecto}
           conPago={cobrado === 0}
+          apertura={apertura}
           alListo={(cambios, dia, pagos) => {
             mover(cambios, dia, pagos);
           }}
@@ -154,12 +158,12 @@ export function AvanceDelContacto({
         />
       ) : formulario === 'pasar-a-presupuestar' ? (
         <FormularioDelPago
-          alListo={(monto) => {
-            const hoy = hoyLocal();
+          apertura={apertura}
+          alListo={(monto, dia, yaEnLaApertura) => {
             mover(
-              cambiosAlPasarAPresupuestar(proyecto, hoy),
+              cambiosAlPasarAPresupuestar(proyecto, hoyLocal()),
               undefined,
-              pagoAntesDePresupuestar(monto, uuidv7(), hoy),
+              pagoAntesDePresupuestar(monto, uuidv7(), dia, yaEnLaApertura),
             );
           }}
           alCancelar={cerrarElFormulario}

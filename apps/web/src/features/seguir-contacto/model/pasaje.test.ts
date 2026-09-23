@@ -67,6 +67,8 @@ function valores(extra: Partial<ValoresDelPasaje> = {}): ValoresDelPasaje {
     inicio: HOY,
     entrega: '2026-10-15',
     direccion: '  Belgrano 123  ',
+    diaDeLaSena: HOY,
+    senaEnLaApertura: false,
     ...extra,
   };
 }
@@ -225,19 +227,55 @@ describe('la seña que se carga al aprobar', () => {
     expect(resumenDelPasaje(null, 0, 300_000_000).saldo).toBeNull();
   });
 
-  it('el pago entra en el mismo guardado que la aprobación, con la fecha de inicio', () => {
+  it('el pago entra en el mismo guardado que la aprobación, con el día en que entró la seña y no con el de inicio', () => {
     const { pedido } = guardadoDelPasaje(
       CONTACTO,
       [],
-      valores({ presupuesto: LOS_DOS, sena: 115_000_000, inicio: '2026-09-20' }),
+      valores({
+        presupuesto: LOS_DOS,
+        sena: 115_000_000,
+        inicio: '2026-09-28',
+        diaDeLaSena: '2026-09-18',
+      }),
       HOY,
       PAGO,
     );
 
     expect(pedido.pagos).toEqual([
-      { id: PAGO, fecha: '2026-09-20', concepto: 'Seña', monto_centavos: 115_000_000 },
+      {
+        id: PAGO,
+        fecha: '2026-09-18',
+        concepto: 'Seña',
+        monto_centavos: 115_000_000,
+        ya_en_la_apertura: false,
+      },
     ]);
-    expect(pedido.datos).toMatchObject({ estado: 'en_curso', fecha_inicio: '2026-09-20' });
+    expect(pedido.datos).toMatchObject({ estado: 'en_curso', fecha_inicio: '2026-09-28' });
+  });
+
+  it('una seña de antes de la apertura viaja con la marca de que ya estaba en los saldos', () => {
+    const { pedido } = guardadoDelPasaje(
+      CONTACTO,
+      [],
+      valores({
+        presupuesto: LOS_DOS,
+        sena: 1_000,
+        diaDeLaSena: '2026-07-20',
+        senaEnLaApertura: true,
+      }),
+      HOY,
+      PAGO,
+    );
+
+    expect(pedido.pagos).toEqual([
+      {
+        id: PAGO,
+        fecha: '2026-07-20',
+        concepto: 'Seña',
+        monto_centavos: 1_000,
+        ya_en_la_apertura: true,
+      },
+    ]);
   });
 
   it('con opciones, el pago viaja junto con la opción que se aprueba', () => {
@@ -252,7 +290,7 @@ describe('la seña que se carga al aprobar', () => {
     );
 
     expect(pedido.pagos).toEqual([
-      { id: PAGO, fecha: HOY, concepto: 'Seña', monto_centavos: 1_000 },
+      { id: PAGO, fecha: HOY, concepto: 'Seña', monto_centavos: 1_000, ya_en_la_apertura: false },
     ]);
     expect(pedido.opciones).toEqual([
       { id: 'a', descripcion: 'Opción a', monto_centavos: SOLO_ALAN, aprobada: false },
@@ -269,16 +307,24 @@ describe('la seña que se carga al aprobar', () => {
     ).toEqual([]);
   });
 
-  it('sin fecha de inicio, el pago queda con el día de hoy', () => {
+  it('sin fecha de inicio, la seña sigue con su día', () => {
     const { pedido } = guardadoDelPasaje(
       CONTACTO,
       [],
-      valores({ presupuesto: 1, sena: 500, inicio: '' }),
+      valores({ presupuesto: 1, sena: 500, inicio: '', diaDeLaSena: '2026-09-10' }),
       HOY,
       PAGO,
     );
 
-    expect(pedido.pagos).toEqual([{ id: PAGO, fecha: HOY, concepto: 'Seña', monto_centavos: 500 }]);
+    expect(pedido.pagos).toEqual([
+      {
+        id: PAGO,
+        fecha: '2026-09-10',
+        concepto: 'Seña',
+        monto_centavos: 500,
+        ya_en_la_apertura: false,
+      },
+    ]);
     expect(pedido.datos.fecha_inicio).toBeNull();
   });
 });

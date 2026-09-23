@@ -35,7 +35,7 @@ import {
   type FormularioDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { filaPorId, filasDe, mensajeDeSincronizacion } from '@/shared/api';
+import { aperturaDeLaReplica, filaPorId, filasDe, mensajeDeSincronizacion } from '@/shared/api';
 import {
   formatearPesos,
   hoyLocal,
@@ -210,11 +210,17 @@ export function PantallaDeProyecto({
 
   const enviar: SubmitHandler<FormularioDeProyecto> = (valores) => {
     const previos = hijosDelProyecto(replica, alAbrir.current.id);
-    const pedido = pedidoDeGuardado(alAbrir.current.id, alAbrir.current.version, valores, {
-      pagos: alAbrir.current.pagos,
-      gastos: alAbrir.current.gastos,
-      opciones: alAbrir.current.opciones,
-    });
+    const pedido = pedidoDeGuardado(
+      alAbrir.current.id,
+      alAbrir.current.version,
+      valores,
+      {
+        pagos: alAbrir.current.pagos,
+        gastos: alAbrir.current.gastos,
+        opciones: alAbrir.current.opciones,
+      },
+      aperturaDeLaReplica(replica),
+    );
 
     setRechazo(null);
     guardar.mutate(
@@ -568,6 +574,7 @@ export function PantallaDeProyecto({
                 errores={errors}
                 campos={pagos}
                 bloqueado={liquidado}
+                apertura={aperturaDeLaReplica(replica)}
               />
               <FilasDinamicas
                 lista="gastos"

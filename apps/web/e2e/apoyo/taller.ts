@@ -2,6 +2,17 @@ import { createHash } from 'node:crypto';
 
 import { entornoDePrueba, type EntornoDePrueba } from './entorno';
 
+const DIA_EN_EL_TALLER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function hoyEnElTaller(ahora: Date = new Date()): string {
+  return DIA_EN_EL_TALLER.format(ahora);
+}
+
 export interface SesionDePrueba {
   entorno: EntornoDePrueba;
   accessToken: string;
@@ -460,6 +471,7 @@ export interface FilaDePago {
   fecha: string;
   concepto: string;
   monto_centavos: number;
+  ya_en_la_apertura: boolean;
 }
 
 export async function pagosDe(
@@ -468,7 +480,7 @@ export async function pagosDe(
 ): Promise<FilaDePago[]> {
   return (await pedir(
     entorno,
-    `/rest/v1/pagos?select=id,fecha,concepto,monto_centavos&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=id`,
+    `/rest/v1/pagos?select=id,fecha,concepto,monto_centavos,ya_en_la_apertura&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=id`,
     { accessToken },
   )) as FilaDePago[];
 }
@@ -493,7 +505,7 @@ export async function contactoPorRpc(
   const { titulo, estado = 'contacto', sena = 0, gasto = 0, visita = null, telefono = '' } = datos;
   const clienteId = await crearCliente(sesion, `Cliente de ${titulo}`, { telefono });
   const id = crypto.randomUUID();
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyEnElTaller();
 
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
@@ -545,6 +557,7 @@ export interface DistribucionCongelada {
   dist_tope_fijos_centavos: number | null;
   dist_fijos_previo_centavos: number | null;
   dist_sueldo_previo_centavos: number | null;
+  reparto_ya_en_la_apertura: boolean;
 }
 
 export async function distribucionDe(
@@ -553,7 +566,7 @@ export async function distribucionDe(
 ): Promise<DistribucionCongelada | undefined> {
   const filas = (await pedir(
     entorno,
-    `/rest/v1/proyectos?select=estado,version,fecha_cobro,dist_cobrado_centavos,dist_gastos_centavos,dist_diezmo_centavos,dist_sueldo_centavos,dist_fijos_centavos,dist_remanente_centavos,dist_tope_fijos_centavos,dist_fijos_previo_centavos,dist_sueldo_previo_centavos&id=eq.${proyectoId}`,
+    `/rest/v1/proyectos?select=estado,version,fecha_cobro,dist_cobrado_centavos,dist_gastos_centavos,dist_diezmo_centavos,dist_sueldo_centavos,dist_fijos_centavos,dist_remanente_centavos,dist_tope_fijos_centavos,dist_fijos_previo_centavos,dist_sueldo_previo_centavos,reparto_ya_en_la_apertura&id=eq.${proyectoId}`,
     { accessToken },
   )) as DistribucionCongelada[];
   return filas[0];

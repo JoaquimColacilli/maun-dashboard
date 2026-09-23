@@ -6,6 +6,7 @@ import {
   crearCliente,
   distribucionDe,
   guardarProyectoPorRpc,
+  hoyEnElTaller,
   iniciarSesionDePrueba,
   leerProyecto,
   vaciarTaller,
@@ -57,7 +58,7 @@ async function proyecto(
         : [
             {
               id: crypto.randomUUID(),
-              fecha: '2026-09-01',
+              fecha: hoyEnElTaller(),
               concepto: 'Seña',
               monto_centavos: pago,
             },
@@ -256,7 +257,7 @@ test('un cobro con el acumulado del mes desactualizado vuelve ajustado y muestra
   await cobrarPorRpc(sesion, {
     p_proyecto_id: uno.id,
     p_version: fila?.version ?? 1,
-    p_fecha_cobro: new Date().toISOString().slice(0, 10),
+    p_fecha_cobro: hoyEnElTaller(),
     p_cobrado_centavos: 70_000_000,
     p_gastos_centavos: 0,
     p_tope_sueldo_centavos: SUELDO,

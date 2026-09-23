@@ -24,6 +24,8 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     visitaHora: '',
     visitaHecha: false,
     sena: null,
+    diaDeLaSena: null,
+    senaEnLaApertura: true,
     notas: '',
     vencimiento: '',
     ...extra,
@@ -155,6 +157,56 @@ describe('pedidoDelContacto', () => {
         fecha: '2026-09-10',
         concepto: CONCEPTO_DE_LA_SENA,
         monto_centavos: 15_000_000,
+        ya_en_la_apertura: false,
+      },
+    ]);
+  });
+
+  it('la seña entra con el día que se elija, y si es de antes de la apertura queda marcada', () => {
+    const pedido = pedidoDelContacto({
+      id: 'p',
+      proyecto: undefined,
+      valores: valores({ visita: '2026-09-10', sena: 15_000_000, diaDeLaSena: '2026-07-02' }),
+      sena: undefined,
+      idDeSenaNueva: 'nueva',
+      hoy: HOY,
+      apertura: '2026-09-11',
+    });
+    expect(pedido.pagos[0]).toMatchObject({ fecha: '2026-07-02', ya_en_la_apertura: true });
+
+    const destildada = pedidoDelContacto({
+      id: 'p',
+      proyecto: undefined,
+      valores: valores({
+        sena: 15_000_000,
+        diaDeLaSena: '2026-07-02',
+        senaEnLaApertura: false,
+      }),
+      sena: undefined,
+      idDeSenaNueva: 'nueva',
+      hoy: HOY,
+      apertura: '2026-09-11',
+    });
+    expect(destildada.pagos[0]).toMatchObject({ ya_en_la_apertura: false });
+  });
+
+  it('corregir el día de una seña ya cargada la manda de nuevo, con el mismo id', () => {
+    const fila = proyecto({ estado: 'a_presupuestar' });
+    const pedido = pedidoDelContacto({
+      id: 'p',
+      proyecto: fila,
+      valores: { ...valoresDelContacto(fila, pago()), diaDeLaSena: '2026-09-05' },
+      sena: pago(),
+      idDeSenaNueva: 'x',
+      hoy: HOY,
+    });
+    expect(pedido.pagos).toEqual([
+      {
+        id: 'sena',
+        fecha: '2026-09-05',
+        concepto: CONCEPTO_DE_LA_SENA,
+        monto_centavos: 15_000_000,
+        ya_en_la_apertura: false,
       },
     ]);
   });
@@ -217,6 +269,7 @@ describe('pedidoDelContacto', () => {
         fecha: '2026-09-08',
         concepto: CONCEPTO_DE_LA_SENA,
         monto_centavos: 18_000_000,
+        ya_en_la_apertura: false,
       },
     ]);
   });
@@ -376,15 +429,15 @@ describe('senaEditable', () => {
 
 describe('erroresDelContacto', () => {
   it('pide cliente y qué pide, y nada más es obligatorio', () => {
-    expect(erroresDelContacto(valores({ clienteId: '', titulo: ' ' }), '')).toEqual({
+    expect(erroresDelContacto(valores({ clienteId: '', titulo: ' ' }), '', HOY)).toEqual({
       cliente: 'Elegí un cliente, o escribí su nombre para crearlo.',
       titulo: 'Contá qué pide, aunque sea en dos palabras.',
     });
-    expect(erroresDelContacto(valores(), '')).toEqual({});
+    expect(erroresDelContacto(valores(), '', HOY)).toEqual({});
   });
 
   it('la seña ya llega en centavos, así que no hay seña mal escrita que frenar, y cero es no tener seña', () => {
-    expect(erroresDelContacto(valores({ sena: 0 }), '')).toEqual({});
+    expect(erroresDelContacto(valores({ sena: 0 }), '', HOY)).toEqual({});
     const pedido = pedidoDelContacto({
       id: 'p',
       proyecto: undefined,
@@ -394,5 +447,15 @@ describe('erroresDelContacto', () => {
       hoy: HOY,
     });
     expect(pedido.pagos).toEqual([]);
+  });
+
+  it('una seña con un día que todavía no llegó no se guarda', () => {
+    expect(
+      erroresDelContacto(valores({ sena: 1_000, diaDeLaSena: '2026-09-13' }), '', HOY),
+    ).toEqual({ diaDeLaSena: 'Esa fecha todavía no llegó: tiene que ser hoy o antes.' });
+    expect(erroresDelContacto(valores({ sena: 1_000, diaDeLaSena: '' }), '', HOY)).toEqual({
+      diaDeLaSena: 'Poné el día en que entró la plata.',
+    });
+    expect(erroresDelContacto(valores({ sena: 1_000, visita: '2026-09-20' }), '', HOY)).toEqual({});
   });
 });

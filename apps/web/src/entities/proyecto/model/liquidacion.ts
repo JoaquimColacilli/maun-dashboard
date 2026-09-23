@@ -33,6 +33,7 @@ export interface AjusteDeLaLiquidacion {
 export function pedidoDeLiquidacion(
   proyecto: Proyecto,
   liquidacion: Liquidacion,
+  yaEnLaApertura = false,
 ): PedidoDeLiquidacion {
   return {
     proyectoId: proyecto.id,
@@ -50,6 +51,7 @@ export function pedidoDeLiquidacion(
     remanenteCentavos: liquidacion.remanente,
     sueldoPrevioCentavos: liquidacion.previo.sueldo,
     fijosPrevioCentavos: liquidacion.previo.fijos,
+    yaEnLaApertura,
   };
 }
 
@@ -66,6 +68,7 @@ export function filaLiquidada(
   proyecto: Proyecto,
   liquidacion: Liquidacion,
   liquidadaEn: string,
+  yaEnLaApertura = false,
 ): Proyecto {
   return {
     ...proyecto,
@@ -88,6 +91,7 @@ export function filaLiquidada(
     dist_sueldo_previo_centavos: liquidacion.previo.sueldo,
     dist_fijos_previo_centavos: liquidacion.previo.fijos,
     dist_liquidado_at: liquidadaEn,
+    reparto_ya_en_la_apertura: yaEnLaApertura,
     reapertura_objetivo_sueldo_centavos: null,
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
@@ -112,6 +116,8 @@ export function filaRevertida(
     reapertura_objetivo_fijos_centavos: desdeUnCobro ? proyecto.dist_objetivo_fijos_centavos : null,
     reapertura_sueldo_mensual: desdeUnCobro ? proyecto.dist_sueldo_mensual : null,
     reapertura_fecha_cobro: desdeUnCobro ? proyecto.fecha_cobro : null,
+    reparto_ya_en_la_apertura:
+      desdeUnCobro && (proyecto as Partial<Proyecto>).reparto_ya_en_la_apertura === true,
     fecha_cobro: null,
     dist_cobrado_centavos: null,
     dist_gastos_centavos: null,

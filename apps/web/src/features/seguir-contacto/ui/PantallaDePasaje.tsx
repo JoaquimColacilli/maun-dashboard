@@ -1,9 +1,10 @@
-import { entregaEstimada, porcentajeDeLaSena } from '@maun/domain';
+import { entregaEstimada, esAnteriorALaApertura, porcentajeDeLaSena } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { CONDICION, EnlaceACliente } from '@/entities/cliente';
+import { CasillaDeLaApertura } from '@/entities/movimiento';
 import {
   COMPROBANTE,
   COMPROBANTES_EN_ORDEN,
@@ -23,14 +24,21 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { ajustesDe, mensajeDeSincronizacion } from '@/shared/api';
-import { formatearPesos, formatearPorcentaje, hoyLocal, uuidv7 } from '@/shared/lib';
+import { ajustesDe, aperturaDeLaReplica, mensajeDeSincronizacion } from '@/shared/api';
+import {
+  errorDeLaFechaDeLaPlata,
+  formatearPesos,
+  formatearPorcentaje,
+  hoyEnElTaller,
+  uuidv7,
+} from '@/shared/lib';
 import { Button, Campo, CamposJuntos, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 import {
   errorDelPasaje,
   formaSugerida,
   guardadoDelPasaje,
+  haySenaAhora,
   presupuestoDelPasaje,
   resumenDelPasaje,
   senaDelPasaje,
@@ -49,7 +57,8 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const idCampos = useId();
   const replica = useReplicaDelTaller();
   const { proyecto, cliente } = resumen;
-  const hoy = hoyLocal();
+  const hoy = hoyEnElTaller();
+  const apertura = aperturaDeLaReplica(replica);
 
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const [rechazo, setRechazo] = useState<unknown>(null);
@@ -95,6 +104,10 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const [senaAMano, setSenaAMano] = useState(false);
   const cuenta = resumenDelPasaje(aprobado, resumen.cobrado, sena);
   const [idDelPago] = useState(uuidv7);
+  const [diaDeLaSena, setDiaDeLaSena] = useState(hoy);
+  const [senaMarcada, setSenaMarcada] = useState(true);
+  const [errorDelDia, setErrorDelDia] = useState<string | undefined>(undefined);
+  const campoDelDia = useRef<HTMLInputElement>(null);
 
   function elegirOpcion(id: string): void {
     setOpcion(id);
@@ -130,13 +143,30 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
       (hayOpciones ? primeraOpcion : campoDelPresupuesto).current?.focus();
       return;
     }
+    const delDia = haySenaAhora(sena) ? errorDeLaFechaDeLaPlata(diaDeLaSena, hoy) : undefined;
+    setErrorDelDia(delDia);
+    if (delDia !== undefined) {
+      campoDelDia.current?.focus();
+      return;
+    }
 
     setRechazo(null);
     guardar.mutate(
       guardadoDelPasaje(
         proyecto,
         opciones,
-        { presupuesto, opcion, sena, forma, comprobante, inicio, entrega, direccion },
+        {
+          presupuesto,
+          opcion,
+          sena,
+          forma,
+          comprobante,
+          inicio,
+          entrega,
+          direccion,
+          diaDeLaSena,
+          senaEnLaApertura: esAnteriorALaApertura(diaDeLaSena, apertura) && senaMarcada,
+        },
         hoy,
         idDelPago,
       ),
@@ -182,8 +212,31 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
       <p id={`${idCampos}-sena-ayuda`} className="text-meta leading-normal text-text-3">
         {esperada.situacion === 'cubierta'
           ? `Con lo que ya cobraste la seña está cubierta. Dejalo en blanco si hoy no cobrás nada más.`
-          : `Entra como un pago del trabajo, con la fecha de inicio y la forma de pago de acá. Si todavía no cobraste, dejalo en blanco.`}
+          : `Entra como un pago del trabajo, con el día en que te la dieron y la forma de pago de acá. Si todavía no cobraste, dejalo en blanco.`}
       </p>
+      {haySenaAhora(sena) && (
+        <>
+          <Campo
+            ref={campoDelDia}
+            etiqueta="Día en que entró la seña"
+            type="date"
+            contenedor="mt-2"
+            max={hoy}
+            value={diaDeLaSena}
+            error={errorDelDia}
+            onChange={(evento) => {
+              setDiaDeLaSena(evento.target.value);
+              setErrorDelDia(undefined);
+            }}
+          />
+          <CasillaDeLaApertura
+            fecha={diaDeLaSena}
+            apertura={apertura}
+            marcada={senaMarcada}
+            alCambiar={setSenaMarcada}
+          />
+        </>
+      )}
     </div>
   );
 

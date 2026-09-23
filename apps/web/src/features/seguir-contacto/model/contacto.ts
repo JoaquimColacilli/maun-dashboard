@@ -1,4 +1,8 @@
-import { vencimientoDelPresupuesto, type EstadoProyecto } from '@maun/domain';
+import {
+  esAnteriorALaApertura,
+  vencimientoDelPresupuesto,
+  type EstadoProyecto,
+} from '@maun/domain';
 
 import {
   cambiaLaFila,
@@ -17,7 +21,7 @@ import {
   type PagoParaGuardar,
   type ProyectoParaGuardar,
 } from '@/shared/api';
-import { fechaDelEnlace, hayCambios } from '@/shared/lib';
+import { errorDeLaFechaDeLaPlata, fechaDelEnlace, hayCambios } from '@/shared/lib';
 
 export const CONCEPTO_DE_LA_SENA = 'Seña de la visita';
 
@@ -28,6 +32,8 @@ export interface ValoresDelContacto {
   visitaHora: string;
   visitaHecha: boolean;
   sena: number | null;
+  diaDeLaSena: string | null;
+  senaEnLaApertura: boolean;
   notas: string;
   vencimiento: string;
 }
@@ -36,6 +42,7 @@ export interface ErroresDelContacto {
   cliente?: string;
   titulo?: string;
   telefono?: string;
+  diaDeLaSena?: string;
   notas?: string;
 }
 
@@ -55,6 +62,9 @@ export function valoresDelContacto(
     visitaHora: proyecto === undefined ? '' : (horaDeLaVisita(proyecto) ?? ''),
     visitaHecha: proyecto === undefined ? false : visitaHecha(proyecto),
     sena: sena === undefined ? null : sena.monto_centavos,
+    diaDeLaSena: sena === undefined ? null : sena.fecha,
+    senaEnLaApertura:
+      sena === undefined ? true : (sena as Partial<Pago>).ya_en_la_apertura === true,
     notas: proyecto?.notas ?? '',
     vencimiento: proyecto?.vencimiento_presupuesto ?? '',
   };
@@ -151,9 +161,16 @@ function visitaHechaAlGuardar(
   return quedaAPresupuestarPorLaFecha || valores.visitaHecha;
 }
 
+export function diaDeLaSena(valores: ValoresDelContacto, hoy: string): string {
+  if (valores.diaDeLaSena !== null) return valores.diaDeLaSena;
+  const visita = fechaDelEnlace(valores.visita.trim());
+  return visita !== undefined && visita <= hoy ? visita : hoy;
+}
+
 export function erroresDelContacto(
   valores: ValoresDelContacto,
   telefono: string,
+  hoy: string,
 ): ErroresDelContacto {
   const errores: ErroresDelContacto = {};
   const titulo = valores.titulo.trim();
@@ -165,6 +182,10 @@ export function erroresDelContacto(
   else if (titulo.length > 200) errores.titulo = 'No puede pasar de 200 caracteres.';
   if (telefono.trim().length > 200) errores.telefono = 'No puede pasar de 200 caracteres.';
   if (valores.notas.trim().length > 10_000) errores.notas = 'Las notas son demasiado largas.';
+  if ((valores.sena ?? 0) > 0) {
+    const delDia = errorDeLaFechaDeLaPlata(diaDeLaSena(valores, hoy), hoy);
+    if (delDia !== undefined) errores.diaDeLaSena = delDia;
+  }
   return errores;
 }
 
@@ -195,23 +216,38 @@ function pagosDeLaSena(
   sena: Pago | undefined,
   idDeSenaNueva: string,
   hoy: string,
+  apertura: string | null,
 ): PagoParaGuardar[] {
   const monto = valores.sena ?? 0;
+  const fecha = valores.diaDeLaSena ?? sena?.fecha ?? diaDeLaSena(valores, hoy);
+  const enLaApertura = valores.senaEnLaApertura && esAnteriorALaApertura(fecha, apertura);
 
   if (sena !== undefined) {
     if (monto === 0) return [{ id: sena.id, borrado: true }];
-    if (monto === sena.monto_centavos) return [];
-    return [{ id: sena.id, fecha: sena.fecha, concepto: sena.concepto, monto_centavos: monto }];
+    const igual =
+      monto === sena.monto_centavos &&
+      fecha === sena.fecha &&
+      enLaApertura === ((sena as Partial<Pago>).ya_en_la_apertura === true);
+    if (igual) return [];
+    return [
+      {
+        id: sena.id,
+        fecha,
+        concepto: sena.concepto,
+        monto_centavos: monto,
+        ya_en_la_apertura: enLaApertura,
+      },
+    ];
   }
 
   if (monto === 0) return [];
-  const visita = valores.visita.trim();
   return [
     {
       id: idDeSenaNueva,
-      fecha: visita !== '' && visita <= hoy ? visita : hoy,
+      fecha,
       concepto: CONCEPTO_DE_LA_SENA,
       monto_centavos: monto,
+      ya_en_la_apertura: enLaApertura,
     },
   ];
 }
@@ -223,6 +259,7 @@ export interface EntradaDelContacto {
   sena: Pago | undefined;
   idDeSenaNueva: string;
   hoy: string;
+  apertura?: string | null;
 }
 
 export function pedidoDelContacto({
@@ -232,6 +269,7 @@ export function pedidoDelContacto({
   sena,
   idDeSenaNueva,
   hoy,
+  apertura = null,
 }: EntradaDelContacto): ProyectoParaGuardar {
   const base =
     proyecto === undefined ? DATOS_DE_UN_CONTACTO_NUEVO : datosActualesDelProyecto(proyecto);
@@ -254,7 +292,7 @@ export function pedidoDelContacto({
       notas: valores.notas.trim(),
       vencimiento_presupuesto: vencimientoDelContacto(proyecto, estado, valores, hoy),
     },
-    pagos: pagosDeLaSena(valores, sena, idDeSenaNueva, hoy),
+    pagos: pagosDeLaSena(valores, sena, idDeSenaNueva, hoy, apertura),
     gastos: [],
   };
 }

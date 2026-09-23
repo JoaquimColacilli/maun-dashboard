@@ -18,13 +18,16 @@ export {
   diasHasta,
   diaYMes,
   diaYMesCorto,
+  errorDeLaFechaDeLaPlata,
   fechaLarga,
   haceCuanto,
+  hoyEnElTaller,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
   nombreDelMes,
   relativa,
+  ZONA_DEL_TALLER,
 } from './fechas';
 export {
   alternar,

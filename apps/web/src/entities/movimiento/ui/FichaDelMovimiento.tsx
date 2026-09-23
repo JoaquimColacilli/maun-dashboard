@@ -47,6 +47,18 @@ export function FichaDelMovimiento({ linea, hoy, alCerrar }: FichaDelMovimientoP
           {linea.categoria !== '' && <Dato etiqueta="Categoría">{linea.categoria}</Dato>}
         </dl>
 
+        {linea.yaEnLaApertura && (
+          <div className="flex items-start gap-2.5 rounded-field bg-surface px-3.5 py-3">
+            <span aria-hidden className="mt-0.5 flex-none text-text-2">
+              <Icono nombre="history" tamano={18} />
+            </span>
+            <p className="text-label leading-relaxed text-text-2">
+              Es de antes de que empezaras con la app: esta plata ya estaba en tus saldos, así que
+              queda anotada con su fecha pero no mueve los tesoros.
+            </p>
+          </div>
+        )}
+
         {motivo !== null && (
           <div className="flex items-start gap-2.5 rounded-field bg-surface px-3.5 py-3">
             <span aria-hidden className="mt-0.5 flex-none text-text-2">

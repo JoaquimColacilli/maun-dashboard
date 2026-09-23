@@ -10,7 +10,7 @@ import {
   type Proyecto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { fechaLarga, formatearPesos, hoyLocal } from '@/shared/lib';
+import { fechaLarga, formatearPesos, hoyEnElTaller } from '@/shared/lib';
 import { Button, FilaDeAcciones, Icono } from '@/shared/ui';
 
 const POR_DEFECTO: EstadoProyecto = 'presupuesto_enviado';
@@ -75,13 +75,18 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
       </h3>
 
       <p className="mt-1.5 text-label leading-relaxed text-text-2">
-        {diezmo > 0 || sueldo > 0 ? (
+        {proyecto.reparto_ya_en_la_apertura && (diezmo > 0 || sueldo > 0) ? (
+          <>
+            Este reparto ya estaba en tus saldos cuando empezaste con la app, así que deshacerlo no
+            mueve plata de los tesoros. Los pagos y los gastos vuelven a poder editarse.
+          </>
+        ) : diezmo > 0 || sueldo > 0 ? (
           <>
             Se deshace el reparto: vuelven {formatearPesos(diezmo)} del diezmo y{' '}
             {formatearPesos(sueldo)} del hogar a la caja del taller.{' '}
             {proyecto.fecha_cobro !== null && (
               <>
-                El mes de {fechaLarga(proyecto.fecha_cobro, hoyLocal())} deja de contar esta
+                El mes de {fechaLarga(proyecto.fecha_cobro, hoyEnElTaller())} deja de contar esta
                 liquidación, y el que le falte de costos fijos queda a la vista.
               </>
             )}
@@ -96,13 +101,12 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
 
       {esCobro ? (
         <p className="mt-2 text-meta leading-relaxed text-text-3">
-          Vuelve a <strong>Entregado</strong>. Cuando lo vuelvas a cobrar, se usan la fecha y los
-          objetivos de este cobro
+          Vuelve a <strong>Entregado</strong>. Cuando lo vuelvas a cobrar, el día de este cobro
           {proyecto.fecha_cobro !== null
-            ? ` (${fechaLarga(proyecto.fecha_cobro, hoyLocal())})`
-            : ''}
-          : corregir un gasto no te reescribe el sueldo con los ajustes de hoy ni te cambia el cobro
-          de mes.
+            ? ` (${fechaLarga(proyecto.fecha_cobro, hoyEnElTaller())})`
+            : ''}{' '}
+          viene puesto y lo podés corregir. Los objetivos siguen siendo los de este cobro: corregir
+          un gasto no te reescribe el sueldo con los ajustes de hoy.
         </p>
       ) : (
         <>
@@ -126,7 +130,7 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
           <p className="mt-2 text-meta leading-relaxed text-text-3">
             A diferencia de reabrir un cobro, esto <strong>no guarda la fecha</strong>: un
             presupuesto que revive está vivo otra vez, y si más adelante lo volvés a dar por perdido
-            es un cierre nuevo, con la fecha de ese día y los ajustes de ese momento.
+            es un cierre nuevo, con el día que elijas y los ajustes de ese momento.
           </p>
         </>
       )}

@@ -1,4 +1,9 @@
-import { ESTADOS, puedeCambiarEstado, type EstadoProyecto } from '@maun/domain';
+import {
+  esAnteriorALaApertura,
+  ESTADOS,
+  puedeCambiarEstado,
+  type EstadoProyecto,
+} from '@maun/domain';
 import { z } from 'zod';
 
 import {
@@ -14,7 +19,14 @@ import {
   type PagoParaGuardar,
   type ProyectoParaGuardar,
 } from '@/shared/api';
-import { formatearPorcentaje, hoyLocal, parsearPorcentaje, SENA_MAXIMA_BP } from '@/shared/lib';
+import {
+  errorDeLaFechaDeLaPlata,
+  formatearPorcentaje,
+  hoyEnElTaller,
+  hoyLocal,
+  parsearPorcentaje,
+  SENA_MAXIMA_BP,
+} from '@/shared/lib';
 
 import {
   COMPROBANTES_EN_ORDEN,
@@ -46,6 +58,14 @@ const filaDinamica = z.object({
   fecha: z.string().min(1, { error: 'Poné la fecha.' }),
   detalle: texto(500),
   monto,
+  enLaApertura: z.boolean(),
+});
+
+const filaDePago = filaDinamica.extend({
+  fecha: z.string().superRefine((valor, contexto) => {
+    const error = errorDeLaFechaDeLaPlata(valor, hoyEnElTaller());
+    if (error !== undefined) contexto.addIssue({ code: 'custom', message: error });
+  }),
 });
 
 const filaDeOpcion = z.object({
@@ -84,7 +104,7 @@ export const esquemaDeProyecto = z.object({
   direccion_entrega: texto(500),
   notas: texto(10_000),
   vencimiento_presupuesto: z.string(),
-  pagos: z.array(filaDinamica),
+  pagos: z.array(filaDePago),
   gastos: z.array(filaDinamica),
   opciones: z.array(filaDeOpcion),
 });
@@ -106,8 +126,8 @@ function fechaOnNull(valor: string): string | null {
   return valor.trim() === '' ? null : valor;
 }
 
-export function filaVacia(id: string, hoy: string = hoyLocal()): FilaDinamica {
-  return { id, fecha: hoy, detalle: '', monto: null };
+export function filaVacia(id: string, hoy: string = hoyEnElTaller()): FilaDinamica {
+  return { id, fecha: hoy, detalle: '', monto: null, enLaApertura: true };
 }
 
 export function opcionVacia(id: string): FilaDeOpcion {
@@ -197,12 +217,14 @@ export function valoresDelFormulario(
       fecha: pago.fecha,
       detalle: pago.concepto,
       monto: pago.monto_centavos,
+      enLaApertura: (pago as Partial<Pago>).ya_en_la_apertura === true,
     })),
     gastos: gastos.map((gasto) => ({
       id: gasto.id,
       fecha: gasto.fecha,
       detalle: gasto.descripcion,
       monto: gasto.monto_centavos,
+      enLaApertura: false,
     })),
     opciones: opciones.map((opcion) => ({
       id: opcion.id,
@@ -260,6 +282,7 @@ export function pedidoDeGuardado(
   version: number | null,
   valores: FormularioDeProyecto,
   existentes: { pagos: readonly string[]; gastos: readonly string[]; opciones: readonly string[] },
+  apertura: string | null = null,
 ): ProyectoParaGuardar {
   const monto = (valor: number | null) => valor ?? 0;
 
@@ -268,6 +291,7 @@ export function pedidoDeGuardado(
     fecha: fila.fecha,
     concepto: fila.detalle.trim(),
     monto_centavos: monto(fila.monto),
+    ya_en_la_apertura: fila.enLaApertura && esAnteriorALaApertura(fila.fecha, apertura),
   }));
 
   const gastos: GastoParaGuardar[] = valores.gastos.map((fila) => ({
