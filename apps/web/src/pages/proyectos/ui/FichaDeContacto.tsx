@@ -90,7 +90,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
     proyecto.estado === 'presupuesto_enviado' || proyecto.estado === 'presupuesto_estimativo';
 
   return (
-    <Pagina ancho="ficha">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to={RUTA_DE_SEGUIMIENTO}

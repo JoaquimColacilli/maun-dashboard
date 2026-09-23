@@ -383,7 +383,7 @@ export function InicioPage() {
   ];
 
   return (
-    <Pagina ancho="tablero" className="gap-4">
+    <Pagina className="gap-4">
       <header className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>

@@ -180,7 +180,7 @@ export function Marco() {
         ref={principal}
         tabIndex={-1}
         style={{ paddingBottom: `${String(holgura.contenido)}px` }}
-        className="min-h-0 flex-1 overflow-y-auto outline-none [--inicio-de-la-pagina:0px] [scrollbar-gutter:stable]"
+        className="min-h-0 flex-1 overflow-y-auto outline-none [scrollbar-gutter:stable_both-edges]"
       >
         {ancho === 'movil' && (
           <TirarParaActualizar

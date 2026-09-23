@@ -167,9 +167,6 @@
   --spacing-bottom-nav: var(--bottom-nav-h);
 
   --container-content: var(--content-max);
-  --container-formulario: var(--ancho-formulario);
-  --container-ficha: var(--ancho-ficha);
-  --container-tablero: var(--ancho-tablero);
 }
 
 :root {
@@ -231,10 +228,6 @@
   --page-pad-tablet: 28px;
   --page-pad-desktop: 36px;
   --content-max: 1180px;
-  --ancho-formulario: 60rem;
-  --ancho-ficha: 80rem;
-  --ancho-tablero: 100rem;
-  --inicio-de-la-pagina: auto;
 
   --dur-fast: 120ms;
   --dur-medium: 220ms;

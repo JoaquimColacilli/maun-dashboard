@@ -15,7 +15,7 @@ export { caracteresDe, MontoQueEntra } from './components/MontoQueEntra.tsx';
 export type { MontoQueEntraProps, TamanoDelMonto } from './components/MontoQueEntra.tsx';
 export type { MoneyInputProps } from './components/MoneyInput.tsx';
 export { Pagina } from './components/Pagina.tsx';
-export type { AnchoDePagina, PaginaProps } from './components/Pagina.tsx';
+export type { PaginaProps } from './components/Pagina.tsx';
 export { entraALaVista, PrincipalYApoyo } from './components/PrincipalYApoyo.tsx';
 export type { PrincipalYApoyoProps } from './components/PrincipalYApoyo.tsx';
 export { SeccionEnFila, SeccionesEnFilas } from './components/SeccionesEnFilas.tsx';

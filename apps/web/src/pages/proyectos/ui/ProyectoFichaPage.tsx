@@ -150,7 +150,7 @@ export function ProyectoFichaPage() {
   }
 
   return (
-    <Pagina ancho="ficha">
+    <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to={RUTA_DE_PROYECTOS}

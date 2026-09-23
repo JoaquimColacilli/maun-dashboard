@@ -354,7 +354,7 @@ export function ProyectosPage() {
   }
 
   return (
-    <Pagina ancho="tablero">
+    <Pagina>
       <header className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
         {etapa === 'seguimiento' ? (
