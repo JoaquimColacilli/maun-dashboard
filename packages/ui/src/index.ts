@@ -3,6 +3,8 @@ export type { AvatarProps } from './components/Avatar.tsx';
 export { Button } from './components/Button.tsx';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './components/Button.tsx';
 export { Campo } from './components/Campo.tsx';
+export { CamposJuntos } from './components/CamposJuntos.tsx';
+export type { CampoMinimo, CamposJuntosProps } from './components/CamposJuntos.tsx';
 export type { CampoProps } from './components/Campo.tsx';
 export { CampoDeContrasena } from './components/CampoDeContrasena.tsx';
 export type { CampoDeContrasenaProps } from './components/CampoDeContrasena.tsx';

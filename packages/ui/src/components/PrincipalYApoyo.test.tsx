@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { entraALaVista, PrincipalYApoyo } from './PrincipalYApoyo.tsx';
+import { entraALaVista, PrincipalYApoyo, topeDelApoyo } from './PrincipalYApoyo.tsx';
 
 function Ficha({ apoyoPrimero }: { apoyoPrimero?: boolean }) {
   return (
@@ -56,15 +56,35 @@ describe('PrincipalYApoyo', () => {
     }
   });
 
-  it('el apoyo se pega solo si entra en lo visible, y solo con las dos columnas', () => {
+  it('el apoyo acompaña al scrollear solo con las dos columnas, pegado donde diga su tope', () => {
     render(<Ficha />);
 
     const { apoyo } = columnas();
     expect(apoyo).toHaveClass(
-      '@min-[52rem]/apoyo:data-pegado:sticky',
-      '@min-[52rem]/apoyo:data-pegado:top-5',
+      '@min-[52rem]/apoyo:sticky',
+      '@min-[52rem]/apoyo:top-(--tope-del-apoyo)',
     );
-    expect(apoyo).toHaveAttribute('data-pegado');
+    expect(apoyo).toHaveAttribute('data-pegado', 'arriba');
+    expect(apoyo?.style.getPropertyValue('--tope-del-apoyo')).toBe('20px');
+  });
+
+  it('si entra se pega arriba; si no, se pega por abajo, con su final a la vista', () => {
+    expect(topeDelApoyo(700, 800)).toBe(20);
+    expect(topeDelApoyo(900, 800)).toBe(-120);
+    expect(topeDelApoyo(1400, 1080)).toBe(-340);
+  });
+
+  it('el apoyo amplio pasa a 26rem cuando el área da, del lado que diga el DOM', () => {
+    render(
+      <PrincipalYApoyo amplio apoyo={<p>Saldo y estado</p>}>
+        <p>Pagos y gastos</p>
+      </PrincipalYApoyo>,
+    );
+
+    expect(columnas().grilla).toHaveClass(
+      '@min-[52rem]/apoyo:grid-cols-[minmax(0,1fr)_22.5rem]',
+      '@min-[64rem]/apoyo:grid-cols-[minmax(0,1fr)_26rem]',
+    );
   });
 
   it('cada columna es su propio contexto posicionado, para que lo que lleva sr-only no se escape', () => {
