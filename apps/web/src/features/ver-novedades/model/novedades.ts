@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-22.5',
+    lineas: [
+      'En la compu, Ajustes ya no deja una columna vacía: cada sección va en su renglón, con el título a la izquierda y lo que completás a la derecha.',
+      'Las fichas de los trabajos y de los clientes, Finanzas, Diezmo y la página de tu cliente ponen los pagos y las notas de un lado y el resumen al costado, que te acompaña mientras bajás.',
+      'En una pantalla grande todo arranca al lado del menú, sin la franja vacía en el medio.',
+      'En la página de tu cliente, el logo de Mercado Pago acompaña los datos para transferir siempre que el pago sea por transferencia, aunque no hayas cargado el link.',
+    ],
+  },
+  {
     version: '2026-09-22.4',
     lineas: [
       'En la página que ve tu cliente, un trabajo entregado y pagado muestra el camino completo, con todos los pasos tildados. Antes el último quedaba en amarillo, como si faltara algo.',

@@ -6,7 +6,9 @@ corrección: el QR de pago no va» más abajo, y con ella cae la sección del es
 problema que ya no existe. Revierte la decisión de no ofrecer Mercado Pago que tomaron el
 [0051](0051-cobrar-con-mercado-pago.md) y el [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md),
 por pedido explícito del dueño y con el costo sobre la mesa. Amplía la lista blanca del
-[0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md).
+[0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md). **Corregida el 2026-09-22** en el logo: ya no sale
+solo cuando la cuenta es de Mercado Pago sino siempre que el pago sea por transferencia (ver la
+corrección al final del [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md)).
 
 ## Contexto
 
@@ -154,6 +156,9 @@ cómoda. Y en Ajustes, debajo del campo, el aviso está siempre —no solo cuand
 el número y el enlace a la página de costos de Mercado Pago.
 
 ## El logo, solo cuando la cuenta es de Mercado Pago
+
+> **Corregido el 2026-09-22:** por pedido del dueño el logo sale con la forma de cobro, sea de
+> quien sea la cuenta (ver el final del ADR 0046). Lo que sigue es lo que se había decidido acá.
 
 La objeción 3 de la primera versión quedó cerrada: mostrar el logo al lado de un CBU de banco era
 decirle algo falso a un cliente que está por mandar plata.
