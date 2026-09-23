@@ -3,7 +3,7 @@
 - Estado: aceptada, corregida
 - Fecha: 2026-09-12
 - Corregida el 2026-09-21 por el [ADR 0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md): el mensaje de Inicio sigue leyendo lo mismo que la barra, pero los dos miden contra **un** sueldo por mes, no contra uno por cobro.
-- Corregida el 2026-09-22 por el [ADR 0062](0062-el-reparto-en-la-compu.md): el molde sigue siendo uno, `Pagina`, pero su ancho máximo sale del reparto de cada pantalla y en la app arranca junto al menú en vez de centrarse.
+- Revisada por el [ADR 0062](0062-el-reparto-en-la-compu.md): el molde sigue siendo uno, `Pagina`, con el mismo ancho y centrado en todas las pantallas, y ninguna lo cambia. Una primera versión de ese ADR le había dado un ancho a cada reparto y lo había pegado al menú; se volvió atrás el 2026-09-22.
 
 ## Contexto
 

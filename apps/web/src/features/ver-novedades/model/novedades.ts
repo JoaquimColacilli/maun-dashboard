@@ -5,6 +5,14 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-22.6',
+    lineas: [
+      'En la compu, todas las pantallas vuelven a ir centradas y con el mismo ancho, como antes: ya no queda un espacio vacío grande a la derecha.',
+      'En la página de tu cliente, cómo pagar vuelve a estar arriba a la derecha, junto a los datos del trabajo, y lo acompaña mientras baja.',
+      'Ajustes, el formulario de un trabajo, Compartir, Cobrar y Avisos usan todo el ancho: lo que va junto, como las fechas o el alias y el CVU, queda en el mismo renglón.',
+    ],
+  },
+  {
     version: '2026-09-22.5',
     lineas: [
       'En la compu, Ajustes ya no deja una columna vacía: cada sección va en su renglón, con el título a la izquierda y lo que completás a la derecha.',

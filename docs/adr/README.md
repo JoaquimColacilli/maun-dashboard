@@ -65,4 +65,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)             | La nota del relevamiento reemplaza al casillero                   | Aceptada             |
 | [0060](0060-materiales-la-edicion-en-la-fila-y-el-monto-que-entra.md)       | Materiales, editar en la fila y el monto que entra                | Aceptada             |
 | [0061](0061-el-aviso-de-version-sale-del-registro.md)                       | El aviso de versión nueva sale del registro, y refrescar pregunta | Aceptada             |
-| [0062](0062-el-reparto-en-la-compu.md)                                      | En la compu, tres repartos: filas, principal y apoyo, y tablero   | Aceptada             |
+| [0062](0062-el-reparto-en-la-compu.md)                                      | En la compu, tres repartos: filas, principal y apoyo, y tablero   | Aceptada, corregida  |
