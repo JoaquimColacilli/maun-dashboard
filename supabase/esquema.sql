@@ -25,8 +25,8 @@ comment on type public.condicion_fiscal is 'Condición frente al IVA del cliente
 create type public.escala_de_pregunta as enum ('conformidad', 'tiempos', 'trato');
 comment on type public.escala_de_pregunta is 'Qué palabras lleva cada una de las cinco caritas de una pregunta de escala: conformidad (de «Nada conforme» a «Muy conforme»), tiempos (de «Llegó muy tarde» a «Llegó antes de lo pautado») o trato (de «Costaba mucho» a «Muy fácil»). Las palabras viven en @maun/domain; acá se guarda cuál juego lleva la pregunta.';
 
-create type public.estado_proyecto as enum ('contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'perdido', 'en_curso', 'entregado', 'cobrado');
-comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro: los primeros seis estados son de seguimiento (contacto, presupuesto estimativo, relevamiento, a presupuestar, presupuesto enviado y perdido), los últimos tres de obra. Las transiciones válidas viven en @maun/domain.';
+create type public.estado_proyecto as enum ('contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_seguimiento', 'perdido', 'en_curso', 'entregado', 'cobrado');
+comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro. Los primeros cinco estados son las consultas (contacto, presupuesto estimativo, relevamiento, a presupuestar y presupuesto enviado); en seguimiento es el «por ahora no», con un próximo contacto pendiente; perdido cierra la consulta, y los últimos tres son de obra. Las transiciones válidas viven en @maun/domain.';
 
 create type public.forma_de_cobro as enum ('transferencia', 'efectivo');
 comment on type public.forma_de_cobro is 'Cómo le paga el cliente al taller una instancia de pago concreta. Transferencia es el cliente entrando a su banco o a su billetera y mandando plata al alias del taller: la arranca él y no tiene costo. Efectivo es en mano. No hay una tercera: cobrar con un link de pago o con un QR de cobro de Mercado Pago le cuesta comisión al taller y este PR no los usa (ADR 0051 y 0053).';
