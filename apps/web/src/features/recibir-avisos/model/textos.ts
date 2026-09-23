@@ -34,6 +34,12 @@ export const QUE_AVISA: Readonly<Record<AvisoDeLaAgenda, DatosDelAviso>> = {
     categoria: 'presupuesto',
     anticipaciones: [0, 1, 2, 3],
   },
+  seguimientos: {
+    etiqueta: 'Volver a escribirle',
+    detalle: 'A quién de los que están en seguimiento le toca un mensaje tuyo',
+    categoria: 'seguimiento',
+    anticipaciones: [0, 1],
+  },
   anotaciones: {
     etiqueta: 'Mis anotaciones',
     detalle: 'Lo que anotás vos: materiales, trabajo de taller',

@@ -345,7 +345,13 @@ export function puedeArrastrarse(evento: EventoDeLaAgenda): boolean {
   return !evento.hecha && evento.categoria !== 'seguimiento';
 }
 
-export const AVISOS_DE_LA_AGENDA = ['entregas', 'visitas', 'presupuestos', 'anotaciones'] as const;
+export const AVISOS_DE_LA_AGENDA = [
+  'entregas',
+  'visitas',
+  'presupuestos',
+  'seguimientos',
+  'anotaciones',
+] as const;
 
 export type AvisoDeLaAgenda = (typeof AVISOS_DE_LA_AGENDA)[number];
 
@@ -364,14 +370,15 @@ export const PREFERENCIAS_INICIALES: PreferenciasDeAvisos = {
   entregas: { activo: true, anticipacion: 2 },
   visitas: { activo: true, anticipacion: 1 },
   presupuestos: { activo: true, anticipacion: 1 },
+  seguimientos: { activo: true, anticipacion: 0 },
   anotaciones: { activo: false, anticipacion: 0 },
 };
 
-export const AVISO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, AvisoDeLaAgenda | null>> = {
+export const AVISO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, AvisoDeLaAgenda>> = {
   entrega: 'entregas',
   visita: 'visitas',
   presupuesto: 'presupuestos',
-  seguimiento: null,
+  seguimiento: 'seguimientos',
   materiales: 'anotaciones',
   taller: 'anotaciones',
 };
@@ -384,9 +391,7 @@ export function eventosParaAvisar(
   const mayor = Math.max(...AVISOS_DE_LA_AGENDA.map((aviso) => preferencias[aviso].anticipacion));
 
   return eventosDeLaAgenda(datos, { desde: hoy, hasta: sumarDias(hoy, mayor) }).filter((evento) => {
-    const aviso = AVISO_DE_LA_CATEGORIA[evento.categoria];
-    if (aviso === null) return false;
-    const preferencia = preferencias[aviso];
+    const preferencia = preferencias[AVISO_DE_LA_CATEGORIA[evento.categoria]];
     if (!preferencia.activo) return false;
     if (evento.hecha) return false;
     return diasEntre(hoy, evento.fecha) <= preferencia.anticipacion;

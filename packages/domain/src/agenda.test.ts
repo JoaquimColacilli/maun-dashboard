@@ -609,18 +609,38 @@ describe('el seguimiento en la agenda', () => {
     expect(eventos.map((evento) => evento.id)).toEqual(['entrega:p2', 'seguimiento:s1', 'nota']);
   });
 
-  it('lo que cae fuera del rango no sale, y todavía no se avisa a la mañana', () => {
+  it('lo que cae fuera del rango no sale', () => {
     const agenda = datos({
       proyectos: [enSeguimiento],
       proximos: [proximo({ fecha: '2026-10-02' })],
     });
     expect(eventosDeLaAgenda(agenda, SEPTIEMBRE)).toEqual([]);
+  });
+
+  it('a la mañana avisa a quién le toca escribirle ese día, no lo de mañana ni lo ya registrado, y se apaga', () => {
+    const agenda = datos({
+      proyectos: [enSeguimiento],
+      proximos: [
+        proximo({ id: 'hoy', fecha: '2026-09-14' }),
+        proximo({ id: 'manana', fecha: '2026-09-15' }),
+        proximo({ id: 'hecho', fecha: '2026-09-14', hechoEl: '2026-09-14' }),
+      ],
+    });
+
+    expect(dias(eventosParaAvisar(agenda, '2026-09-14', PREFERENCIAS_INICIALES))).toEqual([
+      '2026-09-14 seguimiento:hoy',
+    ]);
     expect(
-      eventosParaAvisar(
-        datos({ proyectos: [enSeguimiento], proximos: [proximo({ fecha: '2026-09-14' })] }),
-        '2026-09-14',
-        PREFERENCIAS_INICIALES,
-      ),
+      eventosParaAvisar(agenda, '2026-09-14', {
+        ...PREFERENCIAS_INICIALES,
+        seguimientos: { activo: true, anticipacion: 1 },
+      }).map((evento) => evento.id),
+    ).toEqual(['seguimiento:hoy', 'seguimiento:manana']);
+    expect(
+      eventosParaAvisar(agenda, '2026-09-14', {
+        ...PREFERENCIAS_INICIALES,
+        seguimientos: { activo: false, anticipacion: 0 },
+      }),
     ).toEqual([]);
   });
 
@@ -731,6 +751,7 @@ describe('eventosParaAvisar', () => {
       entregas: { activo: false, anticipacion: 3 },
       visitas: { activo: false, anticipacion: 3 },
       presupuestos: { activo: false, anticipacion: 3 },
+      seguimientos: { activo: false, anticipacion: 3 },
       anotaciones: { activo: false, anticipacion: 3 },
     };
 
@@ -742,6 +763,7 @@ describe('eventosParaAvisar', () => {
       entregas: { activo: true, anticipacion: 3 },
       visitas: { activo: true, anticipacion: 3 },
       presupuestos: { activo: true, anticipacion: 3 },
+      seguimientos: { activo: true, anticipacion: 3 },
       anotaciones: { activo: true, anticipacion: 3 },
     };
 
@@ -756,7 +778,7 @@ describe('eventosParaAvisar', () => {
       'presupuestos',
       'visitas',
       'entregas',
-      null,
+      'seguimientos',
       'anotaciones',
       'anotaciones',
     ]);
@@ -764,6 +786,7 @@ describe('eventosParaAvisar', () => {
       entregas: { activo: true, anticipacion: 2 },
       visitas: { activo: true, anticipacion: 1 },
       presupuestos: { activo: true, anticipacion: 1 },
+      seguimientos: { activo: true, anticipacion: 0 },
       anotaciones: { activo: false, anticipacion: 0 },
     });
   });

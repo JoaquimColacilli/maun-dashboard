@@ -20,6 +20,7 @@ const PREFERENCIAS: PreferenciasDeAvisos = {
   entregas: { activo: true, anticipacion: 2 },
   visitas: { activo: true, anticipacion: 1 },
   presupuestos: { activo: true, anticipacion: 1 },
+  seguimientos: { activo: true, anticipacion: 0 },
   anotaciones: { activo: false, anticipacion: 0 },
 };
 
@@ -211,6 +212,66 @@ Deno.test(
       JSON.parse(enviar.cargas[0] ?? '{}').cuerpo,
       'Relevamiento: Relevamiento UTN (hoy)',
     );
+  },
+);
+
+Deno.test(
+  'a quién le toca escribirle hoy va en el aviso con su nombre, y con el seguimiento apagado no',
+  async () => {
+    const enSeguimiento = (id: string, preferencias: PreferenciasDeAvisos): AvisoPorMandar => ({
+      ...aviso(id, null),
+      preferencias,
+      filas: {
+        proyectos: [
+          {
+            id: 'p-placard',
+            cliente_id: 'c1',
+            titulo: 'Placard',
+            estado: 'en_seguimiento',
+            fecha_visita: null,
+            entrega_estimada: null,
+            vencimiento_presupuesto: null,
+            direccion_entrega: '',
+          } as never,
+        ],
+        clientes: [{ id: 'c1', nombre: 'Villalba', zona: 'Morón' } as never],
+        anotaciones: [],
+        proximos_contactos: [
+          {
+            id: 's1',
+            proyecto_id: 'p-placard',
+            fecha: DIA,
+            hecho_el: null,
+            nota: 'Después de las vacaciones',
+            importante: false,
+            deleted_at: null,
+          } as never,
+        ],
+      },
+    });
+    const base = baseFalsa();
+    const enviar = enviadorQueContesta({});
+
+    const resultado = await mandarLosAvisos(
+      [
+        enSeguimiento('prendido', PREFERENCIAS),
+        enSeguimiento('apagado', {
+          ...PREFERENCIAS,
+          seguimientos: { activo: false, anticipacion: 0 },
+        }),
+      ],
+      base,
+      enviar,
+      VAPID,
+    );
+
+    assert.deepEqual(resultado, { mandados: 1, sinNadaQueAvisar: 1, podados: 0, fallidos: 0 });
+    assert.deepEqual(JSON.parse(enviar.cargas[0] ?? '{}'), {
+      titulo: 'Hoy tenés 1 cosa en la agenda',
+      cuerpo: 'Volver a escribirle a Villalba (hoy)',
+      url: '/agenda',
+      etiqueta: `agenda-${DIA}`,
+    });
   },
 );
 

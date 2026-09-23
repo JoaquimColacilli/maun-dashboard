@@ -40,8 +40,9 @@ describe('otrosDispositivos', () => {
 });
 
 describe('anticipacionesDe', () => {
-  it('las anotaciones se avisan el día o el anterior', () => {
+  it('las anotaciones y los seguimientos se avisan el día o el anterior', () => {
     expect(anticipacionesDe('anotaciones', 0)).toEqual([0, 1]);
+    expect(anticipacionesDe('seguimientos', 0)).toEqual([0, 1]);
     expect(anticipacionesDe('entregas', 2)).toEqual([0, 1, 2, 3]);
   });
 

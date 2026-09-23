@@ -85,6 +85,7 @@ function leerPreferencias(valor: unknown): PreferenciasDeLaPersona {
       entregas: leerPreferencia(avisos, 'entregas'),
       visitas: leerPreferencia(avisos, 'visitas'),
       presupuestos: leerPreferencia(avisos, 'presupuestos'),
+      seguimientos: leerPreferencia(avisos, 'seguimientos'),
       anotaciones: leerPreferencia(avisos, 'anotaciones'),
     },
   };

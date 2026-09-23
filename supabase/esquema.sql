@@ -2373,8 +2373,10 @@ CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
 AS $function$
   select coalesce(
     jsonb_typeof(p_avisos) = 'object'
-    and (select array_agg(clave order by clave) from jsonb_object_keys(p_avisos) as clave)
-      = array['anotaciones', 'entregas', 'presupuestos', 'visitas']
+    and (select array_agg(clave order by clave) from jsonb_object_keys(p_avisos) as clave) in (
+      array['anotaciones', 'entregas', 'presupuestos', 'visitas'],
+      array['anotaciones', 'entregas', 'presupuestos', 'seguimientos', 'visitas']
+    )
     and (
       select bool_and(
         case
@@ -2390,7 +2392,19 @@ AS $function$
   )
 $function$;
 -- execute: solo el dueño
-comment on function private.avisos_bien_formados(jsonb) is 'Qué avisa y con cuánta anticipación: las cuatro claves de AVISOS_DE_LA_AGENDA de @maun/domain, cada una con activo y una anticipación de 0 a 3 días.';
+comment on function private.avisos_bien_formados(jsonb) is 'Qué avisa y con cuánta anticipación: las claves de AVISOS_DE_LA_AGENDA de @maun/domain, cada una con activo y una anticipación de 0 a 3 días. Acepta también la forma de antes, sin seguimientos, para que un bundle viejo no rebote: quien la lee le completa esa clave con avisos_completos.';
+
+CREATE OR REPLACE FUNCTION private.avisos_completos(p_avisos jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select jsonb_build_object('seguimientos', jsonb_build_object('activo', true, 'anticipacion', 0))
+    || p_avisos
+$function$;
+-- execute: solo el dueño
+comment on function private.avisos_completos(jsonb) is 'Las preferencias de avisos con todas las claves: a las que se guardaron antes de que existiera seguimientos les agrega esa clave con su valor inicial (prendido, el mismo día), sin reescribir la fila. Gemela de PREFERENCIAS_INICIALES de @maun/domain para esa clave.';
 
 CREATE OR REPLACE FUNCTION private.avisos_por_mandar(p_ahora timestamp with time zone)
  RETURNS jsonb
@@ -2438,7 +2452,7 @@ AS $function$
         'p256dh', d.p256dh,
         'auth', d.auth,
         'dia', d.dia,
-        'preferencias', d.avisos,
+        'preferencias', private.avisos_completos(d.avisos),
         'filas', jsonb_build_object(
           'proyectos', (
             select coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb)
@@ -2447,7 +2461,7 @@ AS $function$
               and p.deleted_at is null
               and p.estado in (
                 'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado',
-                'en_curso'
+                'en_seguimiento', 'en_curso'
               )
           ),
           'clientes', (
@@ -2462,6 +2476,16 @@ AS $function$
               and a.deleted_at is null
               and not a.hecha
               and a.fecha between d.dia and d.dia + 3
+          ),
+          -- A quién le toca volver a escribirle: los contactos pendientes de los próximos días. Lo
+          -- registrado ya no se avisa.
+          'proximos_contactos', (
+            select coalesce(jsonb_agg(to_jsonb(c)), '[]'::jsonb)
+            from public.proximos_contactos c
+            where c.household_id = d.household_id
+              and c.deleted_at is null
+              and c.hecho_el is null
+              and c.fecha between d.dia and d.dia + 3
           )
         )
       )
@@ -2473,7 +2497,7 @@ AS $function$
   where d.household_id is not null
 $function$;
 -- execute: service_role:EXECUTE
-comment on function private.avisos_por_mandar(timestamp with time zone) is 'Los dispositivos a los que les toca el aviso de la mañana en este momento, según la zona horaria y la hora de cada persona, con los datos de su taller que necesita la agenda. Qué avisar lo decide eventosParaAvisar de @maun/domain en la función de borde, no esta consulta.';
+comment on function private.avisos_por_mandar(timestamp with time zone) is 'Los dispositivos a los que les toca el aviso de la mañana en este momento, según la zona horaria y la hora de cada persona, con los datos de su taller que necesita la agenda: los trabajos, los clientes, las anotaciones y los contactos en seguimiento pendientes. Qué avisar lo decide eventosParaAvisar de @maun/domain en la función de borde, no esta consulta.';
 
 CREATE OR REPLACE FUNCTION private.borrar_hijos_de_proyecto()
  RETURNS trigger
@@ -2936,7 +2960,11 @@ AS $function$
       select count(*) from private.suscripciones_de_avisos s where s.user_id = p_usuario
     ),
     'preferencias', (
-      select jsonb_build_object('zona', p.zona, 'hora', to_char(p.hora, 'HH24:MI'), 'avisos', p.avisos)
+      select jsonb_build_object(
+        'zona', p.zona,
+        'hora', to_char(p.hora, 'HH24:MI'),
+        'avisos', private.avisos_completos(p.avisos)
+      )
       from private.preferencias_de_avisos p
       where p.user_id = p_usuario
     )
