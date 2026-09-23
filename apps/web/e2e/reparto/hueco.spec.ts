@@ -24,7 +24,9 @@ const ANCHOS = [
 ] as const;
 
 const PANTALLAS_DE_HUECO = 0.5;
-const FRANJA_MAXIMA = 64;
+const ANCHO_DEL_MARCO = 1180;
+const TOLERANCIA = 1.5;
+const HASTA_EL_BORDE = 64;
 const ALTO_MAXIMO_DE_CAPTURA = 16_000;
 const CAPTURAS = process.env.CAPTURAS_DEL_REPARTO;
 
@@ -73,6 +75,34 @@ async function capturarEntera(
   await asentar(page);
 }
 
+function fallasDelMarco(pantalla: Pantalla, donde: string, medicion: Medicion): string[] {
+  if (pantalla.sinMarco !== undefined) return [];
+  const { marco } = medicion;
+  if (marco === null) return [`${donde}: no está adentro del molde de la página`];
+  const fallas: string[] = [];
+  const izquierda = marco.marco.izquierda - marco.area.izquierda;
+  const derecha = marco.area.derecha - marco.marco.derecha;
+  if (Math.abs(izquierda - derecha) > TOLERANCIA) {
+    fallas.push(
+      `${donde}: no está centrada, con ${izquierda.toFixed(0)} px a la izquierda y ${derecha.toFixed(0)} a la derecha`,
+    );
+  }
+  const esperado = Math.min(ANCHO_DEL_MARCO, marco.area.util);
+  const ancho = marco.marco.derecha - marco.marco.izquierda;
+  if (Math.abs(ancho - esperado) > TOLERANCIA) {
+    fallas.push(
+      `${donde}: el molde mide ${ancho.toFixed(0)} px y en ese ancho todas miden ${esperado.toFixed(0)}`,
+    );
+  }
+  const vacio = marco.tinta === null ? Infinity : marco.contenido.derecha - marco.tinta.derecha;
+  if (vacio > HASTA_EL_BORDE) {
+    fallas.push(
+      `${donde}: el contenido termina ${vacio.toFixed(0)} px antes del borde derecho del molde`,
+    );
+  }
+  return fallas;
+}
+
 function fallasDe(pantalla: Pantalla, ancho: number, medicion: Medicion): string[] {
   const donde = `${pantalla.nombre} a ${String(ancho)} px`;
   const fallas: string[] = [];
@@ -82,9 +112,7 @@ function fallasDe(pantalla: Pantalla, ancho: number, medicion: Medicion): string
       `${donde}: hueco de ${String(peor.hueco)} px (${(peor.hueco / medicion.visible).toFixed(2)} pantallas) en ${peor.contenedor}`,
     );
   }
-  if (medicion.franja !== null && medicion.franja > FRANJA_MAXIMA) {
-    fallas.push(`${donde}: ${String(medicion.franja)} px vacíos entre el menú y el contenido`);
-  }
+  fallas.push(...fallasDelMarco(pantalla, donde, medicion));
   for (const desorden of medicion.desorden.filter((cual) => cual.exento === null)) {
     fallas.push(
       `${donde}: en ${desorden.contenedor}, «${desorden.despues}» se ve antes que «${desorden.antes}», que va primero en el DOM`,
@@ -178,7 +206,7 @@ const DATOS = [
 ] as const;
 
 for (const { nombre, sembrar } of DATOS) {
-  test(`con ${nombre} datos, ninguna pantalla de la tablet o la compu deja un hueco, una franja junto al menú ni un orden distinto del DOM`, async ({
+  test(`con ${nombre} datos, ninguna pantalla de la tablet o la compu deja un hueco, se sale del molde común ni cambia el orden del DOM`, async ({
     browser,
     context,
     page,

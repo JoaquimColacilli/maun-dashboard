@@ -11,7 +11,11 @@ export interface Pantalla {
   ruta: (taller: TallerSembrado) => string;
   listo: (page: Page) => Promise<void>;
   sinSesion?: boolean;
+  sinMarco?: string;
 }
+
+const HOJA =
+  'Es una hoja: en la compu se abre como panel encima de la pantalla, con su propio ancho, no como una página.';
 
 async function enElMarco(page: Page): Promise<void> {
   await expect(page.locator('main#contenido')).toBeVisible(CARGA);
@@ -133,18 +137,21 @@ export const PANTALLAS: readonly Pantalla[] = [
   },
   {
     clave: 'movimiento-nuevo',
+    sinMarco: HOJA,
     nombre: 'Hoja: cargar un movimiento',
     ruta: () => '/finanzas/nuevo',
     listo: conHoja,
   },
   {
     clave: 'contacto-nuevo',
+    sinMarco: HOJA,
     nombre: 'Hoja: cargar un contacto',
     ruta: () => '/seguimiento/nuevo',
     listo: conHoja,
   },
   {
     clave: 'anotar',
+    sinMarco: HOJA,
     nombre: 'Hoja: anotar en la agenda',
     ruta: () => '/agenda/anotar',
     listo: conHoja,
@@ -157,6 +164,8 @@ export const PANTALLAS: readonly Pantalla[] = [
   },
   {
     clave: 'encuesta',
+    sinMarco:
+      'La encuesta del cliente es una sola columna angosta centrada, pensada para el celular: no lleva el molde de las páginas del taller.',
     nombre: 'La encuesta que abre el cliente',
     ruta: (t) => `/o/${t.encuesta}`,
     listo: async (page) => {
@@ -165,6 +174,8 @@ export const PANTALLAS: readonly Pantalla[] = [
   },
   {
     clave: 'acceso',
+    sinMarco:
+      'La pantalla de entrada tiene su propio diseño a pantalla completa, con la marca y el formulario: no es una página del taller.',
     nombre: 'Entrar',
     ruta: () => '/acceso',
     listo: async (page) => {

@@ -17,12 +17,19 @@ export interface DesordenMedido {
   exento: string | null;
 }
 
+export interface MarcoMedido {
+  area: { izquierda: number; derecha: number; util: number };
+  marco: { izquierda: number; derecha: number };
+  contenido: { izquierda: number; derecha: number };
+  tinta: { izquierda: number; derecha: number } | null;
+}
+
 export interface Medicion {
   visible: number;
   columnas: number;
   hueco: number;
   huecos: HuecoMedido[];
-  franja: number | null;
+  marco: MarcoMedido | null;
   desorden: DesordenMedido[];
   alto: number;
 }
@@ -65,6 +72,7 @@ export function medirElReparto(excepciones: readonly Excepcion[]): Medicion {
     arriba: number;
     abajo: number;
     izquierda: number;
+    derecha: number;
   }
 
   const tintas = new Map<Element, Tinta | null>();
@@ -76,6 +84,7 @@ export function medirElReparto(excepciones: readonly Excepcion[]): Medicion {
       arriba: Math.min(actual.arriba, otra.arriba),
       abajo: Math.max(actual.abajo, otra.abajo),
       izquierda: Math.min(actual.izquierda, otra.izquierda),
+      derecha: Math.max(actual.derecha, otra.derecha),
     };
   };
 
@@ -109,7 +118,7 @@ export function medirElReparto(excepciones: readonly Excepcion[]): Medicion {
         estilo.backgroundImage !== 'none' ||
         conBorde(estilo))
     ) {
-      tinta = { arriba: caja.top, abajo: caja.bottom, izquierda: caja.left };
+      tinta = { arriba: caja.top, abajo: caja.bottom, izquierda: caja.left, derecha: caja.right };
     }
     for (const hijo of Array.from(elemento.childNodes)) {
       if (hijo.nodeType === Node.TEXT_NODE) {
@@ -121,6 +130,7 @@ export function medirElReparto(excepciones: readonly Excepcion[]): Medicion {
             arriba: renglon.top,
             abajo: renglon.bottom,
             izquierda: renglon.left,
+            derecha: renglon.right,
           });
         }
       } else if (hijo instanceof Element) {
@@ -286,26 +296,41 @@ export function medirElReparto(excepciones: readonly Excepcion[]): Medicion {
 
   huecos.sort((x, y) => y.hueco - x.hueco);
 
-  const navegacion = document.querySelector('nav[aria-label="Principal"]');
-  const borde = navegacion?.getBoundingClientRect();
-  let franja: number | null = null;
-  if (borde && borde.left < 1 && raiz === principal) {
-    let izquierda = Infinity;
-    for (const [elemento, tinta] of tintas) {
-      if (!tinta || !REEMPLAZADOS.has(elemento.tagName.toUpperCase())) continue;
-      izquierda = Math.min(izquierda, elemento.getBoundingClientRect().left);
-    }
-    const caminante = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
-    for (let nodo = caminante.nextNode(); nodo; nodo = caminante.nextNode()) {
-      const padre = nodo.parentElement;
-      if (!padre || !tintas.get(padre) || (nodo.textContent ?? '').trim() === '') continue;
-      rango.selectNodeContents(nodo);
-      for (const renglon of Array.from(rango.getClientRects())) {
-        if (renglon.width >= 1 && renglon.height >= 1)
-          izquierda = Math.min(izquierda, renglon.left);
-      }
-    }
-    if (Number.isFinite(izquierda)) franja = Math.round(izquierda - borde.right);
+  let marco: MarcoMedido | null = null;
+  const moldes = dialogo
+    ? []
+    : Array.from(raiz.querySelectorAll<HTMLElement>('[data-pagina]')).filter(
+        (molde) => tintas.get(molde) !== undefined && molde.getBoundingClientRect().width >= 2,
+      );
+  const molde = moldes.sort(
+    (x, y) => y.getBoundingClientRect().width - x.getBoundingClientRect().width,
+  )[0];
+  if (molde) {
+    const caja = molde.getBoundingClientRect();
+    const estilo = getComputedStyle(molde);
+    const cajaDelArea = raiz === principal ? principal.getBoundingClientRect() : null;
+    const area = cajaDelArea
+      ? {
+          izquierda: cajaDelArea.left,
+          derecha: cajaDelArea.right,
+          util: principal?.clientWidth ?? cajaDelArea.width,
+        }
+      : {
+          izquierda: 0,
+          derecha: document.documentElement.clientWidth,
+          util: document.documentElement.clientWidth,
+        };
+    let tinta: Tinta | null = null;
+    for (const otro of moldes) tinta = sumar(tinta, tintas.get(otro) ?? null);
+    marco = {
+      area,
+      marco: { izquierda: caja.left, derecha: caja.right },
+      contenido: {
+        izquierda: caja.left + Number.parseFloat(estilo.paddingLeft),
+        derecha: caja.right - Number.parseFloat(estilo.paddingRight),
+      },
+      tinta: tinta ? { izquierda: tinta.izquierda, derecha: tinta.derecha } : null,
+    };
   }
 
   const peorSinExcepcion = huecos.find((hueco) => hueco.exento === null)?.hueco ?? 0;
@@ -315,7 +340,7 @@ export function medirElReparto(excepciones: readonly Excepcion[]): Medicion {
     columnas: columnasMaximas,
     hueco: peorSinExcepcion,
     huecos: huecos.slice(0, 6),
-    franja,
+    marco,
     desorden: desorden.slice(0, 12),
     alto,
   };
