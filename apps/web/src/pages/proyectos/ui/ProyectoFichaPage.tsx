@@ -273,17 +273,15 @@ export function ProyectoFichaPage() {
         </dl>
       </div>
 
-      {(proyecto.estado === 'entregado' || proyecto.estado === 'cobrado') && (
-        <div className="mt-5">
-          <PedirLaOpinion proyecto={proyecto} cliente={cliente} />
-        </div>
-      )}
-
       <PrincipalYApoyo
         apoyoPrimero
         className="mt-5"
         apoyo={
           <div className="flex flex-col gap-5">
+            {(proyecto.estado === 'entregado' || proyecto.estado === 'cobrado') && (
+              <PedirLaOpinion proyecto={proyecto} cliente={cliente} />
+            )}
+
             <BloqueDeLaSena
               sena={senaDelTrabajo(replica, proyecto, resumen.cobrado)}
               propia={senaDelProyecto(proyecto) !== null}
