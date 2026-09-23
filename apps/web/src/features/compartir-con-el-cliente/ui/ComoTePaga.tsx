@@ -1,7 +1,6 @@
 import { conLaForma, FORMAS_DE_COBRO, ofrece, type FormaDeCobro } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router';
 
 import {
   cambioDeFormas,
@@ -14,7 +13,7 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { ajustesDe, mensajeDeSincronizacion } from '@/shared/api';
-import { metaDeAvisos, RUTA_DE_AJUSTES } from '@/shared/lib';
+import { metaDeAvisos, RUTA_DE_AJUSTES, Ir } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 import {
@@ -125,9 +124,9 @@ export function ComoTePaga({ resumen }: ComoTePagaProps) {
         <p className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 text-label leading-normal text-text-2">
           <Icono nombre="circle-alert" tamano={14} className="translate-y-0.5 text-atencion" />
           <span>{SIN_DATOS_PARA_TRANSFERIR}</span>
-          <Link to={RUTA_DE_AJUSTES} className="font-semibold underline">
+          <Ir a={RUTA_DE_AJUSTES} className="font-semibold underline">
             Cargalos en Ajustes
-          </Link>
+          </Ir>
         </p>
       )}
 

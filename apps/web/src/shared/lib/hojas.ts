@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
-import { matchPath, useLocation, useNavigate, type Location } from 'react-router';
+import { matchPath, useLocation, type Location } from 'react-router';
+
+import { useIr, useVolver } from './puerta';
 
 export const HOJAS_POR_RUTA = [
   { patron: '/finanzas/nuevo', fondo: '/finanzas' },
@@ -44,16 +46,21 @@ export function useUbicacionVisible(): Location {
 }
 
 export function useCerrarHoja(): () => void {
-  const navegar = useNavigate();
+  const ir = useIr();
   const location = useLocation();
-  const pathname = location.pathname;
-  const vieneDeAdentro = fondoDelEstado(location.state) !== undefined;
+  const fondo = fondoDelEstado(location.state);
+  const porDefecto = fondoPorDefecto(location.pathname) ?? '/';
+  const { volver } = useVolver(
+    fondo === undefined ? porDefecto : `${fondo.pathname}${fondo.search}`,
+    '',
+  );
+  const vieneDeAdentro = fondo !== undefined;
 
   return useCallback(() => {
     if (vieneDeAdentro) {
-      void navegar(-1);
+      volver();
       return;
     }
-    void navegar(fondoPorDefecto(pathname) ?? '/', { replace: true });
-  }, [navegar, pathname, vieneDeAdentro]);
+    ir(porDefecto, { como: 'reemplazar' });
+  }, [ir, porDefecto, vieneDeAdentro, volver]);
 }

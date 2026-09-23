@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   cambiosAlPasar,
@@ -13,7 +12,7 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { metaDeAvisos } from '@/shared/lib';
+import { metaDeAvisos, useIr } from '@/shared/lib';
 import { Button, FilaDeAcciones, PanelDePaso } from '@/shared/ui';
 
 export interface AvanceDeLaObraProps {
@@ -23,7 +22,7 @@ export interface AvanceDeLaObraProps {
 
 export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
   const { proyecto } = resumen;
-  const navegar = useNavigate();
+  const ir = useIr();
   const guardar = useMutation({
     ...MUTACION_DE_PROYECTO,
     meta: metaDeAvisos('proyectoAvanzado', { errorEnPantalla: true, sujeto: proyecto.titulo }),
@@ -39,7 +38,7 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
 
   function pasar(cambio: CambioDeEstado): void {
     if (cambio.camino === 'pasaje') {
-      void navegar(rutaDeAprobacion(proyecto.id));
+      ir(rutaDeAprobacion(proyecto.id));
       return;
     }
     setRechazo(null);

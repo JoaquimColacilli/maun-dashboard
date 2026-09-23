@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 
+import { Ir } from '@/shared/lib';
 import { Tablero } from '@/shared/ui';
 
 import type { ResumenDeProyecto } from '../model/resumen';
@@ -38,13 +38,13 @@ export function TarjetaDeProyecto({
 
       <MarcaDeLiquidacion proyectoId={proyecto.id} />
 
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
+      <Ir
+        a={rutaDelProyecto(proyecto.id)}
         data-tarjeta
         className="text-body-lg leading-snug font-medium text-pretty after:absolute after:inset-0 after:rounded-panel after:content-[''] focus-visible:outline-none"
       >
         {proyecto.titulo}
-      </Link>
+      </Ir>
 
       {children}
 

@@ -1,13 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
-import { descartarAviso, useAvisos } from '@/shared/lib';
+import { descartarAviso, useAvisos, useIr } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 export function AvisoDeRechazo() {
   const avisos = useAvisos();
   const queryClient = useQueryClient();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { pathname } = useLocation();
 
   const rechazo = avisos.findLast((aviso) => aviso.tipo === 'rechazo');
@@ -34,7 +34,7 @@ export function AvisoDeRechazo() {
                 type="button"
                 className="text-meta font-semibold text-ink underline underline-offset-3"
                 onClick={() => {
-                  void navegar(rechazo.ruta ?? '/proyectos');
+                  ir(rechazo.ruta ?? '/proyectos');
                 }}
               >
                 Ver el proyecto

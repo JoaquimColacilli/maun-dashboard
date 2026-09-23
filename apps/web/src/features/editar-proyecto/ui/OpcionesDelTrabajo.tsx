@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   aprobacionDeUnaOpcion,
@@ -12,7 +11,7 @@ import {
   type Proyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { avisarEnPantalla, formatearPesos, metaDeAvisos } from '@/shared/lib';
+import { avisarEnPantalla, formatearPesos, metaDeAvisos, useIr } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
 export interface OpcionesDelTrabajoProps {
@@ -25,7 +24,7 @@ export function OpcionesDelTrabajo({
   ofreceCargarLaPrimera = false,
 }: OpcionesDelTrabajoProps) {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const opciones = opcionesDelProyecto(replica, proyecto.id);
 
   const ultimo = useRef({ proyecto, opciones });
@@ -51,7 +50,7 @@ export function OpcionesDelTrabajo({
           variant="secundario"
           className="mt-2.5"
           onClick={() => {
-            void navegar(rutaDeEdicion(proyecto.id), { state: { primeraOpcion: true } });
+            ir(rutaDeEdicion(proyecto.id), { state: { primeraOpcion: true } });
           }}
         >
           <Icono nombre="plus" tamano={16} />

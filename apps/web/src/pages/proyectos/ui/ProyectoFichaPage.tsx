@@ -1,5 +1,5 @@
 import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 
 import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
@@ -42,6 +42,8 @@ import {
   hoyLocal,
   rutaDeCompartir,
   useAvisosDelProyecto,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
 
@@ -68,7 +70,7 @@ function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: s
 
 export function ProyectoFichaPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { id = '' } = useParams();
 
   const location = useLocation();
@@ -91,7 +93,7 @@ export function ProyectoFichaPage() {
         </p>
         <Button
           onClick={() => {
-            void navegar(RUTA_DE_PROYECTOS);
+            ir(RUTA_DE_PROYECTOS);
           }}
         >
           Volver a Proyectos
@@ -157,13 +159,13 @@ export function ProyectoFichaPage() {
   return (
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
-        <Link
-          to={RUTA_DE_PROYECTOS}
+        <Ir
+          a={RUTA_DE_PROYECTOS}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
           Proyectos
-        </Link>
+        </Ir>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
           <Button
@@ -171,7 +173,7 @@ export function ProyectoFichaPage() {
             size="chico"
             aria-label="Mostrarle al cliente"
             onClick={() => {
-              void navegar(rutaDeCompartir(proyecto.id));
+              ir(rutaDeCompartir(proyecto.id));
             }}
           >
             <Icono nombre="eye" tamano={16} />
@@ -181,7 +183,7 @@ export function ProyectoFichaPage() {
             proyecto={proyecto}
             sustantivo="proyecto"
             alBorrar={() => {
-              void navegar(RUTA_DE_PROYECTOS);
+              ir(RUTA_DE_PROYECTOS);
             }}
           />
           <Button
@@ -189,7 +191,7 @@ export function ProyectoFichaPage() {
             size="chico"
             aria-label="Editar"
             onClick={() => {
-              void navegar(rutaDeEdicion(proyecto.id));
+              ir(rutaDeEdicion(proyecto.id));
             }}
           >
             <Icono nombre="pencil" tamano={16} />
@@ -202,13 +204,13 @@ export function ProyectoFichaPage() {
         {cliente === undefined ? (
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
-          <Link
-            to={rutaDelCliente(cliente.id)}
+          <Ir
+            a={rutaDelCliente(cliente.id)}
             className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
           >
             {cliente.nombre}
             <Icono nombre="chevron-right" tamano={14} />
-          </Link>
+          </Ir>
         )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
@@ -300,7 +302,7 @@ export function ProyectoFichaPage() {
                   <Button
                     className="w-full sm:w-auto"
                     onClick={() => {
-                      void navegar(rutaDeCobro(proyecto.id));
+                      ir(rutaDeCobro(proyecto.id));
                     }}
                   >
                     <Icono nombre="hand-coins" tamano={18} />
@@ -315,7 +317,7 @@ export function ProyectoFichaPage() {
                     variant="secundario"
                     className="w-full sm:w-auto"
                     onClick={() => {
-                      void navegar(rutaDeCierre(proyecto.id));
+                      ir(rutaDeCierre(proyecto.id));
                     }}
                   >
                     <Icono nombre="x" tamano={16} />
@@ -427,7 +429,7 @@ export function ProyectoFichaPage() {
               className="w-full"
               disabled={liquidado}
               onClick={() => {
-                void navegar(rutaDeEdicion(proyecto.id));
+                ir(rutaDeEdicion(proyecto.id));
               }}
             >
               <Icono nombre="plus" tamano={16} />

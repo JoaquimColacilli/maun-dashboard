@@ -1,6 +1,6 @@
 import { type EstadoProyecto, type Fase } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 
 import { EnlaceACliente } from '@/entities/cliente';
 import {
@@ -33,6 +33,8 @@ import {
   hoyLocal,
   useAnchoDePantalla,
   type Sentido,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
@@ -195,13 +197,13 @@ function Tabla({
               )}
             </td>
             <td className="w-full max-w-0 px-2.5">
-              <Link
-                to={rutaDelProyecto(resumen.proyecto.id)}
+              <Ir
+                a={rutaDelProyecto(resumen.proyecto.id)}
                 className="block truncate font-medium"
                 title={resumen.proyecto.titulo}
               >
                 {resumen.proyecto.titulo}
-              </Link>
+              </Ir>
             </td>
             <td className="px-2.5 text-right tabular-nums whitespace-nowrap">
               {resumen.proyecto.presupuesto_centavos === null
@@ -280,7 +282,7 @@ function HojaDeOrden({
 }
 
 function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> }) {
-  const navegar = useNavigate();
+  const ir = useIr();
   const textos: Record<
     Exclude<Fase, 'consultas' | 'seguimiento'>,
     { titulo: string; detalle: string }
@@ -308,7 +310,7 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> })
       <p className="text-body leading-relaxed text-text-2">{texto.detalle}</p>
       <Button
         onClick={() => {
-          void navegar(RUTA_DE_PROYECTO_NUEVO);
+          ir(RUTA_DE_PROYECTO_NUEVO);
         }}
       >
         Cargar un proyecto
@@ -319,7 +321,7 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> })
 
 export function ProyectosPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const location = useLocation();
   const { pathname } = location;
   const [busqueda] = useSearchParams();
@@ -366,7 +368,7 @@ export function ProyectosPage() {
         {etapa === 'consultas' || etapa === 'seguimiento' ? (
           <Button
             onClick={() => {
-              void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
+              ir(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
             }}
           >
             <Icono nombre="user-plus" tamano={18} />
@@ -375,7 +377,7 @@ export function ProyectosPage() {
         ) : (
           <Button
             onClick={() => {
-              void navegar(RUTA_DE_PROYECTO_NUEVO);
+              ir(RUTA_DE_PROYECTO_NUEVO);
             }}
           >
             <Icono nombre="plus" tamano={18} />
@@ -400,7 +402,7 @@ export function ProyectosPage() {
                 role="tab"
                 aria-selected={activa}
                 onClick={() => {
-                  void navegar(opcion.ruta);
+                  ir(opcion.ruta);
                 }}
                 className={`flex h-9.5 min-w-0 items-center justify-center gap-1.5 rounded-field text-label whitespace-nowrap ${
                   activa

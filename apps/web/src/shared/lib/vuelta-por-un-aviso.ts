@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
 
 import { anotarVueltaPorUnAviso } from './huella';
+import { useIr } from './puerta';
 
 export const VUELTA_POR_UN_AVISO = 'MAUN_VUELTA_POR_UN_AVISO';
 
@@ -33,7 +33,7 @@ export function rutaDelAviso(url: string, origen: string): string | null {
 }
 
 export function useVueltaPorUnAviso(): void {
-  const navegar = useNavigate();
+  const ir = useIr();
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -43,11 +43,11 @@ export function useVueltaPorUnAviso(): void {
       anotarVueltaPorUnAviso();
       evento.ports[0]?.postMessage(true);
       const ruta = rutaDelAviso(evento.data.url, globalThis.location.origin);
-      if (ruta !== null) void navegar(ruta);
+      if (ruta !== null) ir(ruta, { sinTransicion: true });
     };
     trabajador.addEventListener('message', alRecibir);
     return () => {
       trabajador.removeEventListener('message', alRecibir);
     };
-  }, [navegar]);
+  }, [ir]);
 }

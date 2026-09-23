@@ -1,6 +1,6 @@
 import { asientosDelLibro, estadoDelDiezmo } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
 import {
   agruparPorDia,
@@ -20,6 +20,8 @@ import {
   hoyLocal,
   rutaDeMovimientoNuevo,
   rutaDelMovimiento,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import { ConSalida, Icono, MontoQueEntra, Pagina, PrincipalYApoyo } from '@/shared/ui';
 
@@ -27,7 +29,7 @@ const RUTA_DEL_PAGO = rutaDeMovimientoNuevo({ clase: 'pago_diezmo' });
 
 export function DiezmoPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const location = useLocation();
   const hoy = hoyLocal();
   const [ficha, setFicha] = useState<LineaDelTaller | null>(null);
@@ -54,14 +56,14 @@ export function DiezmoPage() {
     <Pagina className="gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Diezmo</h1>
-        <Link
-          to={RUTA_DEL_PAGO}
+        <Ir
+          a={RUTA_DEL_PAGO}
           state={conFondo(location)}
           className="flex h-button items-center gap-2 rounded-field bg-diezmo px-[18px] text-body font-medium text-paper"
         >
           <Icono nombre="hand-coins" tamano={18} />
           Registrar diezmo
-        </Link>
+        </Ir>
       </header>
 
       <PrincipalYApoyo
@@ -151,7 +153,7 @@ export function DiezmoPage() {
               }
               alAbrir={(linea) => {
                 if (linea.bloqueo === null) {
-                  void navegar(rutaDelMovimiento(linea.asientoId), {
+                  ir(rutaDelMovimiento(linea.asientoId), {
                     state: conFondo(location),
                   });
                   return;

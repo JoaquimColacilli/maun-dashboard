@@ -1,6 +1,5 @@
 import { useMutationState } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
 
 import {
   ESPACIO_DEL_PLAN_BYTES,
@@ -33,6 +32,7 @@ import {
   RUTA_DE_AVISOS,
   useAvisos,
   useEstadoSync,
+  Ir,
 } from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos, SeccionEnFila, SeccionesEnFilas } from '@/shared/ui';
 
@@ -139,12 +139,12 @@ function Avisos() {
       <PanelDeAvisos avisos={avisos}>
         {(aviso) =>
           aviso.ruta === null ? null : (
-            <Link
-              to={aviso.ruta}
+            <Ir
+              a={aviso.ruta}
               className="mt-1 inline-block text-label font-semibold underline underline-offset-3"
             >
               Ver «{aviso.sujeto}»
-            </Link>
+            </Ir>
           )
         }
       </PanelDeAvisos>
@@ -188,13 +188,13 @@ export function AjustesPage() {
             Un recordatorio a la mañana con las entregas, las visitas y los presupuestos que vencen.
             Se activa en cada dispositivo.
           </p>
-          <Link
-            to={RUTA_DE_AVISOS}
+          <Ir
+            a={RUTA_DE_AVISOS}
             className="inline-flex min-h-tap items-center gap-1.5 self-start rounded-field text-body font-semibold underline underline-offset-3"
           >
             <Icono nombre="bell" tamano={18} />
             Configurar los avisos
-          </Link>
+          </Ir>
         </SeccionEnFila>
 
         {esCelular() && (

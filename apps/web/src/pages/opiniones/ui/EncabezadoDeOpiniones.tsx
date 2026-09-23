@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 
-import { RUTA_DE_OPINIONES, RUTA_DE_PREGUNTAS } from '@/shared/lib';
+import { RUTA_DE_OPINIONES, RUTA_DE_PREGUNTAS, Ir } from '@/shared/lib';
 import { Pagina } from '@/shared/ui';
 
 type Seccion = 'resultados' | 'preguntas';
@@ -26,9 +25,9 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
         {SECCIONES.map((opcion) => {
           const activa = opcion.id === seccion;
           return (
-            <Link
+            <Ir
               key={opcion.id}
-              to={opcion.ruta}
+              a={opcion.ruta}
               aria-current={activa ? 'page' : undefined}
               className={`flex h-9 items-center rounded-field px-3.5 text-body-sm no-underline ${
                 activa
@@ -37,7 +36,7 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
               }`}
             >
               {opcion.etiqueta}
-            </Link>
+            </Ir>
           );
         })}
       </nav>

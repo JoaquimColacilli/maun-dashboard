@@ -1,7 +1,6 @@
 import { entregaEstimada, esAnteriorALaApertura, porcentajeDeLaSena } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import { CONDICION, EnlaceACliente } from '@/entities/cliente';
 import { CasillaDeLaApertura } from '@/entities/movimiento';
@@ -31,6 +30,8 @@ import {
   formatearPorcentaje,
   hoyEnElTaller,
   uuidv7,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import { Button, Campo, CamposJuntos, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
@@ -53,7 +54,7 @@ export interface PantallaDePasajeProps {
 const CIFRA = 'contents @min-[44rem]:flex @min-[44rem]:flex-col @min-[44rem]:gap-0.5';
 
 export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
-  const navegar = useNavigate();
+  const ir = useIr();
   const idCampos = useId();
   const replica = useReplicaDelTaller();
   const { proyecto, cliente } = resumen;
@@ -128,12 +129,12 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
 
   useEffect(() => {
     if (guardar.isPaused) {
-      void navegar(rutaDelProyecto(proyecto.id), {
-        replace: true,
+      ir(rutaDelProyecto(proyecto.id), {
+        como: 'reemplazar',
         state: { recienAprobado: true },
       });
     }
-  }, [guardar.isPaused, navegar, proyecto.id]);
+  }, [guardar.isPaused, ir, proyecto.id]);
 
   function aprobar(evento: SyntheticEvent<HTMLFormElement>): void {
     evento.preventDefault();
@@ -172,8 +173,8 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
       ),
       {
         onSuccess: () => {
-          void navegar(rutaDelProyecto(proyecto.id), {
-            replace: true,
+          ir(rutaDelProyecto(proyecto.id), {
+            como: 'reemplazar',
             state: { recienAprobado: true },
           });
         },
@@ -242,13 +243,13 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
 
   return (
     <Pagina>
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
+      <Ir
+        a={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
       >
         <Icono nombre="chevron-left" tamano={20} />
         Volver sin aprobar
-      </Link>
+      </Ir>
 
       <header>
         <p aria-hidden className="mb-2 flex items-center gap-1.5 text-meta text-text-2">
@@ -315,12 +316,12 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
             </div>
             <p id={`${idCampos}-opciones-ayuda`} className="text-meta leading-normal text-text-3">
               El presupuesto del trabajo es el importe de la que elijas. Si aprobó otro importe,{' '}
-              <Link
-                to={rutaDeEdicion(proyecto.id)}
+              <Ir
+                a={rutaDeEdicion(proyecto.id)}
                 className="font-medium text-text-2 underline underline-offset-3"
               >
                 corregí la opción
-              </Link>{' '}
+              </Ir>{' '}
               antes de pasarlo.
             </p>
             {falta !== undefined && (

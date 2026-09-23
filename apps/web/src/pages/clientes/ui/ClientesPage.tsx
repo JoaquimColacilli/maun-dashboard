@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   buscarClientes,
@@ -14,7 +13,7 @@ import {
 } from '@/entities/cliente';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
-import { formatearPesos, relativa } from '@/shared/lib';
+import { formatearPesos, relativa, useIr } from '@/shared/lib';
 import { Button, ConSalida, Icono, Pagina } from '@/shared/ui';
 
 function detalleDe(resumen: ResumenDeCliente, hoy: string): string {
@@ -29,7 +28,7 @@ function detalleDe(resumen: ResumenDeCliente, hoy: string): string {
 }
 
 function Fila({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string }) {
-  const navegar = useNavigate();
+  const ir = useIr();
   const { cliente } = resumen;
 
   return (
@@ -37,7 +36,7 @@ function Fila({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string }) {
       <button
         type="button"
         onClick={() => {
-          void navegar(rutaDelCliente(cliente.id));
+          ir(rutaDelCliente(cliente.id));
         }}
         className="grid min-h-[64px] w-full grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-3 text-left hover:bg-surface lg:grid-cols-[40px_minmax(0,2fr)_minmax(0,1.4fr)_140px_120px]"
       >

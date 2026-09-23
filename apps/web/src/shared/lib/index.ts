@@ -67,6 +67,19 @@ export {
   type BloqueoDelDispositivo,
   type ResultadoDeLaHuella,
 } from './huella';
+export { Ir, type IrProps } from './Ir';
+export {
+  ContextoDeLaPuerta,
+  useIr,
+  usePuerta,
+  useSenalDeUnaVez,
+  useVolver,
+  type ComoIr,
+  type OpcionesDeIr,
+  type PuertoDeNavegacion,
+  type SenalDeUnaVez,
+  type Vuelta,
+} from './puerta';
 export { useVueltaPorUnAviso } from './vuelta-por-un-aviso';
 export {
   aplicarLaVersionNueva,

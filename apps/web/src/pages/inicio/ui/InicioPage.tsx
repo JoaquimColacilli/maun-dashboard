@@ -9,7 +9,6 @@ import {
   type Money,
 } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import {
   faltaDelSueldo,
@@ -49,6 +48,8 @@ import {
   rutaDeFinanzasDelTesoro,
   rutaDelProyecto,
   useAnchoDePantalla,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import {
   Avatar,
@@ -319,19 +320,19 @@ function BotonDeLaCuenta({
 
 function AccesoALaAgenda() {
   return (
-    <Link
-      to="/agenda"
+    <Ir
+      a="/agenda"
       aria-label="Agenda"
       className="flex size-tap flex-none items-center justify-center rounded-pill text-ink hover:bg-surface"
     >
       <Icono nombre="calendar-days" tamano={22} />
-    </Link>
+    </Ir>
   );
 }
 
 export function InicioPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const ancho = useAnchoDePantalla();
   const sesion = useSesionActiva();
   const nombreDeLaPersona = useNombreDeLaPersona();
@@ -375,7 +376,7 @@ export function InicioPage() {
   );
 
   const irA = (ruta: string) => () => {
-    void navegar(ruta);
+    ir(ruta);
   };
 
   const estadisticas = [

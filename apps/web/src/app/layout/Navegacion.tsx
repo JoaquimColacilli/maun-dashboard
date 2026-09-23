@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
-import { flushSync } from 'react-dom';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
 import { VersionDeLaApp } from '@/features/ver-novedades';
-import { conFondo, esRutaDeHoja, useAnchoDePantalla, useUbicacionVisible } from '@/shared/lib';
+import {
+  conFondo,
+  esRutaDeHoja,
+  Ir,
+  useAnchoDePantalla,
+  useIr,
+  useUbicacionVisible,
+} from '@/shared/lib';
 import { Avatar, Icono } from '@/shared/ui';
 
-import { conTransicion } from '../router/transicion';
 import {
   ACCIONES_RAPIDAS,
   DESTINOS,
@@ -19,16 +24,14 @@ import {
 } from './destinos';
 
 function useIrA(): (ruta: string) => void {
-  const navegar = useNavigate();
+  const ir = useIr();
   const location = useLocation();
   const visible = useUbicacionVisible();
   return (ruta) => {
     if (ruta === location.pathname) return;
-    const opciones = esRutaDeHoja(ruta) ? { state: conFondo(visible) } : undefined;
-    conTransicion(() => {
-      flushSync(() => {
-        void navegar(ruta, opciones);
-      });
+    ir(ruta, {
+      state: esRutaDeHoja(ruta) ? conFondo(visible) : undefined,
+      desdeLaNavegacion: true,
     });
   };
 }
@@ -43,17 +46,16 @@ function LogoAInicio({
   children: string;
 }) {
   return (
-    <Link
-      to={DESTINOS.inicio.ruta}
+    <Ir
+      a={DESTINOS.inicio.ruta}
       aria-label="MAUN, ir a Inicio"
       className={className}
-      onClick={(evento) => {
-        evento.preventDefault();
+      alTocar={() => {
         irA(DESTINOS.inicio.ruta);
       }}
     >
       {children}
-    </Link>
+    </Ir>
   );
 }
 

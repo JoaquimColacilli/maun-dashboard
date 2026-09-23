@@ -1,7 +1,6 @@
 import { duracion, menosDe, primeraPalabra, queTieneLaEncuesta } from '@maun/domain';
 import { onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
-import { Link } from 'react-router';
 
 import {
   Carita,
@@ -27,6 +26,7 @@ import {
   rutaDeLaRespuesta,
   tokenNuevo,
   uuidv7,
+  Ir,
 } from '@/shared/lib';
 import { Button, ConSalida, FilaDeAcciones, Hoja, Icono, type NombreDeIcono } from '@/shared/ui';
 
@@ -254,9 +254,9 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
   const pie = (
     <p className="mt-6.5 max-w-[560px] text-label leading-relaxed text-text-3">
       La encuesta que recibe sale de{' '}
-      <Link to={RUTA_DE_PREGUNTAS} className="font-medium text-ink underline underline-offset-3">
+      <Ir a={RUTA_DE_PREGUNTAS} className="font-medium text-ink underline underline-offset-3">
         Opiniones › Preguntas
-      </Link>
+      </Ir>
       , más lo que agregues acá.
     </p>
   );
@@ -288,8 +288,8 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
             }
           />
           {respuesta !== undefined && (
-            <Link
-              to={rutaDeLaRespuesta(respuesta.id)}
+            <Ir
+              a={rutaDeLaRespuesta(respuesta.id)}
               className="flex items-start gap-3.5 rounded-panel border border-hairline bg-paper p-3.5 text-left text-ink no-underline hover:border-ink"
             >
               {ficha?.titular && (
@@ -310,11 +310,11 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
               <span aria-hidden className="flex flex-none">
                 <Icono nombre="chevron-right" tamano={18} />
               </span>
-            </Link>
+            </Ir>
           )}
-          <Link to={RUTA_DE_OPINIONES} className={`${SECUNDARIO} self-start`}>
+          <Ir a={RUTA_DE_OPINIONES} className={`${SECUNDARIO} self-start`}>
             Ver todas las opiniones
-          </Link>
+          </Ir>
         </section>
         <PreguntasDelTrabajo proyectoId={proyecto.id} nombre={nombre} situacion="contestada" />
         {pie}

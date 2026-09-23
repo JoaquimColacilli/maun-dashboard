@@ -1,5 +1,4 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import { AccionesDeContacto, rutaDelCliente } from '@/entities/cliente';
 import {
@@ -38,6 +37,8 @@ import {
   relativa,
   rutaDeCompartir,
   useAvisosDelProyecto,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import {
   Button,
@@ -80,7 +81,7 @@ export interface FichaDeContactoProps {
 
 export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const avisos = useAvisosDelProyecto(resumen.proyecto.id);
   const [editando, setEditando] = useState<HojaAbierta>(null);
   const cerrarLaHoja = useCallback(() => {
@@ -101,13 +102,13 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   return (
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
-        <Link
-          to={RUTA_DE_CONSULTAS}
+        <Ir
+          a={RUTA_DE_CONSULTAS}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
           Consultas
-        </Link>
+        </Ir>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
           <Button
@@ -115,7 +116,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             size="chico"
             aria-label="Mostrarle al cliente"
             onClick={() => {
-              void navegar(rutaDeCompartir(proyecto.id));
+              ir(rutaDeCompartir(proyecto.id));
             }}
           >
             <Icono nombre="eye" tamano={16} />
@@ -125,7 +126,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             proyecto={proyecto}
             sustantivo="contacto"
             alBorrar={() => {
-              void navegar(RUTA_DE_CONSULTAS);
+              ir(RUTA_DE_CONSULTAS);
             }}
           />
           <Button
@@ -146,13 +147,13 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         {cliente === undefined ? (
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
-          <Link
-            to={rutaDelCliente(cliente.id)}
+          <Ir
+            a={rutaDelCliente(cliente.id)}
             className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
           >
             {cliente.nombre}
             <Icono nombre="chevron-right" tamano={14} />
-          </Link>
+          </Ir>
         )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
@@ -265,12 +266,12 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
                 desde el día que los cargaste.
               </p>
             )}
-            <Link
-              to={rutaDeEdicion(proyecto.id)}
+            <Ir
+              a={rutaDeEdicion(proyecto.id)}
               className="mt-2 flex min-h-tap w-fit items-center gap-1.5 rounded-field text-label font-medium underline underline-offset-3"
             >
               Cargar otro pago o un gasto
-            </Link>
+            </Ir>
           </section>
 
           <LoQueHaceFalta proyecto={proyecto} />
@@ -305,7 +306,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
               <Button
                 variant="secundario"
                 onClick={() => {
-                  void navegar(rutaDeCierre(proyecto.id));
+                  ir(rutaDeCierre(proyecto.id));
                 }}
               >
                 <Icono nombre="x" tamano={16} />

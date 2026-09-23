@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 
-import { fechaLarga, formatearPesos, rutaDelProyecto, TESORO } from '@/shared/lib';
+import { fechaLarga, formatearPesos, rutaDelProyecto, TESORO, Ir } from '@/shared/lib';
 import { Button, FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
 
 import { MOTIVO_DEL_BLOQUEO, type LineaDelTaller } from '../model/libro';
@@ -79,12 +78,12 @@ export function FichaDelMovimiento({ linea, hoy, alCerrar }: FichaDelMovimientoP
           </Button>
         </FilaDeAcciones>
         {linea.proyectoId !== null && (
-          <Link
-            to={rutaDelProyecto(linea.proyectoId)}
+          <Ir
+            a={rutaDelProyecto(linea.proyectoId)}
             className="flex h-button items-center justify-center gap-2 rounded-field bg-ink px-[18px] text-body font-medium text-paper"
           >
             Ver «{linea.proyectoTitulo ?? 'el trabajo'}»
-          </Link>
+          </Ir>
         )}
       </footer>
     </Hoja>

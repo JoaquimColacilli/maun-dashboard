@@ -1,5 +1,4 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import { AccionesDeContacto, rutaDelCliente } from '@/entities/cliente';
 import {
@@ -24,6 +23,8 @@ import {
   hoyEnElTaller,
   relativa,
   useAvisosDelProyecto,
+  Ir,
+  useIr,
 } from '@/shared/lib';
 import {
   Button,
@@ -61,7 +62,7 @@ export interface FichaDeSeguimientoProps {
 
 export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { proyecto, cliente } = resumen;
   const avisos = useAvisosDelProyecto(proyecto.id);
   const [hoja, setHoja] = useState<HojaAbierta>(null);
@@ -94,19 +95,19 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
   return (
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
-        <Link
-          to={RUTA_DE_SEGUIMIENTO}
+        <Ir
+          a={RUTA_DE_SEGUIMIENTO}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
           Seguimiento
-        </Link>
+        </Ir>
         <div className="flex flex-none gap-2">
           <BorradoDelProyecto
             proyecto={proyecto}
             sustantivo="contacto"
             alBorrar={() => {
-              void navegar(RUTA_DE_SEGUIMIENTO);
+              ir(RUTA_DE_SEGUIMIENTO);
             }}
           />
           <Button
@@ -127,13 +128,13 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
         {cliente === undefined ? (
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
-          <Link
-            to={rutaDelCliente(cliente.id)}
+          <Ir
+            a={rutaDelCliente(cliente.id)}
             className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
           >
             {cliente.nombre}
             <Icono nombre="chevron-right" tamano={14} />
-          </Link>
+          </Ir>
         )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
@@ -254,7 +255,7 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
               variant="secundario"
               className="mt-2.5"
               onClick={() => {
-                void navegar(rutaDeCierre(proyecto.id));
+                ir(rutaDeCierre(proyecto.id));
               }}
             >
               <Icono nombre="x" tamano={16} />
