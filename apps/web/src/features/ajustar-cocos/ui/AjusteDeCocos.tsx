@@ -52,13 +52,13 @@ export function AjusteDeCocos({ saldo }: AjusteDeCocosProps) {
 
   return (
     <form noValidate className="flex flex-col gap-3" onSubmit={enviar}>
-      <p className="text-label leading-relaxed text-text-2">
+      <p className="max-w-[42rem] text-label leading-relaxed text-text-2">
         Cocos es el único saldo que se corrige a mano: sube solo por los intereses y baja cuando
         retirás. Escribí el saldo que ves en la cuenta y la app anota la diferencia.{' '}
         <strong className="font-semibold text-ink">La resta no la hacés vos.</strong>
       </p>
 
-      <dl className="flex items-baseline justify-between gap-4 border-y border-hairline-soft py-2">
+      <dl className="flex max-w-(--campo-largo) items-baseline justify-between gap-4 border-y border-hairline-soft py-2">
         <dt className="text-label text-text-2">Lo que la app tiene calculado</dt>
         <dd className="text-body font-semibold tabular-nums">{formatearPesos(saldo)}</dd>
       </dl>

@@ -184,7 +184,7 @@ export function AjustesPage() {
         </SeccionEnFila>
 
         <SeccionEnFila id="titulo-avisos-de-la-agenda" titulo="Avisos de la agenda">
-          <p className="text-body leading-relaxed text-text-2">
+          <p className="max-w-[42rem] text-body leading-relaxed text-text-2">
             Un recordatorio a la mañana con las entregas, las visitas y los presupuestos que vencen.
             Se activa en cada dispositivo.
           </p>
@@ -223,14 +223,14 @@ export function AjustesPage() {
 
         {ajustes && (
           <SeccionEnFila id="titulo-cobro" titulo="Cómo te pagan">
-            <p className="text-body leading-relaxed text-text-2">
+            <p className="max-w-[42rem] text-body leading-relaxed text-text-2">
               Es la cuenta a la que te transfiere tu cliente. Se cargan una vez y aparecen en la
               página que le compartís, al lado de lo que tiene que pagarte, con un botón para copiar
               cada uno. El titular y el CUIT le sirven para confirmar que es la cuenta correcta: su
               banco le muestra a nombre de quién está antes de confirmar. Recibir una transferencia
               no te cuesta comisión. Todos son opcionales: lo que dejes vacío, no se muestra.
             </p>
-            <p className="text-body leading-relaxed text-text-2">
+            <p className="max-w-[42rem] text-body leading-relaxed text-text-2">
               El link de Mercado Pago es aparte y es opcional. Sacalo de tu app, en Cobrar → Link de
               pago → Link sin monto definido: se crea una sola vez y sirve para todos tus trabajos.
               Si lo cargás, tu cliente ve en su página un botón que le abre Mercado Pago para
@@ -243,7 +243,7 @@ export function AjustesPage() {
 
         {ajustes && (
           <SeccionEnFila id="titulo-resenas" titulo="Reseñas en Google">
-            <p className="text-body leading-relaxed text-text-2">
+            <p className="max-w-[42rem] text-body leading-relaxed text-text-2">
               Cuando un cliente termina la encuesta, le pedimos que deje su opinión también en
               Google. Se le pide a todos, contesten lo que contesten: pedírsela solo a los que
               quedaron contentos va contra las reglas de Google, que pueden borrar las reseñas del

@@ -16,7 +16,7 @@ export function SelectorDeTema() {
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="mb-1.5 text-label text-text-2">Tema</legend>
-      <div className="grid grid-cols-3 gap-0.5 rounded-field bg-surface-2 p-1">
+      <div className="grid max-w-[30rem] grid-cols-3 gap-0.5 rounded-field bg-surface-2 p-1">
         {OPCIONES.map((opcion) => (
           <label
             key={opcion.id}

@@ -8,7 +8,7 @@ import {
   SENA_MAXIMA_BP,
   useEstadoSync,
 } from '@/shared/lib';
-import { Button, Campo, MoneyInput } from '@/shared/ui';
+import { Button, Campo, CamposJuntos, MoneyInput } from '@/shared/ui';
 
 import { MUTACION_DE_AJUSTES, MUTACION_DEL_NOMBRE } from '../api/mutacion';
 import { diferencias } from '../model/cambios';
@@ -108,62 +108,58 @@ export function FormularioDeConfiguracion({
 
   return (
     <form noValidate className="flex flex-col gap-3" onSubmit={enviar}>
-      <Campo
-        etiqueta="Nombre del taller"
-        className="max-w-(--campo-largo)"
-        value={nombre}
-        maxLength={LARGO_DEL_NOMBRE}
-        error={error?.campo === 'nombre' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          setNombre(evento.target.value);
-        }}
-      />
-      <MoneyInput
-        etiqueta="Sueldo que te asignás"
-        className="max-w-(--campo-medio)"
-        ayuda="Lo que cada trabajo cobrado transfiere al hogar."
-        value={sueldo}
-        error={error?.campo === 'sueldo' ? error.mensaje : undefined}
-        onChange={setSueldo}
-      />
-      <MoneyInput
-        etiqueta="Costos fijos por mes"
-        className="max-w-(--campo-medio)"
-        ayuda="Alquiler, servicios y todo lo que se paga aunque no entre trabajo."
-        value={fijos}
-        error={error?.campo === 'fijos' ? error.mensaje : undefined}
-        onChange={setFijos}
-      />
-      <MoneyInput
-        etiqueta="Meta de Cocos"
-        className="max-w-(--campo-medio)"
-        ayuda="A cuánto querés llegar en el ahorro invertido."
-        value={meta}
-        error={error?.campo === 'meta' ? error.mensaje : undefined}
-        onChange={setMeta}
-      />
-      <Campo
-        etiqueta="Seña que pedís (%)"
-        className="max-w-(--campo-corto)"
-        inputMode="decimal"
-        ayuda="Qué parte del presupuesto pedís para confirmar un trabajo. Lo normal es la mitad, y en un trabajo puntual la podés cambiar."
-        value={sena}
-        error={error?.campo === 'sena' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          setSena(evento.target.value);
-        }}
-      />
-      <Campo
-        etiqueta="Tasa anual de Cocos (%)"
-        className="max-w-(--campo-corto)"
-        inputMode="decimal"
-        ayuda="Solo sirve para proyectar. Si no la sabés, dejala en 0."
-        value={tasa}
-        error={error?.campo === 'tasa' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          setTasa(evento.target.value);
-        }}
-      />
+      <CamposJuntos columnas={3} deADos campoMinimo="12rem">
+        <Campo
+          etiqueta="Nombre del taller"
+          value={nombre}
+          maxLength={LARGO_DEL_NOMBRE}
+          error={error?.campo === 'nombre' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            setNombre(evento.target.value);
+          }}
+        />
+        <MoneyInput
+          etiqueta="Sueldo que te asignás"
+          ayuda="Lo que cada trabajo cobrado transfiere al hogar."
+          value={sueldo}
+          error={error?.campo === 'sueldo' ? error.mensaje : undefined}
+          onChange={setSueldo}
+        />
+        <MoneyInput
+          etiqueta="Costos fijos por mes"
+          ayuda="Alquiler, servicios y todo lo que se paga aunque no entre trabajo."
+          value={fijos}
+          error={error?.campo === 'fijos' ? error.mensaje : undefined}
+          onChange={setFijos}
+        />
+        <MoneyInput
+          etiqueta="Meta de Cocos"
+          ayuda="A cuánto querés llegar en el ahorro invertido."
+          value={meta}
+          error={error?.campo === 'meta' ? error.mensaje : undefined}
+          onChange={setMeta}
+        />
+        <Campo
+          etiqueta="Seña que pedís (%)"
+          inputMode="decimal"
+          ayuda="Qué parte del presupuesto pedís para confirmar un trabajo. Lo normal es la mitad, y en un trabajo puntual la podés cambiar."
+          value={sena}
+          error={error?.campo === 'sena' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            setSena(evento.target.value);
+          }}
+        />
+        <Campo
+          etiqueta="Tasa anual de Cocos (%)"
+          inputMode="decimal"
+          ayuda="Solo sirve para proyectar. Si no la sabés, dejala en 0."
+          value={tasa}
+          error={error?.campo === 'tasa' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            setTasa(evento.target.value);
+          }}
+        />
+      </CamposJuntos>
 
       {hayFallo && (
         <p role="alert" className="text-label font-medium text-alerta">

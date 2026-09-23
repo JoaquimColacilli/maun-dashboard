@@ -25,7 +25,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { ajustesDe, mensajeDeSincronizacion } from '@/shared/api';
 import { formatearPesos, formatearPorcentaje, hoyLocal, uuidv7 } from '@/shared/lib';
-import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
+import { Button, Campo, CamposJuntos, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 import {
   errorDelPasaje,
@@ -41,6 +41,8 @@ export interface PantallaDePasajeProps {
   resumen: ResumenDeProyecto;
   opciones: readonly OpcionDePresupuesto[];
 }
+
+const CIFRA = 'contents @min-[44rem]:flex @min-[44rem]:flex-col @min-[44rem]:gap-0.5';
 
 export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const navegar = useNavigate();
@@ -150,8 +152,43 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
     );
   }
 
+  const campoDeLaSena = (
+    <div className="flex flex-col gap-1.5">
+      <label
+        htmlFor={`${idCampos}-sena`}
+        className="flex items-baseline justify-between gap-2 text-label text-text-2"
+      >
+        Seña que cobrás ahora
+        <span className="text-meta text-text-3">
+          {formatearPorcentaje(porcentaje)}% del presupuesto
+        </span>
+      </label>
+      <div className="flex h-15 items-center gap-1.5 rounded-field border border-border px-3.5">
+        <span aria-hidden className="text-money-lg text-text-3">
+          $
+        </span>
+        <MoneyInput
+          id={`${idCampos}-sena`}
+          placeholder="0"
+          value={sena}
+          aria-describedby={`${idCampos}-sena-ayuda`}
+          onChange={(centavos) => {
+            setSena(centavos);
+            setSenaAMano(true);
+          }}
+          className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+        />
+      </div>
+      <p id={`${idCampos}-sena-ayuda`} className="text-meta leading-normal text-text-3">
+        {esperada.situacion === 'cubierta'
+          ? `Con lo que ya cobraste la seña está cubierta. Dejalo en blanco si hoy no cobrás nada más.`
+          : `Entra como un pago del trabajo, con la fecha de inicio y la forma de pago de acá. Si todavía no cobraste, dejalo en blanco.`}
+      </p>
+    </div>
+  );
+
   return (
-    <Pagina className="[&>*]:max-w-[720px]">
+    <Pagina>
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -244,113 +281,102 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
             )}
           </fieldset>
         ) : (
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
-              Presupuesto aprobado
-            </label>
-            <div
-              className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
-                falta === undefined ? 'border-ink' : 'border-alerta'
-              }`}
-            >
-              <span aria-hidden className="text-money-lg text-text-3">
-                $
-              </span>
-              <MoneyInput
-                ref={campoDelPresupuesto}
-                id={`${idCampos}-presupuesto`}
-                placeholder="0"
-                value={presupuesto}
-                aria-invalid={falta === undefined ? undefined : true}
-                aria-describedby={falta === undefined ? undefined : `${idCampos}-presupuesto-error`}
-                onChange={(centavos) => {
-                  setPresupuesto(centavos);
-                  setFalta(undefined);
-                  if (!senaAMano) {
-                    setSena(
-                      senaSugerida(
-                        senaDelPasaje(
-                          centavos,
-                          resumen.cobrado,
-                          senaDelTaller(ajustesDe(replica)),
-                          senaDelProyecto(proyecto),
-                        ),
-                      ),
-                    );
-                  }
-                }}
-                className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
-              />
-            </div>
-            {falta !== undefined && (
-              <span
-                id={`${idCampos}-presupuesto-error`}
-                role="alert"
-                className="text-label font-medium text-alerta"
+          <CamposJuntos separacion="gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
+                Presupuesto aprobado
+              </label>
+              <div
+                className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
+                  falta === undefined ? 'border-ink' : 'border-alerta'
+                }`}
               >
-                {falta}
-              </span>
-            )}
-          </div>
+                <span aria-hidden className="text-money-lg text-text-3">
+                  $
+                </span>
+                <MoneyInput
+                  ref={campoDelPresupuesto}
+                  id={`${idCampos}-presupuesto`}
+                  placeholder="0"
+                  value={presupuesto}
+                  aria-invalid={falta === undefined ? undefined : true}
+                  aria-describedby={
+                    falta === undefined ? undefined : `${idCampos}-presupuesto-error`
+                  }
+                  onChange={(centavos) => {
+                    setPresupuesto(centavos);
+                    setFalta(undefined);
+                    if (!senaAMano) {
+                      setSena(
+                        senaSugerida(
+                          senaDelPasaje(
+                            centavos,
+                            resumen.cobrado,
+                            senaDelTaller(ajustesDe(replica)),
+                            senaDelProyecto(proyecto),
+                          ),
+                        ),
+                      );
+                    }
+                  }}
+                  className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+                />
+              </div>
+              {falta !== undefined && (
+                <span
+                  id={`${idCampos}-presupuesto-error`}
+                  role="alert"
+                  className="text-label font-medium text-alerta"
+                >
+                  {falta}
+                </span>
+              )}
+            </div>
+            {campoDeLaSena}
+          </CamposJuntos>
         )}
+        {hayOpciones && campoDeLaSena}
 
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor={`${idCampos}-sena`}
-            className="flex items-baseline justify-between gap-2 text-label text-text-2"
-          >
-            Seña que cobrás ahora
-            <span className="text-meta text-text-3">
-              {formatearPorcentaje(porcentaje)}% del presupuesto
-            </span>
-          </label>
-          <div className="flex h-15 items-center gap-1.5 rounded-field border border-border px-3.5">
-            <span aria-hidden className="text-money-lg text-text-3">
-              $
-            </span>
-            <MoneyInput
-              id={`${idCampos}-sena`}
-              placeholder="0"
-              value={sena}
-              aria-describedby={`${idCampos}-sena-ayuda`}
-              onChange={(centavos) => {
-                setSena(centavos);
-                setSenaAMano(true);
-              }}
-              className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
-            />
-          </div>
-          <p id={`${idCampos}-sena-ayuda`} className="text-meta leading-normal text-text-3">
-            {esperada.situacion === 'cubierta'
-              ? `Con lo que ya cobraste la seña está cubierta. Dejalo en blanco si hoy no cobrás nada más.`
-              : `Entra como un pago del trabajo, con la fecha de inicio y la forma de pago de acá. Si todavía no cobraste, dejalo en blanco.`}
-          </p>
-        </div>
-
-        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-field bg-surface px-3.5 py-3 text-body tabular-nums">
+        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-field bg-surface px-3.5 py-3 text-body tabular-nums @min-[44rem]:auto-cols-fr @min-[44rem]:grid-flow-col @min-[44rem]:grid-cols-none @min-[44rem]:gap-x-6">
           {hayOpciones && (
-            <>
+            <div className={CIFRA}>
               <dt className="text-text-2">Presupuesto aprobado</dt>
-              <dd className="text-right font-semibold">
+              <dd className="text-right font-semibold @min-[44rem]:text-left">
                 {aprobado === null ? '—' : formatearPesos(aprobado)}
               </dd>
-            </>
+            </div>
           )}
-          <dt className="text-text-2">Ya cobrado antes</dt>
-          <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.antes)}</dd>
-          <dt className="text-text-2">Seña que cobrás ahora</dt>
-          <dd className="text-right font-medium text-hogar">{formatearPesos(cuenta.ahora)}</dd>
-          <dt className="text-text-2">Cobrado en total</dt>
-          <dd className="text-right font-semibold text-hogar">{formatearPesos(cuenta.cobrado)}</dd>
-          <dt className="text-text-2">Saldo a cobrar</dt>
-          <dd className="text-right font-semibold">
-            {cuenta.saldo === null ? '—' : formatearPesos(cuenta.saldo)}
-          </dd>
+          <div className={CIFRA}>
+            <dt className="text-text-2">Ya cobrado antes</dt>
+            <dd className="text-right font-medium text-hogar @min-[44rem]:text-left">
+              {formatearPesos(cuenta.antes)}
+            </dd>
+          </div>
+          <div className={CIFRA}>
+            <dt className="text-text-2">Seña que cobrás ahora</dt>
+            <dd className="text-right font-medium text-hogar @min-[44rem]:text-left">
+              {formatearPesos(cuenta.ahora)}
+            </dd>
+          </div>
+          <div className={CIFRA}>
+            <dt className="text-text-2">Cobrado en total</dt>
+            <dd className="text-right font-semibold text-hogar @min-[44rem]:text-left">
+              {formatearPesos(cuenta.cobrado)}
+            </dd>
+          </div>
+          <div className={CIFRA}>
+            <dt className="text-text-2">Saldo a cobrar</dt>
+            <dd className="text-right font-semibold @min-[44rem]:text-left">
+              {cuenta.saldo === null ? '—' : formatearPesos(cuenta.saldo)}
+            </dd>
+          </div>
           {resumen.gastos > 0 && (
-            <>
+            <div className={CIFRA}>
               <dt className="text-text-2">Gastos ya cargados</dt>
-              <dd className="text-right font-medium">{formatearPesos(resumen.gastos)}</dd>
-            </>
+              <dd className="text-right font-medium @min-[44rem]:text-left">
+                {formatearPesos(resumen.gastos)}
+              </dd>
+            </div>
           )}
         </dl>
 
@@ -378,7 +404,7 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
           </div>
         </fieldset>
 
-        <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @sm:gap-x-3 @sm:gap-y-1.5">
+        <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @sm:gap-x-4 @sm:gap-y-1.5">
           <Campo
             etiqueta="Fecha de inicio"
             type="date"
@@ -404,43 +430,45 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
           />
         </div>
 
-        <Campo
-          etiqueta="Dirección de entrega"
-          placeholder="Calle y número, localidad"
-          maxLength={500}
-          value={direccion}
-          onChange={(evento) => {
-            setDireccion(evento.target.value);
-          }}
-        />
-
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor={`${idCampos}-comprobante`}
-            className="flex items-baseline justify-between gap-2 text-label text-text-2"
-          >
-            Comprobante a emitir
-            {cliente !== undefined && (
-              <span className="text-meta text-text-3">
-                {CONDICION[cliente.condicion_fiscal].etiqueta}
-              </span>
-            )}
-          </label>
-          <select
-            id={`${idCampos}-comprobante`}
-            value={comprobante}
+        <CamposJuntos separacion="gap-5">
+          <Campo
+            etiqueta="Dirección de entrega"
+            placeholder="Calle y número, localidad"
+            maxLength={500}
+            value={direccion}
             onChange={(evento) => {
-              setComprobante(evento.target.value as Comprobante);
+              setDireccion(evento.target.value);
             }}
-            className="h-field rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
-          >
-            {COMPROBANTES_EN_ORDEN.map((opcion) => (
-              <option key={opcion} value={opcion}>
-                {COMPROBANTE[opcion]}
-              </option>
-            ))}
-          </select>
-        </div>
+          />
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor={`${idCampos}-comprobante`}
+              className="flex items-baseline justify-between gap-2 text-label text-text-2"
+            >
+              Comprobante a emitir
+              {cliente !== undefined && (
+                <span className="text-meta text-text-3">
+                  {CONDICION[cliente.condicion_fiscal].etiqueta}
+                </span>
+              )}
+            </label>
+            <select
+              id={`${idCampos}-comprobante`}
+              value={comprobante}
+              onChange={(evento) => {
+                setComprobante(evento.target.value as Comprobante);
+              }}
+              className="h-field rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
+            >
+              {COMPROBANTES_EN_ORDEN.map((opcion) => (
+                <option key={opcion} value={opcion}>
+                  {COMPROBANTE[opcion]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </CamposJuntos>
 
         <div>
           <Button

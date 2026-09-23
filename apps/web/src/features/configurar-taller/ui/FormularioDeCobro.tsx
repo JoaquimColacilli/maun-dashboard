@@ -5,7 +5,7 @@ import { formatearCbu, formatearCuit } from '@maun/domain';
 
 import { mensajeDeSincronizacion, type FilaDe } from '@/shared/api';
 import { useEstadoSync } from '@/shared/lib';
-import { Button, Campo } from '@/shared/ui';
+import { Button, Campo, CamposJuntos } from '@/shared/ui';
 
 import { MUTACION_DE_AJUSTES } from '../api/mutacion';
 import { diferencias } from '../model/cambios';
@@ -62,60 +62,62 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
 
   return (
     <form noValidate className="flex flex-col gap-3" onSubmit={enviar}>
-      <Campo
-        etiqueta="Alias"
-        className="max-w-(--campo-medio)"
-        inputMode="text"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        ayuda="El que tu cliente escribe en su banco o en su billetera."
-        value={datos.alias}
-        error={error?.campo === 'alias' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          cambiar('alias', evento.target.value);
-        }}
-      />
-      {error?.campo !== 'alias' && avisoDelAlias(datos.alias) !== undefined && (
-        <p className="-mt-1.5 text-label leading-normal text-atencion">
-          {avisoDelAlias(datos.alias)}
-        </p>
-      )}
-      <Campo
-        etiqueta={etiquetaDeLaClave(datos.cbu)}
-        className="max-w-(--campo-largo)"
-        inputMode="numeric"
-        ayuda="Los 22 dígitos. Se muestran de a cuatro para leerlos; el cliente lo copia de una."
-        value={datos.cbu}
-        error={error?.campo === 'cbu' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          cambiar('cbu', formatearCbu(evento.target.value));
-        }}
-      />
-      <Campo
-        etiqueta="Titular de la cuenta"
-        className="max-w-(--campo-largo)"
-        maxLength={LARGO_DEL_TITULAR}
-        ayuda="A nombre de quién está. Es lo que el cliente ve en su banco antes de confirmar."
-        value={datos.titular}
-        error={error?.campo === 'titular' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          cambiar('titular', evento.target.value);
-        }}
-      />
-      <Campo
-        etiqueta="CUIT del titular"
-        className="max-w-(--campo-medio)"
-        inputMode="numeric"
-        ayuda={
-          error?.campo === 'cuit' ? undefined : (avisoDelCuitDelTaller(datos.cuit) ?? 'Opcional.')
-        }
-        value={datos.cuit}
-        error={error?.campo === 'cuit' ? error.mensaje : undefined}
-        onChange={(evento) => {
-          cambiar('cuit', formatearCuit(evento.target.value));
-        }}
-      />
+      <CamposJuntos>
+        <div className="flex min-w-0 flex-col gap-3">
+          <Campo
+            etiqueta="Alias"
+            inputMode="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            ayuda="El que tu cliente escribe en su banco o en su billetera."
+            value={datos.alias}
+            error={error?.campo === 'alias' ? error.mensaje : undefined}
+            onChange={(evento) => {
+              cambiar('alias', evento.target.value);
+            }}
+          />
+          {error?.campo !== 'alias' && avisoDelAlias(datos.alias) !== undefined && (
+            <p className="-mt-1.5 text-label leading-normal text-atencion">
+              {avisoDelAlias(datos.alias)}
+            </p>
+          )}
+        </div>
+        <Campo
+          etiqueta={etiquetaDeLaClave(datos.cbu)}
+          inputMode="numeric"
+          ayuda="Los 22 dígitos. Se muestran de a cuatro para leerlos; el cliente lo copia de una."
+          value={datos.cbu}
+          error={error?.campo === 'cbu' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            cambiar('cbu', formatearCbu(evento.target.value));
+          }}
+        />
+      </CamposJuntos>
+      <CamposJuntos>
+        <Campo
+          etiqueta="Titular de la cuenta"
+          maxLength={LARGO_DEL_TITULAR}
+          ayuda="A nombre de quién está. Es lo que el cliente ve en su banco antes de confirmar."
+          value={datos.titular}
+          error={error?.campo === 'titular' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            cambiar('titular', evento.target.value);
+          }}
+        />
+        <Campo
+          etiqueta="CUIT del titular"
+          inputMode="numeric"
+          ayuda={
+            error?.campo === 'cuit' ? undefined : (avisoDelCuitDelTaller(datos.cuit) ?? 'Opcional.')
+          }
+          value={datos.cuit}
+          error={error?.campo === 'cuit' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            cambiar('cuit', formatearCuit(evento.target.value));
+          }}
+        />
+      </CamposJuntos>
       <Campo
         etiqueta="Link de Mercado Pago"
         inputMode="url"
