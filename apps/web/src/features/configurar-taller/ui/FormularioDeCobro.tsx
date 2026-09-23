@@ -64,6 +64,7 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
     <form noValidate className="flex flex-col gap-3" onSubmit={enviar}>
       <Campo
         etiqueta="Alias"
+        className="max-w-(--campo-medio)"
         inputMode="text"
         autoCapitalize="none"
         autoCorrect="off"
@@ -82,6 +83,7 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
       )}
       <Campo
         etiqueta={etiquetaDeLaClave(datos.cbu)}
+        className="max-w-(--campo-largo)"
         inputMode="numeric"
         ayuda="Los 22 dígitos. Se muestran de a cuatro para leerlos; el cliente lo copia de una."
         value={datos.cbu}
@@ -92,6 +94,7 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
       />
       <Campo
         etiqueta="Titular de la cuenta"
+        className="max-w-(--campo-largo)"
         maxLength={LARGO_DEL_TITULAR}
         ayuda="A nombre de quién está. Es lo que el cliente ve en su banco antes de confirmar."
         value={datos.titular}
@@ -102,6 +105,7 @@ export function FormularioDeCobro({ ajustes }: { ajustes: FilaDe<'ajustes'> }) {
       />
       <Campo
         etiqueta="CUIT del titular"
+        className="max-w-(--campo-medio)"
         inputMode="numeric"
         ayuda={
           error?.campo === 'cuit' ? undefined : (avisoDelCuitDelTaller(datos.cuit) ?? 'Opcional.')

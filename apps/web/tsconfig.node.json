@@ -4,5 +4,11 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "playwright.version.config.ts", "e2e"]
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "playwright.version.config.ts",
+    "playwright.reparto.config.ts",
+    "e2e"
+  ]
 }

@@ -1,10 +1,11 @@
 import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 
 import { listoParaCortar } from '../apoyo/pantalla';
+import { entrarConLaSesion } from '../apoyo/sesion';
 import { iniciarSesionDePrueba, vaciarTaller, type SesionDePrueba } from '../apoyo/taller';
 import { levantarArnes, type Arnes } from './arnes';
 
-const VISTA_ANTES_DE_LA_A = '2099-12-30';
+export { entrarConLaSesion };
 
 export const HASTA_EL_AVISO = { timeout: 30_000 };
 
@@ -32,23 +33,6 @@ export async function tallerVacio(): Promise<SesionDePrueba> {
   const sesion = await iniciarSesionDePrueba();
   await vaciarTaller(sesion);
   return sesion;
-}
-
-export async function entrarConLaSesion(
-  context: BrowserContext,
-  sesion: SesionDePrueba,
-): Promise<void> {
-  await context.addInitScript(
-    ({ guardada, vista }) => {
-      if (localStorage.getItem('maun.sesion') === null) {
-        localStorage.setItem('maun.sesion', guardada);
-      }
-      if (localStorage.getItem('maun:novedades-vistas') === null) {
-        localStorage.setItem('maun:novedades-vistas', vista);
-      }
-    },
-    { guardada: sesion.guardada, vista: VISTA_ANTES_DE_LA_A },
-  );
 }
 
 export function controlada(page: Page): Promise<boolean> {

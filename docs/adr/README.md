@@ -57,7 +57,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0051](0051-cobrar-con-mercado-pago.md)                                     | Cobrar con Mercado Pago: por ahora, el alias                      | Superada en parte    |
 | [0052](0052-el-enlace-se-guarda-entero.md)                                  | El enlace se guarda entero, no solo su huella                     | Aceptada             |
 | [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página          | Aceptada             |
-| [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes        | Aceptada             |
+| [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes        | Aceptada, corregida  |
 | [0055](0055-lo-que-se-guarda-en-el-aparato-y-lo-que-no.md)                  | Lo que se guarda en el aparato, y lo que no                       | Aceptada             |
 | [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                        | Aceptada             |
 | [0057](0057-las-opiniones-de-los-clientes.md)                               | Las opiniones: la primera vez que alguien de afuera escribe       | Aceptada             |
@@ -65,3 +65,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)             | La nota del relevamiento reemplaza al casillero                   | Aceptada             |
 | [0060](0060-materiales-la-edicion-en-la-fila-y-el-monto-que-entra.md)       | Materiales, editar en la fila y el monto que entra                | Aceptada             |
 | [0061](0061-el-aviso-de-version-sale-del-registro.md)                       | El aviso de versión nueva sale del registro, y refrescar pregunta | Aceptada             |
+| [0062](0062-el-reparto-en-la-compu.md)                                      | En la compu, tres repartos: filas, principal y apoyo, y tablero   | Aceptada             |

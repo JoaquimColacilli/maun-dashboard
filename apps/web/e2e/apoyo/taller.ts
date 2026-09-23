@@ -582,6 +582,101 @@ export async function ajustarTaller(
   });
 }
 
+const COLUMNAS_DE_LOS_AJUSTES = [
+  'sueldo_mensual_centavos',
+  'costos_fijos_centavos',
+  'meta_cocos_centavos',
+  'tasa_cocos_anual_bp',
+  'sena_bp',
+  'cobro_alias',
+  'cobro_cbu',
+  'cobro_titular',
+  'cobro_cuit',
+  'cobro_link',
+  'resena_link',
+] as const;
+
+export type AjustesDePrueba = Record<(typeof COLUMNAS_DE_LOS_AJUSTES)[number], number | string>;
+
+export async function leerAjustes({
+  entorno,
+  accessToken,
+}: SesionDePrueba): Promise<AjustesDePrueba> {
+  const filas = (await pedir(
+    entorno,
+    `/rest/v1/ajustes?select=${COLUMNAS_DE_LOS_AJUSTES.join(',')}&deleted_at=is.null`,
+    { accessToken },
+  )) as AjustesDePrueba[];
+  const fila = filas[0];
+  if (fila === undefined) throw new Error('el taller de prueba no tiene ajustes');
+  return fila;
+}
+
+export async function escribirAjustes(
+  { entorno, accessToken }: SesionDePrueba,
+  ajustes: Partial<AjustesDePrueba>,
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/ajustes?deleted_at=is.null', {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(ajustes),
+  });
+}
+
+export async function clientesPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  filas: readonly Record<string, unknown>[],
+): Promise<string[]> {
+  const creadas = (await pedir(entorno, '/rest/v1/clientes', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(filas),
+  })) as { id: string }[];
+  return creadas.map((fila) => fila.id);
+}
+
+export async function movimientosPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  filas: readonly Record<string, unknown>[],
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/movimientos', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(filas),
+  });
+}
+
+export async function anotacionesPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  filas: readonly Record<string, unknown>[],
+): Promise<void> {
+  await pedir(entorno, '/rest/v1/anotaciones', {
+    method: 'POST',
+    accessToken,
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(filas),
+  });
+}
+
+export async function formasDeCobroPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+  formas: { sena?: readonly string[] | null; saldo?: readonly string[] | null },
+): Promise<void> {
+  await pedir(entorno, `/rest/v1/proyectos?id=eq.${proyectoId}`, {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      ...(formas.sena === undefined ? {} : { cobro_sena: formas.sena }),
+      ...(formas.saldo === undefined ? {} : { cobro_saldo: formas.saldo }),
+    }),
+  });
+}
+
 export interface CobroDelTallerDePrueba {
   alias: string;
   cbu: string;

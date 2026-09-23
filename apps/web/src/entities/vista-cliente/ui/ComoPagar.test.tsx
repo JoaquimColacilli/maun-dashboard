@@ -389,38 +389,68 @@ describe('con el link de Mercado Pago cargado', () => {
 describe('el logo de Mercado Pago', () => {
   const CVU_DE_MERCADO_PAGO = '0000003100012345678907';
   const CBU_DE_BANCO = '0110001312345678901233';
+  const LINK_DE_COBRO = 'https://mpago.la/2vXyZ1';
 
-  function conCuenta(cbu: string | null, link: string | null = null) {
-    return trabajo(
-      { cobro: { ...CON_TODO, cbu, link } },
-      { formas: ['transferencia'], monto: 45_000_000 },
-    );
+  function conCuenta(
+    cbu: string | null,
+    link: string | null = null,
+    formas: FormaDeCobro[] = ['transferencia'],
+  ) {
+    return trabajo({ cobro: { ...CON_TODO, cbu, link } }, { formas, monto: 45_000_000 });
   }
 
-  it('aparece cuando la cuenta es un CVU de Mercado Pago', () => {
-    dibujar(conCuenta(CVU_DE_MERCADO_PAGO));
-    expect(within(elBloqueSeguro()).getByAltText('Mercado Pago')).toBeInTheDocument();
-  });
+  function logos() {
+    return elBloqueSeguro().querySelectorAll('[data-logo="mercado-pago"]');
+  }
 
-  it('no aparece con un CBU de banco: sería decirle al cliente algo que no es', () => {
+  it('va con transferencia sin link, y el lector de pantalla lo nombra', () => {
     dibujar(conCuenta(CBU_DE_BANCO));
-    expect(within(elBloqueSeguro()).queryByAltText('Mercado Pago')).toBeNull();
-  });
-
-  it('aparece igual con un CBU de banco si hay link de Mercado Pago cargado', () => {
-    dibujar(conCuenta(CBU_DE_BANCO, 'https://mpago.la/2vXyZ1'));
+    expect(logos()).toHaveLength(1);
     expect(within(elBloqueSeguro()).getByAltText('Mercado Pago')).toBeInTheDocument();
   });
 
-  it('no aparece si ese pago es en efectivo, aunque la cuenta sea de Mercado Pago', () => {
-    dibujar(
-      trabajo({ cobro: { ...CON_TODO, cbu: CVU_DE_MERCADO_PAGO } }, { formas: ['efectivo'] }),
-    );
-    expect(within(elBloqueSeguro()).queryByAltText('Mercado Pago')).toBeNull();
+  it('no depende de la entidad de la cuenta: también con un CVU de Mercado Pago', () => {
+    dibujar(conCuenta(CVU_DE_MERCADO_PAGO));
+    expect(logos()).toHaveLength(1);
   });
 
-  it('tampoco si el taller no cargó ningún dato', () => {
-    dibujar(trabajo({ cobro: SIN_NADA }, { formas: ['transferencia'] }));
+  it('con link va uno solo, y como el recuadro ya dice «Mercado Pago» la imagen es decorativa', () => {
+    dibujar(conCuenta(CBU_DE_BANCO, LINK_DE_COBRO));
+    expect(logos()).toHaveLength(1);
     expect(within(elBloqueSeguro()).queryByAltText('Mercado Pago')).toBeNull();
+    expect(logos()[0]?.querySelector('img')).toHaveAttribute('alt', '');
+    expect(
+      within(elBloqueSeguro()).getByRole('link', { name: PAGAR_CON_MERCADO_PAGO }),
+    ).toBeInTheDocument();
+  });
+
+  it('con transferencia y efectivo a elegir, también va', () => {
+    dibujar(conCuenta(CBU_DE_BANCO, null, ['transferencia', 'efectivo']));
+    expect(logos()).toHaveLength(1);
+  });
+
+  it('en efectivo no va, aunque la cuenta sea de Mercado Pago', () => {
+    dibujar(conCuenta(CVU_DE_MERCADO_PAGO, LINK_DE_COBRO, ['efectivo']));
+    expect(logos()).toHaveLength(0);
+  });
+
+  it('por transferencia sin ningún dato cargado no hay datos para transferir, y no hay logo suelto', () => {
+    dibujar(trabajo({ cobro: SIN_NADA }, { formas: ['transferencia'] }));
+    expect(within(elBloqueSeguro()).queryByText('Alias')).toBeNull();
+    expect(logos()).toHaveLength(0);
+  });
+
+  it('no es un enlace ni un botón, y no suma ningún texto', () => {
+    dibujar(conCuenta(CBU_DE_BANCO));
+    const logo = logos()[0];
+    expect(logo?.closest('a, button')).toBeNull();
+    expect(logo?.textContent).toBe('');
+  });
+
+  it('va sobre un fondo claro fijo, el mismo en los dos temas, sin filtro que lo invierta', () => {
+    dibujar(conCuenta(CBU_DE_BANCO));
+    const logo = logos()[0];
+    expect(logo).toHaveClass('bg-paper-fijo');
+    expect(logo?.innerHTML).not.toMatch(/invert|filter|dark:/);
   });
 });

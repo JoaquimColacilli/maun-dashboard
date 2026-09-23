@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { Tablero } from '@/shared/ui';
+
 import type { ResumenDeProyecto } from '../model/resumen';
 import { rutaDelProyecto } from '../model/rutas';
 import { EstadoBadge } from './EstadoBadge';
@@ -63,11 +65,13 @@ export function TarjetasDeProyectos({
   children: ReactNode;
 }) {
   return (
-    <ul
-      aria-label={etiqueta}
-      className="grid list-none grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+    <Tablero
+      tarjetaMinima="19rem"
+      como="ul"
+      etiqueta={etiqueta}
+      className="list-none grid-cols-1 gap-3"
     >
       {children}
-    </ul>
+    </Tablero>
   );
 }

@@ -29,6 +29,7 @@ import {
   Hoja,
   Icono,
   Pagina,
+  PrincipalYApoyo,
   type NombreDeIcono,
 } from '@/shared/ui';
 
@@ -217,7 +218,7 @@ export function ClienteFichaPage() {
   }
 
   return (
-    <Pagina>
+    <Pagina ancho="ficha">
       <div className="mb-2.5 flex items-center justify-between">
         <Link
           to="/clientes"
@@ -287,64 +288,66 @@ export function ClienteFichaPage() {
         />
       </div>
 
-      <div className="grid gap-0 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] xl:gap-x-11">
-        <div className="min-w-0">
-          <section aria-label="Contacto" className="mt-5">
-            <h2 className="mb-1 text-body-lg font-semibold">Contacto</h2>
-            <dl>
-              <Dato
-                clave="Teléfono"
-                valor={cliente.telefono === '' ? 'Sin teléfono' : cliente.telefono}
-              />
-              <Dato clave="Email" valor={cliente.email === '' ? 'Sin email' : cliente.email} />
-              <Dato
-                clave="Dirección"
-                valor={cliente.direccion === '' ? 'Sin dirección' : cliente.direccion}
-              />
-            </dl>
-          </section>
+      <PrincipalYApoyo
+        apoyoPrimero
+        separacion="gap-y-0"
+        apoyo={
+          <>
+            <section aria-label="Contacto" className="mt-5">
+              <h2 className="mb-1 text-body-lg font-semibold">Contacto</h2>
+              <dl>
+                <Dato
+                  clave="Teléfono"
+                  valor={cliente.telefono === '' ? 'Sin teléfono' : cliente.telefono}
+                />
+                <Dato clave="Email" valor={cliente.email === '' ? 'Sin email' : cliente.email} />
+                <Dato
+                  clave="Dirección"
+                  valor={cliente.direccion === '' ? 'Sin dirección' : cliente.direccion}
+                />
+              </dl>
+            </section>
 
-          <section aria-label="Cómo llegó" className="mt-5">
-            <h2 className="mb-1 text-body-lg font-semibold">Cómo llegó</h2>
-            <p className="border-t border-hairline py-2.5 text-body leading-snug">
-              <span className="font-medium">{origen?.etiqueta ?? 'Sin anotar'}.</span>{' '}
-              <span className="text-text-2">
-                {cliente.origen_detalle === ''
-                  ? (origen?.detalle ?? 'Todavía no anotaste de dónde vino.')
-                  : cliente.origen_detalle}
-              </span>
-            </p>
-          </section>
+            <section aria-label="Cómo llegó" className="mt-5">
+              <h2 className="mb-1 text-body-lg font-semibold">Cómo llegó</h2>
+              <p className="border-t border-hairline py-2.5 text-body leading-snug">
+                <span className="font-medium">{origen?.etiqueta ?? 'Sin anotar'}.</span>{' '}
+                <span className="text-text-2">
+                  {cliente.origen_detalle === ''
+                    ? (origen?.detalle ?? 'Todavía no anotaste de dónde vino.')
+                    : cliente.origen_detalle}
+                </span>
+              </p>
+            </section>
 
-          <section aria-label="Facturación" className="mt-5">
-            <h2 className="mb-1 text-body-lg font-semibold">Facturación</h2>
-            <dl>
-              {facturacion.map((fila) => (
-                <Dato key={fila.clave} clave={fila.clave} valor={fila.valor} />
-              ))}
-            </dl>
-          </section>
+            <section aria-label="Facturación" className="mt-5">
+              <h2 className="mb-1 text-body-lg font-semibold">Facturación</h2>
+              <dl>
+                {facturacion.map((fila) => (
+                  <Dato key={fila.clave} clave={fila.clave} valor={fila.valor} />
+                ))}
+              </dl>
+            </section>
+          </>
+        }
+      >
+        {cliente.notas !== '' && (
+          <p className="mt-4 rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2">
+            {cliente.notas}
+          </p>
+        )}
 
-          {cliente.notas !== '' && (
-            <p className="mt-4 rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2">
-              {cliente.notas}
-            </p>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          <Historial resumen={resumen} hoy={hoy} />
-          <Button
-            className="mt-4 w-full"
-            onClick={() => {
-              void navegar(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
-            }}
-          >
-            <Icono nombre="folder-plus" tamano={18} />
-            Arrancar un proyecto con {nombreCorto(cliente.nombre)}
-          </Button>
-        </div>
-      </div>
+        <Historial resumen={resumen} hoy={hoy} />
+        <Button
+          className="mt-4 w-full"
+          onClick={() => {
+            void navegar(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
+          }}
+        >
+          <Icono nombre="folder-plus" tamano={18} />
+          Arrancar un proyecto con {nombreCorto(cliente.nombre)}
+        </Button>
+      </PrincipalYApoyo>
 
       <ConSalida valor={editando}>
         {() => (

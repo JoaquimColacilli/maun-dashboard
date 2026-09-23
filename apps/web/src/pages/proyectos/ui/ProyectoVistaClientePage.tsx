@@ -17,7 +17,7 @@ export function ProyectoVistaClientePage() {
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-content flex-col gap-2 px-(--page-pad-mobile) pt-3 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+      <div className="ms-(--inicio-de-la-pagina) me-auto flex w-full max-w-ficha flex-col gap-2 px-(--page-pad-mobile) pt-3 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Link
             to={rutaDelProyecto(id)}

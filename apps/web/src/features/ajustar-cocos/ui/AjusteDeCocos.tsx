@@ -65,6 +65,7 @@ export function AjusteDeCocos({ saldo }: AjusteDeCocosProps) {
 
       <MoneyInput
         etiqueta="El saldo que tenés de verdad"
+        className="max-w-(--campo-medio)"
         value={leido}
         error={error}
         onChange={(centavos) => {

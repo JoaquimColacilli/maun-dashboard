@@ -1,6 +1,6 @@
 # 0046. La vista del cliente: una lista blanca en la base, no una pantalla que esconde
 
-Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso.
+Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso. Y el mismo día, el logo de Mercado Pago del recuadro de los datos para transferir pasó a salir por la forma de cobro (el último punto de Consecuencias).
 
 ## Contexto
 
@@ -220,3 +220,4 @@ eso queda guardado y no viaja. Es la misma lista blanca de los campos, aplicada 
   inventa un teléfono. El visor de imágenes del diseño se reemplazó por abrir el archivo en otra
   pestaña: un modal menos en una página pública, y en el celular es lo que la gente espera.
 - `MN010` se suma a la tabla de rechazos del ADR 0010.
+- **Corregido el 2026-09-22 (ADR 0062): el logo de Mercado Pago sale siempre que el pago que toca se ofrece por transferencia y hay algún dato para transferir**, haya o no link y sea de Mercado Pago o de un banco la cuenta; en efectivo o sin datos, no. Lo pidió el dueño. La señal ya llegaba a la página (el `pago` con sus formas, ADR 0053) y la función pública no se tocó. Es uno solo en el recuadro, no es enlace ni botón, va sobre un fondo blanco fijo en los dos temas y es decorativo cuando el recuadro ya dice «Mercado Pago». **Objeción:** con un CBU de banco el logo le dice al cliente algo que no es, que la cuenta es de Mercado Pago; el ADR 0054 lo había evitado por eso. Se implementó como se pidió.

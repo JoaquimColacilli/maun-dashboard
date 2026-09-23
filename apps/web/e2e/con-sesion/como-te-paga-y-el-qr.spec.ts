@@ -399,7 +399,9 @@ test('con el link cargado, el cliente ve el alias primero y el botón después, 
   await expect(page.locator('svg[role="img"]')).toHaveCount(0);
 
   await expect(bloque).toContainText('Después, el saldo: $ 450.000');
-  await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
+  await expect(bloque.locator('[data-logo="mercado-pago"]')).toHaveCount(1);
+  await expect(bloque.locator('[data-logo="mercado-pago"]')).toBeVisible();
+  await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
 
   console.log(`\n=== ${testInfo.project.name}: el bloque con el link de Mercado Pago ===`);
   console.log(await bloque.ariaSnapshot());
@@ -455,7 +457,7 @@ test('si ese pago es en efectivo, el link tampoco viaja', async ({ page }) => {
   await expect(bloque).toBeVisible(CARGA);
   await expect(bloque).toContainText('La seña es en efectivo, en mano.');
   await expect(bloque.getByRole('link', { name: 'Pagar con Mercado Pago' })).toHaveCount(0);
-  await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
+  await expect(bloque.locator('[data-logo="mercado-pago"]')).toHaveCount(0);
 
   await expect.poll(() => respuestas.length, CARGA).toBeGreaterThan(0);
   for (const cuerpo of respuestas) {
@@ -498,7 +500,9 @@ test('ajustes avisa siempre que ese cobro tiene comisión, y enlaza a los costos
   await expect(costos).toHaveAttribute('rel', 'noopener noreferrer');
 });
 
-test('el logo de Mercado Pago sale con un CVU suyo y no con un CBU de banco', async ({ page }) => {
+test('el logo de Mercado Pago sale con transferencia, sea la cuenta de Mercado Pago o de un banco', async ({
+  page,
+}) => {
   const token = tokenDePrueba();
   await trabajoConEnlace(token);
 
@@ -512,7 +516,7 @@ test('el logo de Mercado Pago sale con un CVU suyo y no con un CBU de banco', as
   const bloque = page.getByRole('region', { name: 'Cómo pagar' });
   await expect(bloque).toBeVisible(CARGA);
   await expect(bloque).toContainText('0110 0013 1234 5678 9012 33');
-  await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
+  await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
 
   await ajustarCobroDelTaller(sesion, {
     alias: ALIAS,
@@ -524,6 +528,7 @@ test('el logo de Mercado Pago sale con un CVU suyo y no con un CBU de banco', as
   await expect(bloque).toBeVisible(CARGA);
   await expect(bloque).toContainText('CVU');
   await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
+  await expect(bloque.locator('[data-logo="mercado-pago"]')).toHaveCount(1);
 });
 
 test.describe('en oscuro', () => {
@@ -570,7 +575,12 @@ test.describe('en oscuro', () => {
 
     await page.goto(`/v/${token}`);
     await expect(bloque).toBeVisible(CARGA);
-    await expect(bloque.getByAltText('Mercado Pago')).toHaveCount(0);
+    const logo = bloque.locator('[data-logo="mercado-pago"]');
+    await expect(logo).toBeVisible();
+    expect(
+      await logo.evaluate((placa) => getComputedStyle(placa).backgroundColor),
+      'el logo a color va sobre un fondo claro también en oscuro',
+    ).toBe('rgb(255, 255, 255)');
     await page.screenshot({
       path: testInfo.outputPath(`oscuro-vista-cliente-banco-${testInfo.project.name}.png`),
       fullPage: true,
@@ -585,7 +595,7 @@ test.describe('en oscuro', () => {
     });
     await page.goto(`/v/${token}`);
     await expect(bloque).toBeVisible(CARGA);
-    await expect(bloque.getByAltText('Mercado Pago')).toBeVisible();
+    await expect(bloque.locator('[data-logo="mercado-pago"]')).toHaveCount(1);
     await expect(page.getByRole('img', { name: /Código QR/ })).toHaveCount(0);
     await page.screenshot({
       path: testInfo.outputPath(`oscuro-vista-cliente-mercado-pago-${testInfo.project.name}.png`),
