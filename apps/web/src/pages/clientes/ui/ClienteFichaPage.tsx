@@ -122,7 +122,8 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
         <ol className="list-none">
           {proyectos.map((proyecto) => {
             const fecha = fechaDelProyecto(proyecto);
-            const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
+            const enSeguimiento =
+              faseDe(proyecto.estado) !== 'activos' && faseDe(proyecto.estado) !== 'historial';
             return (
               <li
                 key={proyecto.id}

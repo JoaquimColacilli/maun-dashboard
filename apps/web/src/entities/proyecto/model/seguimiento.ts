@@ -1,5 +1,5 @@
 import {
-  ESTADOS_DE_SEGUIMIENTO,
+  ESTADOS_DE_CONSULTA,
   faseDe,
   puedeCambiarEstado,
   vencimientoDelPresupuesto,
@@ -13,7 +13,7 @@ import type { Proyecto } from './catalogos';
 import type { ResumenDeProyecto } from './resumen';
 import { presupuestoArmado, TAREAS_DEL_PRESUPUESTO, tareasHechas } from './tareas';
 
-export type EtapaDeSeguimiento = (typeof ESTADOS_DE_SEGUIMIENTO)[number];
+export type EtapaDeSeguimiento = (typeof ESTADOS_DE_CONSULTA)[number];
 
 export const DIAS_PARA_ENFRIARSE = 7;
 
@@ -45,7 +45,7 @@ export interface ContactoEnLista {
 }
 
 export function esEtapaDeSeguimiento(estado: EstadoProyecto): estado is EtapaDeSeguimiento {
-  return faseDe(estado) === 'seguimiento';
+  return faseDe(estado) === 'consultas';
 }
 
 export function diaDeLaMarca(marca: string): string {
@@ -254,7 +254,7 @@ export function contactosEnOrden(
 ): ContactoEnLista[] {
   const ultimas = ultimasActividades(replica);
   return resumenes
-    .filter((resumen) => resumen.fase === 'seguimiento')
+    .filter((resumen) => resumen.fase === 'consultas')
     .map((resumen) => {
       const ultimaActividad = ultimas.get(resumen.proyecto.id) ?? resumen.proyecto.updated_at;
       return {

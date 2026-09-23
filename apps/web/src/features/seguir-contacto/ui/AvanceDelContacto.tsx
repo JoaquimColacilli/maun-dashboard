@@ -1,4 +1,4 @@
-import { ESTADOS_DE_SEGUIMIENTO, puedeCambiarEstado } from '@maun/domain';
+import { ESTADOS_DE_CONSULTA, puedeCambiarEstado } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -80,7 +80,7 @@ export function AvanceDelContacto({
   useAlgoEnCurso(formulario !== null);
 
   const pasos = pasosDelContacto(etapa, situacion);
-  const etapas = ESTADOS_DE_SEGUIMIENTO.filter(
+  const etapas = ESTADOS_DE_CONSULTA.filter(
     (estado) => estado === etapa || puedeCambiarEstado(etapa, estado),
   );
 

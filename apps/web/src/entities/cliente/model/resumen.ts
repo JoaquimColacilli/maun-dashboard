@@ -61,7 +61,8 @@ export function resumenesDeClientes(replica: Replica): ResumenDeCliente[] {
     let saldo = 0;
     let facturados = 0;
     for (const proyecto of proyectos) {
-      if (faseDe(proyecto.estado) === 'seguimiento') continue;
+      if (faseDe(proyecto.estado) === 'consultas' || faseDe(proyecto.estado) === 'seguimiento')
+        continue;
       facturados += 1;
       facturado += proyecto.presupuesto_centavos ?? 0;
       if (!ESTADOS_CON_SALDO.includes(proyecto.estado)) continue;

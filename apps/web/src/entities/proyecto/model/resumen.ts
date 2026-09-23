@@ -86,7 +86,7 @@ export function metricasDeProyectos(resumenes: readonly ResumenDeProyecto[]): Me
   let cobrados = 0;
 
   for (const resumen of resumenes) {
-    if (resumen.fase !== 'seguimiento') total += 1;
+    if (resumen.fase === 'activos' || resumen.fase === 'historial') total += 1;
     if (resumen.proyecto.estado === 'en_curso') enCurso += 1;
     if (resumen.proyecto.estado === 'entregado' && (resumen.saldo ?? 0) > 0) {
       entregadosConSaldo += 1;

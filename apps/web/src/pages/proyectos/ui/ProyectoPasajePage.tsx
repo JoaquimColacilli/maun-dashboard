@@ -15,7 +15,7 @@ export function ProyectoPasajePage() {
   const replica = useReplicaDelTaller();
   const { id = '' } = useParams();
   const resumen = resumenDeProyecto(replica, id, hoyLocal());
-  const [enSeguimientoAlEntrar] = useState(() => resumen?.fase === 'seguimiento');
+  const [enSeguimientoAlEntrar] = useState(() => resumen?.fase === 'consultas');
 
   if (!resumen) return <Navigate to={RUTA_DE_SEGUIMIENTO} replace />;
   if (!enSeguimientoAlEntrar) return <Navigate to={rutaDelProyecto(id)} replace />;

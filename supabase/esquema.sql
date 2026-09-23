@@ -750,6 +750,64 @@ grant delete, insert, maintain, references, select, trigger, truncate, update on
 grant insert (id, serie, numero, proyecto_id, orden, texto, tipo, escala, obligatoria, opciones, archivada_at, deleted_at) on public.preguntas to authenticated;
 grant update (id, serie, numero, proyecto_id, orden, texto, tipo, escala, obligatoria, opciones, archivada_at, deleted_at) on public.preguntas to authenticated;
 
+create table public.proximos_contactos (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  proyecto_id uuid not null,
+  fecha date not null,
+  nota text not null default ''::text,
+  etapa_previa estado_proyecto not null,
+  hecho_el date,
+  resultado text,
+  respuesta text not null default ''::text,
+  importante boolean not null default false,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint proximos_contactos_etapa_previa_valida CHECK (etapa_previa = ANY (ARRAY['contacto'::estado_proyecto, 'presupuesto_estimativo'::estado_proyecto, 'relevamiento'::estado_proyecto, 'a_presupuestar'::estado_proyecto, 'presupuesto_enviado'::estado_proyecto])),
+  constraint proximos_contactos_hecho_con_resultado CHECK ((hecho_el IS NULL) = (resultado IS NULL)),
+  constraint proximos_contactos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint proximos_contactos_nota_valida CHECK (char_length(nota) <= 500),
+  constraint proximos_contactos_pkey PRIMARY KEY (id),
+  constraint proximos_contactos_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id),
+  constraint proximos_contactos_respuesta_valida CHECK (char_length(respuesta) <= 500),
+  constraint proximos_contactos_resultado_valido CHECK (resultado IS NULL OR (resultado = ANY (ARRAY['reactivado'::text, 'perdido'::text, 'otra_fecha'::text]))),
+  constraint seguimiento_con_su_contacto TRIGGER DEFERRABLE INITIALLY DEFERRED
+);
+comment on table public.proximos_contactos is 'El seguimiento de un «por ahora no»: cada vez que un trabajo entra en seguimiento o se le cambia la fecha nace una fila pendiente con el día en que hay que volver a escribirle. Al registrar el contacto se completa con el día, el resultado y lo que contestó, y queda como historia. A lo sumo una pendiente por trabajo, y un trabajo está en seguimiento si y solo si tiene una (ADR 0064).';
+comment on column public.proximos_contactos.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.proximos_contactos.fecha is 'El día en que hay que volver a escribirle. Es un día, no un instante: la agenda lo pone en ese día.';
+comment on column public.proximos_contactos.nota is 'Lo que quedó al poner la fecha: «después de las vacaciones», «cuando cobre el aguinaldo». Opcional.';
+comment on column public.proximos_contactos.etapa_previa is 'La etapa de las consultas en la que estaba el trabajo al entrar en seguimiento: reactivar lo devuelve ahí por defecto. La escribe la base al entrar, con el estado que tenía el trabajo; las filas siguientes la copian.';
+comment on column public.proximos_contactos.hecho_el is 'El día en que se le escribió. Null mientras está pendiente.';
+comment on column public.proximos_contactos.resultado is 'Qué pasó al escribirle: reactivado (volvió a las consultas), perdido, u otra_fecha (sigue en seguimiento con una fila nueva). Null mientras está pendiente.';
+comment on column public.proximos_contactos.respuesta is 'Lo que contestó el cliente, en palabras del dueño. Opcional.';
+comment on column public.proximos_contactos.importante is 'Marca de importante en la agenda, como la de las anotaciones: vive en la misma fila y se tilda con un update de esa columna sola.';
+comment on column public.proximos_contactos.deleted_at is 'Borrado lógico, como en todo el household. Se borra con el trabajo.';
+CREATE INDEX proximos_contactos_household_actualizado ON public.proximos_contactos USING btree (household_id, updated_at);
+CREATE INDEX proximos_contactos_household_fecha ON public.proximos_contactos USING btree (household_id, fecha);
+CREATE INDEX proximos_contactos_household_proyecto ON public.proximos_contactos USING btree (household_id, proyecto_id, fecha);
+CREATE UNIQUE INDEX proximos_contactos_un_pendiente ON public.proximos_contactos USING btree (household_id, proyecto_id) WHERE ((hecho_el IS NULL) AND (deleted_at IS NULL));
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proximos_contactos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+CREATE CONSTRAINT TRIGGER seguimiento_con_su_contacto AFTER INSERT OR UPDATE ON proximos_contactos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.revisar_el_seguimiento_del_contacto();
+CREATE TRIGGER validar_proximo_contacto BEFORE INSERT OR UPDATE ON proximos_contactos FOR EACH ROW EXECUTE FUNCTION private.validar_proximo_contacto();
+alter table public.proximos_contactos enable row level security;
+create policy proximos_contactos_alta on public.proximos_contactos as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy proximos_contactos_edicion on public.proximos_contactos as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy proximos_contactos_lectura on public.proximos_contactos as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.proximos_contactos to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.proximos_contactos to service_role;
+grant insert (id, proyecto_id, fecha, nota, etapa_previa, hecho_el, resultado, respuesta, importante, deleted_at) on public.proximos_contactos to authenticated;
+grant update (id, proyecto_id, fecha, nota, etapa_previa, hecho_el, resultado, respuesta, importante, deleted_at) on public.proximos_contactos to authenticated;
+
 create table public.proyectos (
   id uuid not null default private.uuidv7(),
   household_id uuid not null default private.household_actual(),
@@ -832,7 +890,8 @@ create table public.proyectos (
 CASE
     WHEN dist_sueldo_mensual THEN GREATEST(0::bigint, dist_objetivo_sueldo_centavos - dist_sueldo_previo_centavos)
     ELSE dist_objetivo_sueldo_centavos
-END, false))
+END, false)),
+  constraint seguimiento_con_su_contacto TRIGGER DEFERRABLE INITIALLY DEFERRED
 );
 comment on table public.proyectos is 'Leads y proyectos: la misma fila avanza de seguimiento a obra y a cobrado, o se cierra como perdido. Liquidar (cobrar o cerrar como perdido) congela la distribución (ADR 0003 y 0011).';
 comment on column public.proyectos.titulo is 'El trabajo, en pocas palabras: "Placard 3 puertas con interior en melamina".';
@@ -886,8 +945,10 @@ CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (househ
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
 CREATE TRIGGER anotar_el_cambio_de_estado AFTER INSERT OR UPDATE OF estado ON proyectos FOR EACH ROW EXECUTE FUNCTION private.anotar_el_cambio_de_estado();
 CREATE TRIGGER borrar_hijos AFTER UPDATE OF deleted_at ON proyectos FOR EACH ROW WHEN (new.deleted_at IS NOT NULL AND old.deleted_at IS NULL) EXECUTE FUNCTION private.borrar_hijos_de_proyecto();
+CREATE TRIGGER cerrar_el_contacto_pendiente AFTER UPDATE OF estado ON proyectos FOR EACH ROW WHEN (old.estado = 'en_seguimiento'::estado_proyecto AND new.estado IS DISTINCT FROM old.estado) EXECUTE FUNCTION private.cerrar_el_contacto_pendiente();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE CONSTRAINT TRIGGER presupuesto_aprobado AFTER INSERT OR UPDATE ON proyectos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.validar_presupuesto_aprobado();
+CREATE CONSTRAINT TRIGGER seguimiento_con_su_contacto AFTER INSERT OR UPDATE OF estado, deleted_at ON proyectos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.revisar_el_seguimiento_del_proyecto();
 CREATE TRIGGER validar_proyecto BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.validar_proyecto();
 alter table public.proyectos enable row level security;
 create policy proyectos_alta on public.proyectos as permissive
@@ -1176,6 +1237,9 @@ AS $function$
     'necesidades', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.necesidades t where t.deleted_at is null
     ),
+    'proximos_contactos', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.proximos_contactos t where t.deleted_at is null
+    ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.deleted_at is null
     ),
@@ -1423,6 +1487,9 @@ begin
     'necesidades', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.necesidades t where t.updated_at >= v_desde
     ),
+    'proximos_contactos', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.proximos_contactos t where t.updated_at >= v_desde
+    ),
     'movimientos', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.movimientos t where t.updated_at >= v_desde
     ),
@@ -1584,7 +1651,7 @@ $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
 comment on function guardar_preferencias_de_avisos(text,time without time zone,jsonb) is 'Cambia la zona horaria, la hora y qué avisa.';
 
-CREATE OR REPLACE FUNCTION public.guardar_proyecto(p_proyecto jsonb, p_pagos jsonb, p_gastos jsonb, p_opciones jsonb DEFAULT NULL::jsonb, p_necesidades jsonb DEFAULT NULL::jsonb)
+CREATE OR REPLACE FUNCTION public.guardar_proyecto(p_proyecto jsonb, p_pagos jsonb, p_gastos jsonb, p_opciones jsonb DEFAULT NULL::jsonb, p_necesidades jsonb DEFAULT NULL::jsonb, p_proximos jsonb DEFAULT NULL::jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
  SET search_path TO ''
@@ -1605,6 +1672,7 @@ declare
   v_aprobadas integer;
   v_monto_aprobado bigint;
   v_presupuesto bigint;
+  v_entra_en_seguimiento boolean;
 begin
   if p_proyecto is null or jsonb_typeof(p_proyecto) <> 'object' then
     raise exception 'El proyecto va en un objeto jsonb' using errcode = '22023';
@@ -1622,6 +1690,10 @@ begin
 
   if p_necesidades is not null and jsonb_typeof(p_necesidades) <> 'array' then
     raise exception 'Lo que hace falta va en un array jsonb' using errcode = '22023';
+  end if;
+
+  if p_proximos is not null and jsonb_typeof(p_proximos) <> 'array' then
+    raise exception 'Los próximos contactos van en un array jsonb' using errcode = '22023';
   end if;
 
   -- Las horas se leen como texto por la misma razón que las fechas: un <input type="time"> vacío
@@ -1719,6 +1791,31 @@ begin
       using errcode = '22004';
   end if;
 
+  -- El próximo contacto: el día en que hay que escribirle, la etapa a la que vuelve y, si ya se hizo,
+  -- el día y el resultado. Todo se lee como texto y se revisa la forma antes de castear, por lo mismo
+  -- que las fechas de los pagos.
+  if exists (
+    select 1
+    from jsonb_to_recordset(coalesce(p_proximos, '[]'::jsonb))
+      as r (id uuid, fecha text, etapa_previa text, hecho_el text, resultado text, borrado boolean)
+    where r.id is null
+       or (
+         not coalesce(r.borrado, false)
+         and (
+           coalesce(r.fecha, '') !~ '^\d{4}-\d{2}-\d{2}$'
+           or coalesce(r.etapa_previa, '') not in (
+             'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado'
+           )
+           or (nullif(r.hecho_el, '') is not null and r.hecho_el !~ '^\d{4}-\d{2}-\d{2}$')
+           or (nullif(r.hecho_el, '') is null) <> (nullif(r.resultado, '') is null)
+           or coalesce(nullif(r.resultado, ''), 'otra_fecha') not in ('reactivado', 'perdido', 'otra_fecha')
+         )
+       )
+  ) then
+    raise exception 'Cada próximo contacto necesita id, día y la etapa a la que vuelve; si ya se hizo, el día y el resultado'
+      using errcode = '22004';
+  end if;
+
   -- Primer lock: el proyecto, con for update, la misma disciplina que private.liquidar. La guarda
   -- de pagos y gastos toma for share sobre esta misma fila, así que un cobro que llega en el mismo
   -- instante se serializa con este guardado: o la liquidación espera y suma los pagos nuevos, o
@@ -1753,6 +1850,13 @@ begin
   end;
 
   v_household_id := coalesce(v_actual.household_id, private.household_actual());
+
+  -- Entra en seguimiento en este guardado: la etapa a la que vuelve es la que tenía el trabajo, y la
+  -- decide la base, que la tiene en la mano, no lo que diga la app.
+  v_entra_en_seguimiento := v_existia
+    and v_p.estado = 'en_seguimiento'
+    and v_actual.estado is distinct from 'en_seguimiento'
+    and v_actual.estado in ('contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado');
 
   -- El presupuesto que va a quedar, calculado ANTES de escribir el proyecto y sobre el conjunto de
   -- opciones que va a quedar: las que ya están, más las que vienen, menos las que vienen marcadas de
@@ -1970,6 +2074,62 @@ begin
       listo = excluded.listo;
   end if;
 
+  -- El próximo contacto, también solo si viene la clave. Primero los registrados y después los
+  -- pendientes: el índice único del pendiente se evalúa fila por fila, y cerrar uno y abrir el
+  -- siguiente en el mismo guardado tiene que pasar por un momento sin ninguno. La marca de importante
+  -- no viaja por acá: se tilda con su propio update.
+  if p_proximos is not null then
+    insert into public.proximos_contactos (
+      id, proyecto_id, fecha, nota, etapa_previa, hecho_el, resultado, respuesta
+    )
+    select r.id, v_fila.id, r.fecha::date, coalesce(r.nota, ''),
+           r.etapa_previa::public.estado_proyecto, r.hecho_el::date, r.resultado,
+           coalesce(r.respuesta, '')
+    from jsonb_to_recordset(p_proximos) as r (
+      id uuid, fecha text, nota text, etapa_previa text, hecho_el text, resultado text,
+      respuesta text, borrado boolean
+    )
+    where not coalesce(r.borrado, false)
+      and nullif(r.hecho_el, '') is not null
+    on conflict (id) do update set
+      proyecto_id = excluded.proyecto_id,
+      fecha = excluded.fecha,
+      nota = excluded.nota,
+      etapa_previa = excluded.etapa_previa,
+      hecho_el = excluded.hecho_el,
+      resultado = excluded.resultado,
+      respuesta = excluded.respuesta;
+
+    begin
+      insert into public.proximos_contactos (id, proyecto_id, fecha, nota, etapa_previa, respuesta)
+      select r.id, v_fila.id, r.fecha::date, coalesce(r.nota, ''),
+             case
+               when v_entra_en_seguimiento then v_actual.estado
+               else r.etapa_previa::public.estado_proyecto
+             end,
+             coalesce(r.respuesta, '')
+      from jsonb_to_recordset(p_proximos) as r (
+        id uuid, fecha text, nota text, etapa_previa text, hecho_el text, respuesta text,
+        borrado boolean
+      )
+      where not coalesce(r.borrado, false)
+        and nullif(r.hecho_el, '') is null
+      on conflict (id) do update set
+        proyecto_id = excluded.proyecto_id,
+        fecha = excluded.fecha,
+        nota = excluded.nota,
+        etapa_previa = excluded.etapa_previa,
+        respuesta = excluded.respuesta;
+    exception
+      -- Otro dispositivo ya dejó un contacto pendiente para este trabajo: este guardado viene de
+      -- una versión vieja del seguimiento. Se contesta como cualquier otro choque de versiones.
+      when unique_violation then
+        raise exception 'El seguimiento cambió desde que lo abriste'
+          using errcode = 'MN006',
+                hint = 'Abrilo de nuevo para ver cuándo le toca, y volvé a cargar lo que te falte.';
+    end;
+  end if;
+
   -- La baja de una fila hija es la que el cliente vio y sacó del formulario, marcada en el mismo
   -- array. Nunca es "todo lo que no vino en el pedido": la version del proyecto no se mueve cuando
   -- solo cambian sus hijos, así que un guardado viejo borraría en silencio un pago cargado desde
@@ -2005,6 +2165,14 @@ begin
     and coalesce(r.borrado, false)
     and n.proyecto_id = v_fila.id
     and n.deleted_at is null;
+
+  update public.proximos_contactos c
+  set deleted_at = now()
+  from jsonb_to_recordset(coalesce(p_proximos, '[]'::jsonb)) as r (id uuid, borrado boolean)
+  where c.id = r.id
+    and coalesce(r.borrado, false)
+    and c.proyecto_id = v_fila.id
+    and c.deleted_at is null;
 
   -- Vuelve el agregado entero: las filas vivas más las que este guardado dio de baja, para que el
   -- cliente las saque de su réplica sin esperar al próximo delta.
@@ -2053,12 +2221,24 @@ begin
             select (r ->> 'id')::uuid from jsonb_array_elements(coalesce(p_necesidades, '[]'::jsonb)) as r
           )
         )
+    ),
+    'proximos_contactos', (
+      select coalesce(jsonb_agg(to_jsonb(c)), '[]'::jsonb)
+      from public.proximos_contactos c
+      where c.household_id = v_fila.household_id
+        and c.proyecto_id = v_fila.id
+        and (
+          c.deleted_at is null
+          or c.id in (
+            select (r ->> 'id')::uuid from jsonb_array_elements(coalesce(p_proximos, '[]'::jsonb)) as r
+          )
+        )
     )
   );
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto y lo que hace falta para el trabajo en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. p_opciones y p_necesidades en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
+comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto, lo que hace falta para el trabajo y su próximo contacto en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. Entrar en seguimiento, cambiar la fecha y registrar el contacto viajan en p_proximos junto con el estado, y la guarda diferida exige que el trabajo en seguimiento tenga su contacto pendiente (MN019, ADR 0064); al entrar, la etapa a la que vuelve la pone la base. p_opciones, p_necesidades y p_proximos en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
 
 CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
  RETURNS boolean
@@ -2337,8 +2517,14 @@ begin
     and proyecto_id = new.id
     and deleted_at is null;
 
-  -- Lo que agrega esta migración: la encuesta que se le mandó, lo que contestó y sus preguntas
-  -- propias. El enlace deja de funcionar con el trabajo.
+  update public.proximos_contactos
+  set deleted_at = new.deleted_at
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and deleted_at is null;
+
+  -- La encuesta que se le mandó, lo que contestó y sus preguntas propias. El enlace deja de
+  -- funcionar con el trabajo.
   perform private.borrar_las_opiniones_del_trabajo(new.household_id, new.id, new.deleted_at);
 
   return null;
@@ -2465,6 +2651,32 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.cascada(bigint,bigint,integer,bigint,bigint) is 'La cascada: neta = cobrado - gastos; diezmo (mitad hacia arriba); sueldo y fijos topeados por lo que queda; remanente. Gemela de calcularDistribucion de @maun/domain, con el mismo rango de importes.';
+
+CREATE OR REPLACE FUNCTION private.cerrar_el_contacto_pendiente()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  -- Dar por perdido lo cierra con el día del cierre, que manda la app. Volver a una consulta desde el
+  -- formulario no trae día: el pendiente se cierra con el de hoy en el taller. La app, cuando registra
+  -- el contacto, manda su propio cierre en el mismo guardado y ese pisa a este.
+  update public.proximos_contactos
+  set hecho_el = case
+        when new.estado = 'perdido' then coalesce(new.fecha_cobro, private.hoy_en_el_taller())
+        else private.hoy_en_el_taller()
+      end,
+      resultado = case when new.estado = 'perdido' then 'perdido' else 'reactivado' end
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and hecho_el is null
+    and deleted_at is null;
+
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.cerrar_el_contacto_pendiente() is 'Cuando un trabajo sale del seguimiento sin que la app registre el contacto (dar por perdido, cambiar la etapa desde el formulario), cierra el pendiente con ese resultado: perdido con el día del cierre, reactivado con el día de hoy en el taller.';
 
 CREATE OR REPLACE FUNCTION private.crear_household(p_nombre text, p_user_id uuid)
  RETURNS uuid
@@ -2854,7 +3066,8 @@ AS $function$
     case p_hacia
       when 'cobrado' then p_desde = 'entregado'
       when 'perdido' then p_desde in (
-        'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado', 'en_curso'
+        'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado',
+        'en_seguimiento', 'en_curso'
       )
       else false
     end,
@@ -2862,7 +3075,7 @@ AS $function$
   )
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.liquidacion_valida(estado_proyecto,estado_proyecto) is 'Desde qué estado se liquida hacia cobrado o perdido. Gemela de puedeLiquidar de @maun/domain.';
+comment on function private.liquidacion_valida(estado_proyecto,estado_proyecto) is 'Desde qué estado se liquida hacia cobrado o perdido. Un «por ahora no» también se da por perdido. Gemela de puedeLiquidar de @maun/domain.';
 
 CREATE OR REPLACE FUNCTION private.liquidar(p_destino estado_proyecto, p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint, p_ya_en_la_apertura boolean DEFAULT false)
  RETURNS proyectos
@@ -3574,6 +3787,74 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.revertir_liquidacion(uuid,integer,estado_proyecto,estado_proyecto) is 'Descongela la distribución de un proyecto liquidado: reabre un cobrado a entregado guardando la foto del cobro, o reactiva un perdido a un estado de seguimiento sin foto. Los demás proyectos del mes no se recalculan. Rechaza con MN006 si el proyecto cambió. Reconoce el reenvío idéntico.';
 
+CREATE OR REPLACE FUNCTION private.revisar_el_seguimiento_del_contacto()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  perform private.revisar_el_seguimiento(new.household_id, new.proyecto_id);
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.revisar_el_seguimiento_del_contacto() is 'Guarda diferida de proximos_contactos: al commit, revisa que el estado y el contacto pendiente vayan juntos.';
+
+CREATE OR REPLACE FUNCTION private.revisar_el_seguimiento_del_proyecto()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  perform private.revisar_el_seguimiento(new.household_id, new.id);
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.revisar_el_seguimiento_del_proyecto() is 'Guarda diferida de proyectos: al commit, revisa que el estado y el contacto pendiente vayan juntos.';
+
+CREATE OR REPLACE FUNCTION private.revisar_el_seguimiento(p_household_id uuid, p_proyecto_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_estado public.estado_proyecto;
+  v_borrado timestamptz;
+  v_pendientes integer;
+begin
+  select p.estado, p.deleted_at into v_estado, v_borrado
+  from public.proyectos p
+  where p.household_id = p_household_id and p.id = p_proyecto_id;
+
+  -- Un trabajo borrado se lleva sus contactos: no hay nada que revisar.
+  if not found or v_borrado is not null then
+    return;
+  end if;
+
+  select count(*)::integer into v_pendientes
+  from public.proximos_contactos c
+  where c.household_id = p_household_id
+    and c.proyecto_id = p_proyecto_id
+    and c.hecho_el is null
+    and c.deleted_at is null;
+
+  if v_estado = 'en_seguimiento' and v_pendientes = 0 then
+    raise exception 'Un trabajo en seguimiento necesita el día en que le volvés a escribir'
+      using errcode = 'MN019',
+            hint = 'Ponelo en seguimiento con una fecha, o dejalo en la etapa en que estaba.';
+  end if;
+
+  if v_estado <> 'en_seguimiento' and v_pendientes > 0 then
+    raise exception 'Solo un trabajo en seguimiento tiene un contacto pendiente'
+      using errcode = 'MN019',
+            hint = 'Registrá el contacto antes de sacarlo del seguimiento.';
+  end if;
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.revisar_el_seguimiento(uuid,uuid) is 'Un trabajo vivo está en seguimiento si y solo si tiene un contacto pendiente. La llaman las dos guardas diferidas, al commit, cuando ya se escribieron el estado y los contactos de la misma transacción.';
+
 CREATE OR REPLACE FUNCTION private.ruta_del_archivo(p_household_id uuid, p_proyecto_id uuid, p_archivo_id uuid, p_tipo text, p_miniatura boolean)
  RETURNS text
  LANGUAGE sql
@@ -3706,17 +3987,20 @@ AS $function$
     from (
       values
         ('contacto', 'presupuesto_estimativo'), ('contacto', 'relevamiento'), ('contacto', 'a_presupuestar'),
-        ('contacto', 'presupuesto_enviado'), ('contacto', 'en_curso'),
+        ('contacto', 'presupuesto_enviado'), ('contacto', 'en_seguimiento'), ('contacto', 'en_curso'),
         ('presupuesto_estimativo', 'contacto'), ('presupuesto_estimativo', 'relevamiento'),
         ('presupuesto_estimativo', 'a_presupuestar'), ('presupuesto_estimativo', 'presupuesto_enviado'),
-        ('presupuesto_estimativo', 'en_curso'),
+        ('presupuesto_estimativo', 'en_seguimiento'), ('presupuesto_estimativo', 'en_curso'),
         ('relevamiento', 'contacto'), ('relevamiento', 'presupuesto_estimativo'), ('relevamiento', 'a_presupuestar'),
-        ('relevamiento', 'presupuesto_enviado'), ('relevamiento', 'en_curso'),
+        ('relevamiento', 'presupuesto_enviado'), ('relevamiento', 'en_seguimiento'), ('relevamiento', 'en_curso'),
         ('a_presupuestar', 'contacto'), ('a_presupuestar', 'presupuesto_estimativo'), ('a_presupuestar', 'relevamiento'),
-        ('a_presupuestar', 'presupuesto_enviado'), ('a_presupuestar', 'en_curso'),
+        ('a_presupuestar', 'presupuesto_enviado'), ('a_presupuestar', 'en_seguimiento'), ('a_presupuestar', 'en_curso'),
         ('presupuesto_enviado', 'contacto'), ('presupuesto_enviado', 'presupuesto_estimativo'),
         ('presupuesto_enviado', 'relevamiento'), ('presupuesto_enviado', 'a_presupuestar'),
-        ('presupuesto_enviado', 'en_curso'),
+        ('presupuesto_enviado', 'en_seguimiento'), ('presupuesto_enviado', 'en_curso'),
+        ('en_seguimiento', 'contacto'), ('en_seguimiento', 'presupuesto_estimativo'),
+        ('en_seguimiento', 'relevamiento'), ('en_seguimiento', 'a_presupuestar'),
+        ('en_seguimiento', 'presupuesto_enviado'),
         ('en_curso', 'presupuesto_enviado'), ('en_curso', 'entregado'),
         ('entregado', 'en_curso')
     ) as t (desde, hasta)
@@ -3725,7 +4009,7 @@ AS $function$
   )
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.transicion_valida(estado_proyecto,estado_proyecto) is 'Transiciones manuales de estado. Liquidar y revertir no están: son operaciones. Gemela de TRANSICIONES de @maun/domain.';
+comment on function private.transicion_valida(estado_proyecto,estado_proyecto) is 'Transiciones manuales de estado. Liquidar y revertir no están: son operaciones. Del seguimiento se vuelve a cualquier etapa de las consultas y nunca se aprueba directo. Gemela de TRANSICIONES de @maun/domain.';
 
 CREATE OR REPLACE FUNCTION private.user_household_ids()
  RETURNS SETOF uuid
@@ -3898,6 +4182,40 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.validar_presupuesto_aprobado() is 'Con opciones vivas, el presupuesto del trabajo tiene que ser el de la opción aprobada (o null si no hay ninguna). Es un trigger de constraint diferido: adentro de una transacción el proyecto se escribe antes que sus hijas, así que el par recién tiene que cerrar al final.';
+
+CREATE OR REPLACE FUNCTION private.validar_proximo_contacto()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  -- Upsert que choca contra una fila existente: decide la rama UPDATE, que ve la fila vieja.
+  if tg_op = 'INSERT' then
+    perform 1 from public.proximos_contactos where id = new.id;
+    if found then
+      return new;
+    end if;
+  end if;
+
+  if new.hecho_el is not null and new.hecho_el > private.hoy_en_el_taller() then
+    raise exception 'El contacto no se puede registrar en un día que todavía no llegó'
+      using errcode = 'MN017',
+            hint = 'Poné el día en que le escribiste, que tiene que ser hoy o antes.';
+  end if;
+
+  -- La historia no se reabre: un contacto registrado no vuelve a quedar pendiente. Para seguir, se
+  -- carga una fecha nueva.
+  if tg_op = 'UPDATE' and old.hecho_el is not null and new.hecho_el is null then
+    raise exception 'Un contacto ya registrado no vuelve a quedar pendiente'
+      using errcode = 'MN019',
+            hint = 'Para volver a escribirle, poné una fecha nueva.';
+  end if;
+
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.validar_proximo_contacto() is 'Guarda de proximos_contactos: el día en que se registró el contacto no es futuro (MN017) y un contacto registrado no se reabre (MN019).';
 
 CREATE OR REPLACE FUNCTION private.validar_proyecto_abierto()
  RETURNS trigger
@@ -4347,6 +4665,7 @@ CREATE OR REPLACE FUNCTION public.vista_del_cliente(p_proyecto_id uuid)
 AS $function$
 declare
   v_p public.proyectos;
+  v_etapa public.estado_proyecto;
   v_taller text;
   v_cliente text;
   v_ajustes public.ajustes;
@@ -4376,6 +4695,20 @@ begin
     raise exception 'El trabajo no existe o no es tuyo' using errcode = '42501';
   end if;
 
+  -- El «por ahora no» es una nota del taller para acordarse de volver a escribirle, no una etapa del
+  -- trabajo del cliente: el cliente sigue viendo la etapa en la que estaba, la misma que va a ver si
+  -- vuelve. La saca del contacto pendiente, que la guarda al entrar.
+  v_etapa := v_p.estado;
+  if v_p.estado = 'en_seguimiento' then
+    select c.etapa_previa into v_etapa
+    from public.proximos_contactos c
+    where c.household_id = v_p.household_id
+      and c.proyecto_id = v_p.id
+      and c.hecho_el is null
+      and c.deleted_at is null;
+    v_etapa := coalesce(v_etapa, 'presupuesto_enviado');
+  end if;
+
   select h.nombre into v_taller from public.households h where h.id = v_p.household_id;
   select c.nombre into v_cliente from public.clientes c where c.id = v_p.cliente_id;
   select * into v_ajustes from public.ajustes a where a.household_id = v_p.household_id;
@@ -4388,7 +4721,7 @@ begin
   -- Con el estimativo como etapa actual, el número que se le pasó es aproximado y no está guardado:
   -- lo que haya en presupuesto_centavos es otro número, y no viaja.
   v_precio := case
-    when v_p.estado = 'presupuesto_estimativo' then null
+    when v_etapa = 'presupuesto_estimativo' then null
     else v_p.presupuesto_centavos
   end;
 
@@ -4447,7 +4780,7 @@ begin
     'cliente', jsonb_build_object('nombre', v_cliente),
     'trabajo', v_p.titulo,
     'direccion', v_p.direccion_entrega,
-    'estado', v_p.estado,
+    'estado', v_etapa,
     'precio_centavos', v_precio,
     -- El pago que toca ahora y, si hay otro después, cuánto es y cómo se paga. Los importes salen
     -- de lo que ya está guardado; el porcentaje de seña sigue sin viajar, que es lo que dejó
@@ -4547,4 +4880,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Del estimativo viaja el día, nunca un importe, y mientras el trabajo está en esa etapa tampoco viaja el precio. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054 y 0058).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Un trabajo en seguimiento se muestra en la etapa en la que estaba: el «por ahora no» y su próximo contacto son del taller y no viajan (ADR 0064). Del estimativo viaja el día, nunca un importe, y mientras el trabajo está en esa etapa tampoco viaja el precio. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054 y 0058).';

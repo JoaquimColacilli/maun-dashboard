@@ -169,6 +169,8 @@ export {
   type GastoParaGuardar,
   type MovimientoNuevo,
   type NecesidadParaGuardar,
+  type ProximoParaGuardar,
+  type ResultadoDelContacto,
   type OpcionParaGuardar,
   type PagoParaGuardar,
   type PedidoDeLiquidacion,

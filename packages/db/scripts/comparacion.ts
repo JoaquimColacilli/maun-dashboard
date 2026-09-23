@@ -1252,6 +1252,21 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
     ],
   },
   {
+    nombre:
+      'un por ahora no con seña se da por perdido, se reactiva a una consulta y se cierra otra vez',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {
+      enSeguimiento: { estado: 'en_seguimiento', pagos: [4_000_000], gastos: [] },
+      p1: entregado(200_000_000),
+    },
+    pasos: [
+      { liquidar: 'perdido', proyecto: 'enSeguimiento', fecha: '2026-09-18' },
+      { liquidar: 'cobrado', proyecto: 'p1', fecha: '2026-09-19' },
+      { revertir: 'presupuesto_enviado', proyecto: 'enSeguimiento' },
+      { liquidar: 'perdido', proyecto: 'enSeguimiento', fecha: '2026-10-03' },
+    ],
+  },
+  {
     nombre: 'dos cobros en julio y uno en septiembre: los fijos se topean con el mes de cada fecha',
     ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
     proyectos: {
@@ -1412,6 +1427,13 @@ async function prepararEscenario(
     );
     const proyectoId = rows[0]?.id ?? '';
     ids.set(clave, proyectoId);
+    if (proyecto.estado === 'en_seguimiento') {
+      await cliente.query(
+        `insert into public.proximos_contactos (household_id, proyecto_id, fecha, etapa_previa)
+         values ($1, $2, '2026-09-01', 'presupuesto_enviado')`,
+        [householdId, proyectoId],
+      );
+    }
     for (const [tabla, montos, borrado] of [
       ['pagos', proyecto.pagos, false],
       ['gastos', proyecto.gastos, false],

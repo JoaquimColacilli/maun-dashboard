@@ -893,6 +893,72 @@ export type Database = {
           },
         ];
       };
+      proximos_contactos: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          etapa_previa: Database['public']['Enums']['estado_proyecto'];
+          fecha: string;
+          hecho_el: string | null;
+          household_id: string;
+          id: string;
+          importante: boolean;
+          nota: string;
+          proyecto_id: string;
+          respuesta: string;
+          resultado: string | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          etapa_previa: Database['public']['Enums']['estado_proyecto'];
+          fecha: string;
+          hecho_el?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          nota?: string;
+          proyecto_id: string;
+          respuesta?: string;
+          resultado?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          etapa_previa?: Database['public']['Enums']['estado_proyecto'];
+          fecha?: string;
+          hecho_el?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          nota?: string;
+          proyecto_id?: string;
+          respuesta?: string;
+          resultado?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'proximos_contactos_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'proximos_contactos_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       proyectos: {
         Row: {
           cliente_id: string;
@@ -1441,6 +1507,7 @@ export type Database = {
           p_necesidades?: Json;
           p_opciones?: Json;
           p_pagos: Json;
+          p_proximos?: Json;
           p_proyecto: Json;
         };
         Returns: Json;
@@ -1617,6 +1684,7 @@ export type Database = {
         | 'relevamiento'
         | 'a_presupuestar'
         | 'presupuesto_enviado'
+        | 'en_seguimiento'
         | 'perdido'
         | 'en_curso'
         | 'entregado'
@@ -1761,6 +1829,7 @@ export const Constants = {
         'relevamiento',
         'a_presupuestar',
         'presupuesto_enviado',
+        'en_seguimiento',
         'perdido',
         'en_curso',
         'entregado',

@@ -104,7 +104,7 @@ function derivadosDelProyecto(
   proyecto: ProyectoDeLaAgenda,
   cliente: ClienteDeLaAgenda | undefined,
 ): EventoDerivado[] {
-  const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
+  const enConsulta = faseDe(proyecto.estado) === 'consultas';
   const entregada = entregaHecha(proyecto.estado);
   const comun = {
     clase: 'derivada' as const,
@@ -128,7 +128,7 @@ function derivadosDelProyecto(
       importante: proyecto.importante.entrega,
     });
   }
-  if ((enSeguimiento || proyecto.visitaHecha) && proyecto.fechaVisita !== null) {
+  if ((enConsulta || proyecto.visitaHecha) && proyecto.fechaVisita !== null) {
     eventos.push({
       ...comun,
       id: `visita:${proyecto.id}`,
@@ -141,7 +141,7 @@ function derivadosDelProyecto(
     });
   }
   if (
-    enSeguimiento &&
+    enConsulta &&
     proyecto.estado !== 'presupuesto_enviado' &&
     proyecto.estado !== 'presupuesto_estimativo' &&
     proyecto.vencimientoPresupuesto !== null

@@ -156,7 +156,12 @@ export function CostosDeCotizar({ proyecto, abiertoAlPrincipio = true }: CostosD
       </div>
 
       <div className="mt-3.5">
-        <Margen margen={margen} enSeguimiento={faseDe(proyecto.estado) === 'seguimiento'} />
+        <Margen
+          margen={margen}
+          enSeguimiento={
+            faseDe(proyecto.estado) === 'consultas' || faseDe(proyecto.estado) === 'seguimiento'
+          }
+        />
       </div>
 
       {guardar.isError && (

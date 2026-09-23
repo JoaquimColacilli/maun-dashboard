@@ -208,7 +208,7 @@ export function LoQueHaceFalta({ proyecto, abiertoAlPrincipio }: LoQueHaceFaltaP
     aviso?.();
   }
 
-  const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
+  const enSeguimiento = faseDe(proyecto.estado) === 'consultas';
   const bloqueado = proyecto.estado === 'cobrado' || proyecto.estado === 'perdido';
   const { cuantas, listas } = cuentaDeLoQueHaceFalta(todas);
 

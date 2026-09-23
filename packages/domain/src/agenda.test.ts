@@ -18,7 +18,7 @@ import {
   type PreferenciasDeAvisos,
   type ProyectoDeLaAgenda,
 } from './agenda.ts';
-import { ESTADOS, ESTADOS_DE_SEGUIMIENTO } from './estados.ts';
+import { ESTADOS, ESTADOS_DE_CONSULTA } from './estados.ts';
 
 const SEPTIEMBRE = { desde: '2026-09-01', hasta: '2026-09-30' };
 
@@ -227,7 +227,7 @@ describe('eventosDeLaAgenda', () => {
     }
   });
 
-  it('la visita sin hacer sale mientras el trabajo está en seguimiento', () => {
+  it('la visita sin hacer sale mientras el trabajo es una consulta, y no mientras está en seguimiento', () => {
     const conVisita = ESTADOS.map((estado) =>
       proyecto({ id: estado, estado, fechaVisita: '2026-09-11' }),
     );
@@ -252,7 +252,7 @@ describe('eventosDeLaAgenda', () => {
     expect(eventos).toHaveLength(ESTADOS.length);
     expect(eventos.every((evento) => evento.hecha && evento.fecha === '2026-09-11')).toBe(true);
 
-    for (const etapa of ESTADOS_DE_SEGUIMIENTO) {
+    for (const etapa of ESTADOS_DE_CONSULTA) {
       const [visita] = eventosDeLaAgenda(
         datos({
           proyectos: [proyecto({ estado: etapa, fechaVisita: '2026-09-11', visitaHecha: true })],

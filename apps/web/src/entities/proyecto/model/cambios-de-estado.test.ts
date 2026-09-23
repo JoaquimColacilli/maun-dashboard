@@ -1,7 +1,7 @@
 import {
   centavos,
   ESTADOS,
-  ESTADOS_DE_SEGUIMIENTO,
+  ESTADOS_DE_CONSULTA,
   TRANSICIONES,
   type EstadoProyecto,
 } from '@maun/domain';
@@ -143,7 +143,7 @@ describe('los cambios de estado que ofrece una ficha', () => {
   });
 
   it('aprobar un contacto no es un cambio rápido: pasa por la pantalla del pasaje', () => {
-    for (const etapa of ESTADOS_DE_SEGUIMIENTO) {
+    for (const etapa of ESTADOS_DE_CONSULTA) {
       const aprobar = cambiosDeEstado(etapa).find((cambio) => cambio.hacia === 'en_curso');
       expect(aprobar).toMatchObject({ etiqueta: 'Ya lo aprobó', camino: 'pasaje' });
     }

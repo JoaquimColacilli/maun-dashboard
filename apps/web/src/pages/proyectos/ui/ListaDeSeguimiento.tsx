@@ -1,4 +1,4 @@
-import { ESTADOS_DE_SEGUIMIENTO, type EstadoProyecto } from '@maun/domain';
+import { ESTADOS_DE_CONSULTA, type EstadoProyecto } from '@maun/domain';
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -161,7 +161,7 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
           />
         </label>
 
-        {(['todos', ...ESTADOS_DE_SEGUIMIENTO] as const).map((estado) => {
+        {(['todos', ...ESTADOS_DE_CONSULTA] as const).map((estado) => {
           const activo = filtro === estado;
           return (
             <button

@@ -1,4 +1,4 @@
-import { ESTADOS_DE_SEGUIMIENTO, type EstadoProyecto } from '@maun/domain';
+import { ESTADOS_DE_CONSULTA, type EstadoProyecto } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -121,7 +121,7 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
             }}
             className="mt-1 h-field w-full rounded-field border border-border bg-paper px-3.5 text-body-lg"
           >
-            {ESTADOS_DE_SEGUIMIENTO.map((estado) => (
+            {ESTADOS_DE_CONSULTA.map((estado) => (
               <option key={estado} value={estado}>
                 {ESTADO[estado].etiqueta}
               </option>

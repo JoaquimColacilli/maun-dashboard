@@ -38,8 +38,8 @@ import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
-function etapaDeLaRuta(pathname: string, busqueda: URLSearchParams): Fase {
-  if (pathname === '/seguimiento') return 'seguimiento';
+function etapaDeLaRuta(pathname: string, busqueda: URLSearchParams): Exclude<Fase, 'seguimiento'> {
+  if (pathname === '/seguimiento') return 'consultas';
   return busqueda.get('etapa') === 'historial' ? 'historial' : 'activos';
 }
 
@@ -276,9 +276,12 @@ function HojaDeOrden({
   );
 }
 
-function Vacio({ etapa }: { etapa: Exclude<Fase, 'seguimiento'> }) {
+function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> }) {
   const navegar = useNavigate();
-  const textos: Record<Exclude<Fase, 'seguimiento'>, { titulo: string; detalle: string }> = {
+  const textos: Record<
+    Exclude<Fase, 'consultas' | 'seguimiento'>,
+    { titulo: string; detalle: string }
+  > = {
     activos: {
       titulo: 'Todavía no hay proyectos activos',
       detalle:
@@ -357,7 +360,7 @@ export function ProyectosPage() {
     <Pagina>
       <header className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
-        {etapa === 'seguimiento' ? (
+        {etapa === 'consultas' ? (
           <Button
             onClick={() => {
               void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
@@ -408,7 +411,7 @@ export function ProyectosPage() {
         })}
       </div>
 
-      {etapa === 'seguimiento' ? (
+      {etapa === 'consultas' ? (
         <ListaDeSeguimiento resumenes={deLaEtapa} replica={replica} hoy={hoy} />
       ) : deLaEtapa.length === 0 ? (
         <Vacio etapa={etapa} />
