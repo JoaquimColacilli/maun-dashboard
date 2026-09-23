@@ -650,6 +650,7 @@ create table public.pagos (
   updated_at timestamp with time zone not null default now(),
   deleted_at timestamp with time zone,
   version integer not null default 1,
+  ya_en_la_apertura boolean not null default false,
   constraint pagos_concepto_largo CHECK (char_length(concepto) <= 500),
   constraint pagos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint pagos_monto_positivo CHECK (monto_centavos > 0),
@@ -659,9 +660,11 @@ create table public.pagos (
 comment on table public.pagos is 'Cobros recibidos de un proyecto: seña, adelantos, saldo. Entran a MAUN. La distribución se calcula sobre su suma.';
 comment on column public.pagos.monto_centavos is 'Importe cobrado, en centavos. Siempre positivo.';
 comment on column public.pagos.deleted_at is 'Borrado lógico. No se puede tocar un pago de un proyecto cobrado.';
+comment on column public.pagos.ya_en_la_apertura is 'La plata de este pago ya estaba en los saldos con los que arrancó la app: es de antes de la apertura y el dueño dijo que ya la tenía contada. Queda en el trabajo y en el libro mayor con su fecha, pero no mueve los tesoros. Solo puede ser true con una fecha anterior a la apertura. Las filas que existían al agregar la columna quedaron en false, que es lo que deja los saldos como estaban (ADR 0063).';
 CREATE INDEX pagos_household_actualizado ON public.pagos USING btree (household_id, updated_at);
 CREATE INDEX pagos_household_proyecto ON public.pagos USING btree (household_id, proyecto_id);
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+CREATE TRIGGER validar_la_fecha BEFORE INSERT OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.validar_la_fecha_del_pago();
 CREATE TRIGGER validar_proyecto_abierto BEFORE INSERT OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.validar_proyecto_abierto();
 alter table public.pagos enable row level security;
 create policy pagos_alta on public.pagos as permissive
@@ -676,8 +679,8 @@ create policy pagos_lectura on public.pagos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.pagos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.pagos to service_role;
-grant insert (id, proyecto_id, fecha, concepto, monto_centavos, deleted_at) on public.pagos to authenticated;
-grant update (id, proyecto_id, fecha, concepto, monto_centavos, deleted_at) on public.pagos to authenticated;
+grant insert (id, proyecto_id, fecha, concepto, monto_centavos, deleted_at, ya_en_la_apertura) on public.pagos to authenticated;
+grant update (id, proyecto_id, fecha, concepto, monto_centavos, deleted_at, ya_en_la_apertura) on public.pagos to authenticated;
 
 create table public.preguntas (
   id uuid not null default private.uuidv7(),
@@ -806,6 +809,7 @@ create table public.proyectos (
   visita_hora time without time zone,
   cobro_sena forma_de_cobro[],
   cobro_saldo forma_de_cobro[],
+  reparto_ya_en_la_apertura boolean not null default false,
   constraint presupuesto_aprobado TRIGGER DEFERRABLE INITIALLY DEFERRED,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_cobro_saldo_valido CHECK (COALESCE(cobro_saldo IS NULL OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro] OR cobro_saldo = ARRAY['efectivo'::forma_de_cobro] OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro, 'efectivo'::forma_de_cobro], false)),
@@ -850,7 +854,7 @@ comment on column public.proyectos.dist_remanente_centavos is 'Congelado al liqu
 comment on column public.proyectos.deleted_at is 'Borrado lógico. Borrar un proyecto borra sus pagos y gastos; uno liquidado con pagos o gastos vivos no se borra, y uno borrado no revive.';
 comment on column public.proyectos.reapertura_objetivo_sueldo_centavos is 'Objetivo de sueldo del cobro que se reabrió. El próximo cobro lo usa en vez del de los ajustes, y lo limpia.';
 comment on column public.proyectos.reapertura_objetivo_fijos_centavos is 'Objetivo de costos fijos del cobro que se reabrió. El tope se recalcula contra lo liquidado hoy en ese mes.';
-comment on column public.proyectos.reapertura_fecha_cobro is 'Fecha del cobro que se reabrió. El próximo cobro conserva esa fecha y ese mes: corregir no mueve la distribución en el libro mayor.';
+comment on column public.proyectos.reapertura_fecha_cobro is 'Fecha del cobro que se reabrió. Volver a cobrarlo la propone por defecto, y el dueño la puede corregir: la fecha la manda la app (ADR 0063).';
 comment on column public.proyectos.dist_objetivo_sueldo_centavos is 'Congelado al liquidar: objetivo de sueldo con el que se calculó el tope. En un perdido sin sueldo, cero.';
 comment on column public.proyectos.dist_objetivo_fijos_centavos is 'Congelado al liquidar: costos fijos del mes con los que se calculó el tope.';
 comment on column public.proyectos.dist_sueldo_mensual is 'Congelado al liquidar: si el sueldo se topeó por mes (true) o por proyecto (false).';
@@ -876,6 +880,7 @@ comment on column public.proyectos.entrega_hora is 'A qué hora es la entrega, s
 comment on column public.proyectos.visita_hora is 'A qué hora es la visita de relevamiento, si tiene hora. Null es «en algún momento de ese día».';
 comment on column public.proyectos.cobro_sena is 'Cómo se puede pagar la seña de este trabajo, o null si el dueño no lo tocó. Null no es vacío: es «vale el valor por defecto», que private.formas_de_cobro() calcula según si el taller tiene datos para transferir cargados. El check acepta exactamente tres valores, así que un pago nunca queda sin ninguna forma (ADR 0053).';
 comment on column public.proyectos.cobro_saldo is 'Lo mismo para el saldo. Son dos columnas y no una porque el dueño pide la seña por transferencia y cobra el saldo en efectivo cuando termina de instalar, que es el caso que motivó esto (ADR 0053).';
+comment on column public.proyectos.reparto_ya_en_la_apertura is 'El reparto de la liquidación (el diezmo y el sueldo) ya estaba en los saldos con los que arrancó la app: queda en el libro mayor con la fecha del cobro pero no mueve los tesoros. Lo escribe private.liquidar y solo con una fecha anterior a la apertura. Reabrir un cobro lo conserva para que volver a cobrarlo proponga lo mismo; reactivar un perdido lo apaga (ADR 0063).';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -998,7 +1003,8 @@ create view public.libro_mayor with (security_invoker=true) as
     m.tipo::text AS concepto,
     m.categoria,
     m.descripcion,
-    m.proyecto_id
+    m.proyecto_id,
+    false AS ya_en_la_apertura
    FROM movimientos m
   WHERE m.deleted_at IS NULL AND m.tesoro_destino IS NOT NULL
 UNION ALL
@@ -1012,7 +1018,8 @@ UNION ALL
     m.tipo::text AS concepto,
     m.categoria,
     m.descripcion,
-    m.proyecto_id
+    m.proyecto_id,
+    false AS ya_en_la_apertura
    FROM movimientos m
   WHERE m.deleted_at IS NULL AND m.tesoro_origen IS NOT NULL
 UNION ALL
@@ -1026,7 +1033,8 @@ UNION ALL
     'cobro'::text AS concepto,
     'Cobro'::text AS categoria,
     pg.concepto AS descripcion,
-    pg.proyecto_id
+    pg.proyecto_id,
+    pg.ya_en_la_apertura
    FROM pagos pg
      JOIN proyectos p ON p.household_id = pg.household_id AND p.id = pg.proyecto_id
   WHERE pg.deleted_at IS NULL AND p.deleted_at IS NULL
@@ -1041,7 +1049,8 @@ UNION ALL
     'gasto'::text AS concepto,
     'Materiales'::text AS categoria,
     g.descripcion,
-    g.proyecto_id
+    g.proyecto_id,
+    false AS ya_en_la_apertura
    FROM gastos g
      JOIN proyectos p ON p.household_id = g.household_id AND p.id = g.proyecto_id
   WHERE g.deleted_at IS NULL AND p.deleted_at IS NULL
@@ -1056,11 +1065,12 @@ UNION ALL
     d.concepto,
     'Distribución'::text AS categoria,
     p.titulo AS descripcion,
-    p.id AS proyecto_id
+    p.id AS proyecto_id,
+    p.reparto_ya_en_la_apertura AS ya_en_la_apertura
    FROM proyectos p
      CROSS JOIN LATERAL ( VALUES ('diezmo'::tesoro,'maun'::tesoro,p.dist_diezmo_centavos,'diezmo'::text), ('maun'::tesoro,'diezmo'::tesoro,- p.dist_diezmo_centavos,'diezmo'::text), ('hogar'::tesoro,'maun'::tesoro,p.dist_sueldo_centavos,'sueldo'::text), ('maun'::tesoro,'hogar'::tesoro,- p.dist_sueldo_centavos,'sueldo'::text)) d(tesoro, contrapartida, monto_centavos, concepto)
   WHERE (p.estado = ANY (ARRAY['cobrado'::estado_proyecto, 'perdido'::estado_proyecto])) AND p.deleted_at IS NULL AND d.monto_centavos <> 0;
-comment on view public.libro_mayor is 'Libro mayor por tesoro: una fila por tesoro afectado, importe con signo. El saldo de un tesoro es sum(monto_centavos) where tesoro = X.';
+comment on view public.libro_mayor is 'Libro mayor por tesoro: una fila por tesoro afectado, importe con signo. El saldo de un tesoro es sum(monto_centavos) where tesoro = X and not ya_en_la_apertura: una fila ya_en_la_apertura es plata de antes de la apertura que ya estaba en los saldos con los que arrancó la app, y queda en el libro con su fecha sin mover los tesoros (ADR 0063).';
 grant select on public.libro_mayor to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.libro_mayor to service_role;
 
@@ -1205,7 +1215,7 @@ $function$;
 -- execute: service_role:EXECUTE
 comment on function borrar_suscripcion_vencida(text) is 'Solo para la función de borde de los avisos (service_role).';
 
-CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
+CREATE OR REPLACE FUNCTION public.cerrar_perdido(p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint, p_ya_en_la_apertura boolean DEFAULT false)
  RETURNS proyectos
  LANGUAGE sql
  SET search_path TO ''
@@ -1215,13 +1225,13 @@ AS $function$
     'perdido', p_proyecto_id, p_version, p_fecha, p_cobrado_centavos, p_gastos_centavos,
     p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
     p_fijos_centavos, p_remanente_centavos, p_diezmo_bp,
-    p_sueldo_previo_centavos, p_fijos_previo_centavos
+    p_sueldo_previo_centavos, p_fijos_previo_centavos, p_ya_en_la_apertura
   )
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function cerrar_perdido(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint) is 'RPC de cierre como perdido de un lead o de una obra que se cayó. Liquida la seña retenida con la misma cascada que un cobro. Los mismos parámetros que cobrar_proyecto, más el diezmo que vio el usuario: en un perdido es un dato de los ajustes, no una regla.';
+comment on function cerrar_perdido(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint,boolean) is 'RPC de cierre como perdido de un lead o de una obra que se cayó. Liquida la seña retenida con la misma cascada que un cobro, con la fecha del cierre que manda la app. Los mismos parámetros que cobrar_proyecto, más el diezmo que vio el usuario: en un perdido es un dato de los ajustes, no una regla.';
 
-CREATE OR REPLACE FUNCTION public.cobrar_proyecto(p_proyecto_id uuid, p_version integer, p_fecha_cobro date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
+CREATE OR REPLACE FUNCTION public.cobrar_proyecto(p_proyecto_id uuid, p_version integer, p_fecha_cobro date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint, p_ya_en_la_apertura boolean DEFAULT false)
  RETURNS proyectos
  LANGUAGE sql
  SET search_path TO ''
@@ -1231,11 +1241,11 @@ AS $function$
     'cobrado', p_proyecto_id, p_version, p_fecha_cobro, p_cobrado_centavos, p_gastos_centavos,
     p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
     p_fijos_centavos, p_remanente_centavos, null,
-    p_sueldo_previo_centavos, p_fijos_previo_centavos
+    p_sueldo_previo_centavos, p_fijos_previo_centavos, p_ya_en_la_apertura
   )
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha, la distribución que le mostró al usuario y el acumulado del mes que vio. Si ese acumulado no es el de la base, la liquidación se congela con el de la base y la app lo ve comparando dist_sueldo_previo_centavos contra lo que mandó.';
+comment on function cobrar_proyecto(uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,boolean) is 'RPC de cobro de un proyecto entregado. La app manda la versión del proyecto, los totales, los topes, la fecha del cobro (la del último pago por defecto, o la del cobro original si fue reabierto), la distribución que le mostró al usuario, el acumulado del mes que vio y si ese reparto ya estaba en los saldos de la apertura. Si el acumulado no es el de la base, la liquidación se congela con el de la base y la app lo ve comparando dist_sueldo_previo_centavos contra lo que mandó.';
 
 CREATE OR REPLACE FUNCTION public.contestar_encuesta(p_token text, p_respuesta jsonb)
  RETURNS jsonb
@@ -1649,11 +1659,25 @@ begin
   -- un mensaje para el usuario y que tapa la cola igual que cualquier otro rechazo definitivo.
   if exists (
     select 1
-    from jsonb_to_recordset(p_pagos) as r (id uuid, fecha text, monto_centavos bigint, borrado boolean)
+    from jsonb_to_recordset(p_pagos) as r (id uuid, monto_centavos bigint, borrado boolean)
     where r.id is null
-       or (not coalesce(r.borrado, false) and (nullif(r.fecha, '') is null or r.monto_centavos is null))
+       or (not coalesce(r.borrado, false) and r.monto_centavos is null)
   ) then
-    raise exception 'Cada pago necesita id, fecha y monto' using errcode = '22004';
+    raise exception 'Cada pago necesita id y monto' using errcode = '22004';
+  end if;
+
+  -- La fecha de un pago es el día en que entró la plata, y la sabe la app. Sin ella, o con algo que
+  -- no es un día, no se guarda: la base no la inventa (ADR 0063). Se lee como texto por lo mismo
+  -- que las horas, y se revisa la forma antes de castear para no cortar con un 22007 sin mensaje.
+  if exists (
+    select 1
+    from jsonb_to_recordset(p_pagos) as r (fecha text, borrado boolean)
+    where not coalesce(r.borrado, false)
+      and coalesce(r.fecha, '') !~ '^\d{4}-\d{2}-\d{2}$'
+  ) then
+    raise exception 'Cada pago necesita su fecha'
+      using errcode = 'MN016',
+            hint = 'Poné el día en que te pagaron.';
   end if;
 
   if exists (
@@ -1867,18 +1891,28 @@ begin
     end;
   end if;
 
-  -- Los hijos van después del proyecto: la foreign key compuesta exige que el padre exista.
-  insert into public.pagos (id, proyecto_id, fecha, concepto, monto_centavos)
-  select r.id, v_fila.id, r.fecha::date, coalesce(r.concepto, ''), r.monto_centavos
-  from jsonb_to_recordset(p_pagos) as r (
-    id uuid, fecha text, concepto text, monto_centavos bigint, borrado boolean
+  -- Los hijos van después del proyecto: la foreign key compuesta exige que el padre exista. La marca
+  -- de la apertura de un pago usa el patrón de la clave presente: sin la clave (un bundle viejo)
+  -- queda la que ya tenía el pago, y un pago nuevo nace en false.
+  insert into public.pagos (id, proyecto_id, fecha, concepto, monto_centavos, ya_en_la_apertura)
+  select r.id, v_fila.id, r.fecha::date, coalesce(r.concepto, ''), r.monto_centavos,
+         case
+           when e ? 'ya_en_la_apertura' then coalesce(r.ya_en_la_apertura, false)
+           else coalesce(g.ya_en_la_apertura, false)
+         end
+  from jsonb_array_elements(p_pagos) as e
+  cross join lateral jsonb_to_record(e) as r (
+    id uuid, fecha text, concepto text, monto_centavos bigint, ya_en_la_apertura boolean,
+    borrado boolean
   )
+  left join public.pagos g on g.id = r.id
   where not coalesce(r.borrado, false)
   on conflict (id) do update set
     proyecto_id = excluded.proyecto_id,
     fecha = excluded.fecha,
     concepto = excluded.concepto,
-    monto_centavos = excluded.monto_centavos;
+    monto_centavos = excluded.monto_centavos,
+    ya_en_la_apertura = excluded.ya_en_la_apertura;
 
   insert into public.gastos (id, proyecto_id, fecha, descripcion, monto_centavos)
   select r.id, v_fila.id, r.fecha::date, coalesce(r.descripcion, ''), r.monto_centavos
@@ -2024,7 +2058,7 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto y lo que hace falta para el trabajo en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. p_opciones y p_necesidades en null quieren decir "no toques eso", para que un bundle viejo no lo borre. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
+comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto y lo que hace falta para el trabajo en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. p_opciones y p_necesidades en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
 
 CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
  RETURNS boolean
@@ -2709,6 +2743,22 @@ AS $function$
 $function$;
 -- execute: authenticated:EXECUTE
 
+CREATE OR REPLACE FUNCTION private.fecha_de_apertura(p_household_id uuid)
+ RETURNS date
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select min(m.fecha)
+  from public.movimientos m
+  where m.household_id = p_household_id
+    and m.tipo = 'ajuste'
+    and m.categoria = 'Apertura'
+    and m.deleted_at is null
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.fecha_de_apertura(uuid) is 'El día de la apertura del household: el primer ajuste con la categoría «Apertura», que es lo que escribe la migración del sistema viejo (ADR 0017). Null si el taller no vino de una migración. Gemela de fechaDeApertura de @maun/domain.';
+
 CREATE OR REPLACE FUNCTION private.formas_de_cobro(p_guardado forma_de_cobro[], p_hay_como_transferir boolean)
  RETURNS forma_de_cobro[]
  LANGUAGE sql
@@ -2780,6 +2830,20 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.household_actual() is 'Household del usuario de la sesión. Es el default de household_id en todas las tablas: el cliente no lo manda nunca.';
 
+CREATE OR REPLACE FUNCTION private.hoy_en_el_taller()
+ RETURNS date
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(
+    nullif(current_setting('maun.hoy_en_el_taller', true), '')::date,
+    (now() at time zone 'America/Argentina/Buenos_Aires')::date
+  )
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.hoy_en_el_taller() is 'El día de hoy en Argentina, donde está el taller. Sirve solo para rechazar una fecha que todavía no llegó: la fecha de un pago o de un cobro la manda la app, nunca sale de acá. Los tests la fijan con el setting maun.hoy_en_el_taller, porque sus fechas son fijas y el calendario no.';
+
 CREATE OR REPLACE FUNCTION private.liquidacion_valida(p_desde estado_proyecto, p_hacia estado_proyecto)
  RETURNS boolean
  LANGUAGE sql
@@ -2800,7 +2864,7 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.liquidacion_valida(estado_proyecto,estado_proyecto) is 'Desde qué estado se liquida hacia cobrado o perdido. Gemela de puedeLiquidar de @maun/domain.';
 
-CREATE OR REPLACE FUNCTION private.liquidar(p_destino estado_proyecto, p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint)
+CREATE OR REPLACE FUNCTION private.liquidar(p_destino estado_proyecto, p_proyecto_id uuid, p_version integer, p_fecha date, p_cobrado_centavos bigint, p_gastos_centavos bigint, p_tope_sueldo_centavos bigint, p_tope_fijos_centavos bigint, p_diezmo_centavos bigint, p_sueldo_centavos bigint, p_fijos_centavos bigint, p_remanente_centavos bigint, p_diezmo_bp integer, p_sueldo_previo_centavos bigint DEFAULT NULL::bigint, p_fijos_previo_centavos bigint DEFAULT NULL::bigint, p_ya_en_la_apertura boolean DEFAULT false)
  RETURNS proyectos
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -2826,11 +2890,20 @@ declare
   v_gastos bigint;
   v_dist record;
   v_dist_vista record;
+  v_apertura date;
 begin
+  -- La fecha la manda la app, que es la que sabe qué día pasó. Sin fecha no se liquida: la base no
+  -- la inventa.
+  if p_fecha is null then
+    raise exception 'La liquidación necesita su fecha'
+      using errcode = 'MN016',
+            hint = 'Poné el día del cobro, o del cierre si lo das por perdido.';
+  end if;
+
   if num_nulls(
-    p_destino, p_proyecto_id, p_version, p_fecha, p_cobrado_centavos, p_gastos_centavos,
+    p_destino, p_proyecto_id, p_version, p_cobrado_centavos, p_gastos_centavos,
     p_tope_sueldo_centavos, p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos,
-    p_fijos_centavos, p_remanente_centavos
+    p_fijos_centavos, p_remanente_centavos, p_ya_en_la_apertura
   ) > 0 then
     raise exception 'La liquidación necesita todos sus parámetros' using errcode = '22004';
   end if;
@@ -2865,18 +2938,20 @@ begin
   end if;
 
   -- El reenvío de la cola: esta misma liquidación ya se aplicó (la versión subió exactamente uno) y
-  -- la respuesta se perdió. Se devuelve la fila tal cual, sin rechazar algo que salió bien.
+  -- la respuesta se perdió. Se devuelve la fila tal cual, sin rechazar algo que salió bien. Va antes
+  -- de mirar la fecha contra hoy: un reenvío que llega días después sigue siendo el mismo cobro.
   if v_proyecto.estado = p_destino
     and v_proyecto.version = p_version + 1
     and (
       v_proyecto.fecha_cobro, v_proyecto.dist_cobrado_centavos, v_proyecto.dist_gastos_centavos,
       v_proyecto.dist_tope_sueldo_centavos, v_proyecto.dist_tope_fijos_centavos,
       v_proyecto.dist_diezmo_centavos, v_proyecto.dist_sueldo_centavos,
-      v_proyecto.dist_fijos_centavos, v_proyecto.dist_remanente_centavos
+      v_proyecto.dist_fijos_centavos, v_proyecto.dist_remanente_centavos,
+      v_proyecto.reparto_ya_en_la_apertura
     ) = (
       p_fecha, p_cobrado_centavos, p_gastos_centavos, p_tope_sueldo_centavos,
       p_tope_fijos_centavos, p_diezmo_centavos, p_sueldo_centavos, p_fijos_centavos,
-      p_remanente_centavos
+      p_remanente_centavos, p_ya_en_la_apertura
     )
     and (p_diezmo_bp is null or v_proyecto.dist_diezmo_bp = p_diezmo_bp)
   then
@@ -2892,15 +2967,23 @@ begin
     and v_proyecto.estado = p_destino
     and v_proyecto.version = p_version + 1
     and (
-      v_proyecto.fecha_cobro, v_proyecto.dist_cobrado_centavos, v_proyecto.dist_gastos_centavos
+      v_proyecto.fecha_cobro, v_proyecto.dist_cobrado_centavos, v_proyecto.dist_gastos_centavos,
+      v_proyecto.reparto_ya_en_la_apertura
     ) = (
-      p_fecha, p_cobrado_centavos, p_gastos_centavos
+      p_fecha, p_cobrado_centavos, p_gastos_centavos, p_ya_en_la_apertura
     )
     and (p_diezmo_bp is null or v_proyecto.dist_diezmo_bp = p_diezmo_bp)
     and (v_proyecto.dist_sueldo_previo_centavos, v_proyecto.dist_fijos_previo_centavos)
       is distinct from (p_sueldo_previo_centavos, p_fijos_previo_centavos)
   then
     return v_proyecto;
+  end if;
+
+  if p_fecha > private.hoy_en_el_taller() then
+    raise exception 'La fecha es de un día que todavía no llegó'
+      using errcode = 'MN017',
+            detail = format('fecha %s, hoy %s', p_fecha, private.hoy_en_el_taller()),
+            hint = 'Poné el día en que pasó: hoy o antes.';
   end if;
 
   if v_proyecto.deleted_at is not null then
@@ -2925,6 +3008,18 @@ begin
             detail = format('versión vista %s, versión actual %s', p_version, v_proyecto.version);
   end if;
 
+  -- Un reparto que ya estaba en los saldos de arranque tiene que ser de antes de la apertura. Si no,
+  -- esa plata desaparecería de los tesoros sin que nadie la haya contado.
+  if p_ya_en_la_apertura then
+    v_apertura := private.fecha_de_apertura(v_proyecto.household_id);
+    if v_apertura is null or p_fecha >= v_apertura then
+      raise exception 'Ese cobro no es de antes de que empezaras con la app'
+        using errcode = 'MN018',
+              detail = format('fecha %s, apertura %s', p_fecha, coalesce(v_apertura::text, 'ninguna')),
+              hint = 'Solo la plata de antes de la apertura puede estar en los saldos con los que arrancaste.';
+    end if;
+  end if;
+
   -- Segundo lock: la fila de ajustes del household. Toda liquidación y toda reversión la toman, así
   -- que dos liquidaciones del mismo household se serializan y la segunda suma el mes después de
   -- que la primera commiteó. for no key update: choca con otra liquidación y con una edición de
@@ -2938,24 +3033,25 @@ begin
     raise exception 'El household no tiene ajustes' using errcode = 'P0002';
   end if;
 
-  -- Con qué fecha, diezmo y objetivos se liquida. Gemela de planDeLiquidacion.
+  -- Con qué fecha, diezmo y objetivos se liquida. Gemela de planDeLiquidacion. La fecha es siempre
+  -- la que manda la app (ADR 0063): en un cobro reabierto la app propone la del original, y el
+  -- dueño la puede corregir.
+  v_fecha := p_fecha;
   if p_destino = 'perdido' then
     -- Un cierre como perdido es un evento nuevo: no usa la foto de una reapertura. El sueldo del
     -- perdido es un objetivo en cero cuando perdido_con_sueldo está apagado, no otra cascada.
-    v_fecha := p_fecha;
     v_diezmo_bp := case when v_ajustes.perdido_con_diezmo then c_diezmo_bp else 0 end;
     v_objetivo_sueldo := case when v_ajustes.perdido_con_sueldo then v_ajustes.sueldo_mensual_centavos else 0 end;
     v_objetivo_fijos := v_ajustes.costos_fijos_centavos;
     v_sueldo_mensual := v_ajustes.sueldo_tope_mensual;
   elsif v_proyecto.reapertura_fecha_cobro is not null then
-    -- Un cobro reabierto se vuelve a cobrar con la fecha y los objetivos del original.
-    v_fecha := v_proyecto.reapertura_fecha_cobro;
+    -- Un cobro reabierto se vuelve a cobrar con los objetivos del original: corregir un gasto no
+    -- reescribe el sueldo con los ajustes de hoy (ADR 0003).
     v_diezmo_bp := c_diezmo_bp;
     v_objetivo_sueldo := v_proyecto.reapertura_objetivo_sueldo_centavos;
     v_objetivo_fijos := v_proyecto.reapertura_objetivo_fijos_centavos;
     v_sueldo_mensual := v_proyecto.reapertura_sueldo_mensual;
   else
-    v_fecha := p_fecha;
     v_diezmo_bp := c_diezmo_bp;
     v_objetivo_sueldo := v_ajustes.sueldo_mensual_centavos;
     v_objetivo_fijos := v_ajustes.costos_fijos_centavos;
@@ -3016,7 +3112,6 @@ begin
   -- solo puede venir de los objetivos, y sigue siendo MN006.
   if v_cobrado <> p_cobrado_centavos
     or v_gastos <> p_gastos_centavos
-    or v_fecha <> p_fecha
     or v_diezmo_bp <> coalesce(p_diezmo_bp, v_diezmo_bp)
     or (
       not v_ajustada
@@ -3026,7 +3121,7 @@ begin
       )
     )
   then
-    raise exception 'Los pagos, los gastos, los topes, el diezmo o la fecha cambiaron desde que viste la distribución'
+    raise exception 'Los pagos, los gastos, los topes o el diezmo cambiaron desde que viste la distribución'
       using errcode = 'MN006',
             detail = format(
               'cobrado %s, gastos %s, tope de sueldo %s, tope de fijos %s, diezmo %s bp, fecha %s; el mes ya llevaba %s de sueldo y %s de fijos',
@@ -3098,6 +3193,7 @@ begin
     dist_sueldo_previo_centavos = v_sueldo_previo,
     dist_fijos_previo_centavos = v_fijos_previo,
     dist_liquidado_at = clock_timestamp(),
+    reparto_ya_en_la_apertura = p_ya_en_la_apertura,
     reapertura_objetivo_sueldo_centavos = null,
     reapertura_objetivo_fijos_centavos = null,
     reapertura_sueldo_mensual = null,
@@ -3109,7 +3205,7 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.liquidar(estado_proyecto,uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint) is 'Liquida un proyecto hacia cobrado o perdido y congela su distribución. Bloquea el proyecto y después los ajustes, suma lo liquidado en el mes, y rechaza con MN006 si la versión, los totales, el diezmo o la fecha no son los que vio el cliente, y con MN008 si la distribución no es la de la base. Si el cliente manda el acumulado del mes que vio y no es el de la base, recalcula los topes con el suyo y congela eso en vez de rechazar: el MN008 se sigue exigiendo contra lo que el cliente vio. Reconoce el reenvío, ajustado o no.';
+comment on function private.liquidar(estado_proyecto,uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint,boolean) is 'Liquida un proyecto hacia cobrado o perdido y congela su distribución con la fecha que manda la app, también al volver a cobrar un reabierto (ADR 0063). Rechaza sin fecha (MN016), con una fecha que todavía no llegó (MN017) y un reparto marcado como ya incluido en la apertura con una fecha que no es anterior a ella (MN018). Bloquea el proyecto y después los ajustes, suma lo liquidado en el mes, y rechaza con MN006 si la versión, los totales o el diezmo no son los que vio el cliente, y con MN008 si la distribución no es la de la base. Si el cliente manda el acumulado del mes que vio y no es el de la base, recalcula los topes con el suyo y congela eso en vez de rechazar: el MN008 se sigue exigiendo contra lo que el cliente vio. Reconoce el reenvío, ajustado o no.';
 
 CREATE OR REPLACE FUNCTION private.mantener_metadatos()
  RETURNS trigger
@@ -3443,14 +3539,16 @@ begin
   for no key update;
 
   -- Reabrir un cobro guarda la fecha, los objetivos y el modo del original para el cobro
-  -- siguiente (ADR 0003). Reactivar un perdido no guarda nada: un lead que revive es un lead vivo
-  -- otra vez, y un cierre posterior es un evento nuevo con su fecha.
+  -- siguiente (ADR 0003), y conserva si su reparto ya estaba en la apertura: volver a cobrarlo
+  -- propone lo mismo. Reactivar un perdido no guarda nada: un lead que revive es un lead vivo otra
+  -- vez, y un cierre posterior es un evento nuevo con su fecha.
   update public.proyectos set
     estado = p_hacia,
     reapertura_objetivo_sueldo_centavos = case when p_desde = 'cobrado' then dist_objetivo_sueldo_centavos end,
     reapertura_objetivo_fijos_centavos = case when p_desde = 'cobrado' then dist_objetivo_fijos_centavos end,
     reapertura_sueldo_mensual = case when p_desde = 'cobrado' then dist_sueldo_mensual end,
     reapertura_fecha_cobro = case when p_desde = 'cobrado' then fecha_cobro end,
+    reparto_ya_en_la_apertura = case when p_desde = 'cobrado' then reparto_ya_en_la_apertura else false end,
     fecha_cobro = null,
     dist_cobrado_centavos = null,
     dist_gastos_centavos = null,
@@ -3692,6 +3790,55 @@ begin
 end;
 $function$;
 -- execute: solo el dueño
+
+CREATE OR REPLACE FUNCTION private.validar_la_fecha_del_pago()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_apertura date;
+begin
+  -- En un upsert que choca contra una fila existente, este trigger corre antes de detectar el
+  -- conflicto. Se deja pasar y decide el trigger de UPDATE, que ve la fila vieja.
+  if tg_op = 'INSERT' then
+    perform 1 from public.pagos where id = new.id;
+    if found then
+      return new;
+    end if;
+  end if;
+
+  -- Una baja no se revisa: sacar un pago con una fecha rara tiene que poder hacerse siempre.
+  if new.deleted_at is not null then
+    return new;
+  end if;
+
+  if (tg_op = 'INSERT' or new.fecha is distinct from old.fecha)
+    and new.fecha > private.hoy_en_el_taller()
+  then
+    raise exception 'La fecha del pago es de un día que todavía no llegó'
+      using errcode = 'MN017',
+            detail = format('fecha %s, hoy %s', new.fecha, private.hoy_en_el_taller()),
+            hint = 'Poné el día en que te pagaron: hoy o antes.';
+  end if;
+
+  if new.ya_en_la_apertura
+    and (tg_op = 'INSERT' or new.fecha is distinct from old.fecha or not old.ya_en_la_apertura)
+  then
+    v_apertura := private.fecha_de_apertura(new.household_id);
+    if v_apertura is null or new.fecha >= v_apertura then
+      raise exception 'Ese pago no es de antes de que empezaras con la app'
+        using errcode = 'MN018',
+              detail = format('fecha %s, apertura %s', new.fecha, coalesce(v_apertura::text, 'ninguna')),
+              hint = 'Solo la plata de antes de la apertura puede estar en los saldos con los que arrancaste.';
+    end if;
+  end if;
+
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.validar_la_fecha_del_pago() is 'Guarda de la fecha de un pago: no acepta un día que todavía no llegó (MN017) y solo deja marcarlo como ya incluido en la apertura si es de antes de la apertura (MN018). La que falte la fecha la frena guardar_proyecto y el not null de la columna. Deja pasar las bajas.';
 
 CREATE OR REPLACE FUNCTION private.validar_presupuesto_aprobado()
  RETURNS trigger

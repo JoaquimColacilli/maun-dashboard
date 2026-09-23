@@ -227,7 +227,8 @@ export interface BajaDeFilaHija {
   borrado: true;
 }
 
-export type PagoParaGuardar = (FilaHijaViva & { concepto: string }) | BajaDeFilaHija;
+export type PagoParaGuardar =
+  (FilaHijaViva & { concepto: string; ya_en_la_apertura?: boolean }) | BajaDeFilaHija;
 
 export type GastoParaGuardar = (FilaHijaViva & { descripcion: string }) | BajaDeFilaHija;
 
@@ -763,6 +764,7 @@ export interface PedidoDeLiquidacion {
   remanenteCentavos: number;
   sueldoPrevioCentavos: number;
   fijosPrevioCentavos: number;
+  yaEnLaApertura?: boolean;
 }
 
 export interface PedidoDeReversion {
@@ -789,6 +791,7 @@ export async function liquidarProyecto(
     p_remanente_centavos: pedido.remanenteCentavos,
     p_sueldo_previo_centavos: pedido.sueldoPrevioCentavos,
     p_fijos_previo_centavos: pedido.fijosPrevioCentavos,
+    p_ya_en_la_apertura: pedido.yaEnLaApertura ?? false,
   };
 
   const { data, error } =

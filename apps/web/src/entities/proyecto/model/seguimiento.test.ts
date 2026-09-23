@@ -75,6 +75,7 @@ function proyecto(id: string, extra: Partial<Proyecto> = {}): Proyecto {
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    reparto_ya_en_la_apertura: false,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
@@ -99,6 +100,7 @@ function pago(id: string, proyectoId: string, actualizado: string): FilaDe<'pago
     fecha: '2026-09-01',
     concepto: 'Seña',
     monto_centavos: SENA,
+    ya_en_la_apertura: false,
   };
 }
 

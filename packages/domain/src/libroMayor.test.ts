@@ -5,8 +5,11 @@ import {
   asientosDelLibro,
   asientosDelMes,
   entradasYSalidas,
+  esAnteriorALaApertura,
   estadoDelDiezmo,
+  fechaDeApertura,
   lineasDelLibro,
+  mueveLosTesoros,
   proyeccionCocos,
   saldosDelLibro,
   saldosPorTesoro,
@@ -48,6 +51,7 @@ function pago(partes: Partial<PagoDelLibro>): PagoDelLibro {
     fecha: '2026-09-01',
     concepto: 'Seña',
     monto: $(500),
+    yaEnLaApertura: false,
     ...partes,
   };
 }
@@ -71,6 +75,7 @@ function proyecto(partes: Partial<ProyectoDelLibro>): ProyectoDelLibro {
     fechaCobro: null,
     diezmo: $(0),
     sueldo: $(0),
+    repartoYaEnLaApertura: false,
     ...partes,
   };
 }
@@ -373,6 +378,7 @@ describe('lineasDelLibro', () => {
         categoria: '',
         descripcion: '',
         proyectoId: null,
+        yaEnLaApertura: false,
       },
     ]);
 
@@ -474,6 +480,97 @@ describe('lineasDelLibro', () => {
         datos({ pagos: [pago({ proyectoId: 'otro' })], gastos: [gasto({ proyectoId: 'otro' })] }),
       ),
     ).toEqual([]);
+  });
+});
+
+describe('lo que ya estaba en los saldos de la apertura', () => {
+  const conLaApertura = datos({
+    movimientos: [
+      movimiento({
+        id: 'a1',
+        tipo: 'ajuste',
+        fecha: '2026-09-14',
+        tesoroOrigen: null,
+        tesoroDestino: 'maun',
+        monto: $(1_000_000),
+        categoria: 'Apertura',
+      }),
+    ],
+    pagos: [
+      pago({ id: 'viejo', fecha: '2026-07-10', monto: $(300_000), yaEnLaApertura: true }),
+      pago({ id: 'nuevo', fecha: '2026-09-20', monto: $(200_000) }),
+    ],
+    proyectos: [
+      proyecto({
+        estado: 'cobrado',
+        fechaCobro: '2026-07-10',
+        diezmo: $(30_000),
+        sueldo: $(270_000),
+        repartoYaEnLaApertura: true,
+      }),
+    ],
+  });
+
+  it('el pago y el reparto quedan en el libro con su fecha, marcados', () => {
+    const lineas = lineasDelLibro(conLaApertura);
+
+    expect(
+      lineas
+        .filter((linea) => linea.yaEnLaApertura)
+        .map((linea) => [linea.origen, linea.fecha, linea.monto]),
+    ).toEqual([
+      ['pago', '2026-07-10', 300_000],
+      ['distribucion', '2026-07-10', 30_000],
+      ['distribucion', '2026-07-10', 270_000],
+    ]);
+    expect(
+      asientosDelLibro(conLaApertura)
+        .filter((asiento) => asiento.yaEnLaApertura)
+        .every((asiento) => !mueveLosTesoros(asiento)),
+    ).toBe(true);
+  });
+
+  it('pero no mueven los tesoros: el saldo es la apertura más lo nuevo', () => {
+    expect(saldosDelLibro(conLaApertura)).toEqual({
+      hogar: 0,
+      maun: 1_000_000 + 200_000,
+      diezmo: 0,
+      cocos: 0,
+    });
+  });
+
+  it('las cifras del mes sí los cuentan en su mes: la plata entró ese mes', () => {
+    const julio = asientosDelMes(asientosDelLibro(conLaApertura), '2026-07');
+    expect(entradasYSalidas(julio, 'maun')).toEqual({ entro: 300_000, salio: 300_000 });
+    expect(entradasYSalidas(julio, 'hogar')).toEqual({ entro: 270_000, salio: 0 });
+  });
+
+  it('el diezmo que ya estaba en la apertura no se debe de nuevo', () => {
+    expect(estadoDelDiezmo(asientosDelLibro(conLaApertura))).toMatchObject({
+      situacion: 'al-dia',
+      generado: 0,
+    });
+  });
+
+  it('la fecha de la apertura es el primer ajuste de apertura; sin apertura no hay', () => {
+    expect(fechaDeApertura(conLaApertura.movimientos)).toBe('2026-09-14');
+    expect(
+      fechaDeApertura([
+        movimiento({ id: 'x', tipo: 'ajuste', fecha: '2026-09-16', categoria: 'Apertura' }),
+        movimiento({ id: 'y', tipo: 'ajuste', fecha: '2026-09-15', categoria: 'Apertura' }),
+        movimiento({ id: 'v', tipo: 'ajuste', fecha: '2026-09-17', categoria: 'Apertura' }),
+        movimiento({ id: 'z', tipo: 'ajuste', fecha: '2026-01-01', categoria: 'Ajuste' }),
+        movimiento({ id: 'w', tipo: 'ingreso', fecha: '2026-01-01', categoria: 'Apertura' }),
+      ]),
+    ).toBe('2026-09-15');
+    expect(fechaDeApertura([movimiento({})])).toBeNull();
+  });
+
+  it('anterior a la apertura es estrictamente antes: el día de la apertura ya no', () => {
+    expect(esAnteriorALaApertura('2026-09-13', '2026-09-14')).toBe(true);
+    expect(esAnteriorALaApertura('2026-09-14', '2026-09-14')).toBe(false);
+    expect(esAnteriorALaApertura('2026-09-20', '2026-09-14')).toBe(false);
+    expect(esAnteriorALaApertura('2020-01-01', null)).toBe(false);
   });
 });
 

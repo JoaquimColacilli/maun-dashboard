@@ -253,6 +253,7 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         reapertura_objetivo_fijos_centavos: null,
         reapertura_sueldo_mensual: null,
         reapertura_fecha_cobro: null,
+        reparto_ya_en_la_apertura: false,
       } satisfies FilaDe<'proyectos'>);
 
   let siguiente = aplicarFilaLocal(replica, 'proyectos', fila);
@@ -270,6 +271,7 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
       fecha: pago.fecha,
       concepto: pago.concepto,
       monto_centavos: pago.monto_centavos,
+      ya_en_la_apertura: pago.ya_en_la_apertura ?? previo?.ya_en_la_apertura ?? false,
       created_at: previo?.created_at ?? ahora,
       updated_at: ahora,
       deleted_at: null,

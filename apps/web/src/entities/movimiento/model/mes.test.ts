@@ -13,6 +13,7 @@ function asiento(partes: Partial<Asiento> & Pick<Asiento, 'monto' | 'concepto'>)
     categoria: '',
     descripcion: '',
     proyectoId: null,
+    yaEnLaApertura: false,
     ...partes,
   };
 }

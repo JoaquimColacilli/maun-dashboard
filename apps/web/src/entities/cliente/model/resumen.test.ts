@@ -68,6 +68,7 @@ function proyecto(id: string, clienteId: string, extra: Partial<Proyecto> = {}):
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    reparto_ya_en_la_apertura: false,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
@@ -88,6 +89,7 @@ function pago(id: string, proyectoId: string, monto: number): Pago {
     fecha: '2026-02-01',
     concepto: '',
     monto_centavos: monto,
+    ya_en_la_apertura: false,
   };
 }
 

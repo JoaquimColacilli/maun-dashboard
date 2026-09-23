@@ -88,13 +88,14 @@ export function liquidacionProyectada(
   { destino = 'cobrado', pagoExtra = centavos(0) }: OpcionesDeProyeccion = {},
 ): Liquidacion {
   const { cobrado, gastos } = totalesDelProyecto(replica, proyecto.id);
+  const reapertura = reaperturaDe(proyecto);
   return calcularLiquidacion({
     destino,
-    fecha: hoy,
+    fecha: destino === 'cobrado' && reapertura !== null ? reapertura.fecha : hoy,
     cobrado: sumar(cobrado, pagoExtra),
     gastos,
     ajustes: ajustesDeLaReplica(replica),
-    reapertura: reaperturaDe(proyecto),
+    reapertura,
     liquidaciones: liquidacionesDeLaReplica(replica, proyecto.id),
   });
 }

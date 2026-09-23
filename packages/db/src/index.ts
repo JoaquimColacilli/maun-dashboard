@@ -80,6 +80,7 @@ export {
 } from './avisos.ts';
 
 export {
+  aperturaDeLaReplica,
   datosDelLibro,
   liquidacionesDeLaReplica,
   objetivosDeLaReplica,

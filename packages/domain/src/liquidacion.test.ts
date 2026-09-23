@@ -131,7 +131,7 @@ describe('el plan: con qué fecha, diezmo y objetivos se liquida', () => {
     });
   });
 
-  it('un cobro reabierto usa la fecha y los objetivos del cobro original', () => {
+  it('un cobro reabierto usa los objetivos del cobro original y la fecha que se elige al volver a cobrar', () => {
     const reapertura = {
       fecha: '2026-08-20',
       objetivoSueldo: centavos(150_000_000),
@@ -139,10 +139,13 @@ describe('el plan: con qué fecha, diezmo y objetivos se liquida', () => {
       sueldoMensual: true,
     };
     expect(planDeLiquidacion('cobrado', '2026-09-11', AJUSTES, reapertura)).toEqual({
-      fecha: '2026-08-20',
+      fecha: '2026-09-11',
       diezmoBp: DIEZMO,
       objetivos: { sueldo: 150_000_000, fijos: 40_000_000, sueldoMensual: true },
     });
+    expect(planDeLiquidacion('cobrado', '2026-08-20', AJUSTES, reapertura).fecha).toBe(
+      '2026-08-20',
+    );
   });
 
   it('un perdido, por defecto, no paga sueldo y sí diezmo: objetivo de sueldo en cero', () => {
@@ -196,6 +199,39 @@ describe('la liquidación completa', () => {
       liquidaciones: [registrada('2026-08-25', { fijos: p2.fijos })],
     });
     expect(p1Corregido).toMatchObject({ fecha: '2026-08-20', fijos: 45_000_000, remanente: 0 });
+  });
+
+  it('volver a cobrar un reabierto en otro mes lleva el reparto a ese mes, con los objetivos del original', () => {
+    const agosto = registrada('2026-08-25', { fijos: centavos(30_000_000) });
+    const septiembre = registrada('2026-09-03', { fijos: centavos(10_000_000) });
+    const reapertura = {
+      fecha: '2026-08-20',
+      objetivoSueldo: SUELDO,
+      objetivoFijos: FIJOS,
+      sueldoMensual: false,
+    };
+    const enSuMes = liquidar({
+      fecha: '2026-08-20',
+      cobrado: centavos(400_000_000),
+      reapertura,
+      liquidaciones: [agosto, septiembre],
+    });
+    const enOtroMes = liquidar({
+      fecha: '2026-09-10',
+      cobrado: centavos(400_000_000),
+      reapertura,
+      ajustes: { ...AJUSTES, costosFijos: centavos(99_000_000) },
+      liquidaciones: [agosto, septiembre],
+    });
+
+    expect(enSuMes).toMatchObject({ fecha: '2026-08-20', previo: { fijos: 30_000_000 } });
+    expect(enSuMes.fijos).toBe(20_000_000);
+    expect(enOtroMes).toMatchObject({
+      fecha: '2026-09-10',
+      previo: { fijos: 10_000_000 },
+      objetivos: { fijos: FIJOS },
+    });
+    expect(enOtroMes.fijos).toBe(40_000_000);
   });
 
   it('lo liquidado en otro mes no cuenta', () => {

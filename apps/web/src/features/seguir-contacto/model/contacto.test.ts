@@ -82,6 +82,7 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    reparto_ya_en_la_apertura: false,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
@@ -106,6 +107,7 @@ function pago(extra: Partial<FilaDe<'pagos'>> = {}): FilaDe<'pagos'> {
     fecha: '2026-09-08',
     concepto: CONCEPTO_DE_LA_SENA,
     monto_centavos: 15_000_000,
+    ya_en_la_apertura: false,
     ...extra,
   };
 }

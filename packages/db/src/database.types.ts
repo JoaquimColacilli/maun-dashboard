@@ -770,6 +770,7 @@ export type Database = {
           proyecto_id: string;
           updated_at: string;
           version: number;
+          ya_en_la_apertura: boolean;
         };
         Insert: {
           concepto?: string;
@@ -782,6 +783,7 @@ export type Database = {
           proyecto_id: string;
           updated_at?: string;
           version?: number;
+          ya_en_la_apertura?: boolean;
         };
         Update: {
           concepto?: string;
@@ -794,6 +796,7 @@ export type Database = {
           proyecto_id?: string;
           updated_at?: string;
           version?: number;
+          ya_en_la_apertura?: boolean;
         };
         Relationships: [
           {
@@ -941,6 +944,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1001,6 +1005,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
           reapertura_sueldo_mensual?: boolean | null;
+          reparto_ya_en_la_apertura?: boolean;
           sena_bp?: number | null;
           titulo: string;
           ultimo_contacto?: string | null;
@@ -1061,6 +1066,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
           reapertura_sueldo_mensual?: boolean | null;
+          reparto_ya_en_la_apertura?: boolean;
           sena_bp?: number | null;
           titulo?: string;
           ultimo_contacto?: string | null;
@@ -1227,6 +1233,7 @@ export type Database = {
           origen: string | null;
           proyecto_id: string | null;
           tesoro: Database['public']['Enums']['tesoro'] | null;
+          ya_en_la_apertura: boolean | null;
         };
         Relationships: [];
       };
@@ -1258,6 +1265,7 @@ export type Database = {
           p_tope_fijos_centavos: number;
           p_tope_sueldo_centavos: number;
           p_version: number;
+          p_ya_en_la_apertura?: boolean;
         };
         Returns: {
           cliente_id: string;
@@ -1309,6 +1317,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1341,6 +1350,7 @@ export type Database = {
           p_tope_fijos_centavos: number;
           p_tope_sueldo_centavos: number;
           p_version: number;
+          p_ya_en_la_apertura?: boolean;
         };
         Returns: {
           cliente_id: string;
@@ -1392,6 +1402,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1486,6 +1497,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1559,6 +1571,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import {
   calcularLiquidacion,
+  CATEGORIA_DE_APERTURA,
   centavos,
   saldosDelLibro,
   type AjustesDeLiquidacion,
@@ -113,7 +114,6 @@ export interface OpcionesDeMigracion {
   despues?: LoDeDespues;
 }
 
-export const CATEGORIA_DE_APERTURA = 'Apertura';
 export const CATEGORIA_DEL_AJUSTE_DE_COCOS = 'Ajuste';
 
 export function objetivoDeLosLeidos(leidos: Saldos): Saldos {
@@ -727,6 +727,7 @@ export async function migrar(
       fecha: pago.fecha,
       concepto: pago.concepto,
       monto: centavos(pago.monto_centavos),
+      yaEnLaApertura: false,
     })),
     gastos: gastos.map((gasto) => ({
       id: gasto.id,
@@ -744,6 +745,7 @@ export async function migrar(
         fechaCobro: liquidacion?.fecha ?? null,
         diezmo: liquidacion?.diezmo ?? centavos(0),
         sueldo: liquidacion?.sueldo ?? centavos(0),
+        repartoYaEnLaApertura: false,
       };
     }),
   };

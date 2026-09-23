@@ -7,6 +7,11 @@ create extension if not exists pgtap with schema extensions;
 create schema tests;
 grant usage on schema tests to anon, authenticated;
 
+-- La base rechaza un pago o un cobro con una fecha que todavía no llegó, y los tests usan fechas
+-- fijas que el calendario va a pasar tarde o temprano. Para la suite, hoy es un día lejano; el test
+-- que prueba el rechazo fija el suyo (29_la_fecha_del_cobro.sql).
+select set_config('maun.hoy_en_el_taller', '2099-12-31', true);
+
 -- Un usuario de Auth mínimo. Solo existe dentro de la transacción del test.
 --
 -- Nace sin confirmar, que es como nace un registro real y, sobre todo, es lo que deja que el test
