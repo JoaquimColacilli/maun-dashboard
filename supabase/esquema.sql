@@ -104,6 +104,7 @@ comment on column public.ajustes.cobro_titular is 'A nombre de quién está la c
 comment on column public.ajustes.cobro_cuit is 'El CUIT del titular con guiones (NN-NNNNNNNN-N), o vacío. Mismo formato que public.clientes.cuit; el dígito verificador lo revisa la app.';
 comment on column public.ajustes.cobro_link is 'El link de Mercado Pago del taller para que el cliente le pague, o vacío. Lo pega el dueño: lo saca de su app, de Cobrar con QR o de Link de pago. La página del cliente lo muestra como código QR y como botón. No se deriva del alias ni del CVU porque no existe ningún link estándar que abra una billetera en «Transferir a este alias»: el QR interoperable del BCRA lo emite un PSP y es un QR de cobro. El check acota el host a Mercado Pago porque este texto se vuelve un enlace en una página pública. Cobrar por acá le cuesta comisión al taller; transferir al alias no (ADR 0051 y 0054).';
 comment on column public.ajustes.resena_link is 'El enlace del taller para dejarle una reseña en Google, o vacío. Lo pega el dueño, lo saca de su Perfil de Negocio. La encuesta se lo ofrece al final a todos los que contestan, contesten lo que contesten: filtrar a quién se le pide según lo que opinó está prohibido por las políticas de Google (ADR 0057). El check acota el host a Google porque este texto se vuelve un enlace en una página pública.';
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
 create policy ajustes_edicion on public.ajustes as permissive
@@ -146,6 +147,7 @@ comment on column public.anotaciones.importante is 'La marcó como importante: e
 comment on column public.anotaciones.deleted_at is 'Borrado lógico, como en todo el household: delta() lo trae para que el cliente la saque de su copia.';
 CREATE INDEX anotaciones_household_actualizado ON public.anotaciones USING btree (household_id, updated_at);
 CREATE INDEX anotaciones_household_proyecto ON public.anotaciones USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON anotaciones FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON anotaciones FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.anotaciones enable row level security;
 create policy anotaciones_alta on public.anotaciones as permissive
@@ -196,6 +198,7 @@ comment on column public.archivos.deleted_at is 'Borrado lógico, como en todo e
 comment on column public.archivos.visible_para_cliente is 'Si este archivo se ve en la vista del cliente. Apagado por defecto, siempre: un archivo nuevo es privado hasta que el dueño decide lo contrario, nunca al revés (ADR 0046).';
 CREATE INDEX archivos_household_actualizado ON public.archivos USING btree (household_id, updated_at);
 CREATE INDEX archivos_household_proyecto ON public.archivos USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON archivos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON archivos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.archivos enable row level security;
 create policy archivos_alta on public.archivos as permissive
@@ -277,6 +280,7 @@ comment on column public.clientes.origen_detalle is 'Detalle libre del origen: q
 comment on column public.clientes.cuit is 'CUIT con guiones (NN-NNNNNNNN-N), o vacío. El dígito verificador lo valida la app.';
 comment on column public.clientes.deleted_at is 'Borrado lógico. No se puede borrar un cliente con proyectos vivos.';
 CREATE INDEX clientes_household_actualizado ON public.clientes USING btree (household_id, updated_at);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON clientes FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON clientes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE TRIGGER validar_baja BEFORE UPDATE OF deleted_at ON clientes FOR EACH ROW EXECUTE FUNCTION private.validar_baja_cliente();
 alter table public.clientes enable row level security;
@@ -332,6 +336,7 @@ CREATE INDEX encuestas_enviadas_household_proyecto ON public.encuestas_enviadas 
 CREATE UNIQUE INDEX encuestas_enviadas_token ON public.encuestas_enviadas USING btree (token_hash);
 CREATE UNIQUE INDEX encuestas_enviadas_una_viva_por_trabajo ON public.encuestas_enviadas USING btree (household_id, proyecto_id) WHERE ((revocada_at IS NULL) AND (deleted_at IS NULL));
 CREATE TRIGGER armar_la_encuesta BEFORE INSERT ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.armar_la_encuesta();
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER cuidar_la_encuesta BEFORE UPDATE ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.cuidar_la_encuesta();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON encuestas_enviadas FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.encuestas_enviadas enable row level security;
@@ -383,6 +388,7 @@ CREATE INDEX enlaces_publicos_household_actualizado ON public.enlaces_publicos U
 CREATE INDEX enlaces_publicos_household_proyecto ON public.enlaces_publicos USING btree (household_id, proyecto_id);
 CREATE UNIQUE INDEX enlaces_publicos_token ON public.enlaces_publicos USING btree (token_hash);
 CREATE UNIQUE INDEX enlaces_publicos_uno_vivo_por_trabajo ON public.enlaces_publicos USING btree (household_id, proyecto_id) WHERE ((revocado_at IS NULL) AND (deleted_at IS NULL));
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON enlaces_publicos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON enlaces_publicos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.enlaces_publicos enable row level security;
 create policy enlaces_publicos_alta on public.enlaces_publicos as permissive
@@ -422,6 +428,7 @@ comment on column public.gastos.monto_centavos is 'Importe gastado, en centavos.
 comment on column public.gastos.deleted_at is 'Borrado lógico. No se puede tocar un gasto de un proyecto cobrado.';
 CREATE INDEX gastos_household_actualizado ON public.gastos USING btree (household_id, updated_at);
 CREATE INDEX gastos_household_proyecto ON public.gastos USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON gastos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON gastos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE TRIGGER validar_proyecto_abierto BEFORE INSERT OR UPDATE ON gastos FOR EACH ROW EXECUTE FUNCTION private.validar_proyecto_abierto();
 alter table public.gastos enable row level security;
@@ -458,6 +465,7 @@ comment on table public.household_members is 'Pertenencia de un usuario de Auth 
 comment on column public.household_members.deleted_at is 'Borrado lógico: una membresía borrada no da acceso.';
 CREATE INDEX household_members_household_actualizado ON public.household_members USING btree (household_id, updated_at);
 CREATE UNIQUE INDEX household_members_un_household_por_usuario ON public.household_members USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON household_members FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON household_members FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.household_members enable row level security;
 create policy household_members_lectura_miembros on public.household_members as permissive
@@ -480,6 +488,7 @@ comment on table public.households is 'Contenedor de aislamiento multi-tenant. T
 comment on column public.households.updated_at is 'Lo mantiene private.mantener_metadatos(). Es la marca que usa public.delta().';
 comment on column public.households.deleted_at is 'Borrado lógico. Un household borrado deja de dar acceso a sus miembros.';
 comment on column public.households.version is 'Contador de cambios de la fila, mantenido por trigger. Base del control de concurrencia en las operaciones de plata.';
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON households FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON households FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.households enable row level security;
 create policy households_edicion on public.households as permissive
@@ -533,6 +542,7 @@ comment on column public.movimientos.categoria is 'Categoría libre para agrupar
 comment on column public.movimientos.proyecto_id is 'Opcional: un movimiento manual atribuible a un proyecto, por ejemplo un ajuste sobre una distribución cerrada.';
 CREATE INDEX movimientos_household_actualizado ON public.movimientos USING btree (household_id, updated_at);
 CREATE INDEX movimientos_household_proyecto ON public.movimientos USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON movimientos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON movimientos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.movimientos enable row level security;
 create policy movimientos_alta on public.movimientos as permissive
@@ -577,6 +587,7 @@ comment on column public.necesidades.listo is 'Ya lo pedió, lo compró o lo tie
 comment on column public.necesidades.deleted_at is 'Borrado lógico, como en todo el household.';
 CREATE INDEX necesidades_household_actualizado ON public.necesidades USING btree (household_id, updated_at);
 CREATE INDEX necesidades_household_proyecto ON public.necesidades USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON necesidades FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON necesidades FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.necesidades enable row level security;
 create policy necesidades_alta on public.necesidades as permissive
@@ -621,6 +632,7 @@ comment on column public.opciones_de_presupuesto.deleted_at is 'Borrado lógico,
 CREATE INDEX opciones_de_presupuesto_household_actualizado ON public.opciones_de_presupuesto USING btree (household_id, updated_at);
 CREATE INDEX opciones_de_presupuesto_household_proyecto ON public.opciones_de_presupuesto USING btree (household_id, proyecto_id);
 CREATE UNIQUE INDEX opciones_de_presupuesto_una_aprobada ON public.opciones_de_presupuesto USING btree (household_id, proyecto_id) WHERE (aprobada AND (deleted_at IS NULL));
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON opciones_de_presupuesto FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON opciones_de_presupuesto FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE CONSTRAINT TRIGGER presupuesto_aprobado AFTER INSERT OR UPDATE ON opciones_de_presupuesto DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.validar_presupuesto_aprobado();
 alter table public.opciones_de_presupuesto enable row level security;
@@ -663,6 +675,7 @@ comment on column public.pagos.deleted_at is 'Borrado lógico. No se puede tocar
 comment on column public.pagos.ya_en_la_apertura is 'La plata de este pago ya estaba en los saldos con los que arrancó la app: es de antes de la apertura y el dueño dijo que ya la tenía contada. Queda en el trabajo y en el libro mayor con su fecha, pero no mueve los tesoros. Solo puede ser true con una fecha anterior a la apertura. Las filas que existían al agregar la columna quedaron en false, que es lo que deja los saldos como estaban (ADR 0063).';
 CREATE INDEX pagos_household_actualizado ON public.pagos USING btree (household_id, updated_at);
 CREATE INDEX pagos_household_proyecto ON public.pagos USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE TRIGGER validar_la_fecha BEFORE INSERT OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.validar_la_fecha_del_pago();
 CREATE TRIGGER validar_proyecto_abierto BEFORE INSERT OR UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION private.validar_proyecto_abierto();
@@ -732,6 +745,7 @@ comment on column public.preguntas.archivada_at is 'Cuándo se dejó de pregunta
 comment on column public.preguntas.deleted_at is 'Borrado lógico. Lo usan la pregunta propia que el dueño saca antes de que el cliente conteste, la pregunta de la encuesta base que nadie llegó a ver (el trigger no deja borrar otra) y el borrado de un trabajo, que se lleva las suyas.';
 CREATE INDEX preguntas_household_actualizado ON public.preguntas USING btree (household_id, updated_at);
 CREATE INDEX preguntas_household_proyecto ON public.preguntas USING btree (household_id, proyecto_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER cuidar_la_pregunta BEFORE INSERT OR UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION private.cuidar_la_pregunta();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.preguntas enable row level security;
@@ -789,6 +803,7 @@ CREATE INDEX proximos_contactos_household_actualizado ON public.proximos_contact
 CREATE INDEX proximos_contactos_household_fecha ON public.proximos_contactos USING btree (household_id, fecha);
 CREATE INDEX proximos_contactos_household_proyecto ON public.proximos_contactos USING btree (household_id, proyecto_id, fecha);
 CREATE UNIQUE INDEX proximos_contactos_un_pendiente ON public.proximos_contactos USING btree (household_id, proyecto_id) WHERE ((hecho_el IS NULL) AND (deleted_at IS NULL));
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON proximos_contactos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proximos_contactos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE CONSTRAINT TRIGGER seguimiento_con_su_contacto AFTER INSERT OR UPDATE ON proximos_contactos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.revisar_el_seguimiento_del_contacto();
 CREATE TRIGGER validar_proximo_contacto BEFORE INSERT OR UPDATE ON proximos_contactos FOR EACH ROW EXECUTE FUNCTION private.validar_proximo_contacto();
@@ -944,6 +959,7 @@ CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (ho
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
 CREATE TRIGGER anotar_el_cambio_de_estado AFTER INSERT OR UPDATE OF estado ON proyectos FOR EACH ROW EXECUTE FUNCTION private.anotar_el_cambio_de_estado();
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER borrar_hijos AFTER UPDATE OF deleted_at ON proyectos FOR EACH ROW WHEN (new.deleted_at IS NOT NULL AND old.deleted_at IS NULL) EXECUTE FUNCTION private.borrar_hijos_de_proyecto();
 CREATE TRIGGER cerrar_el_contacto_pendiente AFTER UPDATE OF estado ON proyectos FOR EACH ROW WHEN (old.estado = 'en_seguimiento'::estado_proyecto AND new.estado IS DISTINCT FROM old.estado) EXECUTE FUNCTION private.cerrar_el_contacto_pendiente();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
@@ -1007,6 +1023,7 @@ comment on column public.renglones_de_respuesta.valor_texto is 'Texto libre, sin
 CREATE INDEX renglones_de_respuesta_household_actualizado ON public.renglones_de_respuesta USING btree (household_id, updated_at);
 CREATE INDEX renglones_de_respuesta_household_pregunta ON public.renglones_de_respuesta USING btree (household_id, pregunta_id, tipo, cantidad_de_opciones);
 CREATE INDEX renglones_de_respuesta_household_respuesta ON public.renglones_de_respuesta USING btree (household_id, respuesta_id);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON renglones_de_respuesta FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON renglones_de_respuesta FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.renglones_de_respuesta enable row level security;
 create policy renglones_de_respuesta_lectura on public.renglones_de_respuesta as permissive
@@ -1037,6 +1054,7 @@ comment on column public.respuestas.contestada_at is 'Cuándo contestó. La pone
 comment on column public.respuestas.leida_at is 'Cuándo la leyó el dueño, o null si todavía no. Es del dueño y se escribe por la cola como cualquier otra cosa suya.';
 comment on column public.respuestas.deleted_at is 'Borrado lógico. Solo lo pone el borrado del trabajo.';
 CREATE INDEX respuestas_household_actualizado ON public.respuestas USING btree (household_id, updated_at);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON respuestas FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON respuestas FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.respuestas enable row level security;
 create policy respuestas_edicion on public.respuestas as permissive
@@ -1178,6 +1196,13 @@ create policy fotos_de_perfil_ver_la_propia on storage.objects as permissive
   for select to authenticated
   using (((bucket_id = 'fotos-de-perfil'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text)));
 comment on policy fotos_de_perfil_ver_la_propia on storage.objects is 'No es para leer las fotos (el bucket es público y se leen por URL): es para la subida con upsert, que chequea si el objeto existe con un select bajo la RLS del usuario. Sin esta política ese chequeo nunca encuentra la foto anterior y la subida falla con un error de RLS.';
+
+-- Realtime ---------------------------------------------------------------------------------------
+
+create policy cambios_del_taller_escucha on realtime.messages as permissive
+  for select to authenticated
+  using (((extension = 'broadcast'::text) AND private.es_el_canal_de_mi_taller(( SELECT realtime.topic() AS topic))));
+comment on policy cambios_del_taller_escucha on realtime.messages is 'Solo el dueño escucha el canal de cambios de su taller. Es la única autorización del canal, y alcanza porque el aviso no lleva datos: quien lo recibe sabe que algo cambió y pide el delta, que vuelve a pasar por la RLS de cada tabla. anon no tiene política, así que no se suscribe a ningún canal privado.';
 
 -- Funciones --------------------------------------------------------------------------------------
 
@@ -2365,6 +2390,36 @@ $function$;
 -- execute: solo el dueño
 comment on function private.armar_la_encuesta() is 'Trigger del alta de una encuesta enviada: exige que el trabajo esté entregado o cobrado y que su cliente no haya contestado ya, y le saca la foto a la encuesta base vigente. Lo que el dueño manda es el id, el trabajo y el enlace; la foto, la fecha y los estados los pone la base.';
 
+CREATE OR REPLACE FUNCTION private.avisar_los_cambios()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_household uuid;
+  v_avisados text;
+begin
+  v_household := (
+    to_jsonb(case when tg_op = 'DELETE' then old else new end) ->> tg_argv[0]
+  )::uuid;
+  if v_household is null then
+    return null;
+  end if;
+
+  v_avisados := coalesce(current_setting('maun.cambios_avisados', true), '');
+  if position(v_household::text in v_avisados) > 0 then
+    return null;
+  end if;
+  perform set_config('maun.cambios_avisados', v_avisados || v_household::text || ',', true);
+
+  perform private.mandar_el_aviso_de_cambios(v_household);
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.avisar_los_cambios() is 'Trigger de cada tabla del delta: la primera escritura de la transacción en un taller le manda el aviso de cambios, y las demás lo saltean (la marca maun.cambios_avisados vive lo que la transacción). El aviso no lleva datos a propósito: Broadcast autoriza por canal, no por fila, así que cualquier fila en el payload pasaría por al lado de la RLS de su tabla, quedaría guardada en realtime.messages y armaría un segundo camino de entrada a la réplica. Con el aviso vacío, lo único que sabe quien escucha es que algo cambió, y lo que cambió lo trae el delta. Security definer porque escribe en realtime.messages, que no le da insert a authenticated ni a anon. El argumento es la columna del taller: household_id, o id en households.';
+
 CREATE OR REPLACE FUNCTION private.avisos_bien_formados(p_avisos jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -2931,6 +2986,19 @@ $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.dar_de_baja_suscripcion(text) is 'Borra este dispositivo si es del usuario de la sesión. Un endpoint de otra cuenta no se toca.';
 
+CREATE OR REPLACE FUNCTION private.es_el_canal_de_mi_taller(p_tema text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+  select coalesce(p_tema, '') in (
+    select 'cambios:' || h::text from private.user_household_ids() as h
+  )
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.es_el_canal_de_mi_taller(text) is 'Si el canal de Realtime que se quiere escuchar es cambios:<household_id> de un taller del que el usuario es miembro. La usa la política de lectura de realtime.messages, que corre con el rol y los claims de quien se conecta.';
+
 CREATE OR REPLACE FUNCTION private.es_reenvio(p_old jsonb, p_new jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -3447,6 +3515,16 @@ end;
 $function$;
 -- execute: authenticated:EXECUTE
 comment on function private.liquidar(estado_proyecto,uuid,integer,date,bigint,bigint,bigint,bigint,bigint,bigint,bigint,bigint,integer,bigint,bigint,boolean) is 'Liquida un proyecto hacia cobrado o perdido y congela su distribución con la fecha que manda la app, también al volver a cobrar un reabierto (ADR 0063). Rechaza sin fecha (MN016), con una fecha que todavía no llegó (MN017) y un reparto marcado como ya incluido en la apertura con una fecha que no es anterior a ella (MN018). Bloquea el proyecto y después los ajustes, suma lo liquidado en el mes, y rechaza con MN006 si la versión, los totales o el diezmo no son los que vio el cliente, y con MN008 si la distribución no es la de la base. Si el cliente manda el acumulado del mes que vio y no es el de la base, recalcula los topes con el suyo y congela eso en vez de rechazar: el MN008 se sigue exigiendo contra lo que el cliente vio. Reconoce el reenvío, ajustado o no.';
+
+CREATE OR REPLACE FUNCTION private.mandar_el_aviso_de_cambios(p_household uuid)
+ RETURNS void
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select realtime.send('{}'::jsonb, 'cambios', 'cambios:' || p_household::text, true)
+$function$;
+-- execute: solo el dueño
+comment on function private.mandar_el_aviso_de_cambios(uuid) is 'Manda el aviso de cambios al canal privado del taller, cambios:<household_id>, con el evento cambios y un payload vacío (realtime.send le agrega solo un id). Gemela de TEMA_DE_LOS_CAMBIOS y EVENTO_DE_LOS_CAMBIOS de @maun/db. realtime.send no corta la transacción si falla: la escritura del usuario vale aunque el aviso no salga.';
 
 CREATE OR REPLACE FUNCTION private.mantener_metadatos()
  RETURNS trigger

@@ -84,7 +84,6 @@ function laOpinion(page: Page) {
 test('con la app a la vista, la opinión que contesta el cliente aparece sola en unos segundos', async ({
   page,
 }) => {
-  test.fail(true, 'hoy la app abierta no se entera: nada pide el delta mientras está a la vista');
   const token = await encuestaLista();
   await abrirInicio(page);
 
@@ -96,7 +95,6 @@ test('con la app a la vista, la opinión que contesta el cliente aparece sola en
 test('volver a la app trae lo nuevo enseguida, aunque la última carga sea de hace segundos', async ({
   page,
 }) => {
-  test.fail(true, 'hoy volver no pide el delta si la réplica tiene menos de un minuto');
   const token = await encuestaLista();
   await abrirInicio(page);
   await ponerLaVisibilidad(page, 'hidden');

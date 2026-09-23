@@ -12,6 +12,7 @@ export {
   subirAlBucketDeArchivos,
   urlDelArchivo,
 } from './archivos';
+export { escucharLosCambiosDelTaller, type OyentesDeLosCambios } from './cambios';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   compartirElArchivo,

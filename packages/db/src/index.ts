@@ -78,6 +78,12 @@ export {
   type ServidorDeAvisos,
   type SuscripcionDelDispositivo,
 } from './avisos.ts';
+export {
+  EVENTO_DE_LOS_CAMBIOS,
+  escucharLosCambios,
+  temaDeLosCambios,
+  type OyentesDeLosCambios,
+} from './cambios.ts';
 
 export {
   aperturaDeLaReplica,

@@ -19,5 +19,7 @@ export function useReplica(usuarioId: string): UseQueryResult<Replica> {
         hayPendientes: queryClient.getMutationCache().findAll({ status: 'pending' }).length > 0,
       }),
     retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

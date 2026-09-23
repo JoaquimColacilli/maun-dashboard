@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router';
 
-import { ProveedorDeReplica, useReplica } from '@/entities/replica';
+import { ProveedorDeReplica, useCambiosEnVivo, useReplica } from '@/entities/replica';
 import { ProveedorDeSesion, useSesion, useSesionActiva } from '@/entities/sesion';
 import { EntrarConOtraCuenta } from '@/features/cerrar-sesion';
 import { BloqueoAlVolver, PantallaDeBloqueo } from '@/features/desbloquear-la-app';
-import { tieneAcceso } from '@/shared/api';
+import { householdDe, tieneAcceso } from '@/shared/api';
 import { esCelular, useAppBloqueada, useVueltaPorUnAviso, vigilarElBloqueo } from '@/shared/lib';
 import { Cargando } from '@/shared/ui';
 
@@ -79,6 +79,7 @@ export function RutaConAcceso() {
   const { usuarioId } = useSesionActiva();
   const replica = useReplica(usuarioId);
   const tarda = useTardaMasDe(TOPE_DE_LA_PRIMERA_CARGA_MS);
+  useCambiosEnVivo(usuarioId, replica.data ? (householdDe(replica.data)?.id ?? null) : null);
   const reintentar = () => {
     void replica.refetch();
   };

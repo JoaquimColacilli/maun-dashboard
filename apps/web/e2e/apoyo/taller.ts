@@ -62,6 +62,15 @@ export async function iniciarSesionDePrueba(): Promise<SesionDePrueba> {
   return { entorno, accessToken, usuarioId, guardada: JSON.stringify(cuerpo) };
 }
 
+export async function householdDePrueba({ entorno, accessToken }: SesionDePrueba): Promise<string> {
+  const filas = (await pedir(entorno, '/rest/v1/households?select=id', { accessToken })) as {
+    id: string;
+  }[];
+  const id = filas[0]?.id;
+  if (id === undefined) throw new Error('La cuenta de prueba no tiene taller.');
+  return id;
+}
+
 export async function vaciarClientes({ entorno, accessToken }: SesionDePrueba): Promise<number> {
   const vivos = (await pedir(entorno, '/rest/v1/clientes?select=id&deleted_at=is.null', {
     accessToken,
