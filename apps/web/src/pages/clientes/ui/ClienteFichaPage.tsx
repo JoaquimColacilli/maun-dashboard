@@ -29,6 +29,7 @@ import {
   metaDeAvisos,
   relativa,
   useIr,
+  useVolver,
 } from '@/shared/lib';
 import {
   Button,
@@ -175,6 +176,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
 export function ClienteFichaPage() {
   const replica = useReplicaDelTaller();
   const ir = useIr();
+  const vuelta = useVolver('/clientes', 'Clientes');
   const { id = '' } = useParams();
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
@@ -197,13 +199,7 @@ export function ClienteFichaPage() {
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente de
           otro taller.
         </p>
-        <Button
-          onClick={() => {
-            ir('/clientes');
-          }}
-        >
-          Volver a Clientes
-        </Button>
+        <Button onClick={vuelta.volver}>Volver a Clientes</Button>
       </Pagina>
     );
   }
@@ -234,10 +230,11 @@ export function ClienteFichaPage() {
       <div className="mb-2.5 flex items-center justify-between">
         <Ir
           a="/clientes"
+          alTocar={vuelta.volver}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Clientes
+          {vuelta.etiqueta}
         </Ir>
         <div className="flex gap-2">
           <Button
@@ -412,7 +409,7 @@ export function ClienteFichaPage() {
                       previo: cliente,
                     });
                     setConfirmando(false);
-                    ir('/clientes');
+                    ir('/clientes', { como: 'terminar' });
                   }}
                 >
                   Borrar el cliente

@@ -1,5 +1,11 @@
-import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
-import { useLocation, useParams } from 'react-router';
+import {
+  estaLiquidado,
+  faseDe,
+  puedeCerrarPerdido,
+  puedeCobrar,
+  type EstadoProyecto,
+} from '@maun/domain';
+import { useParams } from 'react-router';
 
 import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
@@ -11,6 +17,7 @@ import {
   esEtapaDeConsulta,
   ESTADO,
   EstadoBadge,
+  ETAPAS,
   FORMA_DE_PAGO,
   gastosDelProyecto,
   MarcaDeLiquidacion,
@@ -44,15 +51,13 @@ import {
   useAvisosDelProyecto,
   Ir,
   useIr,
+  useSenalDeUnaVez,
+  useVolver,
 } from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 import { FichaDeSeguimiento } from './FichaDeSeguimiento';
-
-function vieneDe(estado: unknown, marca: 'recienLiquidado' | 'recienAprobado'): boolean {
-  return typeof estado === 'object' && estado !== null && marca in estado;
-}
 
 function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: string }) {
   return (
@@ -68,20 +73,25 @@ function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: s
   );
 }
 
+function etapaDeLaFicha(estado: EstadoProyecto | undefined): string {
+  const fase = estado === undefined ? 'activos' : faseDe(estado);
+  return ETAPAS.find((etapa) => etapa.id === fase)?.ruta ?? RUTA_DE_PROYECTOS;
+}
+
 export function ProyectoFichaPage() {
   const replica = useReplicaDelTaller();
   const ir = useIr();
   const { id = '' } = useParams();
 
-  const location = useLocation();
-
   const hoy = hoyLocal();
   const resumen = resumenDeProyecto(replica, id, hoy);
   const avisos = useAvisosDelProyecto(id);
   const enVuelo = useLiquidacionEnVuelo(id);
+  const padre = etapaDeLaFicha(resumen?.proyecto.estado);
+  const vuelta = useVolver(padre, 'Proyectos');
 
-  const recienLiquidado = vieneDe(location.state, 'recienLiquidado');
-  const recienAprobado = vieneDe(location.state, 'recienAprobado');
+  const recienLiquidado = useSenalDeUnaVez('recienLiquidado');
+  const recienAprobado = useSenalDeUnaVez('recienAprobado');
 
   if (!resumen) {
     return (
@@ -91,13 +101,7 @@ export function ProyectoFichaPage() {
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto de
           otro taller.
         </p>
-        <Button
-          onClick={() => {
-            ir(RUTA_DE_PROYECTOS);
-          }}
-        >
-          Volver a Proyectos
-        </Button>
+        <Button onClick={vuelta.volver}>Volver a Proyectos</Button>
       </Pagina>
     );
   }
@@ -160,11 +164,12 @@ export function ProyectoFichaPage() {
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Ir
-          a={RUTA_DE_PROYECTOS}
+          a={padre}
+          alTocar={vuelta.volver}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Proyectos
+          {vuelta.etiqueta}
         </Ir>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
@@ -183,7 +188,7 @@ export function ProyectoFichaPage() {
             proyecto={proyecto}
             sustantivo="proyecto"
             alBorrar={() => {
-              ir(RUTA_DE_PROYECTOS);
+              ir(padre, { como: 'terminar' });
             }}
           />
           <Button

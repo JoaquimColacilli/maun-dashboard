@@ -170,12 +170,13 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
     'Seña de la visita',
   );
 
-  await page.getByRole('link', { name: 'Proyectos', exact: true }).first().click();
-  await expect(page).toHaveURL(/\/proyectos$/);
-  await expect(page.getByRole('link', { name: titulo, exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: /Consultas/ }).click();
+  // La ficha se abrió desde Consultas: la flecha vuelve ahí y lo dice (ADR 0066).
+  await page.getByRole('link', { name: 'Consultas', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/consultas$/);
   await expect(page.getByRole('heading', { level: 2 })).toHaveText('No hay consultas por ahora');
   await expect(page.getByRole('link', { name: titulo, exact: true })).toHaveCount(0);
+  await page.getByRole('tab', { name: /Activos/ }).click();
+  await expect(page.getByRole('link', { name: titulo, exact: true })).toBeVisible();
 
   await esperarEstado(titulo, 'en_curso');
   const aprobado = await leerProyecto(sesion, titulo);

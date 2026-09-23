@@ -25,6 +25,7 @@ import {
   useAvisosDelProyecto,
   Ir,
   useIr,
+  useVolver,
 } from '@/shared/lib';
 import {
   Button,
@@ -63,6 +64,7 @@ export interface FichaDeSeguimientoProps {
 export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
   const replica = useReplicaDelTaller();
   const ir = useIr();
+  const vuelta = useVolver(RUTA_DE_SEGUIMIENTO, 'Seguimiento');
   const { proyecto, cliente } = resumen;
   const avisos = useAvisosDelProyecto(proyecto.id);
   const [hoja, setHoja] = useState<HojaAbierta>(null);
@@ -97,17 +99,18 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
       <div className="mb-2.5 flex items-center justify-between">
         <Ir
           a={RUTA_DE_SEGUIMIENTO}
+          alTocar={vuelta.volver}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Seguimiento
+          {vuelta.etiqueta}
         </Ir>
         <div className="flex flex-none gap-2">
           <BorradoDelProyecto
             proyecto={proyecto}
             sustantivo="contacto"
             alBorrar={() => {
-              ir(RUTA_DE_SEGUIMIENTO);
+              ir(RUTA_DE_SEGUIMIENTO, { como: 'terminar' });
             }}
           />
           <Button

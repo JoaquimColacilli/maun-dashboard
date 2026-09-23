@@ -34,6 +34,7 @@ import {
   uuidv7,
   Ir,
   useIr,
+  useVolver,
 } from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
@@ -116,6 +117,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const ir = useIr();
   const { proyecto } = resumen;
   const textos = TEXTOS[destino];
+  const vuelta = useVolver(rutaDelProyecto(proyecto.id), textos.volver, { fija: true });
 
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const liquidar = useMutation(MUTACION_DE_LIQUIDACION);
@@ -201,7 +203,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       titulo: proyecto.titulo,
     });
 
-    ir(rutaDelProyecto(proyecto.id), { como: 'reemplazar', state: { recienLiquidado: true } });
+    ir(rutaDelProyecto(proyecto.id), { como: 'terminar', senal: 'recienLiquidado' });
   }
 
   const aRepartir = despiece.piezas.filter((pieza) => pieza.monto > 0);
@@ -210,6 +212,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
     <Pagina>
       <Ir
         a={rutaDelProyecto(proyecto.id)}
+        alTocar={vuelta.volver}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
       >
         <Icono nombre="chevron-left" tamano={20} />

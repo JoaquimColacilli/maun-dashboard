@@ -32,6 +32,7 @@ import {
   uuidv7,
   Ir,
   useIr,
+  useVolver,
 } from '@/shared/lib';
 import { Button, Campo, CamposJuntos, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
@@ -58,6 +59,7 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   const idCampos = useId();
   const replica = useReplicaDelTaller();
   const { proyecto, cliente } = resumen;
+  const vuelta = useVolver(rutaDelProyecto(proyecto.id), 'Volver sin aprobar', { fija: true });
   const hoy = hoyEnElTaller();
   const apertura = aperturaDeLaReplica(replica);
 
@@ -129,10 +131,7 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
 
   useEffect(() => {
     if (guardar.isPaused) {
-      ir(rutaDelProyecto(proyecto.id), {
-        como: 'reemplazar',
-        state: { recienAprobado: true },
-      });
+      ir(rutaDelProyecto(proyecto.id), { como: 'terminar', senal: 'recienAprobado' });
     }
   }, [guardar.isPaused, ir, proyecto.id]);
 
@@ -173,10 +172,7 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
       ),
       {
         onSuccess: () => {
-          ir(rutaDelProyecto(proyecto.id), {
-            como: 'reemplazar',
-            state: { recienAprobado: true },
-          });
+          ir(rutaDelProyecto(proyecto.id), { como: 'terminar', senal: 'recienAprobado' });
         },
         onError: setRechazo,
       },
@@ -245,10 +241,11 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
     <Pagina>
       <Ir
         a={rutaDelProyecto(proyecto.id)}
+        alTocar={vuelta.volver}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
       >
         <Icono nombre="chevron-left" tamano={20} />
-        Volver sin aprobar
+        {vuelta.etiqueta}
       </Ir>
 
       <header>

@@ -26,6 +26,7 @@ import {
   uuidv7,
   Ir,
   useIr,
+  useVolver,
 } from '@/shared/lib';
 import {
   Button,
@@ -58,6 +59,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   const replica = useReplicaDelTaller();
   const ir = useIr();
   const { proyecto, cliente } = resumen;
+  const vuelta = useVolver(rutaDelProyecto(proyecto.id), 'Volver al trabajo', { fija: true });
   const hoy = hoyLocal();
   const sync = useEstadoSync();
   const sinSenal = sync.tipo === 'sin-conexion';
@@ -168,10 +170,11 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
     <Pagina>
       <Ir
         a={rutaDelProyecto(proyecto.id)}
+        alTocar={vuelta.volver}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
       >
         <Icono nombre="chevron-left" tamano={20} />
-        Volver al trabajo
+        {vuelta.etiqueta}
       </Ir>
 
       <header className="flex flex-col gap-1.5 border-b border-hairline pb-4">

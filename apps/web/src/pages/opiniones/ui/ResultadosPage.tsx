@@ -128,6 +128,7 @@ function SinRespuestas({
 export function ResultadosPage() {
   const replica = useReplicaDelTaller();
   const estadoSync = useEstadoSync();
+  const ir = useIr();
   const location = useLocation();
   const [busqueda, setBusqueda] = useSearchParams();
   const hoy = hoyLocal();
@@ -148,14 +149,10 @@ export function ResultadosPage() {
   }
 
   function cerrar(): void {
-    setBusqueda(
-      (actual) => {
-        const siguiente = new URLSearchParams(actual);
-        siguiente.delete(PARAMETRO_DE_RESPUESTA);
-        return siguiente;
-      },
-      { replace: true },
-    );
+    const siguiente = new URLSearchParams(busqueda);
+    siguiente.delete(PARAMETRO_DE_RESPUESTA);
+    const resto = siguiente.toString();
+    ir(`${location.pathname}${resto === '' ? '' : `?${resto}`}`, { como: 'terminar' });
   }
 
   return (

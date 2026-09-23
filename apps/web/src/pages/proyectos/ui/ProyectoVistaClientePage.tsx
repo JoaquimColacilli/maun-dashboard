@@ -4,7 +4,7 @@ import { resumenDeProyecto, rutaDelProyecto } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { PantallaDeLaVista, useVistaDelTrabajo } from '@/entities/vista-cliente';
 import { BotonDelQr } from '@/features/compartir-con-el-cliente';
-import { hoyLocal, useEstadoSync, Ir } from '@/shared/lib';
+import { hoyLocal, Ir, useEstadoSync, useVolver } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 export function ProyectoVistaClientePage() {
@@ -14,6 +14,11 @@ export function ProyectoVistaClientePage() {
   const resultado = useVistaDelTrabajo(id);
   const sync = useEstadoSync();
   const desactualizada = sync.tipo === 'sin-conexion' && resultado.estado === 'lista';
+  const vuelta = useVolver(
+    rutaDelProyecto(id),
+    `Volver ${resumen === undefined ? 'al trabajo' : `a «${resumen.proyecto.titulo}»`}`,
+    { fija: true },
+  );
 
   return (
     <>
@@ -21,10 +26,11 @@ export function ProyectoVistaClientePage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Ir
             a={rutaDelProyecto(id)}
+            alTocar={vuelta.volver}
             className="flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
           >
             <Icono nombre="chevron-left" tamano={20} />
-            Volver {resumen === undefined ? 'al trabajo' : `a «${resumen.proyecto.titulo}»`}
+            {vuelta.etiqueta}
           </Ir>
           {resumen !== undefined && (
             <BotonDelQr proyectoId={id} trabajo={resumen.proyecto.titulo} />

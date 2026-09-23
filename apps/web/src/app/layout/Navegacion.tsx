@@ -12,6 +12,8 @@ import {
 } from '@/shared/lib';
 import { Avatar, Icono } from '@/shared/ui';
 
+import { historialDelNavegador } from '../navegacion/historial';
+import { destinoDeLaBarra } from '../navegacion/pila';
 import {
   ACCIONES_RAPIDAS,
   DESTINOS,
@@ -33,6 +35,20 @@ function useIrA(): (ruta: string) => void {
       state: esRutaDeHoja(ruta) ? conFondo(visible) : undefined,
       desdeLaNavegacion: true,
     });
+  };
+}
+
+function useIrALaSeccion(irA: (ruta: string) => void): (ruta: string) => void {
+  const location = useLocation();
+  return (ruta) => {
+    const historial = historialDelNavegador();
+    const destino = destinoDeLaBarra(ruta, {
+      actual: `${location.pathname}${location.search}`,
+      anteriores: historial.anteriores(),
+      movil: true,
+      conHistorial: historial.disponible(),
+    });
+    if (destino !== null) irA(destino);
   };
 }
 
@@ -156,6 +172,7 @@ function BarraInferior({
 }) {
   const { abierto, setAbierto } = useMenuDeAcciones();
   const editando = useEditando();
+  const irALaSeccion = useIrALaSeccion(irA);
   const columnas = ['col-start-1', 'col-start-2', 'col-start-4', 'col-start-5'];
 
   if (editando) return null;
@@ -188,7 +205,7 @@ function BarraInferior({
                   esActivo ? 'font-semibold text-ink' : 'font-medium text-text-3'
                 }`}
                 onClick={() => {
-                  irA(destino.ruta);
+                  irALaSeccion(destino.ruta);
                 }}
               >
                 <Icono nombre={destino.icono} tamano={22} grosor={esActivo ? 2.25 : 1.75} />

@@ -39,6 +39,7 @@ import {
   useAvisosDelProyecto,
   Ir,
   useIr,
+  useVolver,
 } from '@/shared/lib';
 import {
   Button,
@@ -82,6 +83,7 @@ export interface FichaDeContactoProps {
 export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const replica = useReplicaDelTaller();
   const ir = useIr();
+  const vuelta = useVolver(RUTA_DE_CONSULTAS, 'Consultas');
   const avisos = useAvisosDelProyecto(resumen.proyecto.id);
   const [editando, setEditando] = useState<HojaAbierta>(null);
   const cerrarLaHoja = useCallback(() => {
@@ -104,10 +106,11 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
       <div className="mb-2.5 flex items-center justify-between">
         <Ir
           a={RUTA_DE_CONSULTAS}
+          alTocar={vuelta.volver}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Consultas
+          {vuelta.etiqueta}
         </Ir>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
@@ -126,7 +129,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             proyecto={proyecto}
             sustantivo="contacto"
             alBorrar={() => {
-              ir(RUTA_DE_CONSULTAS);
+              ir(RUTA_DE_CONSULTAS, { como: 'terminar' });
             }}
           />
           <Button

@@ -1,5 +1,5 @@
 interface ConTransiciones {
-  startViewTransition: (actualizar: () => void) => unknown;
+  startViewTransition: (actualizar: () => void | Promise<void>) => unknown;
 }
 
 function soportaTransiciones(documento: Document): documento is Document & ConTransiciones {
@@ -10,9 +10,9 @@ function prefiereMenosMovimiento(): boolean {
   return globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export function conTransicion(actualizar: () => void): void {
+export function conTransicion(actualizar: () => void | Promise<void>): void {
   if (prefiereMenosMovimiento() || !soportaTransiciones(document)) {
-    actualizar();
+    void actualizar();
     return;
   }
   document.startViewTransition(actualizar);
