@@ -8,7 +8,7 @@ import {
   CostosDeCotizar,
   despieceDelProyecto,
   DistribucionDespiece,
-  esEtapaDeSeguimiento,
+  esEtapaDeConsulta,
   ESTADO,
   EstadoBadge,
   FORMA_DE_PAGO,
@@ -101,7 +101,7 @@ export function ProyectoFichaPage() {
 
   const { proyecto, cliente } = resumen;
 
-  if (esEtapaDeSeguimiento(proyecto.estado)) {
+  if (esEtapaDeConsulta(proyecto.estado)) {
     return <FichaDeContacto key={proyecto.id} resumen={resumen} etapa={proyecto.estado} />;
   }
 
@@ -217,7 +217,7 @@ export function ProyectoFichaPage() {
         {recienAprobado && (
           <p className="flex items-center gap-1.5 text-label font-medium text-hogar">
             <Icono nombre="check" tamano={16} />
-            Pasó de Seguimiento a Activos, con lo que ya habías cobrado adentro.
+            Pasó de Consultas a Activos, con lo que ya habías cobrado adentro.
           </p>
         )}
         {fechas.length > 0 && (

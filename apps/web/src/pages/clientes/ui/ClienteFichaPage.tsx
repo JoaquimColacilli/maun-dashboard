@@ -87,7 +87,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
         {proyectos.length > 0 && (
           <span className="text-meta text-text-2 tabular-nums">
             {resumen.facturados} {resumen.facturados === 1 ? 'proyecto' : 'proyectos'}
-            {resumen.enSeguimiento > 0 && `, ${String(resumen.enSeguimiento)} en seguimiento`}
+            {resumen.enConsultas > 0 && `, ${String(resumen.enConsultas)} en consultas`}
           </span>
         )}
       </div>
@@ -122,7 +122,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
         <ol className="list-none">
           {proyectos.map((proyecto) => {
             const fecha = fechaDelProyecto(proyecto);
-            const enSeguimiento =
+            const enConsultas =
               faseDe(proyecto.estado) !== 'activos' && faseDe(proyecto.estado) !== 'historial';
             return (
               <li
@@ -138,7 +138,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
                     {proyecto.titulo}
                   </Link>
                   <span className="mt-0.5 block text-meta text-text-3">
-                    {enSeguimiento ? 'Seguimiento' : 'Obra'}
+                    {enConsultas ? 'Consulta' : 'Obra'}
                     {fecha === undefined ? '' : `, ${relativa(fecha, hoy)}`}
                   </span>
                 </span>

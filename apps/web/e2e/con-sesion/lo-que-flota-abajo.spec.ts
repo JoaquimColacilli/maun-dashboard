@@ -331,7 +331,7 @@ test('al final del scroll nada del contenido queda debajo de lo que flota abajo,
 
   const pantallas = [
     '/',
-    '/seguimiento',
+    '/consultas',
     '/proyectos',
     '/proyectos?etapa=historial',
     '/clientes',

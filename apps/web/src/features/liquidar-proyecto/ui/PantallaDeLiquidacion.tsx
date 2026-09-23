@@ -323,7 +323,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
             </p>
           )}
           <p className="mt-1.5 max-w-[48rem]">
-            Se puede deshacer: reactivando el presupuesto vuelve al seguimiento y la plata se
+            Se puede deshacer: reactivando el presupuesto vuelve a las consultas y la plata se
             descuenta de los tesoros.
           </p>
         </section>

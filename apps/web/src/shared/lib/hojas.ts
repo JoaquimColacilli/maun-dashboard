@@ -4,7 +4,7 @@ import { matchPath, useLocation, useNavigate, type Location } from 'react-router
 export const HOJAS_POR_RUTA = [
   { patron: '/finanzas/nuevo', fondo: '/finanzas' },
   { patron: '/finanzas/:id', fondo: '/finanzas' },
-  { patron: '/seguimiento/nuevo', fondo: '/seguimiento' },
+  { patron: '/consultas/nueva', fondo: '/consultas' },
   { patron: '/agenda/anotar', fondo: '/agenda' },
 ] as const;
 

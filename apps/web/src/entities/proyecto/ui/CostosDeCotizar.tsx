@@ -38,7 +38,7 @@ function Renglon({ clave, valor, tono = '' }: { clave: string; valor: string; to
   );
 }
 
-function Margen({ margen, enSeguimiento }: { margen: MargenDelTrabajo; enSeguimiento: boolean }) {
+function Margen({ margen, sinAprobar }: { margen: MargenDelTrabajo; sinAprobar: boolean }) {
   if (margen.situacion === 'sin-estimar') return null;
 
   if (margen.situacion === 'sin-presupuesto') {
@@ -58,7 +58,7 @@ function Margen({ margen, enSeguimiento }: { margen: MargenDelTrabajo; enSeguimi
       <Renglon clave="Costo estimado" valor={formatearPesos(margen.estimado)} />
       <Renglon clave="Presupuesto" valor={formatearPesos(margen.presupuesto)} />
       <Renglon
-        clave={enSeguimiento ? 'Te queda, si te lo aprueban' : 'Te queda'}
+        clave={sinAprobar ? 'Te queda, si te lo aprueban' : 'Te queda'}
         valor={formatearPesos(margen.margen)}
         tono={enContra ? 'text-alerta' : 'text-hogar'}
       />
@@ -158,7 +158,7 @@ export function CostosDeCotizar({ proyecto, abiertoAlPrincipio = true }: CostosD
       <div className="mt-3.5">
         <Margen
           margen={margen}
-          enSeguimiento={
+          sinAprobar={
             faseDe(proyecto.estado) === 'consultas' || faseDe(proyecto.estado) === 'seguimiento'
           }
         />

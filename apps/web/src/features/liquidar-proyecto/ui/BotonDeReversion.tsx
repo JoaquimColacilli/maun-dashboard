@@ -111,7 +111,7 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
       ) : (
         <>
           <label className="mt-3 block text-label text-text-2" htmlFor="estado-al-reactivar">
-            Vuelve al seguimiento, en
+            Vuelve a las consultas, en
           </label>
           <select
             id="estado-al-reactivar"

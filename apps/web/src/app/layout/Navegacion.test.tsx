@@ -49,9 +49,9 @@ describe('en el celular', () => {
     );
   });
 
-  it('estando en Seguimiento marca Proyectos, que es donde vive', () => {
+  it('estando en Consultas marca Proyectos, que es donde vive', () => {
     pantallaDe(390);
-    montar('/seguimiento');
+    montar('/consultas');
 
     expect(screen.getByRole('button', { name: 'Proyectos' })).toHaveAttribute(
       'aria-current',
@@ -59,11 +59,11 @@ describe('en el celular', () => {
     );
   });
 
-  it('no muestra Seguimiento, Diezmo ni Ajustes como destinos', () => {
+  it('no muestra Consultas, Diezmo ni Ajustes como destinos', () => {
     pantallaDe(390);
     montar('/');
 
-    expect(screen.queryByRole('button', { name: 'Seguimiento' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Consultas' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Diezmo' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajustes' })).not.toBeInTheDocument();
   });
@@ -113,13 +113,13 @@ describe('en la tablet', () => {
 });
 
 describe('en el escritorio', () => {
-  it('Seguimiento, Diezmo y Ajustes son destinos propios', () => {
+  it('Consultas, Diezmo y Ajustes son destinos propios', () => {
     pantallaDe(1440);
-    montar('/seguimiento');
+    montar('/consultas');
 
     for (const etiqueta of [
       'Inicio',
-      'Seguimiento',
+      'Consultas',
       'Proyectos',
       'Clientes',
       'Finanzas',
@@ -128,7 +128,7 @@ describe('en el escritorio', () => {
     ]) {
       expect(screen.getByRole('button', { name: etiqueta })).toBeInTheDocument();
     }
-    expect(screen.getByRole('button', { name: 'Seguimiento' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Consultas' })).toHaveAttribute(
       'aria-current',
       'page',
     );

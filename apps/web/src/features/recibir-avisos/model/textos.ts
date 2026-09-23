@@ -24,7 +24,7 @@ export const QUE_AVISA: Readonly<Record<AvisoDeLaAgenda, DatosDelAviso>> = {
   },
   visitas: {
     etiqueta: 'Visitas y relevamientos',
-    detalle: 'Las visitas que tenés agendadas en seguimiento',
+    detalle: 'Las visitas que tenés agendadas en las consultas',
     categoria: 'visita',
     anticipaciones: [0, 1, 2, 3],
   },

@@ -35,13 +35,13 @@ describe('seccionDeLaRuta', () => {
 
 describe('destinoResaltado', () => {
   it('en escritorio cada sección se resalta a sí misma', () => {
-    expect(destinoResaltado('seguimiento', NAV_ESCRITORIO)).toBe('seguimiento');
+    expect(destinoResaltado('consultas', NAV_ESCRITORIO)).toBe('consultas');
     expect(destinoResaltado('ajustes', NAV_ESCRITORIO)).toBe('ajustes');
     expect(destinoResaltado('diezmo', NAV_ESCRITORIO)).toBe('diezmo');
   });
 
-  it('en celular Seguimiento se resalta sobre Proyectos, que es donde vive', () => {
-    expect(destinoResaltado('seguimiento', NAV_MOVIL)).toBe('proyectos');
+  it('en celular Consultas se resalta sobre Proyectos, que es donde vive', () => {
+    expect(destinoResaltado('consultas', NAV_MOVIL)).toBe('proyectos');
   });
 
   it('en celular Diezmo y Ajustes se resaltan sobre Inicio, que es desde donde se llega', () => {

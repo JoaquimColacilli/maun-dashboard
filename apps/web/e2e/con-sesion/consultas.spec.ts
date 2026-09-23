@@ -85,6 +85,20 @@ async function recorrerConTab(page: Page, pasos: number): Promise<string[]> {
   return visto;
 }
 
+test('las direcciones de antes de llamarse Consultas siguen andando', async ({ page }) => {
+  await abrir(page, '/seguimiento');
+  await expect(page).toHaveURL(/\/consultas$/);
+  await expect(page.getByRole('tab', { name: /^Consultas/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+
+  const dia = fechaLocal(3);
+  await abrir(page, `/seguimiento/nuevo?visita=${dia}`);
+  await expect(page).toHaveURL(new RegExp(`/consultas/nueva\\?visita=${dia}$`));
+  await expect(page.getByRole('dialog', { name: 'Cargar contacto' })).toBeVisible();
+});
+
 test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado, y la seña es el mismo pago', async ({
   page,
 }) => {
@@ -92,7 +106,7 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
   await ajustarTaller(sesion, { sena_bp: 5000 });
   const antes = await saldosEnInicio(page);
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   await page.getByRole('button', { name: 'Cargar el primer contacto' }).click();
   const alta = page.getByRole('dialog', { name: 'Cargar contacto' });
   await alta.getByRole('combobox', { name: 'Cliente' }).fill('Ramiro Díaz');
@@ -130,7 +144,7 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
   await abrir(page, '/proyectos');
   await expect(page.getByRole('link', { name: titulo, exact: true })).toHaveCount(0);
 
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
+  await page.getByRole('tab', { name: /Consultas/ }).click();
   await page.getByRole('link', { name: titulo, exact: true }).click();
   await page.getByRole('button', { name: 'Mandé el presupuesto' }).click();
   await page.getByLabel('Cuánto presupuestaste').fill('1.200.000');
@@ -151,7 +165,7 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
   await page.getByRole('button', { name: 'Pasar a Proyectos' }).click();
 
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`), { timeout: 30_000 });
-  await expect(page.getByText('Pasó de Seguimiento a Activos')).toBeVisible();
+  await expect(page.getByText('Pasó de Consultas a Activos')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Pagos recibidos' })).toContainText(
     'Seña de la visita',
   );
@@ -159,10 +173,8 @@ test('el caso del audio: contacto sin presupuesto, seña en la visita, aprobado,
   await page.getByRole('link', { name: 'Proyectos', exact: true }).first().click();
   await expect(page).toHaveURL(/\/proyectos$/);
   await expect(page.getByRole('link', { name: titulo, exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText(
-    'Nadie en seguimiento por ahora',
-  );
+  await page.getByRole('tab', { name: /Consultas/ }).click();
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('No hay consultas por ahora');
   await expect(page.getByRole('link', { name: titulo, exact: true })).toHaveCount(0);
 
   await esperarEstado(titulo, 'en_curso');
@@ -227,14 +239,14 @@ test('un contacto en cualquier etapa previa no aparece en Activos', async ({ pag
     'Todavía no hay proyectos activos',
   );
   await expect(page.getByRole('tab', { name: /Activos\s*0/ })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /Seguimiento\s*4/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Consultas\s*4/ })).toBeVisible();
   for (const estado of etapas) {
     await expect(page.getByRole('link', { name: `Trabajo en ${estado}`, exact: true })).toHaveCount(
       0,
     );
   }
 
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
+  await page.getByRole('tab', { name: /Consultas/ }).click();
   await expect(tarjetas(page)).toHaveCount(4);
 });
 
@@ -291,7 +303,7 @@ test('perder un contacto con seña liquida la seña: diezmo sí, sueldo no, y pa
   expect(congelada?.dist_sueldo_centavos).toBe(0);
 
   await page.getByRole('link', { name: 'Proyectos', exact: true }).first().click();
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
+  await page.getByRole('tab', { name: /Consultas/ }).click();
   await expect(page.getByRole('link', { name: titulo, exact: true })).toHaveCount(0);
   await page.getByRole('tab', { name: /Historial/ }).click();
   await expect(page.getByRole('link', { name: titulo, exact: true })).toBeVisible();
@@ -308,7 +320,7 @@ test('la lista va primero con lo que hace más que espera, y tocar un contacto l
     visita: fechaLocal(3),
   });
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   await expect(tarjetas(page)).toHaveCount(3);
   await expect(tarjetas(page).nth(0)).toContainText('Primero en llegar');
   await expect(tarjetas(page).nth(0)).toContainText('A presupuestar desde hoy');
@@ -322,7 +334,7 @@ test('la lista va primero con lo que hace más que espera, y tocar un contacto l
   await expect(page.getByRole('region', { name: 'Qué falta' })).toContainText(
     'Presupuesto enviado hoy',
   );
-  await page.getByRole('link', { name: 'Seguimiento', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Consultas', exact: true }).first().click();
 
   await expect(tarjetas(page).nth(0)).toContainText('Segundo en llegar');
   await expect(tarjetas(page).nth(1)).toContainText('Primero en llegar');
@@ -338,7 +350,7 @@ test('toda la tarjeta lleva al trabajo, el nombre del cliente a su ficha, y con 
     sena: 5_000_000,
   });
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   await tarjetas(page).first().getByText('Falta presupuestar').click({ force: true });
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`));
 
@@ -370,13 +382,13 @@ test('pasados nueve días, la tarjeta dice hace cuánto y se marca como fría', 
     estado: 'presupuesto_enviado',
   });
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   await expect(tarjetas(page).first()).toContainText('Presupuesto enviado hoy');
   await expect(tarjetas(page).first()).not.toHaveClass(/border-atencion/);
 
   await page.clock.setFixedTime(new Date(Date.now() + 9 * UN_DIA_MS));
   await page.getByRole('tab', { name: /Activos/ }).click();
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
+  await page.getByRole('tab', { name: /Consultas/ }).click();
 
   await expect(tarjetas(page).first()).toContainText(
     'Presupuesto enviado hace 9 días, sin respuesta',
@@ -390,7 +402,7 @@ test('en modo avión el contacto con su seña queda entero, sobrevive a cerrar l
 }) => {
   await crearCliente(sesion, 'Nora Paz', { telefono: '11 4444-5555' });
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   await expect(page.getByRole('button', { name: 'Cargar el primer contacto' })).toBeVisible();
   await listoParaCortar(page);
   await context.setOffline(true);
@@ -425,7 +437,7 @@ test('en modo avión el contacto con su seña queda entero, sobrevive a cerrar l
 
   await page.close();
   const reabierta = await context.newPage();
-  await reabierta.goto('/seguimiento');
+  await reabierta.goto('/consultas');
   const tarjeta = tarjetas(reabierta).first();
   await expect(tarjeta).toContainText('Biblioteca sin señal', { timeout: 30_000 });
   await expect(tarjeta).toContainText('A presupuestar');
@@ -459,7 +471,7 @@ test('llamar y escribir por WhatsApp salen de la tarjeta y de la ficha, en el ce
   });
   await contactoPorRpc(sesion, { titulo: 'Sin teléfono todavía' });
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   const conTelefono = tarjetas(page).filter({ hasText: 'Mesa de comedor' });
   const llamar = conTelefono.getByRole('link', { name: /^Llamar a/ });
   await expect(llamar).toHaveAttribute('href', 'tel:0111544445555');
@@ -491,10 +503,8 @@ test('llamar y escribir por WhatsApp salen de la tarjeta y de la ficha, en el ce
 test('la lista vacía, con datos y sin resultados dicen cosas distintas', async ({ page }) => {
   await crearCliente(sesion, 'Julia Ferro');
 
-  await abrir(page, '/seguimiento');
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText(
-    'Nadie en seguimiento por ahora',
-  );
+  await abrir(page, '/consultas');
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('No hay consultas por ahora');
 
   await page.getByRole('button', { name: 'Cargar el primer contacto' }).click();
   const alta = page.getByRole('dialog', { name: 'Cargar contacto' });
@@ -511,7 +521,7 @@ test('la lista vacía, con datos y sin resultados dicen cosas distintas', async 
   await alta.getByRole('button', { name: 'Guardar contacto' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Alacena de cocina');
 
-  await page.getByRole('link', { name: 'Seguimiento', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Consultas', exact: true }).first().click();
   await expect(tarjetas(page)).toHaveCount(1);
 
   await page.getByRole('searchbox', { name: 'Buscar contacto' }).fill('zzz');
@@ -667,7 +677,7 @@ test('sin estimativo: relevar sin cobrar sugiere el estimativo, y aun así se pu
   await expect(panel.getByRole('button', { name: 'Mandé el estimativo' })).toBeVisible();
   await esperarEstado(titulo, 'a_presupuestar');
 
-  await page.getByRole('link', { name: 'Seguimiento', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Consultas', exact: true }).first().click();
   await expect(tarjetas(page).first()).toContainText(
     'Falta el estimativo: la visita no está cobrada',
   );
@@ -718,14 +728,14 @@ test('las tareas de presupuestar se tildan y se destildan, y con las cuatro la a
   expect((await leerContacto(sesion, titulo))?.estado).toBe('a_presupuestar');
 });
 
-test('seguimiento y la ficha del contacto se recorren con el teclado', async ({ page }) => {
+test('las consultas y la ficha del contacto se recorren con el teclado', async ({ page }) => {
   await contactoPorRpc(sesion, {
     titulo: 'Escritorio flotante',
     estado: 'a_presupuestar',
     telefono: '11 5555-0000',
   });
 
-  await abrir(page, '/seguimiento');
+  await abrir(page, '/consultas');
   await expect(tarjetas(page)).toHaveCount(1);
   const enLaLista = await recorrerConTab(page, 60);
   expect(enLaLista.some((foco) => foco.includes('Cargar contacto'))).toBe(true);
@@ -753,10 +763,10 @@ test('seguimiento y la ficha del contacto se recorren con el teclado', async ({ 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Editar el contacto' })).toBeHidden();
 
-  await page.getByRole('link', { name: 'Seguimiento', exact: true }).first().click();
+  await page.getByRole('link', { name: 'Consultas', exact: true }).first().click();
   await page.getByRole('button', { name: 'Cargar contacto', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('combobox', { name: 'Cliente' })).toBeFocused();
   await page.keyboard.press('Escape');
-  await expect(page).toHaveURL(/\/seguimiento$/);
+  await expect(page).toHaveURL(/\/consultas$/);
 });

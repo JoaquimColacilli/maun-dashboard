@@ -10,7 +10,7 @@ import {
   pasosDelContacto,
   rutaDeAprobacion,
   vencimientoPropuesto,
-  type EtapaDeSeguimiento,
+  type EtapaDeConsulta,
   type PasoDelContacto,
   type Proyecto,
   type SituacionDelContacto,
@@ -54,7 +54,7 @@ function conElVencimiento(
 
 export interface AvanceDelContactoProps {
   proyecto: Proyecto;
-  etapa: EtapaDeSeguimiento;
+  etapa: EtapaDeConsulta;
   situacion: SituacionDelContacto;
   cobrado: number;
   conOpciones: boolean;

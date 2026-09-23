@@ -11,8 +11,8 @@ import {
   ultimasActividades,
   ultimoContactoAlGuardar,
   yaSeRelevo,
-  type EtapaDeSeguimiento,
-} from './seguimiento';
+  type EtapaDeConsulta,
+} from './consultas';
 
 type Proyecto = FilaDe<'proyectos'>;
 
@@ -370,7 +370,7 @@ describe('el estimativo', () => {
 
 describe('pasosDelContacto', () => {
   it('cada paso que ofrece es una transición válida desde su etapa', () => {
-    const casos: [EtapaDeSeguimiento, Partial<Proyecto>, number][] = [
+    const casos: [EtapaDeConsulta, Partial<Proyecto>, number][] = [
       ['contacto', {}, 0],
       ['presupuesto_estimativo', {}, 0],
       ['presupuesto_estimativo', { fecha_visita: '2026-09-01' }, 0],

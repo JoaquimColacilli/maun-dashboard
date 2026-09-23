@@ -172,7 +172,7 @@ export {
   diaDeLaMarca,
   diaDelUltimoContacto,
   DIAS_PARA_ENFRIARSE,
-  esEtapaDeSeguimiento,
+  esEtapaDeConsulta,
   etapaAlGuardarElContacto,
   pasosDelContacto,
   situacionDelContacto,
@@ -182,11 +182,11 @@ export {
   yaSeRelevo,
   type CaminoDelPaso,
   type ContactoEnLista,
-  type EtapaDeSeguimiento,
+  type EtapaDeConsulta,
   type PasoDelContacto,
   type SituacionDelContacto,
   type SugerenciaDelContacto,
-} from './model/seguimiento';
+} from './model/consultas';
 export {
   marcaDeLaTarea,
   presupuestoArmado,
@@ -208,7 +208,7 @@ export {
   RUTA_DE_CONTACTO_NUEVO,
   RUTA_DE_PROYECTO_NUEVO,
   RUTA_DE_PROYECTOS,
-  RUTA_DE_SEGUIMIENTO,
+  RUTA_DE_CONSULTAS,
   rutaDeAprobacion,
   rutaDeCierre,
   rutaDeCobro,

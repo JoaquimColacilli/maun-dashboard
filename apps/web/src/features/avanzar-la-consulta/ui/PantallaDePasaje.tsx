@@ -252,7 +252,7 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
 
       <header>
         <p aria-hidden className="mb-2 flex items-center gap-1.5 text-meta text-text-2">
-          <span className="rounded-control border border-border px-1.5">Seguimiento</span>
+          <span className="rounded-control border border-border px-1.5">Consultas</span>
           <Icono nombre="chevron-right" tamano={14} />
           <span className="rounded-control border border-ink px-1.5 font-semibold text-ink">
             Activos

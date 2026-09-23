@@ -470,11 +470,11 @@ test('desde «Anotar algo», el camino al contacto lleva la visita del día eleg
   await expect(caminos.getByRole('link')).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath(`agenda-caminos-${lugar}-anotar.png`) });
 
-  await caminos.getByRole('link', { name: /Cargar un contacto de seguimiento/ }).click();
+  await caminos.getByRole('link', { name: /Cargar una consulta/ }).click();
   const alta = page.getByRole('dialog', { name: 'Cargar contacto' });
   await expect(alta).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Anotar algo' })).toHaveCount(0);
-  await expect(page).toHaveURL(new RegExp(`/seguimiento/nuevo\\?visita=${fecha}$`));
+  await expect(page).toHaveURL(new RegExp(`/consultas/nueva\\?visita=${fecha}$`));
   await expect(alta.getByLabel('Visita', { exact: true })).toHaveValue(fecha);
   await page.screenshot({ path: testInfo.outputPath(`agenda-caminos-${lugar}-contacto.png`) });
 

@@ -92,13 +92,13 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
   );
 }
 
-export interface ListaDeSeguimientoProps {
+export interface ListaDeConsultasProps {
   resumenes: readonly ResumenDeProyecto[];
   replica: Replica;
   hoy: string;
 }
 
-export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimientoProps) {
+export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasProps) {
   const navegar = useNavigate();
   const location = useLocation();
   const [consulta, setConsulta] = useState('');
@@ -124,7 +124,7 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
         <span className="flex size-12 items-center justify-center rounded-field bg-surface">
           <Icono nombre="route" tamano={24} />
         </span>
-        <h2 className="mt-1 text-h1 leading-tight font-semibold">Nadie en seguimiento por ahora</h2>
+        <h2 className="mt-1 text-h1 leading-tight font-semibold">No hay consultas por ahora</h2>
         <p className="text-body leading-relaxed text-text-2">
           Cuando te llame alguien, cargalo acá con lo que pide y la fecha de la visita. Si en la
           visita te dejó una seña, anotala: entra a la caja del taller desde ese día. Cuando lo

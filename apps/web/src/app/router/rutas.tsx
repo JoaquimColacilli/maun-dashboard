@@ -19,12 +19,21 @@ import {
   ProyectosPage,
   ProyectoVistaClientePage,
 } from '@/pages/proyectos';
-import { HOJAS_POR_RUTA, type PatronDeHoja } from '@/shared/lib';
+import {
+  HOJAS_POR_RUTA,
+  RUTA_DE_CONSULTAS,
+  RUTA_DE_CONTACTO_NUEVO,
+  type PatronDeHoja,
+} from '@/shared/lib';
+
+import { RutaVieja } from './RutaVieja';
 
 export const RUTAS_DE_PANTALLA: RouteObject[] = [
   { index: true, element: <InicioPage /> },
   { path: '/agenda', element: <AgendaPage /> },
-  { path: '/seguimiento', element: <ProyectosPage /> },
+  { path: '/consultas', element: <ProyectosPage /> },
+  { path: '/seguimiento', element: <RutaVieja a={RUTA_DE_CONSULTAS} /> },
+  { path: '/seguimiento/nuevo', element: <RutaVieja a={RUTA_DE_CONTACTO_NUEVO} /> },
   { path: '/proyectos', element: <ProyectosPage /> },
   { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
   { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
@@ -47,7 +56,7 @@ export const RUTAS_DE_PANTALLA: RouteObject[] = [
 const HOJA: Readonly<Record<PatronDeHoja, ReactNode>> = {
   '/finanzas/nuevo': <MovimientoNuevoPage />,
   '/finanzas/:id': <MovimientoEdicionPage />,
-  '/seguimiento/nuevo': <ContactoNuevoPage />,
+  '/consultas/nueva': <ContactoNuevoPage />,
   '/agenda/anotar': <AnotarPage />,
 };
 

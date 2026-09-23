@@ -232,7 +232,7 @@ test('las hojas: cancelar y guardar entran juntos o bajan juntos, y una sola acc
   for (const ancho of anchosDelProyecto(page, testInfo)) {
     await page.setViewportSize(ancho);
 
-    await page.goto('/seguimiento/nuevo');
+    await page.goto('/consultas/nueva');
     const contacto = page.getByRole('dialog');
     await expect(contacto.getByRole('button', { name: 'Guardar contacto' })).toBeVisible(CARGA);
     const forma = await revisar(

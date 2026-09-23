@@ -36,10 +36,10 @@ import {
 } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
-import { ListaDeSeguimiento } from './ListaDeSeguimiento';
+import { ListaDeConsultas } from './ListaDeConsultas';
 
 function etapaDeLaRuta(pathname: string, busqueda: URLSearchParams): Exclude<Fase, 'seguimiento'> {
-  if (pathname === '/seguimiento') return 'consultas';
+  if (pathname === '/consultas') return 'consultas';
   return busqueda.get('etapa') === 'historial' ? 'historial' : 'activos';
 }
 
@@ -285,7 +285,7 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> })
     activos: {
       titulo: 'Todavía no hay proyectos activos',
       detalle:
-        'Acá están los trabajos que te aprobaron. Los contactos y los presupuestos que esperan respuesta viven en Seguimiento, y pasan solos a esta pestaña cuando los aprobás.',
+        'Acá están los trabajos que te aprobaron. Los contactos y los presupuestos que esperan respuesta viven en Consultas, y pasan solos a esta pestaña cuando los aprobás.',
     },
     historial: {
       titulo: 'Todavía no cerraste ningún proyecto',
@@ -412,7 +412,7 @@ export function ProyectosPage() {
       </div>
 
       {etapa === 'consultas' ? (
-        <ListaDeSeguimiento resumenes={deLaEtapa} replica={replica} hoy={hoy} />
+        <ListaDeConsultas resumenes={deLaEtapa} replica={replica} hoy={hoy} />
       ) : deLaEtapa.length === 0 ? (
         <Vacio etapa={etapa} />
       ) : (

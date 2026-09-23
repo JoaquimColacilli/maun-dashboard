@@ -3,7 +3,7 @@ import type { NombreDeIcono } from '@/shared/ui';
 export type IdDeSeccion =
   | 'inicio'
   | 'agenda'
-  | 'seguimiento'
+  | 'consultas'
   | 'proyectos'
   | 'clientes'
   | 'finanzas'
@@ -28,10 +28,10 @@ export const DESTINOS: Readonly<Record<IdDeSeccion, Destino>> = {
     icono: 'calendar-days',
     alternativa: 'inicio',
   },
-  seguimiento: {
-    id: 'seguimiento',
-    etiqueta: 'Seguimiento',
-    ruta: '/seguimiento',
+  consultas: {
+    id: 'consultas',
+    etiqueta: 'Consultas',
+    ruta: '/consultas',
     icono: 'route',
     alternativa: 'proyectos',
   },
@@ -76,7 +76,7 @@ export const NAV_TABLET: readonly IdDeSeccion[] = [
 export const NAV_ESCRITORIO: readonly IdDeSeccion[] = [
   'inicio',
   'agenda',
-  'seguimiento',
+  'consultas',
   'proyectos',
   'clientes',
   'finanzas',
@@ -96,7 +96,7 @@ export const ACCIONES_RAPIDAS: readonly AccionRapida[] = [
   { etiqueta: 'Movimiento', icono: 'arrow-left-right', ruta: '/finanzas/nuevo' },
   { etiqueta: 'Cobro de proyecto', icono: 'hand-coins', ruta: '/proyectos' },
   { etiqueta: 'Proyecto nuevo', icono: 'folder-plus', ruta: '/proyectos/nuevo' },
-  { etiqueta: 'Contacto de seguimiento', icono: 'user-plus', ruta: '/seguimiento/nuevo' },
+  { etiqueta: 'Consulta nueva', icono: 'user-plus', ruta: '/consultas/nueva' },
 ];
 
 export function seccionDeLaRuta(ruta: string): IdDeSeccion {

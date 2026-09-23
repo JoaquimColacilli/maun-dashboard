@@ -33,7 +33,7 @@ import { datosActualesDelProyecto } from '../model/liquidacion';
 import { cambiaAlgunaForma } from '../model/cobro';
 import { cambiaAlgunCosto } from '../model/costos';
 import { cambiaAlgunaMarca } from '../model/marcas';
-import { ultimoContactoAlGuardar } from '../model/seguimiento';
+import { ultimoContactoAlGuardar } from '../model/consultas';
 import { cambiaAlgunaTarea } from '../model/tareas';
 
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;

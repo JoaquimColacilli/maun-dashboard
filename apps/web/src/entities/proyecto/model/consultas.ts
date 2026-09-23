@@ -13,7 +13,7 @@ import type { Proyecto } from './catalogos';
 import type { ResumenDeProyecto } from './resumen';
 import { presupuestoArmado, TAREAS_DEL_PRESUPUESTO, tareasHechas } from './tareas';
 
-export type EtapaDeSeguimiento = (typeof ESTADOS_DE_CONSULTA)[number];
+export type EtapaDeConsulta = (typeof ESTADOS_DE_CONSULTA)[number];
 
 export const DIAS_PARA_ENFRIARSE = 7;
 
@@ -44,7 +44,7 @@ export interface ContactoEnLista {
   ultimaActividad: string;
 }
 
-export function esEtapaDeSeguimiento(estado: EstadoProyecto): estado is EtapaDeSeguimiento {
+export function esEtapaDeConsulta(estado: EstadoProyecto): estado is EtapaDeConsulta {
   return faseDe(estado) === 'consultas';
 }
 
@@ -294,7 +294,7 @@ export interface PasoDelContacto {
 const APROBAR: PasoDelContacto = { hacia: 'en_curso', etiqueta: 'Ya lo aprobó', camino: 'pasaje' };
 
 function pasosDeLaSugerencia(
-  etapa: EtapaDeSeguimiento,
+  etapa: EtapaDeConsulta,
   sugerencia: SugerenciaDelContacto,
 ): PasoDelContacto[] {
   const relevar: PasoDelContacto = {
@@ -359,7 +359,7 @@ function pasosDeLaSugerencia(
 }
 
 export function pasosDelContacto(
-  etapa: EtapaDeSeguimiento,
+  etapa: EtapaDeConsulta,
   situacion: SituacionDelContacto,
 ): PasoDelContacto[] {
   return pasosDeLaSugerencia(etapa, situacion.sugerencia).filter((paso) =>

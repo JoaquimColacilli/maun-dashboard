@@ -124,7 +124,7 @@ test('editar un cliente sin cambiar nada no pregunta, y con un cambio pregunta c
 test('cargar contacto: con lo que pide escrito, tocar afuera pregunta; si se borra lo escrito, Cancelar cierra de una', async ({
   page,
 }) => {
-  const hoja = await abrirPorRuta(page, '/seguimiento/nuevo', 'Cargar contacto');
+  const hoja = await abrirPorRuta(page, '/consultas/nueva', 'Cargar contacto');
   const quePide = hoja.getByLabel('Qué pide');
   await quePide.fill('Placard');
 

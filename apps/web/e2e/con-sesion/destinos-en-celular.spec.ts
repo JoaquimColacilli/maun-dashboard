@@ -54,8 +54,8 @@ test.describe('los ocho destinos del sidebar, en el celular', () => {
 
     await barra(page).getByRole('button', { name: 'Proyectos' }).click();
     await expect(titulo(page, 'Proyectos')).toBeVisible();
-    await page.getByRole('tab', { name: /^Seguimiento/ }).click();
-    await expect(page).toHaveURL(/\/seguimiento$/);
+    await page.getByRole('tab', { name: /^Consultas/ }).click();
+    await expect(page).toHaveURL(/\/consultas$/);
 
     await barra(page).getByRole('button', { name: 'Clientes' }).click();
     await expect(titulo(page, 'Clientes')).toBeVisible();

@@ -9,7 +9,7 @@ import {
   gastosDelProyecto,
   opcionesDelProyecto,
   pagosDelProyecto,
-  RUTA_DE_SEGUIMIENTO,
+  RUTA_DE_CONSULTAS,
   rutaDeCierre,
   rutaDeEdicion,
   senaDelProyecto,
@@ -17,7 +17,7 @@ import {
   situacionDelContacto,
   ultimasActividades,
   yaSeRelevo,
-  type EtapaDeSeguimiento,
+  type EtapaDeConsulta,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
@@ -29,7 +29,7 @@ import {
   NotasDelProyecto,
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
-import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
+import { AvanceDelContacto, HojaDeContacto } from '@/features/avanzar-la-consulta';
 import {
   fechaLarga,
   formatearPesos,
@@ -66,7 +66,7 @@ type HojaAbierta = 'contacto' | 'visita' | null;
 
 export interface FichaDeContactoProps {
   resumen: ResumenDeProyecto;
-  etapa: EtapaDeSeguimiento;
+  etapa: EtapaDeConsulta;
 }
 
 export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
@@ -93,11 +93,11 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
-          to={RUTA_DE_SEGUIMIENTO}
+          to={RUTA_DE_CONSULTAS}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Seguimiento
+          Consultas
         </Link>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
@@ -116,7 +116,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             proyecto={proyecto}
             sustantivo="contacto"
             alBorrar={() => {
-              void navegar(RUTA_DE_SEGUIMIENTO);
+              void navegar(RUTA_DE_CONSULTAS);
             }}
           />
           <Button
