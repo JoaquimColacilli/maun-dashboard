@@ -6,7 +6,7 @@ import { Icono, Pagina } from '@/shared/ui';
 
 export function AvisosPage() {
   return (
-    <Pagina className="gap-5 [&>*]:max-w-[720px]">
+    <Pagina className="gap-5">
       <header className="flex flex-col items-start gap-1.5">
         <Link
           to={RUTA_DE_AJUSTES}

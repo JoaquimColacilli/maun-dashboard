@@ -145,7 +145,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const aRepartir = despiece.piezas.filter((pieza) => pieza.monto > 0);
 
   return (
-    <Pagina className="[&>*]:max-w-[720px]">
+    <Pagina>
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -219,7 +219,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
             Esto mueve plata, aunque sea un presupuesto que no salió
           </h2>
           {resumen.cobrado > 0 ? (
-            <p className="mt-1.5">
+            <p className="mt-1.5 max-w-[48rem]">
               Los {formatearPesos(resumen.cobrado)} de seña que retenés dejan de ser un anticipo y
               pasan a ser ingreso del taller.{' '}
               {ajustes.perdidoConDiezmo
@@ -231,14 +231,14 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
               El resto queda en el taller.
             </p>
           ) : (
-            <p className="mt-1.5">
+            <p className="mt-1.5 max-w-[48rem]">
               No hay seña retenida, así que no se mueve plata de los tesoros.
               {resumen.gastos > 0
                 ? ` Los ${formatearPesos(resumen.gastos)} de gastos que cargaste quedan como pérdida del taller.`
                 : ''}
             </p>
           )}
-          <p className="mt-1.5">
+          <p className="mt-1.5 max-w-[48rem]">
             Se puede deshacer: reactivando el presupuesto vuelve al seguimiento y la plata se
             descuenta de los tesoros.
           </p>

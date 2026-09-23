@@ -26,7 +26,15 @@ import {
   useEstadoSync,
   uuidv7,
 } from '@/shared/lib';
-import { Button, ConSalida, FilaDeAcciones, Hoja, Icono, Pagina } from '@/shared/ui';
+import {
+  Button,
+  ConSalida,
+  FilaDeAcciones,
+  Hoja,
+  Icono,
+  Pagina,
+  PrincipalYApoyo,
+} from '@/shared/ui';
 
 import { filasDeCobro } from '../model/comoTePaga';
 import {
@@ -156,7 +164,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   );
 
   return (
-    <Pagina className="[&>*]:max-w-[720px]">
+    <Pagina>
       <Link
         to={rutaDelProyecto(proyecto.id)}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
@@ -182,202 +190,221 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
         </div>
       </header>
 
-      {vista.como === 'sin_enlace' && (
-        <section className="mt-5 flex flex-col gap-3.5 rounded-panel border border-hairline p-5">
-          <span className="flex items-center gap-2.5 text-body-lg font-semibold">
-            <Icono nombre="link-2" tamano={20} />
-            Todavía no compartiste este trabajo
-          </span>
-          <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-            Se crea un enlace propio de este trabajo. Quien lo tenga puede abrirlo sin cuenta ni
-            contraseña, así que pasáselo solo a tu cliente. Lo podés dar de baja cuando quieras.
-          </p>
-          <FilaDeAcciones>
-            {botonDeCrear('Crear el enlace')}
-            {botonDeLaVista}
-          </FilaDeAcciones>
-        </section>
-      )}
-
-      {vista.como === 'de_baja' && (
-        <section className="mt-5 flex flex-col gap-3.5 rounded-panel border border-hairline p-5">
-          <span className="flex items-center gap-2.5 text-body-lg font-semibold">
-            <Icono nombre="link-2-off" tamano={20} />
-            El enlace está dado de baja
-          </span>
-          <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-            Si tu cliente lo abre, ve un aviso de que no funciona más y nada del trabajo. Podés
-            crear uno nuevo cuando quieras; el anterior no vuelve.
-          </p>
-          <FilaDeAcciones>
-            {botonDeCrear('Crear un enlace nuevo')}
-            {botonDeLaVista}
-          </FilaDeAcciones>
-        </section>
-      )}
-
-      {activo !== undefined && (
-        <section
-          aria-label="El enlace"
-          className="mt-5 flex flex-col gap-3 rounded-panel border border-hairline px-4 py-4"
-        >
-          <div className="flex flex-wrap items-center gap-2.5 text-body">
-            <span aria-hidden className="size-2 flex-none rounded-pill bg-hogar" />
-            <span className="font-semibold">Enlace activo</span>
-            <span className="text-text-2">
-              creado el {fechaLarga(activo.created_at.slice(0, 10), hoy)} · no vence
-            </span>
-          </div>
-
-          {vista.como === 'activo' ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="h-12 min-w-[200px] flex-1 truncate rounded-field border border-border bg-surface px-3 font-mono text-label leading-12">
-                  {vista.url}
+      <PrincipalYApoyo
+        apoyoPrimero
+        separacion="gap-y-0"
+        className="mt-5"
+        apoyo={
+          <div className="flex min-w-0 flex-col">
+            {vista.como === 'sin_enlace' && (
+              <section className="flex flex-col gap-3.5 rounded-panel border border-hairline p-5">
+                <span className="flex items-center gap-2.5 text-body-lg font-semibold">
+                  <Icono nombre="link-2" tamano={20} />
+                  Todavía no compartiste este trabajo
                 </span>
-                <Button
-                  onClick={() => {
-                    copiar(vista.url);
-                  }}
-                >
-                  <Icono nombre={copiado ? 'check' : 'copy'} tamano={18} />
-                  {copiado ? 'Copiado' : 'Copiar'}
-                </Button>
-              </div>
+                <p className="max-w-[520px] text-body leading-relaxed text-text-2">
+                  Se crea un enlace propio de este trabajo. Quien lo tenga puede abrirlo sin cuenta
+                  ni contraseña, así que pasáselo solo a tu cliente. Lo podés dar de baja cuando
+                  quieras.
+                </p>
+                <FilaDeAcciones>
+                  {botonDeCrear('Crear el enlace')}
+                  {botonDeLaVista}
+                </FilaDeAcciones>
+              </section>
+            )}
 
-              <p className="flex flex-wrap items-baseline gap-x-2 text-label leading-normal text-text-3">
-                <span>En WhatsApp va a decir:</span>
-                <span className="font-semibold text-text-2">
-                  {comoSeVeEnWhatsapp(proyecto.titulo, household?.nombre ?? '')}
+            {vista.como === 'de_baja' && (
+              <section className="flex flex-col gap-3.5 rounded-panel border border-hairline p-5">
+                <span className="flex items-center gap-2.5 text-body-lg font-semibold">
+                  <Icono nombre="link-2-off" tamano={20} />
+                  El enlace está dado de baja
                 </span>
+                <p className="max-w-[520px] text-body leading-relaxed text-text-2">
+                  Si tu cliente lo abre, ve un aviso de que no funciona más y nada del trabajo.
+                  Podés crear uno nuevo cuando quieras; el anterior no vuelve.
+                </p>
+                <FilaDeAcciones>
+                  {botonDeCrear('Crear un enlace nuevo')}
+                  {botonDeLaVista}
+                </FilaDeAcciones>
+              </section>
+            )}
+
+            {activo !== undefined && (
+              <section
+                aria-label="El enlace"
+                className="flex flex-col gap-3 rounded-panel border border-hairline px-4 py-4"
+              >
+                <div className="flex flex-wrap items-center gap-2.5 text-body">
+                  <span aria-hidden className="size-2 flex-none rounded-pill bg-hogar" />
+                  <span className="font-semibold">Enlace activo</span>
+                  <span className="text-text-2">
+                    creado el {fechaLarga(activo.created_at.slice(0, 10), hoy)} · no vence
+                  </span>
+                </div>
+
+                {vista.como === 'activo' ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="h-12 min-w-[200px] flex-1 truncate rounded-field border border-border bg-surface px-3 font-mono text-label leading-12 @min-[52rem]/apoyo:h-auto @min-[52rem]/apoyo:basis-full @min-[52rem]/apoyo:py-2.5 @min-[52rem]/apoyo:leading-normal @min-[52rem]/apoyo:break-all @min-[52rem]/apoyo:whitespace-normal">
+                        {vista.url}
+                      </span>
+                      <Button
+                        className="@min-[52rem]/apoyo:w-full"
+                        onClick={() => {
+                          copiar(vista.url);
+                        }}
+                      >
+                        <Icono nombre={copiado ? 'check' : 'copy'} tamano={18} />
+                        {copiado ? 'Copiado' : 'Copiar'}
+                      </Button>
+                    </div>
+
+                    <p className="flex flex-wrap items-baseline gap-x-2 text-label leading-normal text-text-3">
+                      <span>En WhatsApp va a decir:</span>
+                      <span className="font-semibold text-text-2">
+                        {comoSeVeEnWhatsapp(proyecto.titulo, household?.nombre ?? '')}
+                      </span>
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2 @min-[52rem]/apoyo:flex-col @min-[52rem]/apoyo:items-stretch @min-[52rem]/apoyo:gap-3">
+                      <a
+                        href={enlaceDeWhatsapp(
+                          cliente?.telefono ?? '',
+                          mensajeParaElCliente(
+                            resumen.nombreDelCliente,
+                            proyecto.titulo,
+                            vista.url,
+                            hayPagoPendiente,
+                          ),
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex min-h-tap w-fit items-center gap-2 rounded-field border border-border px-3 text-label font-medium hover:bg-surface @min-[52rem]/apoyo:w-full @min-[52rem]/apoyo:justify-center @min-[52rem]/apoyo:text-body"
+                      >
+                        <Icono nombre="message-circle" tamano={16} />
+                        Mandárselo por WhatsApp
+                      </a>
+                      <BotonDelQr
+                        proyectoId={proyecto.id}
+                        trabajo={proyecto.titulo}
+                        className="@min-[52rem]/apoyo:w-full @min-[52rem]/apoyo:justify-center @min-[52rem]/apoyo:text-body"
+                      />
+                    </div>
+
+                    <FilaDeAcciones className="@min-[52rem]/apoyo:gap-3">
+                      {botonDeLaVista}
+                      <Button
+                        variant="secundario"
+                        onClick={() => {
+                          setPreguntandoLaBaja(true);
+                        }}
+                      >
+                        <Icono nombre="link-2-off" tamano={18} />
+                        Dar de baja
+                      </Button>
+                    </FilaDeAcciones>
+                  </>
+                ) : (
+                  <>
+                    <p className="max-w-[520px] text-body leading-relaxed text-text-2">
+                      Este enlace se creó antes de que la dirección se guardara en tu taller, así
+                      que todavía vive en el aparato donde lo hiciste. Abrí este trabajo una vez
+                      desde ahí y la dirección te aparece acá sola, sin tocar el que tu cliente ya
+                      tiene. Si no llegás a ese aparato, creá uno nuevo: el anterior deja de andar.
+                    </p>
+                    <FilaDeAcciones>
+                      {botonDeCrear('Crear uno nuevo')}
+                      {botonDeLaVista}
+                      <Button
+                        variant="secundario"
+                        onClick={() => {
+                          setPreguntandoLaBaja(true);
+                        }}
+                      >
+                        <Icono nombre="link-2-off" tamano={18} />
+                        Dar de baja
+                      </Button>
+                    </FilaDeAcciones>
+                  </>
+                )}
+
+                {vistos.total > 0 && (
+                  <p
+                    className={`text-label leading-normal ${vistos.ninguno ? 'font-medium text-alerta' : 'text-text-3'}`}
+                  >
+                    {vistos.ninguno
+                      ? `Con este enlace el cliente ve 0 de ${String(vistos.total)} archivos: elegí abajo cuáles le mostrás.`
+                      : `Con este enlace el cliente ve ${String(vistos.compartidos)} de ${String(vistos.total)} archivos.`}
+                  </p>
+                )}
+
+                <p className="text-label leading-normal text-text-3">
+                  {vecesQueLoAbrio(activo)}
+                  {activo.ultima_visita_at === null
+                    ? '.'
+                    : `. La última vez, el ${fechaLarga(activo.ultima_visita_at.slice(0, 10), hoy)}.`}
+                </p>
+              </section>
+            )}
+
+            {sinSenal && vista.como !== 'activo' && (
+              <p className="mt-2 flex items-center gap-2 text-label font-medium text-text-2">
+                <Icono nombre="cloud-off" tamano={16} />
+                Para crear el enlace necesitás señal: se guarda en el momento y recién ahí funciona.
               </p>
+            )}
 
-              <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href={enlaceDeWhatsapp(
-                    cliente?.telefono ?? '',
-                    mensajeParaElCliente(
-                      resumen.nombreDelCliente,
-                      proyecto.titulo,
-                      vista.url,
-                      hayPagoPendiente,
-                    ),
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-h-tap w-fit items-center gap-2 rounded-field border border-border px-3 text-label font-medium hover:bg-surface"
-                >
-                  <Icono nombre="message-circle" tamano={16} />
-                  Mandárselo por WhatsApp
-                </a>
-                <BotonDelQr proyectoId={proyecto.id} trabajo={proyecto.titulo} />
-              </div>
-
-              <FilaDeAcciones>
-                {botonDeLaVista}
-                <Button
-                  variant="secundario"
-                  onClick={() => {
-                    setPreguntandoLaBaja(true);
-                  }}
-                >
-                  <Icono nombre="link-2-off" tamano={18} />
-                  Dar de baja
-                </Button>
-              </FilaDeAcciones>
-            </>
-          ) : (
-            <>
-              <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-                Este enlace se creó antes de que la dirección se guardara en tu taller, así que
-                todavía vive en el aparato donde lo hiciste. Abrí este trabajo una vez desde ahí y
-                la dirección te aparece acá sola, sin tocar el que tu cliente ya tiene. Si no llegás
-                a ese aparato, creá uno nuevo: el anterior deja de andar.
+            {rechazo !== null && (
+              <p role="alert" className="mt-2 text-label font-medium text-alerta">
+                {mensajeDeSincronizacion(rechazo, {
+                  operacion: 'proyecto',
+                  sujeto: proyecto.titulo,
+                })}
               </p>
-              <FilaDeAcciones>
-                {botonDeCrear('Crear uno nuevo')}
-                {botonDeLaVista}
-                <Button
-                  variant="secundario"
-                  onClick={() => {
-                    setPreguntandoLaBaja(true);
-                  }}
-                >
-                  <Icono nombre="link-2-off" tamano={18} />
-                  Dar de baja
-                </Button>
-              </FilaDeAcciones>
-            </>
-          )}
+            )}
 
-          {vistos.total > 0 && (
-            <p
-              className={`text-label leading-normal ${vistos.ninguno ? 'font-medium text-alerta' : 'text-text-3'}`}
-            >
-              {vistos.ninguno
-                ? `Con este enlace el cliente ve 0 de ${String(vistos.total)} archivos: elegí abajo cuáles le mostrás.`
-                : `Con este enlace el cliente ve ${String(vistos.compartidos)} de ${String(vistos.total)} archivos.`}
-            </p>
-          )}
-
-          <p className="text-label leading-normal text-text-3">
-            {vecesQueLoAbrio(activo)}
-            {activo.ultima_visita_at === null
-              ? '.'
-              : `. La última vez, el ${fechaLarga(activo.ultima_visita_at.slice(0, 10), hoy)}.`}
-          </p>
-        </section>
-      )}
-
-      {sinSenal && vista.como !== 'activo' && (
-        <p className="mt-2 flex items-center gap-2 text-label font-medium text-text-2">
-          <Icono nombre="cloud-off" tamano={16} />
-          Para crear el enlace necesitás señal: se guarda en el momento y recién ahí funciona.
-        </p>
-      )}
-
-      {rechazo !== null && (
-        <p role="alert" className="mt-2 text-label font-medium text-alerta">
-          {mensajeDeSincronizacion(rechazo, { operacion: 'proyecto', sujeto: proyecto.titulo })}
-        </p>
-      )}
-
-      <ConSalida valor={preguntandoLaBaja}>
-        {() => (
-          <Hoja
-            titulo="¿Damos de baja el enlace?"
-            rol="alertdialog"
-            ancho="angosto"
-            alCerrar={() => {
-              setPreguntandoLaBaja(false);
-            }}
-          >
-            <div className="flex flex-col gap-3.5 px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:px-6 md:pb-5">
-              <p className="text-label leading-relaxed text-text-2">
-                Tu cliente va a dejar de ver el trabajo desde el enlace que le pasaste. Si después
-                lo necesitás, creás uno nuevo.
-              </p>
-              <FilaDeAcciones>
-                <Button
-                  variant="secundario"
-                  onClick={() => {
+            <ConSalida valor={preguntandoLaBaja}>
+              {() => (
+                <Hoja
+                  titulo="¿Damos de baja el enlace?"
+                  rol="alertdialog"
+                  ancho="angosto"
+                  alCerrar={() => {
                     setPreguntandoLaBaja(false);
                   }}
                 >
-                  Dejarlo como está
-                </Button>
-                <Button variant="peligro" onClick={darLoDeBaja}>
-                  Darlo de baja
-                </Button>
-              </FilaDeAcciones>
-            </div>
-          </Hoja>
-        )}
-      </ConSalida>
-
-      <ComoTePaga resumen={resumen} />
-
-      <ArchivosQueVeElCliente archivos={archivos} />
+                  <div className="flex flex-col gap-3.5 px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:px-6 md:pb-5">
+                    <p className="text-label leading-relaxed text-text-2">
+                      Tu cliente va a dejar de ver el trabajo desde el enlace que le pasaste. Si
+                      después lo necesitás, creás uno nuevo.
+                    </p>
+                    <FilaDeAcciones>
+                      <Button
+                        variant="secundario"
+                        onClick={() => {
+                          setPreguntandoLaBaja(false);
+                        }}
+                      >
+                        Dejarlo como está
+                      </Button>
+                      <Button variant="peligro" onClick={darLoDeBaja}>
+                        Darlo de baja
+                      </Button>
+                    </FilaDeAcciones>
+                  </div>
+                </Hoja>
+              )}
+            </ConSalida>
+          </div>
+        }
+      >
+        <div className="min-w-0 @min-[52rem]/apoyo:[&>section:first-child]:mt-0">
+          <ComoTePaga resumen={resumen} />
+          <ArchivosQueVeElCliente archivos={archivos} />
+        </div>
+      </PrincipalYApoyo>
     </Pagina>
   );
 }
