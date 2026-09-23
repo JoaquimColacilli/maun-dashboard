@@ -109,76 +109,119 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
       </header>
 
       <PrincipalYApoyo
-        apoyoPrimero
+        amplio
         separacion="gap-y-0"
         className="mt-4"
         apoyo={
           <div className="@container">
-            <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
-              <span className="text-body text-text-2">{trabajo.cliente}</span>
-              <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
-                {trabajo.trabajo}
-              </h1>
-
-              {vista.foco === 'saldo' ? (
-                <>
-                  <div className="mt-3 flex flex-col gap-0.5">
-                    <span className="text-body text-text-2">{etiquetaDelSaldo}</span>
-                    <MontoQueEntra
-                      tamano="destacado"
-                      className={`leading-tight font-semibold ${tonoDelSaldo}`}
-                    >
-                      {textoDelSaldo}
-                    </MontoQueEntra>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
-                    <span className="flex items-baseline gap-2">
-                      <span className="text-text-2">Vale</span>
-                      <span className="font-semibold tabular-nums">
-                        {trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
-                      </span>
-                    </span>
-                    <span className="flex items-baseline gap-2">
-                      <span className="text-text-2">Pagaste</span>
-                      <span className="font-semibold tabular-nums">
-                        {formatearPesos(vista.pagado)}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
-                    <span className="text-body-lg font-semibold">{etapa?.texto}</span>
-                    {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-3 flex flex-col gap-1">
-                    <span className="text-money-xl leading-tight font-semibold text-pretty">
-                      {etapa?.texto}
-                    </span>
-                    {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
-                    <Cifra
-                      clave={etiquetaDelSaldo}
-                      valor={textoDelSaldo}
-                      grande
-                      tono={tonoDelSaldo}
-                    />
-                    <Cifra
-                      clave="Vale"
-                      valor={trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
-                    />
-                    <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
-                  </div>
-                </>
-              )}
+            <section aria-label="Datos del trabajo" className="mt-7 @min-[52rem]/apoyo:mt-0">
+              <dl className="rounded-panel border border-hairline px-3.5 py-1">
+                <Dato
+                  clave="Dirección"
+                  valor={trabajo.direccion.trim() === '' ? 'A confirmar' : trabajo.direccion}
+                />
+                <Dato
+                  clave="Empezamos"
+                  valor={
+                    trabajo.fechas.inicio === null
+                      ? 'Todavía no'
+                      : fechaLarga(trabajo.fechas.inicio, hoy)
+                  }
+                />
+                <Dato
+                  clave={trabajo.fechas.entregado === null ? 'Entrega pautada' : 'Entregado'}
+                  valor={
+                    trabajo.fechas.entregado !== null
+                      ? fechaLarga(trabajo.fechas.entregado, hoy)
+                      : trabajo.fechas.entregaPautada !== null
+                        ? fechaLarga(trabajo.fechas.entregaPautada, hoy)
+                        : 'A confirmar'
+                  }
+                  fuerte
+                />
+                <Dato
+                  clave="Seña"
+                  valor={
+                    trabajo.pagos[0] === undefined
+                      ? 'Pendiente'
+                      : `${formatearPesos(trabajo.pagos[0].monto)} · ${fechaLarga(trabajo.pagos[0].fecha, hoy)}`
+                  }
+                />
+              </dl>
             </section>
+
+            <ComoPagar trabajo={trabajo} />
+
+            <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
+              Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
+              trabajo. Si algo no coincide, escribile al taller.
+            </p>
           </div>
         }
       >
         <div className="@container">
-          <section aria-label="En qué anda" className="mt-7 @min-[52rem]/apoyo:mt-0">
+          <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
+            <span className="text-body text-text-2">{trabajo.cliente}</span>
+            <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
+              {trabajo.trabajo}
+            </h1>
+
+            {vista.foco === 'saldo' ? (
+              <>
+                <div className="mt-3 flex flex-col gap-0.5">
+                  <span className="text-body text-text-2">{etiquetaDelSaldo}</span>
+                  <MontoQueEntra
+                    tamano="destacado"
+                    className={`leading-tight font-semibold ${tonoDelSaldo}`}
+                  >
+                    {textoDelSaldo}
+                  </MontoQueEntra>
+                </div>
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-text-2">Vale</span>
+                    <span className="font-semibold tabular-nums">
+                      {trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
+                    </span>
+                  </span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-text-2">Pagaste</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatearPesos(vista.pagado)}
+                    </span>
+                  </span>
+                </div>
+                <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
+                  <span className="text-body-lg font-semibold">{etapa?.texto}</span>
+                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-3 flex flex-col gap-1">
+                  <span className="text-money-xl leading-tight font-semibold text-pretty">
+                    {etapa?.texto}
+                  </span>
+                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
+                </div>
+                <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+                  <Cifra
+                    clave={etiquetaDelSaldo}
+                    valor={textoDelSaldo}
+                    grande
+                    tono={tonoDelSaldo}
+                  />
+                  <Cifra
+                    clave="Vale"
+                    valor={trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
+                  />
+                  <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
+                </div>
+              </>
+            )}
+          </section>
+
+          <section aria-label="En qué anda" className="mt-7">
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
             <CaminoDeHitos hitos={vista.hitos} nota={nota} hoy={hoy} />
             {vista.sigue !== '' && (
@@ -342,49 +385,6 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               </>
             )}
           </section>
-
-          <section aria-label="Datos del trabajo" className="mt-7">
-            <dl className="rounded-panel border border-hairline px-3.5 py-1">
-              <Dato
-                clave="Dirección"
-                valor={trabajo.direccion.trim() === '' ? 'A confirmar' : trabajo.direccion}
-              />
-              <Dato
-                clave="Empezamos"
-                valor={
-                  trabajo.fechas.inicio === null
-                    ? 'Todavía no'
-                    : fechaLarga(trabajo.fechas.inicio, hoy)
-                }
-              />
-              <Dato
-                clave={trabajo.fechas.entregado === null ? 'Entrega pautada' : 'Entregado'}
-                valor={
-                  trabajo.fechas.entregado !== null
-                    ? fechaLarga(trabajo.fechas.entregado, hoy)
-                    : trabajo.fechas.entregaPautada !== null
-                      ? fechaLarga(trabajo.fechas.entregaPautada, hoy)
-                      : 'A confirmar'
-                }
-                fuerte
-              />
-              <Dato
-                clave="Seña"
-                valor={
-                  trabajo.pagos[0] === undefined
-                    ? 'Pendiente'
-                    : `${formatearPesos(trabajo.pagos[0].monto)} · ${fechaLarga(trabajo.pagos[0].fecha, hoy)}`
-                }
-              />
-            </dl>
-          </section>
-
-          <ComoPagar trabajo={trabajo} />
-
-          <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
-            Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
-            trabajo. Si algo no coincide, escribile al taller.
-          </p>
         </div>
       </PrincipalYApoyo>
     </Pagina>

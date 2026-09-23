@@ -66,6 +66,7 @@ export function DiezmoPage() {
 
       <PrincipalYApoyo
         apoyoPrimero
+        amplio
         apoyo={
           <div className="flex min-w-0 flex-col gap-5">
             <section

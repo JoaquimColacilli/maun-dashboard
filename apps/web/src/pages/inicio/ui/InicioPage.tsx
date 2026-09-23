@@ -260,7 +260,7 @@ function Acceso({
     <button
       type="button"
       onClick={alElegir}
-      className="flex w-full items-center gap-3 border-b border-hairline py-3.5 text-left"
+      className="flex w-full items-center gap-3 border-b border-hairline py-3.5 text-left @min-[52rem]/apoyo:gap-4"
     >
       <span
         className={`flex size-9 flex-none items-center justify-center rounded-field ${fondo ?? 'bg-surface'} ${tono ?? ''}`}
@@ -269,7 +269,9 @@ function Acceso({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-meta text-text-2">{etiqueta}</span>
-        <span className="block truncate text-body font-medium">{titulo}</span>
+        <span className="block truncate text-body font-medium @min-[52rem]/apoyo:line-clamp-2 @min-[52rem]/apoyo:whitespace-normal">
+          {titulo}
+        </span>
       </span>
       <span className={`flex-none text-body font-semibold tabular-nums ${tono ?? ''}`}>
         {valor}
@@ -449,6 +451,7 @@ export function InicioPage() {
         </section>
       ) : (
         <PrincipalYApoyo
+          amplio
           separacion="gap-y-0"
           apoyo={
             <>

@@ -150,6 +150,7 @@ export function FinanzasPage() {
 
       <PrincipalYApoyo
         apoyoPrimero
+        amplio
         separacion="gap-y-4"
         apoyo={
           <ComparacionMensual
@@ -184,35 +185,39 @@ export function FinanzasPage() {
         }
       >
         <div className="flex flex-wrap items-center gap-2">
-          <Chip
-            activo={filtro.tesoro === 'todos'}
-            etiqueta="Todos"
-            alElegir={() => {
-              cambiar({ tesoro: 'todos' });
-            }}
-          />
-          {TESOROS_EN_ORDEN.map((id: Tesoro) => (
+          <div className="contents @min-[52rem]/apoyo:flex @min-[52rem]/apoyo:flex-wrap @min-[52rem]/apoyo:items-center @min-[52rem]/apoyo:gap-2">
             <Chip
-              key={id}
-              activo={filtro.tesoro === id}
-              etiqueta={TESORO[id].nombre}
-              punto={TESORO[id].barra}
+              activo={filtro.tesoro === 'todos'}
+              etiqueta="Todos"
               alElegir={() => {
-                cambiar({ tesoro: id });
+                cambiar({ tesoro: 'todos' });
               }}
             />
-          ))}
-          <span aria-hidden className="mx-0.5 h-6 w-px bg-hairline" />
-          {SENTIDOS.map((sentido) => (
-            <Chip
-              key={sentido.id}
-              activo={filtro.sentido === sentido.id}
-              etiqueta={sentido.etiqueta}
-              alElegir={() => {
-                cambiar({ sentido: sentido.id });
-              }}
-            />
-          ))}
+            {TESOROS_EN_ORDEN.map((id: Tesoro) => (
+              <Chip
+                key={id}
+                activo={filtro.tesoro === id}
+                etiqueta={TESORO[id].nombre}
+                punto={TESORO[id].barra}
+                alElegir={() => {
+                  cambiar({ tesoro: id });
+                }}
+              />
+            ))}
+          </div>
+          <span aria-hidden className="mx-0.5 h-6 w-px bg-hairline @min-[52rem]/apoyo:hidden" />
+          <div className="contents @min-[52rem]/apoyo:flex @min-[52rem]/apoyo:flex-wrap @min-[52rem]/apoyo:items-center @min-[52rem]/apoyo:gap-2">
+            {SENTIDOS.map((sentido) => (
+              <Chip
+                key={sentido.id}
+                activo={filtro.sentido === sentido.id}
+                etiqueta={sentido.etiqueta}
+                alElegir={() => {
+                  cambiar({ sentido: sentido.id });
+                }}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="mt-2.5 flex gap-2">
