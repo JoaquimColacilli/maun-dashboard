@@ -9,6 +9,7 @@
     "playwright.config.ts",
     "playwright.version.config.ts",
     "playwright.reparto.config.ts",
+    "playwright.transiciones.config.ts",
     "e2e"
   ]
 }
