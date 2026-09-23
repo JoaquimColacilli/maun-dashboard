@@ -49,7 +49,7 @@ export function TarjetaDeProyecto({
       {children}
 
       {pie !== undefined && (
-        <div className="relative z-10 -mx-3.5 mt-1 -mb-3 rounded-b-panel border-t border-hairline-soft px-3.5 pt-2.5 pb-3">
+        <div className="relative z-10 -mx-3.5 mt-1 -mb-3 rounded-b-panel border-t border-hairline-soft px-3.5 pt-2.5 pb-3 @min-[1px]/tablero:mt-auto">
           {pie}
         </div>
       )}

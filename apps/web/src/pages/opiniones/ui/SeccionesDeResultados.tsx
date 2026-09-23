@@ -87,7 +87,7 @@ function UnComentario({
 
   return (
     <li className={`flex min-w-0 flex-col gap-2.5 border-t-2 pt-3.5 ${filo}`}>
-      <p className="text-body-lg leading-relaxed whitespace-pre-line text-pretty @lg:text-subtitulo">
+      <p className="max-w-[42rem] text-body-lg leading-relaxed whitespace-pre-line text-pretty @lg:text-subtitulo">
         {comentario.texto}
       </p>
       <div className="flex flex-wrap items-center gap-2.5 text-label">
@@ -151,6 +151,7 @@ export function LoQueEscribieron({
       ) : (
         <Tablero
           tarjetaMinima="27rem"
+          completar
           como="ul"
           className="mt-3 list-none grid-cols-1 gap-5.5 p-0 @min-[56rem]/tablero:gap-x-8 @min-[56rem]/tablero:gap-y-6.5"
         >

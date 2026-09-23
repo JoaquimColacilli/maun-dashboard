@@ -53,7 +53,7 @@ export function PaginaDeOpiniones({
   children: ReactNode;
 }) {
   return (
-    <Pagina className="pb-10 [&>*]:max-w-[1080px]">
+    <Pagina className="pb-10">
       <EncabezadoDeOpiniones seccion={seccion} />
       {children}
     </Pagina>

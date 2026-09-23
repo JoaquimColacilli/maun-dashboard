@@ -160,7 +160,7 @@ function Tabla({
                   onClick={() => {
                     alOrdenar(criterio.id);
                   }}
-                  className={`flex h-10 w-full items-center gap-1.5 px-2.5 text-meta hover:bg-surface ${
+                  className={`flex h-10 w-full items-center gap-1.5 px-2.5 text-meta whitespace-nowrap hover:bg-surface ${
                     aLaDerecha ? 'justify-end' : 'justify-start'
                   } ${activo ? 'bg-surface font-semibold text-ink' : 'font-medium text-text-3'}`}
                 >
@@ -191,7 +191,7 @@ function Tabla({
                 <EnlaceACliente id={resumen.cliente.id} nombre={resumen.cliente.nombre} />
               )}
             </td>
-            <td className="max-w-[340px] px-2.5">
+            <td className="w-full max-w-0 px-2.5">
               <Link
                 to={rutaDelProyecto(resumen.proyecto.id)}
                 className="block truncate font-medium"
