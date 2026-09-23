@@ -335,14 +335,12 @@ test('la lista vacía, con datos y sin resultados dicen cosas distintas', async 
   await expect(page.getByText('Ningún proyecto coincide con «zzz».')).toBeVisible();
 });
 
-test('el control segmentado navega entre Seguimiento, Activos e Historial', async ({ page }) => {
+test('el control segmentado navega entre Consultas, Activos e Historial', async ({ page }) => {
   await page.goto('/proyectos');
 
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
-  await expect(page).toHaveURL(/\/seguimiento$/);
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText(
-    'Nadie en seguimiento por ahora',
-  );
+  await page.getByRole('tab', { name: /Consultas/ }).click();
+  await expect(page).toHaveURL(/\/consultas$/);
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('No hay consultas por ahora');
 
   await page.getByRole('tab', { name: /Historial/ }).click();
   await expect(page).toHaveURL(/etapa=historial/);

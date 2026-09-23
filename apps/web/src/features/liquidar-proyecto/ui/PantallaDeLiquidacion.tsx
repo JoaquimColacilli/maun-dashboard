@@ -1,25 +1,39 @@
-import { centavos, type EstadoLiquidado } from '@maun/domain';
+import { centavos, esAnteriorALaApertura, type EstadoLiquidado } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { EnlaceACliente } from '@/entities/cliente';
+import { CasillaDeLaApertura } from '@/entities/movimiento';
 import {
   ajustesDeLaReplica,
   datosActualesDelProyecto,
   despieceDeLaLiquidacion,
   DistribucionDespiece,
+  fechaDelCobroPropuesta,
   filaLiquidada,
   liquidacionProyectada,
   MUTACION_DE_LIQUIDACION,
   MUTACION_DE_PROYECTO,
   pedidoDeLiquidacion,
+  repartoEnLaAperturaPropuesto,
   rutaDelProyecto,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { mensajeDeSincronizacion, type ProyectoParaGuardar } from '@/shared/api';
-import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
+import {
+  aperturaDeLaReplica,
+  mensajeDeSincronizacion,
+  type ProyectoParaGuardar,
+} from '@/shared/api';
+import {
+  errorDeLaFechaDeLaPlata,
+  formatearPesos,
+  hoyEnElTaller,
+  mesDeLaFecha,
+  nombreDelMes,
+  uuidv7,
+} from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
 const TEXTOS = {
@@ -27,13 +41,22 @@ const TEXTOS = {
     titulo: 'Cobrar',
     verbo: 'Cobrar y repartir',
     volver: 'Volver sin cobrar',
+    dia: 'Día del cobro',
   },
   perdido: {
     titulo: 'Dar por perdido',
     verbo: 'Dar por perdido y liquidar la seña',
     volver: 'Volver sin cerrarlo',
+    dia: 'Día del cierre',
   },
 } as const;
+
+function ayudaDelDia(destino: EstadoLiquidado, fecha: string): string {
+  const mes = `${nombreDelMes(mesDeLaFecha(fecha)).toLowerCase()} de ${fecha.slice(0, 4)}`;
+  return destino === 'cobrado'
+    ? `El día en que terminó de entrar la plata. El sueldo y los costos fijos se cuentan en ${mes}.`
+    : `El día en que la seña pasa a ser del taller. El reparto se cuenta en ${mes}.`;
+}
 
 function Trio({ resumen }: { resumen: ResumenDeProyecto }) {
   const celdas = [
@@ -96,20 +119,52 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const liquidar = useMutation(MUTACION_DE_LIQUIDACION);
 
+  const hoy = hoyEnElTaller();
+  const apertura = aperturaDeLaReplica(replica);
+
   const faltaCobrar = destino === 'cobrado' && resumen.saldo !== null && resumen.saldo > 0;
   const [conPagoFinal, setConPagoFinal] = useState(faltaCobrar);
   const [monto, setMonto] = useState<number | null>(resumen.saldo);
-  const [fecha, setFecha] = useState(hoyLocal);
+  const [fechaDelPago, setFechaDelPago] = useState(hoy);
   const [concepto, setConcepto] = useState('Saldo final en la entrega');
+  const [fechaElegida, setFechaElegida] = useState<string | null>(null);
+  const [aperturaElegida, setAperturaElegida] = useState<boolean | null>(null);
 
-  const pagoExtra = centavos(conPagoFinal && faltaCobrar ? (monto ?? 0) : 0);
-  const liquidacion = liquidacionProyectada(replica, proyecto, hoyLocal(), { destino, pagoExtra });
+  const hayPagoFinal = conPagoFinal && faltaCobrar;
+  const pagoExtra = centavos(hayPagoFinal ? (monto ?? 0) : 0);
+  const errorDelPago = hayPagoFinal ? errorDeLaFechaDeLaPlata(fechaDelPago, hoy) : undefined;
+
+  const fecha =
+    fechaElegida ??
+    (destino === 'cobrado'
+      ? fechaDelCobroPropuesta(replica, proyecto, hoy, hayPagoFinal ? fechaDelPago : null)
+      : hoy);
+  const errorDelDia = errorDeLaFechaDeLaPlata(fecha, hoy);
+  const fechaValida = errorDelDia === undefined ? fecha : hoy;
+
+  const pagoAntes =
+    hayPagoFinal && errorDelPago === undefined && esAnteriorALaApertura(fechaDelPago, apertura);
+  const repartoAntes = esAnteriorALaApertura(fechaValida, apertura);
+  const enLaApertura =
+    (pagoAntes || repartoAntes) &&
+    (aperturaElegida ??
+      (repartoAntes ? repartoEnLaAperturaPropuesto(proyecto, fechaValida, apertura) : true));
+  const pagoEnLaApertura = pagoAntes && enLaApertura;
+  const repartoEnLaApertura = repartoAntes && enLaApertura;
+
+  const liquidacion = liquidacionProyectada(replica, proyecto, fechaValida, {
+    destino,
+    pagoExtra,
+  });
   const despiece = despieceDeLaLiquidacion(liquidacion);
   const ajustes = ajustesDeLaReplica(replica);
 
   const enCurso = liquidar.isPending && !liquidar.isPaused;
+  const listo = errorDelPago === undefined && errorDelDia === undefined;
 
   function confirmar(): void {
+    if (!listo) return;
+
     if (pagoExtra > 0) {
       const pedidoDelPago: ProyectoParaGuardar = {
         id: proyecto.id,
@@ -118,9 +173,10 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
         pagos: [
           {
             id: uuidv7(),
-            fecha,
+            fecha: fechaDelPago,
             concepto: concepto.trim(),
             monto_centavos: pagoExtra,
+            ya_en_la_apertura: pagoEnLaApertura,
           },
         ],
         gastos: [],
@@ -131,10 +187,15 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       });
     }
 
-    const pedido = pedidoDeLiquidacion(proyecto, liquidacion);
+    const pedido = pedidoDeLiquidacion(proyecto, liquidacion, repartoEnLaApertura);
     liquidar.mutate({
       pedido,
-      optimista: filaLiquidada(proyecto, liquidacion, new Date().toISOString()),
+      optimista: filaLiquidada(
+        proyecto,
+        liquidacion,
+        new Date().toISOString(),
+        repartoEnLaApertura,
+      ),
       previo: proyecto,
       titulo: proyecto.titulo,
     });
@@ -198,17 +259,40 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
               />
               <MoneyInput etiqueta="Monto" value={monto} onChange={setMonto} />
               <Campo
-                etiqueta="Fecha"
+                etiqueta="Fecha del pago"
                 type="date"
-                value={fecha}
+                max={hoy}
+                value={fechaDelPago}
+                error={errorDelPago}
                 onChange={(evento) => {
-                  setFecha(evento.target.value);
+                  setFechaDelPago(evento.target.value);
                 }}
               />
             </div>
           )}
         </section>
       )}
+
+      <div className="mt-5 max-w-[32rem]">
+        <Campo
+          etiqueta={textos.dia}
+          type="date"
+          max={hoy}
+          value={fecha}
+          error={errorDelDia}
+          ayuda={errorDelDia === undefined ? ayudaDelDia(destino, fecha) : undefined}
+          onChange={(evento) => {
+            setFechaElegida(evento.target.value);
+          }}
+        />
+        <CasillaDeLaApertura
+          className="mt-2"
+          fecha={repartoAntes ? fechaValida : fechaDelPago}
+          apertura={pagoAntes || repartoAntes ? apertura : null}
+          marcada={enLaApertura}
+          alCambiar={setAperturaElegida}
+        />
+      </div>
 
       {destino === 'perdido' && (
         <section
@@ -239,7 +323,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
             </p>
           )}
           <p className="mt-1.5 max-w-[48rem]">
-            Se puede deshacer: reactivando el presupuesto vuelve al seguimiento y la plata se
+            Se puede deshacer: reactivando el presupuesto vuelve a las consultas y la plata se
             descuenta de los tesoros.
           </p>
         </section>
@@ -250,7 +334,12 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       </div>
 
       <div className="mt-5">
-        <Button className="w-full sm:w-auto" cargando={enCurso} onClick={confirmar}>
+        <Button
+          className="w-full sm:w-auto"
+          cargando={enCurso}
+          disabled={!listo}
+          onClick={confirmar}
+        >
           <Icono nombre="hand-coins" tamano={18} />
           {textos.verbo}
           {despiece.neta > 0 ? ` ${formatearPesos(despiece.neta)}` : ''}
@@ -263,7 +352,10 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
               {aRepartir
                 .map((pieza) => `${formatearPesos(pieza.monto)} ${pieza.etiqueta.toLowerCase()}`)
                 .join(', ')}
-              . Los saldos de los tesoros se mueven con esto.
+              .{' '}
+              {repartoEnLaApertura
+                ? 'Queda en el libro con su fecha, pero no mueve los tesoros: ya estaba en tus saldos.'
+                : 'Los saldos de los tesoros se mueven con esto.'}
             </>
           ) : (
             <>

@@ -39,6 +39,11 @@ export {
   type BajaDeMovimiento,
   type EdicionDeMovimiento,
 } from './api/mutacion';
+export {
+  CasillaDeLaApertura,
+  TEXTO_DE_LA_APERTURA,
+  type CasillaDeLaAperturaProps,
+} from './ui/CasillaDeLaApertura';
 export { FichaDelMovimiento } from './ui/FichaDelMovimiento';
 export { FilaDelLibro } from './ui/FilaDelLibro';
 export { ListaDelLibro } from './ui/ListaDelLibro';

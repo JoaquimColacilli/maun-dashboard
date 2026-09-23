@@ -42,6 +42,7 @@ export function MarcaDeCategoria({
     rombo: `${CAJA[tamano]} ${TRAZO[tamano]} ${borde} rotate-45 scale-[0.85]`,
     circulo: `${CAJA[tamano]} rounded-pill ${fondo}`,
     barra: `${BARRA[tamano]} ${fondo}`,
+    triangulo: `${CAJA[tamano]} ${fondo} [clip-path:polygon(50%_0%,100%_100%,0%_100%)]`,
   };
 
   return (

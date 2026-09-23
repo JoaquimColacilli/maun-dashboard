@@ -1,6 +1,7 @@
 import {
   calcularLiquidacion,
   centavos,
+  esAnteriorALaApertura,
   estaLiquidado,
   puntosBasicos,
   sumar,
@@ -16,6 +17,7 @@ import {
 import {
   ajustesDe,
   dinero,
+  filasDe,
   liquidacionesDeLaReplica,
   totalesDelProyecto,
   type Replica,
@@ -76,6 +78,34 @@ export function reaperturaDe(proyecto: Proyecto): Reapertura | null {
   };
 }
 
+export function fechaDelCobroPropuesta(
+  replica: Replica,
+  proyecto: Proyecto,
+  hoy: string,
+  pagoFinal: string | null = null,
+): string {
+  const reapertura = reaperturaDe(proyecto);
+  if (reapertura !== null) return reapertura.fecha;
+
+  let ultima: string | null = pagoFinal !== null && pagoFinal !== '' ? pagoFinal : null;
+  for (const pago of filasDe(replica, 'pagos')) {
+    if (pago.proyecto_id !== proyecto.id) continue;
+    if (ultima === null || pago.fecha > ultima) ultima = pago.fecha;
+  }
+  if (ultima === null || ultima > hoy) return hoy;
+  return ultima;
+}
+
+export function repartoEnLaAperturaPropuesto(
+  proyecto: Proyecto,
+  fecha: string,
+  apertura: string | null,
+): boolean {
+  if (!esAnteriorALaApertura(fecha, apertura)) return false;
+  if (reaperturaDe(proyecto) === null) return true;
+  return (proyecto as Partial<Proyecto>).reparto_ya_en_la_apertura === true;
+}
+
 export interface OpcionesDeProyeccion {
   destino?: EstadoLiquidado;
   pagoExtra?: Money;
@@ -84,13 +114,13 @@ export interface OpcionesDeProyeccion {
 export function liquidacionProyectada(
   replica: Replica,
   proyecto: Proyecto,
-  hoy: string,
+  fecha: string,
   { destino = 'cobrado', pagoExtra = centavos(0) }: OpcionesDeProyeccion = {},
 ): Liquidacion {
   const { cobrado, gastos } = totalesDelProyecto(replica, proyecto.id);
   return calcularLiquidacion({
     destino,
-    fecha: hoy,
+    fecha,
     cobrado: sumar(cobrado, pagoExtra),
     gastos,
     ajustes: ajustesDeLaReplica(replica),
@@ -178,7 +208,11 @@ export function despieceDelProyecto(replica: Replica, proyecto: Proyecto, hoy: s
     };
   }
 
-  const proyectada = liquidacionProyectada(replica, proyecto, hoy);
+  const proyectada = liquidacionProyectada(
+    replica,
+    proyecto,
+    fechaDelCobroPropuesta(replica, proyecto, hoy),
+  );
   return {
     modo: 'proyeccion',
     cobrado: proyectada.cobrado,

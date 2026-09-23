@@ -103,6 +103,7 @@ const PROYECTO: FilaDe<'proyectos'> = {
   reapertura_objetivo_fijos_centavos: null,
   reapertura_sueldo_mensual: null,
   reapertura_fecha_cobro: null,
+  reparto_ya_en_la_apertura: false,
   presupuesto_diseno: false,
   presupuesto_despiece: false,
   presupuesto_cotizacion: false,
@@ -161,6 +162,7 @@ function respuestaDeLaBase(): ProyectoGuardado {
         version: 3,
       },
     ],
+    proximos: [],
   };
 }
 

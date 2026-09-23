@@ -32,7 +32,7 @@ describe('las hojas que se abren por ruta', () => {
   it('reconocen sus rutas y la pantalla que va detrás por defecto', () => {
     expect(fondoPorDefecto('/finanzas/nuevo?clase=pago_diezmo')).toBe('/finanzas');
     expect(fondoPorDefecto('/finanzas/0190aaaa-bbbb')).toBe('/finanzas');
-    expect(fondoPorDefecto('/seguimiento/nuevo')).toBe('/seguimiento');
+    expect(fondoPorDefecto('/consultas/nueva')).toBe('/consultas');
     expect(esRutaDeHoja('/proyectos/nuevo')).toBe(false);
     expect(esRutaDeHoja('/finanzas')).toBe(false);
   });
@@ -61,13 +61,13 @@ describe('las hojas que se abren por ruta', () => {
 
   it('abierta directo por URL, va detrás la pantalla por defecto y al cerrar queda en ella', () => {
     render(
-      <MemoryRouter initialEntries={['/seguimiento/nuevo']}>
+      <MemoryRouter initialEntries={['/consultas/nueva']}>
         <Prueba />
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId('fondo')).toHaveTextContent('/seguimiento');
+    expect(screen.getByTestId('fondo')).toHaveTextContent('/consultas');
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
-    expect(screen.getByTestId('ruta')).toHaveTextContent('/seguimiento');
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/consultas');
   });
 });

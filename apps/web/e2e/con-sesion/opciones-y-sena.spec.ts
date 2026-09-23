@@ -4,6 +4,7 @@ import {
   ajustarTaller,
   crearCliente,
   guardarProyectoPorRpc,
+  hoyEnElTaller,
   iniciarSesionDePrueba,
   leerProyecto,
   opcionesDe,
@@ -47,7 +48,7 @@ async function trabajo(
 ): Promise<string> {
   const clienteId = await crearCliente(sesion, `Cliente de ${titulo}`);
   const id = crypto.randomUUID();
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyEnElTaller();
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
       id,

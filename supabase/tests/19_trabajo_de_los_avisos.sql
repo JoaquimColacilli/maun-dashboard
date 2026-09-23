@@ -1,7 +1,7 @@
 -- A quién le toca el aviso de la mañana: la cuenta de la hora local la hace la base con la zona que
 -- eligió cada persona, no el servidor que manda. Y el trabajo que lo pide existe.
 
-select plan(12);
+select plan(14);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller A', tests.id('a')));
@@ -45,6 +45,12 @@ insert into public.anotaciones (fecha, texto) values
   ('2026-09-14', 'Retirar el pulpo'),
   ('2026-10-20', 'Algo del mes que viene');
 insert into public.anotaciones (fecha, texto, hecha) values ('2026-09-14', 'Ya estaba lista', true);
+insert into public.proyectos (id, cliente_id, titulo, estado)
+  values ('aaaaaaaa-0000-7000-8000-000000000003', 'aaaaaaaa-0000-7000-8000-000000000001', 'Placard', 'en_seguimiento');
+insert into public.proximos_contactos (proyecto_id, fecha, etapa_previa, hecho_el, resultado)
+  values ('aaaaaaaa-0000-7000-8000-000000000003', '2026-09-01', 'presupuesto_enviado', '2026-09-02', 'otra_fecha');
+insert into public.proximos_contactos (proyecto_id, fecha, etapa_previa)
+  values ('aaaaaaaa-0000-7000-8000-000000000003', '2026-09-14', 'presupuesto_enviado');
 select tests.registrar('https://push.example/a', 'America/Argentina/Buenos_Aires');
 
 -- M: en Madrid, a las 12:00.
@@ -97,12 +103,25 @@ select is(
     select array[
       jsonb_array_length(e -> 'filas' -> 'proyectos'),
       jsonb_array_length(e -> 'filas' -> 'clientes'),
-      jsonb_array_length(e -> 'filas' -> 'anotaciones')
+      jsonb_array_length(e -> 'filas' -> 'anotaciones'),
+      jsonb_array_length(e -> 'filas' -> 'proximos_contactos')
     ]
     from tests.aviso_de('2026-09-14 10:40:00+00', 'https://push.example/a') as e
   ),
-  array[1, 1, 1],
-  'trae los datos de su taller: el proyecto, su cliente y lo anotado en la ventana que no está tildado'
+  array[2, 1, 1, 1],
+  'trae los datos de su taller: los trabajos (también el que está en seguimiento), su cliente, lo anotado en la ventana que no está tildado y el contacto pendiente, no el ya registrado'
+);
+
+select is(
+  tests.aviso_de('2026-09-14 10:40:00+00', 'https://push.example/a') -> 'preferencias' -> 'seguimientos',
+  '{"activo": true, "anticipacion": 0}'::jsonb,
+  'el aviso trae el seguimiento prendido para el mismo día'
+);
+
+select is(
+  tests.aviso_de('2026-09-14 10:20:00+00', 'https://push.example/m') -> 'preferencias' -> 'seguimientos',
+  '{"activo": true, "anticipacion": 0}'::jsonb,
+  'también a quien guardó sus preferencias con las cuatro claves de antes'
 );
 
 select is(

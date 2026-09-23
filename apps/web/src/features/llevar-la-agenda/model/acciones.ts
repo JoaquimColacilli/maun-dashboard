@@ -13,6 +13,7 @@ import {
 import {
   guardadoDeUnPaso,
   marcaDeImportante,
+  MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
   MUTACION_DE_MARCAS,
   MUTACION_DE_PROYECTO,
   type Proyecto,
@@ -177,6 +178,7 @@ export function marcarDelTrabajo(
   proyecto: Proyecto,
   avisar: Avisador = avisarEnPantalla,
 ): void {
+  if (evento.categoria === 'seguimiento') return;
   const columna = COLUMNA_DE_LA_MARCA[evento.categoria];
   const importante = !evento.importante;
   mandarALaCola(
@@ -191,6 +193,24 @@ export function marcarDelTrabajo(
       previos: marcaDeImportante(columna, evento.importante),
       version: proyecto.version,
     },
+  );
+  avisarLaMarca(avisar, evento.id, importante);
+}
+
+export function marcarElSeguimiento(
+  cliente: QueryClient,
+  evento: EventoDerivado,
+  id: string,
+  avisar: Avisador = avisarEnPantalla,
+): void {
+  const importante = !evento.importante;
+  mandarALaCola(
+    cliente,
+    {
+      ...MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
+      meta: metaDeAvisos('marcaDeLaAgenda', { silencioso: true, sujeto: evento.titulo }),
+    },
+    { id, importante, previa: evento.importante },
   );
   avisarLaMarca(avisar, evento.id, importante);
 }
@@ -223,6 +243,7 @@ function moverElTrabajo(
   fecha: string,
   hoy: string,
 ): boolean {
+  if (evento.categoria === 'seguimiento') return false;
   const proyecto = proyectoEnLaReplica(cliente, evento.proyectoId);
   if (proyecto === undefined) return false;
 

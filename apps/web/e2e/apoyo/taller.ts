@@ -2,6 +2,17 @@ import { createHash } from 'node:crypto';
 
 import { entornoDePrueba, type EntornoDePrueba } from './entorno';
 
+const DIA_EN_EL_TALLER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Argentina/Buenos_Aires',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function hoyEnElTaller(ahora: Date = new Date()): string {
+  return DIA_EN_EL_TALLER.format(ahora);
+}
+
 export interface SesionDePrueba {
   entorno: EntornoDePrueba;
   accessToken: string;
@@ -49,6 +60,15 @@ export async function iniciarSesionDePrueba(): Promise<SesionDePrueba> {
     );
   }
   return { entorno, accessToken, usuarioId, guardada: JSON.stringify(cuerpo) };
+}
+
+export async function householdDePrueba({ entorno, accessToken }: SesionDePrueba): Promise<string> {
+  const filas = (await pedir(entorno, '/rest/v1/households?select=id', { accessToken })) as {
+    id: string;
+  }[];
+  const id = filas[0]?.id;
+  if (id === undefined) throw new Error('La cuenta de prueba no tiene taller.');
+  return id;
 }
 
 export async function vaciarClientes({ entorno, accessToken }: SesionDePrueba): Promise<number> {
@@ -460,6 +480,7 @@ export interface FilaDePago {
   fecha: string;
   concepto: string;
   monto_centavos: number;
+  ya_en_la_apertura: boolean;
 }
 
 export async function pagosDe(
@@ -468,7 +489,7 @@ export async function pagosDe(
 ): Promise<FilaDePago[]> {
   return (await pedir(
     entorno,
-    `/rest/v1/pagos?select=id,fecha,concepto,monto_centavos&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=id`,
+    `/rest/v1/pagos?select=id,fecha,concepto,monto_centavos,ya_en_la_apertura&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=id`,
     { accessToken },
   )) as FilaDePago[];
 }
@@ -493,7 +514,7 @@ export async function contactoPorRpc(
   const { titulo, estado = 'contacto', sena = 0, gasto = 0, visita = null, telefono = '' } = datos;
   const clienteId = await crearCliente(sesion, `Cliente de ${titulo}`, { telefono });
   const id = crypto.randomUUID();
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyEnElTaller();
 
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
@@ -545,6 +566,7 @@ export interface DistribucionCongelada {
   dist_tope_fijos_centavos: number | null;
   dist_fijos_previo_centavos: number | null;
   dist_sueldo_previo_centavos: number | null;
+  reparto_ya_en_la_apertura: boolean;
 }
 
 export async function distribucionDe(
@@ -553,7 +575,7 @@ export async function distribucionDe(
 ): Promise<DistribucionCongelada | undefined> {
   const filas = (await pedir(
     entorno,
-    `/rest/v1/proyectos?select=estado,version,fecha_cobro,dist_cobrado_centavos,dist_gastos_centavos,dist_diezmo_centavos,dist_sueldo_centavos,dist_fijos_centavos,dist_remanente_centavos,dist_tope_fijos_centavos,dist_fijos_previo_centavos,dist_sueldo_previo_centavos&id=eq.${proyectoId}`,
+    `/rest/v1/proyectos?select=estado,version,fecha_cobro,dist_cobrado_centavos,dist_gastos_centavos,dist_diezmo_centavos,dist_sueldo_centavos,dist_fijos_centavos,dist_remanente_centavos,dist_tope_fijos_centavos,dist_fijos_previo_centavos,dist_sueldo_previo_centavos,reparto_ya_en_la_apertura&id=eq.${proyectoId}`,
     { accessToken },
   )) as DistribucionCongelada[];
   return filas[0];
@@ -711,6 +733,7 @@ export async function guardarProyectoPorRpc(
     gastos: unknown[];
     opciones?: unknown[];
     necesidades?: unknown[];
+    proximos?: unknown[];
   },
 ): Promise<unknown> {
   return pedir(entorno, '/rest/v1/rpc/guardar_proyecto', {
@@ -722,8 +745,65 @@ export async function guardarProyectoPorRpc(
       p_gastos: pedido.gastos,
       p_opciones: pedido.opciones ?? null,
       p_necesidades: pedido.necesidades ?? null,
+      p_proximos: pedido.proximos ?? null,
     }),
   });
+}
+
+export interface FilaDeProximoContacto {
+  id: string;
+  fecha: string;
+  nota: string;
+  etapa_previa: string;
+  hecho_el: string | null;
+  resultado: string | null;
+  respuesta: string;
+  importante: boolean;
+}
+
+export async function proximosContactosDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDeProximoContacto[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/proximos_contactos?select=id,fecha,nota,etapa_previa,hecho_el,resultado,respuesta,importante&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as FilaDeProximoContacto[];
+}
+
+export async function seguimientoPorRpc(
+  sesion: SesionDePrueba,
+  datos: { titulo: string; fecha: string; nota?: string; telefono?: string },
+): Promise<ContactoDePrueba> {
+  const contacto = await contactoPorRpc(sesion, {
+    titulo: datos.titulo,
+    estado: 'presupuesto_enviado',
+    telefono: datos.telefono,
+  });
+  const fila = await leerProyecto(sesion, datos.titulo);
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id: contacto.id,
+      version: fila?.version ?? 1,
+      cliente_id: contacto.clienteId,
+      titulo: datos.titulo,
+      estado: 'en_seguimiento',
+      presupuesto_centavos: null,
+      comprobante: 'sin_comprobante',
+    },
+    pagos: [],
+    gastos: [],
+    proximos: [
+      {
+        id: crypto.randomUUID(),
+        fecha: datos.fecha,
+        nota: datos.nota ?? '',
+        etapa_previa: 'presupuesto_enviado',
+      },
+    ],
+  });
+  return contacto;
 }
 
 export interface FilaDeNecesidad {

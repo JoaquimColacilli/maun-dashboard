@@ -123,7 +123,7 @@ select set_eq(
     'dist_objetivo_sueldo_centavos', 'dist_objetivo_fijos_centavos', 'dist_sueldo_mensual',
     'dist_sueldo_previo_centavos', 'dist_fijos_previo_centavos', 'dist_liquidado_at',
     'reapertura_objetivo_sueldo_centavos', 'reapertura_objetivo_fijos_centavos',
-    'reapertura_sueldo_mensual', 'reapertura_fecha_cobro',
+    'reapertura_sueldo_mensual', 'reapertura_fecha_cobro', 'reparto_ya_en_la_apertura',
     'presupuesto_diseno', 'presupuesto_despiece', 'presupuesto_cotizacion', 'presupuesto_pdf',
     'visita_hecha', 'visita_importante', 'entrega_importante', 'presupuesto_importante',
     'sena_bp', 'entrega_hora', 'visita_hora',

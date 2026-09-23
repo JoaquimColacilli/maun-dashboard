@@ -2,7 +2,7 @@
 -- la cuenta, y que nada de esto sea parte de la réplica del household ni se lea por fuera de las
 -- funciones.
 
-select plan(24);
+select plan(27);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('b', tests.crear_usuario('b@maun.test'));
@@ -44,7 +44,7 @@ select is(
     'preferencias', jsonb_build_object(
       'zona', 'America/Argentina/Buenos_Aires',
       'hora', '07:30',
-      'avisos', '{"entregas": {"activo": true, "anticipacion": 2}, "visitas": {"activo": true, "anticipacion": 1}, "presupuestos": {"activo": true, "anticipacion": 1}, "anotaciones": {"activo": false, "anticipacion": 0}}'::jsonb
+      'avisos', '{"entregas": {"activo": true, "anticipacion": 2}, "visitas": {"activo": true, "anticipacion": 1}, "presupuestos": {"activo": true, "anticipacion": 1}, "seguimientos": {"activo": true, "anticipacion": 0}, "anotaciones": {"activo": false, "anticipacion": 0}}'::jsonb
     )
   ),
   'registrar el dispositivo lo deja suscripto y crea las preferencias con la zona que eligió'
@@ -160,6 +160,28 @@ select is(
   ) -> 'preferencias' ->> 'hora',
   '06:30',
   'la hora, la zona y qué avisa se guardan'
+);
+
+select is(
+  public.estado_de_mis_avisos(null) -> 'preferencias' -> 'avisos' -> 'seguimientos',
+  '{"activo": true, "anticipacion": 0}'::jsonb,
+  'lo guardado con las cuatro claves de antes, como hace un bundle viejo, se lee con el seguimiento prendido para el mismo día'
+);
+
+select is(
+  public.guardar_preferencias_de_avisos(
+    'America/Argentina/Cordoba',
+    '06:30',
+    '{"entregas": {"activo": true, "anticipacion": 3}, "visitas": {"activo": false, "anticipacion": 1}, "presupuestos": {"activo": true, "anticipacion": 0}, "seguimientos": {"activo": false, "anticipacion": 1}, "anotaciones": {"activo": true, "anticipacion": 1}}'
+  ) -> 'preferencias' -> 'avisos' -> 'seguimientos',
+  '{"activo": false, "anticipacion": 1}'::jsonb,
+  'con las cinco claves, el seguimiento se apaga y se guarda como está'
+);
+
+select throws_ok(
+  $$ select public.guardar_preferencias_de_avisos('America/Argentina/Cordoba', '06:30', '{"entregas": {"activo": true, "anticipacion": 3}, "visitas": {"activo": false, "anticipacion": 1}, "presupuestos": {"activo": true, "anticipacion": 0}, "seguimientos": {"activo": false, "anticipacion": 1}, "anotaciones": {"activo": true, "anticipacion": 1}, "otra": {"activo": true, "anticipacion": 1}}') $$,
+  '22023', 'Las preferencias de avisos no tienen la forma esperada',
+  'una clave que no existe se rechaza'
 );
 
 select throws_ok(

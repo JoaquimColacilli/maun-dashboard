@@ -8,7 +8,7 @@ describe('seActualizaTirando', () => {
   it('las pantallas que leen de la réplica tienen el gesto', () => {
     for (const ruta of [
       '/',
-      '/seguimiento',
+      '/consultas',
       '/proyectos',
       '/clientes',
       '/finanzas',
@@ -40,6 +40,6 @@ describe('seActualizaTirando', () => {
   it('una ruta de hoja no es una pantalla con el gesto', () => {
     expect(seActualizaTirando('/finanzas/nuevo')).toBe(false);
     expect(seActualizaTirando(`/finanzas/${ID}`)).toBe(false);
-    expect(seActualizaTirando('/seguimiento/nuevo')).toBe(false);
+    expect(seActualizaTirando('/consultas/nueva')).toBe(false);
   });
 });

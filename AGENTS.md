@@ -26,6 +26,21 @@ La app le muestra al dueño qué cambió cada vez que se actualiza. Una versión
 
 Las dependencias van en una sola dirección: `apps/web` usa `ui`, `domain` y `db`; `db` puede usar `domain`; `ui` y `domain` no usan nada del monorepo. Cada paquete tiene su `CLAUDE.md` con las reglas locales: el más cercano al archivo que editás es el que manda.
 
+## Glosario
+
+Las palabras de la app son las del dueño. En el código del front se usan las mismas; en la base quedan los nombres de antes, que no se renombran por un cambio de texto (ADR 0064).
+
+| Palabra          | Qué es                                                                                                                                                                                                | En la base                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Consultas        | Los trabajos que todavía no se aprobaron: contacto, estimativo enviado, relevamiento, a presupuestar y presupuesto enviado. Hasta el ADR 0064 esta pestaña se llamaba Seguimiento. Ruta `/consultas`. | Los cinco estados del embudo; tests y funciones viejas dicen «seguimiento» (`20_embudo_del_seguimiento`). |
+| Seguimiento      | Los que dijeron «por ahora no»: el trabajo sigue vivo y tiene el día en que hay que volver a escribirle. Pestaña entre Consultas y Activos, `/proyectos?etapa=seguimiento`.                           | Estado `en_seguimiento` y la tabla `proximos_contactos`.                                                  |
+| Próximo contacto | El día en que se le vuelve a escribir a alguien en seguimiento. Registrarlo lo deja como historia, con el día, el resultado y lo que contestó.                                                        | Una fila de `proximos_contactos`; a lo sumo una pendiente por trabajo.                                    |
+| Activos          | Los trabajos aprobados, en curso o entregados sin cobrar.                                                                                                                                             | `en_curso` y `entregado`.                                                                                 |
+| Historial        | Lo cobrado y lo perdido.                                                                                                                                                                              | `cobrado` y `perdido`.                                                                                    |
+| Perdido          | El cliente dijo que no. Se cierra con lo que corresponde a la seña retenida.                                                                                                                          | `perdido`, por `liquidar_proyecto`.                                                                       |
+| Apertura         | La foto de la plata del día en que empezó con la app (2026-09-14). Lo anterior a esa fecha puede estar «ya en los saldos» y no mover los tesoros (ADR 0063).                                          | Movimientos de ajuste con categoría `Apertura`; `ya_en_la_apertura` y `reparto_ya_en_la_apertura`.        |
+| Aviso de cambios | El timbre que le avisa a la app abierta que algo cambió, para que pida el delta. No lleva datos (ADR 0065).                                                                                           | Trigger `avisar_los_cambios`, canal `cambios:<household_id>`.                                             |
+
 ## Comandos (desde la raíz)
 
 ```sh

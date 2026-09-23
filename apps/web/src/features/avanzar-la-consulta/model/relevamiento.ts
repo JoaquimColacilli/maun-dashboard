@@ -1,4 +1,4 @@
-import { vencimientoDelPresupuesto } from '@maun/domain';
+import { esAnteriorALaApertura, vencimientoDelPresupuesto } from '@maun/domain';
 
 import type { Proyecto } from '@/entities/proyecto';
 import type { CambiosDeProyecto, PagoParaGuardar } from '@/shared/api';
@@ -11,6 +11,7 @@ export interface ValoresDelRelevamiento {
   vencimiento: string;
   vencimientoAMano: boolean;
   pago: number | null;
+  pagoEnLaApertura: boolean;
 }
 
 export function valoresDelRelevamiento(proyecto: Proyecto, hoy: string): ValoresDelRelevamiento {
@@ -21,6 +22,7 @@ export function valoresDelRelevamiento(proyecto: Proyecto, hoy: string): Valores
     vencimiento: vencimientoDelPresupuesto(dia),
     vencimientoAMano: false,
     pago: null,
+    pagoEnLaApertura: true,
   };
 }
 
@@ -50,9 +52,22 @@ export function errorDelDia(valores: ValoresDelRelevamiento, hoy: string): strin
   return undefined;
 }
 
-function pagoDeLaVisita(monto: number | null, id: string, fecha: string): PagoParaGuardar[] {
+function pagoDeLaVisita(
+  monto: number | null,
+  id: string,
+  fecha: string,
+  yaEnLaApertura: boolean,
+): PagoParaGuardar[] {
   if (monto === null || monto <= 0) return [];
-  return [{ id, fecha, concepto: CONCEPTO_DE_LA_SENA, monto_centavos: monto }];
+  return [
+    {
+      id,
+      fecha,
+      concepto: CONCEPTO_DE_LA_SENA,
+      monto_centavos: monto,
+      ya_en_la_apertura: yaEnLaApertura,
+    },
+  ];
 }
 
 export interface PasoDelRelevamiento {
@@ -63,6 +78,7 @@ export interface PasoDelRelevamiento {
 export function pasoDelRelevamiento(
   valores: ValoresDelRelevamiento,
   idDelPago: string,
+  apertura: string | null = null,
 ): PasoDelRelevamiento {
   return {
     cambios: {
@@ -71,7 +87,12 @@ export function pasoDelRelevamiento(
       visita_hecha: true,
       vencimiento_presupuesto: fechaDelEnlace(valores.vencimiento) ?? null,
     },
-    pagos: pagoDeLaVisita(valores.pago, idDelPago, valores.dia),
+    pagos: pagoDeLaVisita(
+      valores.pago,
+      idDelPago,
+      valores.dia,
+      valores.pagoEnLaApertura && esAnteriorALaApertura(valores.dia, apertura),
+    ),
   };
 }
 
@@ -84,7 +105,8 @@ export function cambiosAlPasarAPresupuestar(proyecto: Proyecto, hoy: string): Ca
 export function pagoAntesDePresupuestar(
   monto: number | null,
   idDelPago: string,
-  hoy: string,
+  dia: string,
+  yaEnLaApertura = false,
 ): PagoParaGuardar[] {
-  return pagoDeLaVisita(monto, idDelPago, hoy);
+  return pagoDeLaVisita(monto, idDelPago, dia, yaEnLaApertura);
 }

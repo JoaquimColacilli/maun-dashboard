@@ -1,8 +1,10 @@
+import { esAnteriorALaApertura } from '@maun/domain';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 
+import { CasillaDeLaApertura } from '@/entities/movimiento';
 import type { Proyecto } from '@/entities/proyecto';
 import type { CambiosDeProyecto, PagoParaGuardar } from '@/shared/api';
-import { hoyLocal, uuidv7 } from '@/shared/lib';
+import { errorDeLaFechaDeLaPlata, hoyEnElTaller, uuidv7 } from '@/shared/lib';
 import { Button, Campo, FilaDeAcciones, MoneyInput } from '@/shared/ui';
 
 import {
@@ -16,6 +18,7 @@ import {
 export interface FormularioDelRelevamientoProps {
   proyecto: Proyecto;
   conPago: boolean;
+  apertura: string | null;
   alListo: (cambios: CambiosDeProyecto, dia: string, pagos: PagoParaGuardar[]) => void;
   alCancelar: () => void;
 }
@@ -23,10 +26,11 @@ export interface FormularioDelRelevamientoProps {
 export function FormularioDelRelevamiento({
   proyecto,
   conPago,
+  apertura,
   alListo,
   alCancelar,
 }: FormularioDelRelevamientoProps) {
-  const hoy = hoyLocal();
+  const hoy = hoyEnElTaller();
   const [valores, setValores] = useState(() => valoresDelRelevamiento(proyecto, hoy));
   const [error, setError] = useState<string | undefined>(undefined);
   const campoDelDia = useRef<HTMLInputElement>(null);
@@ -41,7 +45,7 @@ export function FormularioDelRelevamiento({
     const encontrado = errorDelDia(valores, hoy);
     setError(encontrado);
     if (encontrado !== undefined) return;
-    const { cambios, pagos } = pasoDelRelevamiento(valores, idDelPago.current);
+    const { cambios, pagos } = pasoDelRelevamiento(valores, idDelPago.current, apertura);
     alListo(cambios, valores.dia, pagos);
   }
 
@@ -79,6 +83,16 @@ export function FormularioDelRelevamiento({
             setValores((previos) => ({ ...previos, pago }));
           }}
           ayuda="Si no te la pagó, lo que sigue es un estimativo. Igual podés presupuestar."
+        />
+      )}
+      {conPago && (valores.pago ?? 0) > 0 && (
+        <CasillaDeLaApertura
+          fecha={valores.dia}
+          apertura={apertura}
+          marcada={valores.pagoEnLaApertura}
+          alCambiar={(marcada) => {
+            setValores((previos) => ({ ...previos, pagoEnLaApertura: marcada }));
+          }}
         />
       )}
       <FilaDeAcciones>
@@ -148,13 +162,72 @@ export function FormularioDelPresupuesto(props: FormularioDeUnMontoProps) {
   );
 }
 
-export function FormularioDelPago(props: FormularioDeUnMontoProps) {
+export interface FormularioDelPagoProps {
+  apertura: string | null;
+  alListo: (monto: number | null, dia: string, yaEnLaApertura: boolean) => void;
+  alCancelar: () => void;
+}
+
+export function FormularioDelPago({ apertura, alListo, alCancelar }: FormularioDelPagoProps) {
+  const hoy = hoyEnElTaller();
+  const [monto, setMonto] = useState<number | null>(null);
+  const [dia, setDia] = useState(hoy);
+  const [marcada, setMarcada] = useState(true);
+  const [error, setError] = useState<string | undefined>(undefined);
+  const campo = useRef<HTMLInputElement>(null);
+  const hayPago = monto !== null && monto > 0;
+
+  useEffect(() => {
+    campo.current?.focus();
+  }, []);
+
   return (
-    <FormularioDeUnMonto
-      {...props}
-      etiqueta="Cuánto te pagó"
-      ayuda="Si todavía no te pagó y vas a presupuestar igual, dejalo vacío."
-      enviar="Pasar a presupuestar"
-    />
+    <form
+      noValidate
+      onSubmit={(evento) => {
+        evento.preventDefault();
+        const encontrado = hayPago ? errorDeLaFechaDeLaPlata(dia, hoy) : undefined;
+        setError(encontrado);
+        if (encontrado !== undefined) return;
+        alListo(monto, dia, marcada && esAnteriorALaApertura(dia, apertura));
+      }}
+      className="mt-3 flex flex-col gap-2.5"
+    >
+      <MoneyInput
+        ref={campo}
+        etiqueta="Cuánto te pagó"
+        placeholder="Opcional"
+        value={monto}
+        onChange={setMonto}
+        ayuda="Si todavía no te pagó y vas a presupuestar igual, dejalo vacío."
+      />
+      {hayPago && (
+        <>
+          <Campo
+            etiqueta="Qué día te pagó"
+            type="date"
+            max={hoy}
+            value={dia}
+            error={error}
+            onChange={(evento) => {
+              setDia(evento.target.value);
+              setError(undefined);
+            }}
+          />
+          <CasillaDeLaApertura
+            fecha={dia}
+            apertura={apertura}
+            marcada={marcada}
+            alCambiar={setMarcada}
+          />
+        </>
+      )}
+      <FilaDeAcciones>
+        <Button type="submit">Pasar a presupuestar</Button>
+        <Button variant="secundario" onClick={alCancelar}>
+          Todavía no
+        </Button>
+      </FilaDeAcciones>
+    </form>
   );
 }

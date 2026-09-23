@@ -15,13 +15,13 @@ update public.movimientos set deleted_at = now() where id = 'aaaaaaaa-0000-7000-
 
 select is(
   (select array_agg(k order by k) from jsonb_object_keys(public.bootstrap()) as k),
-  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'encuestas_enviadas', 'enlaces_publicos', 'gastos', 'household_members', 'households', 'movimientos', 'necesidades', 'opciones_de_presupuesto', 'pagos', 'preguntas', 'proyectos', 'renglones_de_respuesta', 'respuestas'],
+  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'encuestas_enviadas', 'enlaces_publicos', 'gastos', 'household_members', 'households', 'movimientos', 'necesidades', 'opciones_de_presupuesto', 'pagos', 'preguntas', 'proximos_contactos', 'proyectos', 'renglones_de_respuesta', 'respuestas'],
   'bootstrap() trae el cursor y todas las tablas sincronizables'
 );
 
 select is(
   (select array_agg(k order by k) from jsonb_object_keys(public.delta(now())) as k),
-  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'encuestas_enviadas', 'enlaces_publicos', 'gastos', 'household_members', 'households', 'movimientos', 'necesidades', 'opciones_de_presupuesto', 'pagos', 'preguntas', 'proyectos', 'renglones_de_respuesta', 'respuestas'],
+  array['ajustes', 'anotaciones', 'archivos', 'clientes', 'cursor', 'encuestas_enviadas', 'enlaces_publicos', 'gastos', 'household_members', 'households', 'movimientos', 'necesidades', 'opciones_de_presupuesto', 'pagos', 'preguntas', 'proximos_contactos', 'proyectos', 'renglones_de_respuesta', 'respuestas'],
   'delta() trae las mismas claves que bootstrap()'
 );
 

@@ -164,7 +164,7 @@ export function planDeLiquidacion(
 
   if (reapertura !== null) {
     return {
-      fecha: reapertura.fecha,
+      fecha,
       diezmoBp: DIEZMO,
       objetivos: {
         sueldo: reapertura.objetivoSueldo,

@@ -9,7 +9,7 @@ import {
   gastosDelProyecto,
   opcionesDelProyecto,
   pagosDelProyecto,
-  RUTA_DE_SEGUIMIENTO,
+  RUTA_DE_CONSULTAS,
   rutaDeCierre,
   rutaDeEdicion,
   senaDelProyecto,
@@ -17,7 +17,7 @@ import {
   situacionDelContacto,
   ultimasActividades,
   yaSeRelevo,
-  type EtapaDeSeguimiento,
+  type EtapaDeConsulta,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
@@ -29,7 +29,8 @@ import {
   NotasDelProyecto,
   OpcionesDelTrabajo,
 } from '@/features/editar-proyecto';
-import { AvanceDelContacto, HojaDeContacto } from '@/features/seguir-contacto';
+import { AvanceDelContacto, HojaDeContacto } from '@/features/avanzar-la-consulta';
+import { HojaDePonerEnSeguimiento } from '@/features/hacer-el-seguimiento';
 import {
   fechaLarga,
   formatearPesos,
@@ -38,7 +39,15 @@ import {
   rutaDeCompartir,
   useAvisosDelProyecto,
 } from '@/shared/lib';
-import { Button, ConSalida, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
+import {
+  Button,
+  ConSalida,
+  FilaDeAcciones,
+  Icono,
+  Pagina,
+  PanelDeAvisos,
+  PrincipalYApoyo,
+} from '@/shared/ui';
 
 function Dato({
   clave,
@@ -62,11 +71,11 @@ function Dato({
   );
 }
 
-type HojaAbierta = 'contacto' | 'visita' | null;
+type HojaAbierta = 'contacto' | 'visita' | 'por-ahora-no' | null;
 
 export interface FichaDeContactoProps {
   resumen: ResumenDeProyecto;
-  etapa: EtapaDeSeguimiento;
+  etapa: EtapaDeConsulta;
 }
 
 export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
@@ -93,11 +102,11 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
         <Link
-          to={RUTA_DE_SEGUIMIENTO}
+          to={RUTA_DE_CONSULTAS}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Seguimiento
+          Consultas
         </Link>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
@@ -116,7 +125,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             proyecto={proyecto}
             sustantivo="contacto"
             alBorrar={() => {
-              void navegar(RUTA_DE_SEGUIMIENTO);
+              void navegar(RUTA_DE_CONSULTAS);
             }}
           />
           <Button
@@ -277,32 +286,48 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
           <section aria-label="Si no sale" className="rounded-panel bg-surface-3 px-4 py-3.5">
             <h2 className="text-section font-semibold">Si no sale</h2>
             <p className="mt-1 text-label leading-relaxed text-text-2">
+              Si te dijo «por ahora no», pasalo a seguimiento con el día en que le volvés a
+              escribir: sale de tus consultas y la agenda te avisa. Si no va,{' '}
               {resumen.cobrado > 0
-                ? `La seña de ${formatearPesos(resumen.cobrado)} se liquida como ingreso del taller, y el contacto pasa al historial. Se puede reactivar.`
-                : 'Pasa al historial sin mover plata. Se puede reactivar.'}
+                ? `la seña de ${formatearPesos(resumen.cobrado)} se liquida como ingreso del taller, y el contacto pasa al historial. Se puede reactivar.`
+                : 'pasa al historial sin mover plata. Se puede reactivar.'}
             </p>
-            <Button
-              variant="secundario"
-              className="mt-2.5"
-              onClick={() => {
-                void navegar(rutaDeCierre(proyecto.id));
-              }}
-            >
-              <Icono nombre="x" tamano={16} />
-              Dar por perdido
-            </Button>
+            <FilaDeAcciones className="mt-2.5">
+              <Button
+                variant="secundario"
+                onClick={() => {
+                  setEditando('por-ahora-no');
+                }}
+              >
+                <Icono nombre="clock" tamano={16} />
+                Por ahora no
+              </Button>
+              <Button
+                variant="secundario"
+                onClick={() => {
+                  void navegar(rutaDeCierre(proyecto.id));
+                }}
+              >
+                <Icono nombre="x" tamano={16} />
+                Dar por perdido
+              </Button>
+            </FilaDeAcciones>
           </section>
         </div>
       </PrincipalYApoyo>
 
       <ConSalida valor={editando}>
-        {(abierta) => (
-          <HojaDeContacto
-            proyecto={proyecto}
-            enfocarLaVisita={abierta === 'visita'}
-            alCerrar={cerrarLaHoja}
-          />
-        )}
+        {(abierta) =>
+          abierta === 'por-ahora-no' ? (
+            <HojaDePonerEnSeguimiento proyecto={proyecto} nombre={nombre} alCerrar={cerrarLaHoja} />
+          ) : (
+            <HojaDeContacto
+              proyecto={proyecto}
+              enfocarLaVisita={abierta === 'visita'}
+              alCerrar={cerrarLaHoja}
+            />
+          )
+        }
       </ConSalida>
     </Pagina>
   );

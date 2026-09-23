@@ -88,6 +88,7 @@ export function lineasDelTaller(replica: Replica): LineaDelTaller[] {
 }
 
 export function efectoDeLaLinea(linea: LineaDelLibro, tesoro: Tesoro | 'todos'): Money {
+  if (linea.yaEnLaApertura) return CERO;
   if (tesoro === 'todos') {
     if (linea.desde !== null && linea.hacia !== null) return CERO;
     return linea.hacia === null ? restar(CERO, linea.monto) : linea.monto;

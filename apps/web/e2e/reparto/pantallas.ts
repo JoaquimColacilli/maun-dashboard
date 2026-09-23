@@ -37,7 +37,13 @@ async function laVistaDelCliente(page: Page): Promise<void> {
 export const PANTALLAS: readonly Pantalla[] = [
   { clave: 'inicio', nombre: 'Inicio', ruta: () => '/', listo: enElMarco },
   { clave: 'agenda', nombre: 'Agenda', ruta: () => '/agenda', listo: enElMarco },
-  { clave: 'seguimiento', nombre: 'Seguimiento', ruta: () => '/seguimiento', listo: enElMarco },
+  { clave: 'consultas', nombre: 'Consultas', ruta: () => '/consultas', listo: enElMarco },
+  {
+    clave: 'seguimiento',
+    nombre: 'Proyectos: seguimiento',
+    ruta: () => '/proyectos?etapa=seguimiento',
+    listo: enElMarco,
+  },
   { clave: 'activos', nombre: 'Proyectos: activos', ruta: () => '/proyectos', listo: enElMarco },
   {
     clave: 'historial',
@@ -61,6 +67,12 @@ export const PANTALLAS: readonly Pantalla[] = [
     clave: 'contacto',
     nombre: 'Ficha de un contacto',
     ruta: (t) => `/proyectos/${t.contacto}`,
+    listo: enElMarco,
+  },
+  {
+    clave: 'en-seguimiento',
+    nombre: 'Ficha de un trabajo en seguimiento',
+    ruta: (t) => `/proyectos/${t.enSeguimiento}`,
     listo: enElMarco,
   },
   {
@@ -146,7 +158,7 @@ export const PANTALLAS: readonly Pantalla[] = [
     clave: 'contacto-nuevo',
     sinMarco: HOJA,
     nombre: 'Hoja: cargar un contacto',
-    ruta: () => '/seguimiento/nuevo',
+    ruta: () => '/consultas/nueva',
     listo: conHoja,
   },
   {

@@ -8,6 +8,7 @@ import {
   esEstado,
   estaLiquidado,
   esLinkDeMercadoPago,
+  fechaDeApertura,
   esLinkDeResena,
   esNombreDeNecesidad,
   formasDeCobro,
@@ -814,6 +815,7 @@ export interface FilaProyecto {
   reapertura_objetivo_fijos: string | null;
   reapertura_sueldo_mensual: boolean | null;
   reapertura_fecha: string | null;
+  en_la_apertura: boolean;
 }
 
 const COLUMNAS = `p.id, p.estado::text as estado, p.version, p.fecha_cobro::text as fecha_cobro,
@@ -829,7 +831,8 @@ const COLUMNAS = `p.id, p.estado::text as estado, p.version, p.fecha_cobro::text
   (extract(epoch from p.dist_liquidado_at) * 1000)::float8 as liquidado_en,
   p.reapertura_objetivo_sueldo_centavos::text as reapertura_objetivo_sueldo,
   p.reapertura_objetivo_fijos_centavos::text as reapertura_objetivo_fijos,
-  p.reapertura_sueldo_mensual, p.reapertura_fecha_cobro::text as reapertura_fecha`;
+  p.reapertura_sueldo_mensual, p.reapertura_fecha_cobro::text as reapertura_fecha,
+  p.reparto_ya_en_la_apertura as en_la_apertura`;
 
 function entero(valor: string | null): number | null {
   return valor === null ? null : Number(valor);
@@ -858,10 +861,11 @@ function congelado(fila: FilaProyecto): string {
     entero(fila.reapertura_objetivo_fijos),
     fila.reapertura_sueldo_mensual,
     fila.reapertura_fecha,
+    fila.en_la_apertura,
   ]);
 }
 
-function esperadoAlLiquidar(liquidacion: Liquidacion): string {
+function esperadoAlLiquidar(liquidacion: Liquidacion, enLaApertura: boolean): string {
   return JSON.stringify([
     liquidacion.destino,
     liquidacion.fecha,
@@ -884,6 +888,7 @@ function esperadoAlLiquidar(liquidacion: Liquidacion): string {
     null,
     null,
     null,
+    enLaApertura,
   ]);
 }
 
@@ -897,6 +902,7 @@ function esperadoAlRevertir(antes: FilaProyecto, hacia: EstadoProyecto): string 
     conFoto ? entero(antes.objetivo_fijos) : null,
     conFoto ? antes.sueldo_mensual : null,
     conFoto ? antes.fecha_cobro : null,
+    conFoto ? antes.en_la_apertura : false,
   ]);
 }
 
@@ -984,6 +990,7 @@ export interface LiquidacionPreparada {
   version: number;
   esperado: Liquidacion;
   vista: Liquidacion;
+  enLaApertura: boolean;
 }
 
 export async function prepararLiquidacion(
@@ -993,6 +1000,7 @@ export async function prepararLiquidacion(
   destino: EstadoLiquidado,
   fecha: string,
   sinVer: readonly string[] = [],
+  enLaApertura = false,
 ): Promise<LiquidacionPreparada> {
   const actual = await leerProyecto(cliente, proyectoId);
   const otras = await leerProyectos(
@@ -1022,12 +1030,12 @@ export async function prepararLiquidacion(
           liquidaciones: deLasOtras(otras.filter((fila) => !sinVer.includes(fila.id))),
         });
 
-  return { proyectoId, version: actual.version, esperado, vista };
+  return { proyectoId, version: actual.version, esperado, vista, enLaApertura };
 }
 
 export function liquidarPreparada(
   cliente: pg.Client,
-  { proyectoId, version, vista }: LiquidacionPreparada,
+  { proyectoId, version, vista, enLaApertura }: LiquidacionPreparada,
 ): Promise<pg.QueryResult<FilaProyecto>> {
   const comunes = [
     proyectoId,
@@ -1042,15 +1050,15 @@ export function liquidarPreparada(
     vista.fijos,
     vista.remanente,
   ];
-  const acumulado = [vista.previo.sueldo, vista.previo.fijos];
+  const acumulado = [vista.previo.sueldo, vista.previo.fijos, enLaApertura];
 
   return vista.destino === 'cobrado'
     ? cliente.query<FilaProyecto>(
-        `select ${COLUMNAS} from public.cobrar_proyecto($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) p`,
+        `select ${COLUMNAS} from public.cobrar_proyecto($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) p`,
         [...comunes, ...acumulado],
       )
     : cliente.query<FilaProyecto>(
-        `select ${COLUMNAS} from public.cerrar_perdido($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) p`,
+        `select ${COLUMNAS} from public.cerrar_perdido($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) p`,
         [...comunes, vista.diezmoBp, ...acumulado],
       );
 }
@@ -1067,6 +1075,8 @@ interface ProyectoDeEscenario {
   estado: EstadoProyecto;
   pagos: number[];
   gastos: number[];
+  fechaDeLosPagos?: string;
+  pagosEnLaApertura?: boolean;
   borrado?: boolean;
   pagosBorrados?: number[];
   gastosBorrados?: number[];
@@ -1084,7 +1094,13 @@ interface MovimientoDeEscenario {
 }
 
 type Paso =
-  | { liquidar: EstadoLiquidado; proyecto: string; fecha: string; sinVer?: string[] }
+  | {
+      liquidar: EstadoLiquidado;
+      proyecto: string;
+      fecha: string;
+      sinVer?: string[];
+      enLaApertura?: boolean;
+    }
   | { revertir: EstadoProyecto; proyecto: string }
   | { pago: number; proyecto: string }
   | { ajustes: { sueldo?: number; fijos?: number } };
@@ -1095,6 +1111,7 @@ export interface EscenarioDeLiquidacion {
   proyectos: Readonly<Record<string, ProyectoDeEscenario>>;
   pasos: Paso[];
   movimientos?: MovimientoDeEscenario[];
+  apertura?: string;
 }
 
 function unCobro(
@@ -1235,6 +1252,82 @@ export const ESCENARIOS_DE_LIQUIDACION: EscenarioDeLiquidacion[] = [
     ],
   },
   {
+    nombre:
+      'un por ahora no con seña se da por perdido, se reactiva a una consulta y se cierra otra vez',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {
+      enSeguimiento: { estado: 'en_seguimiento', pagos: [4_000_000], gastos: [] },
+      p1: entregado(200_000_000),
+    },
+    pasos: [
+      { liquidar: 'perdido', proyecto: 'enSeguimiento', fecha: '2026-09-18' },
+      { liquidar: 'cobrado', proyecto: 'p1', fecha: '2026-09-19' },
+      { revertir: 'presupuesto_enviado', proyecto: 'enSeguimiento' },
+      { liquidar: 'perdido', proyecto: 'enSeguimiento', fecha: '2026-10-03' },
+    ],
+  },
+  {
+    nombre: 'dos cobros en julio y uno en septiembre: los fijos se topean con el mes de cada fecha',
+    ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
+    proyectos: {
+      p1: entregado(40_000_000),
+      p2: entregado(80_000_000),
+      p3: entregado(60_000_000),
+    },
+    pasos: [
+      { liquidar: 'cobrado', proyecto: 'p1', fecha: '2026-07-10' },
+      { liquidar: 'cobrado', proyecto: 'p2', fecha: '2026-07-28' },
+      { liquidar: 'cobrado', proyecto: 'p3', fecha: '2026-09-05' },
+    ],
+  },
+  {
+    nombre:
+      'reabrir un cobro de agosto y volver a cobrarlo en septiembre: el reparto pasa al mes nuevo con los objetivos del original',
+    ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
+    proyectos: {
+      p1: entregado(70_000_000),
+      p2: entregado(100_000_000),
+      p3: entregado(100_000_000),
+    },
+    pasos: [
+      { liquidar: 'cobrado', proyecto: 'p1', fecha: '2026-08-20' },
+      { liquidar: 'cobrado', proyecto: 'p2', fecha: '2026-09-03' },
+      { revertir: 'entregado', proyecto: 'p1' },
+      { ajustes: { sueldo: 90_000_000, fijos: 99_000_000 } },
+      { liquidar: 'cobrado', proyecto: 'p1', fecha: '2026-09-10' },
+      { liquidar: 'cobrado', proyecto: 'p3', fecha: '2026-08-25' },
+    ],
+  },
+  {
+    nombre:
+      'un cobro y un perdido de antes de la apertura, marcados: se congelan con la marca, reabrir la conserva y reactivar la apaga',
+    apertura: '2026-09-14',
+    ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
+    proyectos: {
+      viejo: {
+        estado: 'entregado',
+        pagos: [60_000_000],
+        gastos: [],
+        fechaDeLosPagos: '2026-07-01',
+        pagosEnLaApertura: true,
+      },
+      lead: {
+        estado: 'presupuesto_enviado',
+        pagos: [5_000_000],
+        gastos: [],
+        fechaDeLosPagos: '2026-06-01',
+        pagosEnLaApertura: true,
+      },
+    },
+    pasos: [
+      { liquidar: 'cobrado', proyecto: 'viejo', fecha: '2026-07-01', enLaApertura: true },
+      { liquidar: 'perdido', proyecto: 'lead', fecha: '2026-06-15', enLaApertura: true },
+      { revertir: 'entregado', proyecto: 'viejo' },
+      { liquidar: 'cobrado', proyecto: 'viejo', fecha: '2026-07-05', enLaApertura: true },
+      { revertir: 'presupuesto_enviado', proyecto: 'lead' },
+    ],
+  },
+  {
     nombre: 'un cobro con el acumulado del mes viejo se ajusta, y lo congelado es lo del dominio',
     ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
     proyectos: {
@@ -1285,6 +1378,7 @@ async function prepararEscenario(
   cliente: pg.Client,
   escenario: EscenarioDeLiquidacion,
 ): Promise<Contexto> {
+  await cliente.query("select set_config('maun.hoy_en_el_taller', '2099-12-31', true)");
   const { rows: usuario } = await cliente.query<{ id: string }>(
     `insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
      values (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
@@ -1316,6 +1410,14 @@ async function prepararEscenario(
     `insert into public.clientes (household_id, nombre) values ($1, 'Cliente') returning id`,
     [householdId],
   );
+  if (escenario.apertura !== undefined) {
+    await cliente.query(
+      `insert into public.movimientos
+         (household_id, fecha, tipo, tesoro_origen, tesoro_destino, monto_centavos, categoria, descripcion)
+       values ($1, $2, 'ajuste', null, 'maun', 100000000, 'Apertura', 'Apertura')`,
+      [householdId, escenario.apertura],
+    );
+  }
   const ids = new Map<string, string>();
   for (const [clave, proyecto] of Object.entries(escenario.proyectos)) {
     const { rows } = await cliente.query<{ id: string }>(
@@ -1325,6 +1427,13 @@ async function prepararEscenario(
     );
     const proyectoId = rows[0]?.id ?? '';
     ids.set(clave, proyectoId);
+    if (proyecto.estado === 'en_seguimiento') {
+      await cliente.query(
+        `insert into public.proximos_contactos (household_id, proyecto_id, fecha, etapa_previa)
+         values ($1, $2, '2026-09-01', 'presupuesto_enviado')`,
+        [householdId, proyectoId],
+      );
+    }
     for (const [tabla, montos, borrado] of [
       ['pagos', proyecto.pagos, false],
       ['gastos', proyecto.gastos, false],
@@ -1332,8 +1441,24 @@ async function prepararEscenario(
       ['gastos', proyecto.gastosBorrados ?? [], true],
     ] as const) {
       for (const monto of montos) {
+        if (tabla === 'pagos') {
+          await cliente.query(
+            `insert into public.pagos
+               (household_id, proyecto_id, fecha, monto_centavos, deleted_at, ya_en_la_apertura)
+             values ($1, $2, $3, $4, $5, $6)`,
+            [
+              householdId,
+              proyectoId,
+              proyecto.fechaDeLosPagos ?? '2026-08-01',
+              monto,
+              borrado ? '2026-08-15T00:00:00Z' : null,
+              proyecto.pagosEnLaApertura === true,
+            ],
+          );
+          continue;
+        }
         await cliente.query(
-          `insert into public.${tabla} (household_id, proyecto_id, fecha, monto_centavos, deleted_at)
+          `insert into public.gastos (household_id, proyecto_id, fecha, monto_centavos, deleted_at)
            values ($1, $2, '2026-08-01', $3, $4)`,
           [householdId, proyectoId, monto, borrado ? '2026-08-15T00:00:00Z' : null],
         );
@@ -1421,13 +1546,20 @@ async function correrPaso(cliente: pg.Client, contexto: Contexto, paso: Paso): P
     paso.liquidar,
     paso.fecha,
     (paso.sinVer ?? []).map((clave) => contexto.ids.get(clave) ?? ''),
+    paso.enLaApertura === true,
   );
   const { rows } = await liquidarPreparada(cliente, preparada);
   const enBase = rows[0] === undefined ? 'sin fila' : congelado(rows[0]);
-  const enDominio = esperadoAlLiquidar(preparada.esperado);
+  const enDominio = esperadoAlLiquidar(preparada.esperado, preparada.enLaApertura);
+  const conSuFecha =
+    rows[0]?.fecha_cobro === paso.fecha
+      ? []
+      : [
+          `${paso.liquidar} ${paso.proyecto}: se pidió el ${paso.fecha} y quedó el ${String(rows[0]?.fecha_cobro)}`,
+        ];
   return enBase === enDominio
-    ? []
-    : [`${paso.liquidar} ${paso.proyecto}: base ${enBase}, dominio ${enDominio}`];
+    ? conSuFecha
+    : [`${paso.liquidar} ${paso.proyecto}: base ${enBase}, dominio ${enDominio}`, ...conSuFecha];
 }
 
 export async function compararLiquidaciones(cliente: pg.Client): Promise<string[]> {
@@ -1479,7 +1611,7 @@ export async function compararSeed(cliente: pg.Client): Promise<string[]> {
       liquidaciones: anteriores,
     });
     const enBase = congelado(fila);
-    const enDominio = esperadoAlLiquidar(esperado);
+    const enDominio = esperadoAlLiquidar(esperado, false);
     if (enBase !== enDominio)
       diferencias.push(`seed ${fila.id}: base ${enBase}, dominio ${enDominio}`);
     anteriores.push(registro);
@@ -1498,11 +1630,12 @@ interface FilaDelLibro {
   categoria: string;
   descripcion: string;
   proyecto_id: string | null;
+  ya_en_la_apertura: boolean;
 }
 
 const COLUMNAS_DEL_LIBRO = `origen, asiento_id, fecha::text as fecha, tesoro::text as tesoro,
   contrapartida::text as contrapartida, monto_centavos::text as monto_centavos,
-  concepto, categoria, descripcion, proyecto_id`;
+  concepto, categoria, descripcion, proyecto_id, ya_en_la_apertura`;
 
 function comoTextoSql(fila: FilaDelLibro): string {
   return JSON.stringify([
@@ -1516,6 +1649,7 @@ function comoTextoSql(fila: FilaDelLibro): string {
     fila.categoria,
     fila.descripcion,
     fila.proyecto_id,
+    fila.ya_en_la_apertura,
   ]);
 }
 
@@ -1531,6 +1665,7 @@ function comoTextoTs(asiento: Asiento): string {
     asiento.categoria,
     asiento.descripcion,
     asiento.proyectoId,
+    asiento.yaEnLaApertura,
   ]);
 }
 
@@ -1556,6 +1691,17 @@ async function asientosDeLaReplica(cliente: pg.Client, usuarioId: string): Promi
   return asientosDelLibro(datosDelLibro(await replicaDeLaBase(cliente, usuarioId)));
 }
 
+async function compararApertura(cliente: pg.Client, contexto: Contexto): Promise<string[]> {
+  const { rows } = await cliente.query<{ fecha: string | null }>(
+    'select private.fecha_de_apertura($1)::text as fecha',
+    [contexto.householdId],
+  );
+  const enSql = rows[0]?.fecha ?? null;
+  const replica = await replicaDeLaBase(cliente, contexto.usuarioId);
+  const enTs = fechaDeApertura(datosDelLibro(replica).movimientos);
+  return enSql === enTs ? [] : [`apertura: SQL ${String(enSql)}, TS ${String(enTs)}`];
+}
+
 async function leerLibro(cliente: pg.Client, householdId: string): Promise<FilaDelLibro[]> {
   const { rows } = await cliente.query<FilaDelLibro>(
     `select ${COLUMNAS_DEL_LIBRO} from public.libro_mayor where household_id = $1`,
@@ -1572,7 +1718,8 @@ async function compararSaldos(
   const { rows } = await cliente.query<{ tesoro: string; saldo: string }>(
     `select t.tesoro::text as tesoro, coalesce(sum(l.monto_centavos), 0)::text as saldo
      from unnest(enum_range(null::public.tesoro)) as t (tesoro)
-     left join public.libro_mayor l on l.tesoro = t.tesoro and l.household_id = $1
+     left join public.libro_mayor l
+       on l.tesoro = t.tesoro and l.household_id = $1 and not l.ya_en_la_apertura
      group by t.tesoro`,
     [householdId],
   );
@@ -1692,6 +1839,33 @@ export const ESCENARIOS_DEL_LIBRO: EscenarioDeLiquidacion[] = [
     ],
   },
   {
+    nombre:
+      'lo de antes de la apertura queda en el libro con su fecha y no mueve los tesoros; lo destildado sí',
+    apertura: '2026-09-14',
+    ajustes: { sueldo: 180_000_000, fijos: 25_000_000 },
+    proyectos: {
+      marcado: {
+        estado: 'entregado',
+        pagos: [60_000_000, 40_000_000],
+        gastos: [5_000_000],
+        fechaDeLosPagos: '2026-07-10',
+        pagosEnLaApertura: true,
+      },
+      destildado: {
+        estado: 'entregado',
+        pagos: [30_000_000],
+        gastos: [],
+        fechaDeLosPagos: '2026-07-12',
+      },
+      nuevo: { estado: 'en_curso', pagos: [20_000_000], gastos: [], fechaDeLosPagos: '2026-09-20' },
+    },
+    pasos: [
+      { liquidar: 'cobrado', proyecto: 'marcado', fecha: '2026-07-10', enLaApertura: true },
+      { liquidar: 'cobrado', proyecto: 'destildado', fecha: '2026-07-12' },
+    ],
+    movimientos: MOVIMIENTOS_DE_TODOS_LOS_TIPOS,
+  },
+  {
     nombre: 'reabrir un cobro lo saca del libro y volver a cobrarlo lo devuelve',
     ajustes: { sueldo: 50_000_000, fijos: 25_000_000 },
     proyectos: { p: { estado: 'entregado', pagos: [120_000_000], gastos: [10_000_000] } },
@@ -1717,6 +1891,7 @@ export async function compararLibroMayor(cliente: pg.Client): Promise<string[]> 
       const delEscenario = [
         ...diferenciasDeMultiset(filas.map(comoTextoSql), asientos.map(comoTextoTs)),
         ...(await compararSaldos(cliente, contexto.householdId, asientos)),
+        ...(await compararApertura(cliente, contexto)),
       ];
       diferencias.push(...delEscenario.map((linea) => `"${escenario.nombre}", ${linea}`));
     } catch (error) {

@@ -34,7 +34,7 @@ export interface GrillaDelMesProps {
 function textoCorto(evento: EventoDeLaAgenda): string {
   return evento.clase === 'propia'
     ? evento.texto
-    : `${DERIVADA[evento.categoria].corta}: ${evento.titulo}`;
+    : `${DERIVADA[evento.categoria].corta}${DERIVADA[evento.categoria].conector}${evento.titulo}`;
 }
 
 export function GrillaDelMes({

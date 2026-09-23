@@ -30,6 +30,27 @@ const MESES = [
 
 const MS_POR_DIA = 86_400_000;
 
+export const ZONA_DEL_TALLER = 'America/Argentina/Buenos_Aires';
+
+const DIA_EN_EL_TALLER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ZONA_DEL_TALLER,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function hoyEnElTaller(ahora: Date = new Date()): string {
+  return DIA_EN_EL_TALLER.format(ahora);
+}
+
+const FORMA_DEL_DIA = /^\d{4}-\d{2}-\d{2}$/;
+
+export function errorDeLaFechaDeLaPlata(fecha: string, hoy: string): string | undefined {
+  if (!FORMA_DEL_DIA.test(fecha)) return 'Poné el día en que entró la plata.';
+  if (fecha > hoy) return 'Esa fecha todavía no llegó: tiene que ser hoy o antes.';
+  return undefined;
+}
+
 export function hoyLocal(ahora: Date = new Date()): string {
   const anio = String(ahora.getFullYear()).padStart(4, '0');
   const mes = String(ahora.getMonth() + 1).padStart(2, '0');

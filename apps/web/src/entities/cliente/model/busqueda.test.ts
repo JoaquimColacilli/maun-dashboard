@@ -24,7 +24,7 @@ function resumen(
       ...extra,
     },
     proyectos: [],
-    enSeguimiento: 0,
+    enConsultas: 0,
     facturados: 0,
     ultimo: undefined,
     fechaDelUltimo: undefined,

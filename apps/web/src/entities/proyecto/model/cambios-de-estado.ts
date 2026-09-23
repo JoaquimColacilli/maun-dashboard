@@ -37,9 +37,11 @@ function etiquetaDelCambio(desde: EstadoProyecto, hacia: EstadoSinLiquidar): str
     case 'a_presupuestar':
       return 'Pasar a presupuestar';
     case 'presupuesto_enviado':
-      return faseDe(desde) === 'seguimiento' ? 'Mandé el presupuesto' : 'Volvió a presupuesto';
+      return faseDe(desde) === 'consultas' ? 'Mandé el presupuesto' : 'Volvió a presupuesto';
     case 'en_curso':
-      return faseDe(desde) === 'seguimiento' ? 'Ya lo aprobó' : 'Volvió al taller';
+      return faseDe(desde) === 'consultas' ? 'Ya lo aprobó' : 'Volvió al taller';
+    case 'en_seguimiento':
+      return 'Por ahora no';
     case 'entregado':
       return 'Ya lo entregué';
   }
@@ -51,7 +53,7 @@ export function cambiosDeEstado(desde: EstadoProyecto): CambioDeEstado[] {
     hacia,
     etiqueta: etiquetaDelCambio(desde, hacia),
     sentido: ESTADOS.indexOf(hacia) > posicion ? 'adelante' : 'atras',
-    camino: faseDe(desde) === 'seguimiento' && faseDe(hacia) === 'activos' ? 'pasaje' : 'guardar',
+    camino: faseDe(desde) === 'consultas' && faseDe(hacia) === 'activos' ? 'pasaje' : 'guardar',
   }));
 }
 

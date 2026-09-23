@@ -8,7 +8,7 @@ const TARJETA = 'flex flex-col gap-2.5 rounded-panel border border-hairline p-5'
 const TITULO = 'flex items-center gap-2.5 text-section leading-tight font-semibold';
 const TEXTO = 'text-body leading-relaxed text-text-2';
 const PASOS = 'flex list-decimal flex-col gap-1.5 pl-5 text-body leading-relaxed';
-const FILAS_DEL_ESQUELETO = ['entregas', 'visitas', 'presupuestos', 'anotaciones'];
+const FILAS_DEL_ESQUELETO = ['entregas', 'visitas', 'presupuestos', 'seguimientos', 'anotaciones'];
 
 export function EsqueletoDeLosAvisos() {
   return (

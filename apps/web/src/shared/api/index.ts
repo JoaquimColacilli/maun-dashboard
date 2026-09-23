@@ -12,6 +12,7 @@ export {
   subirAlBucketDeArchivos,
   urlDelArchivo,
 } from './archivos';
+export { escucharLosCambiosDelTaller, type OyentesDeLosCambios } from './cambios';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   compartirElArchivo,
@@ -77,6 +78,7 @@ export {
   guardarLasFormasDeCobro,
   guardarLosCostosEstimados,
   liquidarElProyecto,
+  marcarElProximoContacto,
   marcarEnLaAgenda,
   marcarTareasDelPresupuesto,
   registrarMovimiento,
@@ -92,6 +94,7 @@ export {
   COLUMNA_DE_LA_FECHA,
   COLUMNA_DE_LA_MARCA,
   COLUMNAS_DE_AJUSTES,
+  aperturaDeLaReplica,
   COLUMNAS_DE_ANOTACION,
   COLUMNAS_DE_CLIENTE,
   COLUMNAS_DE_COSTOS,
@@ -160,6 +163,7 @@ export {
   type NecesidadParaGuardar,
   type OpcionParaGuardar,
   type PagoParaGuardar,
+  type ProximoParaGuardar,
   type PedidoDeLiquidacion,
   type PedidoDeReversion,
   type ProyectoGuardado,

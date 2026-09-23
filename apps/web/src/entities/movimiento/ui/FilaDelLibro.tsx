@@ -27,7 +27,7 @@ export interface FilaDelLibroProps {
 export function FilaDelLibro({ linea, tesoro, sinConfirmar, alAbrir }: FilaDelLibroProps) {
   const mueve = linea.sentido === 'mueve';
   const efecto = efectoDeLaLinea(linea, tesoro);
-  const neutro = mueve && efecto === 0;
+  const neutro = (mueve && efecto === 0) || linea.yaEnLaApertura;
   const datos = TESORO[linea.tesoroPrincipal];
 
   const importe = neutro
@@ -65,6 +65,9 @@ export function FilaDelLibro({ linea, tesoro, sinConfirmar, alAbrir }: FilaDelLi
               <Icono nombre="folder-kanban" tamano={10} />
               {linea.proyectoTitulo}
             </span>
+          )}
+          {linea.yaEnLaApertura && (
+            <span className="text-badge font-semibold text-text-2">ya estaba en tus saldos</span>
           )}
           {sinConfirmar && (
             <span className="flex items-center gap-1 text-badge font-semibold text-atencion">

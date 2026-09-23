@@ -6,6 +6,8 @@ export const TESOROS = ['hogar', 'maun', 'diezmo', 'cocos'] as const;
 
 export type Tesoro = (typeof TESOROS)[number];
 
+export const CATEGORIA_DE_APERTURA = 'Apertura';
+
 export type OrigenDeAsiento = 'manual' | 'pago' | 'gasto_proyecto' | 'distribucion';
 
 export interface MovimientoDelLibro {
@@ -26,6 +28,7 @@ export interface PagoDelLibro {
   fecha: string;
   concepto: string;
   monto: Money;
+  yaEnLaApertura: boolean;
 }
 
 export interface GastoDelLibro {
@@ -43,6 +46,7 @@ export interface ProyectoDelLibro {
   fechaCobro: string | null;
   diezmo: Money;
   sueldo: Money;
+  repartoYaEnLaApertura: boolean;
 }
 
 export interface DatosDelLibro {
@@ -63,6 +67,7 @@ export interface Asiento {
   categoria: string;
   descripcion: string;
   proyectoId: string | null;
+  yaEnLaApertura: boolean;
 }
 
 export interface LineaDelLibro {
@@ -76,6 +81,7 @@ export interface LineaDelLibro {
   categoria: string;
   descripcion: string;
   proyectoId: string | null;
+  yaEnLaApertura: boolean;
 }
 
 export type SaldosPorTesoro = Readonly<Record<Tesoro, Money>>;
@@ -99,6 +105,7 @@ export function lineasDelLibro(datos: DatosDelLibro): LineaDelLibro[] {
       categoria: movimiento.categoria,
       descripcion: movimiento.descripcion,
       proyectoId: movimiento.proyectoId,
+      yaEnLaApertura: false,
     });
   }
 
@@ -117,6 +124,7 @@ export function lineasDelLibro(datos: DatosDelLibro): LineaDelLibro[] {
       categoria: 'Cobro',
       descripcion: pago.concepto,
       proyectoId: pago.proyectoId,
+      yaEnLaApertura: pago.yaEnLaApertura,
     });
   }
 
@@ -133,6 +141,7 @@ export function lineasDelLibro(datos: DatosDelLibro): LineaDelLibro[] {
       categoria: 'Materiales',
       descripcion: gasto.descripcion,
       proyectoId: gasto.proyectoId,
+      yaEnLaApertura: false,
     });
   }
 
@@ -157,6 +166,7 @@ export function lineasDelLibro(datos: DatosDelLibro): LineaDelLibro[] {
         categoria: 'Distribución',
         descripcion: proyecto.titulo,
         proyectoId: proyecto.id,
+        yaEnLaApertura: proyecto.repartoYaEnLaApertura,
       });
     }
   }
@@ -173,6 +183,7 @@ export function asientosDeLaLinea(linea: LineaDelLibro): Asiento[] {
     categoria: linea.categoria,
     descripcion: linea.descripcion,
     proyectoId: linea.proyectoId,
+    yaEnLaApertura: linea.yaEnLaApertura,
   };
 
   const asientos: Asiento[] = [];
@@ -199,12 +210,29 @@ export function asientosDelLibro(datos: DatosDelLibro): Asiento[] {
   return lineasDelLibro(datos).flatMap(asientosDeLaLinea);
 }
 
+export function mueveLosTesoros(asiento: Asiento): boolean {
+  return !asiento.yaEnLaApertura;
+}
+
 export function saldosPorTesoro(asientos: readonly Asiento[]): SaldosPorTesoro {
   const saldos: Record<Tesoro, Money> = { hogar: CERO, maun: CERO, diezmo: CERO, cocos: CERO };
-  for (const asiento of asientos) {
+  for (const asiento of asientos.filter(mueveLosTesoros)) {
     saldos[asiento.tesoro] = sumar(saldos[asiento.tesoro], asiento.monto);
   }
   return saldos;
+}
+
+export function fechaDeApertura(movimientos: readonly MovimientoDelLibro[]): string | null {
+  let apertura: string | null = null;
+  for (const movimiento of movimientos) {
+    if (movimiento.tipo !== 'ajuste' || movimiento.categoria !== CATEGORIA_DE_APERTURA) continue;
+    if (apertura === null || movimiento.fecha < apertura) apertura = movimiento.fecha;
+  }
+  return apertura;
+}
+
+export function esAnteriorALaApertura(fecha: string, apertura: string | null): boolean {
+  return apertura !== null && fecha < apertura;
 }
 
 export function saldosDelLibro(datos: DatosDelLibro): SaldosPorTesoro {
@@ -243,7 +271,7 @@ export interface EstadoDelDiezmo {
 }
 
 export function estadoDelDiezmo(asientos: readonly Asiento[]): EstadoDelDiezmo {
-  const { entro, salio } = entradasYSalidas(asientos, 'diezmo');
+  const { entro, salio } = entradasYSalidas(asientos.filter(mueveLosTesoros), 'diezmo');
   const saldo = restar(entro, salio);
   return {
     situacion: saldo > 0 ? 'debe' : saldo < 0 ? 'pago-de-mas' : 'al-dia',

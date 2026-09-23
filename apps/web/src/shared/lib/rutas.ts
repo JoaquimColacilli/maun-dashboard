@@ -38,9 +38,10 @@ export function rutaDeProyectoNuevo(entrega?: string): string {
 
 export const RUTA_DE_PROYECTOS = '/proyectos';
 
-export const RUTA_DE_SEGUIMIENTO = '/seguimiento';
+export const RUTA_DE_CONSULTAS = '/consultas';
+export const RUTA_DE_SEGUIMIENTO = '/proyectos?etapa=seguimiento';
 
-export const RUTA_DE_CONTACTO_NUEVO = '/seguimiento/nuevo';
+export const RUTA_DE_CONTACTO_NUEVO = '/consultas/nueva';
 
 export const PARAMETRO_DE_VISITA = 'visita';
 

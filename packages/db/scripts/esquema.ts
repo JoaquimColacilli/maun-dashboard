@@ -292,6 +292,13 @@ async function storage(cliente: pg.Client): Promise<string[]> {
     );
   }
 
+  lineas.push(...(await politicasDe(cliente, 'storage', 'objects')));
+  return lineas;
+}
+
+async function politicasDe(cliente: pg.Client, esquema: string, tabla: string): Promise<string[]> {
+  const objeto = `${esquema}.${tabla}`;
+  const lineas: string[] = [];
   for (const politica of await filas<{
     nombre: string;
     permisiva: string;
@@ -305,21 +312,26 @@ async function storage(cliente: pg.Client): Promise<string[]> {
     `select p.policyname as nombre, p.permissive as permisiva, p.cmd as comando, p.roles::text[] as roles,
             p.qual as usando, p.with_check as chequeo, obj_description(pol.oid, 'pg_policy') as comentario
      from pg_policies p
-     join pg_policy pol on pol.polname = p.policyname and pol.polrelid = 'storage.objects'::regclass
-     where p.schemaname = 'storage' and p.tablename = 'objects'
+     join pg_policy pol on pol.polname = p.policyname and pol.polrelid = $1::regclass
+     where p.schemaname = $2 and p.tablename = $3
      order by p.policyname`,
+    [objeto, esquema, tabla],
   )) {
     lineas.push(
       [
-        `create policy ${politica.nombre} on storage.objects as ${politica.permisiva.toLowerCase()}`,
+        `create policy ${politica.nombre} on ${objeto} as ${politica.permisiva.toLowerCase()}`,
         `  for ${politica.comando.toLowerCase()} to ${politica.roles.join(', ')}`,
         ...(politica.usando === null ? [] : [`  using (${politica.usando})`]),
         ...(politica.chequeo === null ? [] : [`  with check (${politica.chequeo})`]),
       ].join('\n') + ';',
     );
-    lineas.push(...comentario(`policy ${politica.nombre} on storage.objects`, politica.comentario));
+    lineas.push(...comentario(`policy ${politica.nombre} on ${objeto}`, politica.comentario));
   }
   return lineas;
+}
+
+async function realtime(cliente: pg.Client): Promise<string[]> {
+  return politicasDe(cliente, 'realtime', 'messages');
 }
 
 async function funciones(cliente: pg.Client): Promise<string[]> {
@@ -368,6 +380,7 @@ export async function generarEsquema(cliente: pg.Client): Promise<string> {
     ['Vistas', await vistas(cliente)],
     ['Triggers sobre auth.users', await triggersDeAuth(cliente)],
     ['Storage', await storage(cliente)],
+    ['Realtime', await realtime(cliente)],
     ['Funciones', await funciones(cliente)],
   ];
   const cuerpo = secciones.map(([titulo, lineas]) =>

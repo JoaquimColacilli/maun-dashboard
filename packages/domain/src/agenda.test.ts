@@ -16,9 +16,10 @@ import {
   type DatosDeLaAgenda,
   type EventoDeLaAgenda,
   type PreferenciasDeAvisos,
+  type ProximoDeLaAgenda,
   type ProyectoDeLaAgenda,
 } from './agenda.ts';
-import { ESTADOS, ESTADOS_DE_SEGUIMIENTO } from './estados.ts';
+import { ESTADOS, ESTADOS_DE_CONSULTA } from './estados.ts';
 
 const SEPTIEMBRE = { desde: '2026-09-01', hasta: '2026-09-30' };
 
@@ -64,6 +65,7 @@ function datos(cambios: Partial<DatosDeLaAgenda> = {}): DatosDeLaAgenda {
       { id: 'c2', nombre: 'UTN', zona: 'Haedo' },
     ],
     anotaciones: [],
+    proximos: [],
     ...cambios,
   };
 }
@@ -227,7 +229,7 @@ describe('eventosDeLaAgenda', () => {
     }
   });
 
-  it('la visita sin hacer sale mientras el trabajo está en seguimiento', () => {
+  it('la visita sin hacer sale mientras el trabajo es una consulta, y no mientras está en seguimiento', () => {
     const conVisita = ESTADOS.map((estado) =>
       proyecto({ id: estado, estado, fechaVisita: '2026-09-11' }),
     );
@@ -252,7 +254,7 @@ describe('eventosDeLaAgenda', () => {
     expect(eventos).toHaveLength(ESTADOS.length);
     expect(eventos.every((evento) => evento.hecha && evento.fecha === '2026-09-11')).toBe(true);
 
-    for (const etapa of ESTADOS_DE_SEGUIMIENTO) {
+    for (const etapa of ESTADOS_DE_CONSULTA) {
       const [visita] = eventosDeLaAgenda(
         datos({
           proyectos: [proyecto({ estado: etapa, fechaVisita: '2026-09-11', visitaHecha: true })],
@@ -511,6 +513,147 @@ describe('eventosDeLaAgenda', () => {
   });
 });
 
+describe('el seguimiento en la agenda', () => {
+  function proximo(cambios: Partial<ProximoDeLaAgenda> = {}): ProximoDeLaAgenda {
+    return {
+      id: 's1',
+      proyectoId: 'p1',
+      fecha: '2026-09-20',
+      hechoEl: null,
+      nota: '',
+      importante: false,
+      ...cambios,
+    };
+  }
+
+  const enSeguimiento = proyecto({ id: 'p1', titulo: 'Placard', estado: 'en_seguimiento' });
+
+  it('volver a escribirle cae en el día acordado, con el nombre del cliente y el trabajo con su nota', () => {
+    const [evento] = eventosDeLaAgenda(
+      datos({
+        proyectos: [enSeguimiento],
+        proximos: [proximo({ nota: 'después de las vacaciones' })],
+      }),
+      SEPTIEMBRE,
+    );
+
+    expect(evento).toEqual({
+      clase: 'derivada',
+      id: 'seguimiento:s1',
+      categoria: 'seguimiento',
+      fecha: '2026-09-20',
+      hora: null,
+      proyectoId: 'p1',
+      clienteId: 'c1',
+      titulo: 'Victor',
+      cliente: '',
+      lugar: 'Placard · después de las vacaciones',
+      hecha: false,
+      importante: false,
+    });
+  });
+
+  it('lo hecho queda tachado en el día en que se le escribió, y lo atrasado sigue pendiente en el suyo', () => {
+    const eventos = eventosDeLaAgenda(
+      datos({
+        proyectos: [enSeguimiento],
+        proximos: [
+          proximo({ id: 'hecho', fecha: '2026-09-10', hechoEl: '2026-09-12' }),
+          proximo({ id: 'atrasado', fecha: '2026-09-15' }),
+        ],
+      }),
+      SEPTIEMBRE,
+    );
+
+    expect(hechas(eventos)).toEqual([
+      ['seguimiento:hecho', true],
+      ['seguimiento:atrasado', false],
+    ]);
+    expect(dias(eventos)).toEqual([
+      '2026-09-12 seguimiento:hecho',
+      '2026-09-15 seguimiento:atrasado',
+    ]);
+  });
+
+  it('sin nombre de cliente dice el trabajo, y sin trabajo en la agenda no sale', () => {
+    const [sinNombre] = eventosDeLaAgenda(
+      datos({
+        proyectos: [proyecto({ ...enSeguimiento, clienteId: 'otro' })],
+        proximos: [proximo()],
+      }),
+      SEPTIEMBRE,
+    );
+    expect(sinNombre).toMatchObject({ titulo: 'Placard', lugar: 'Placard' });
+
+    expect(eventosDeLaAgenda(datos({ proximos: [proximo()] }), SEPTIEMBRE)).toEqual([]);
+  });
+
+  it('no se arrastra: cambiar el día es registrar el contacto, y eso queda en la historia', () => {
+    const [evento] = eventosDeLaAgenda(
+      datos({ proyectos: [enSeguimiento], proximos: [proximo()] }),
+      SEPTIEMBRE,
+    );
+    expect(evento).toBeDefined();
+    if (evento) expect(puedeArrastrarse(evento)).toBe(false);
+  });
+
+  it('va después de la entrega y antes de lo que anotás, dentro del mismo día', () => {
+    const eventos = eventosDeLaAgenda(
+      datos({
+        proyectos: [enSeguimiento, proyecto({ id: 'p2', entregaEstimada: '2026-09-20' })],
+        proximos: [proximo()],
+        anotaciones: [anotacion({ id: 'nota', fecha: '2026-09-20' })],
+      }),
+      SEPTIEMBRE,
+    );
+    expect(eventos.map((evento) => evento.id)).toEqual(['entrega:p2', 'seguimiento:s1', 'nota']);
+  });
+
+  it('lo que cae fuera del rango no sale', () => {
+    const agenda = datos({
+      proyectos: [enSeguimiento],
+      proximos: [proximo({ fecha: '2026-10-02' })],
+    });
+    expect(eventosDeLaAgenda(agenda, SEPTIEMBRE)).toEqual([]);
+  });
+
+  it('a la mañana avisa a quién le toca escribirle ese día, no lo de mañana ni lo ya registrado, y se apaga', () => {
+    const agenda = datos({
+      proyectos: [enSeguimiento],
+      proximos: [
+        proximo({ id: 'hoy', fecha: '2026-09-14' }),
+        proximo({ id: 'manana', fecha: '2026-09-15' }),
+        proximo({ id: 'hecho', fecha: '2026-09-14', hechoEl: '2026-09-14' }),
+      ],
+    });
+
+    expect(dias(eventosParaAvisar(agenda, '2026-09-14', PREFERENCIAS_INICIALES))).toEqual([
+      '2026-09-14 seguimiento:hoy',
+    ]);
+    expect(
+      eventosParaAvisar(agenda, '2026-09-14', {
+        ...PREFERENCIAS_INICIALES,
+        seguimientos: { activo: true, anticipacion: 1 },
+      }).map((evento) => evento.id),
+    ).toEqual(['seguimiento:hoy', 'seguimiento:manana']);
+    expect(
+      eventosParaAvisar(agenda, '2026-09-14', {
+        ...PREFERENCIAS_INICIALES,
+        seguimientos: { activo: false, anticipacion: 0 },
+      }),
+    ).toEqual([]);
+  });
+
+  it('mientras está en seguimiento no se le cuenta el plazo del presupuesto', () => {
+    expect(
+      eventosDeLaAgenda(
+        datos({ proyectos: [{ ...enSeguimiento, vencimientoPresupuesto: '2026-09-18' }] }),
+        SEPTIEMBRE,
+      ),
+    ).toEqual([]);
+  });
+});
+
 describe('eventosParaAvisar', () => {
   const agenda = datos({
     proyectos: [
@@ -608,6 +751,7 @@ describe('eventosParaAvisar', () => {
       entregas: { activo: false, anticipacion: 3 },
       visitas: { activo: false, anticipacion: 3 },
       presupuestos: { activo: false, anticipacion: 3 },
+      seguimientos: { activo: false, anticipacion: 3 },
       anotaciones: { activo: false, anticipacion: 3 },
     };
 
@@ -619,6 +763,7 @@ describe('eventosParaAvisar', () => {
       entregas: { activo: true, anticipacion: 3 },
       visitas: { activo: true, anticipacion: 3 },
       presupuestos: { activo: true, anticipacion: 3 },
+      seguimientos: { activo: true, anticipacion: 3 },
       anotaciones: { activo: true, anticipacion: 3 },
     };
 
@@ -633,6 +778,7 @@ describe('eventosParaAvisar', () => {
       'presupuestos',
       'visitas',
       'entregas',
+      'seguimientos',
       'anotaciones',
       'anotaciones',
     ]);
@@ -640,6 +786,7 @@ describe('eventosParaAvisar', () => {
       entregas: { activo: true, anticipacion: 2 },
       visitas: { activo: true, anticipacion: 1 },
       presupuestos: { activo: true, anticipacion: 1 },
+      seguimientos: { activo: true, anticipacion: 0 },
       anotaciones: { activo: false, anticipacion: 0 },
     });
   });

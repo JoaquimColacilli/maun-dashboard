@@ -68,6 +68,7 @@ function proyecto(id: string, clienteId: string, extra: Partial<Proyecto> = {}):
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    reparto_ya_en_la_apertura: false,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
@@ -88,6 +89,7 @@ function pago(id: string, proyectoId: string, monto: number): Pago {
     fecha: '2026-02-01',
     concepto: '',
     monto_centavos: monto,
+    ya_en_la_apertura: false,
   };
 }
 
@@ -131,12 +133,12 @@ describe('resumenesDeClientes', () => {
       facturado: 0,
       saldo: 0,
       facturados: 0,
-      enSeguimiento: 0,
+      enConsultas: 0,
       ultimo: undefined,
     });
   });
 
-  it('lo facturado son los proyectos de obra; los de seguimiento no cuentan', () => {
+  it('lo facturado son los proyectos de obra; los de las consultas no cuentan', () => {
     const replica = replicaCon({
       clientes: [cliente('c1', 'Ana')],
       proyectos: [
@@ -149,7 +151,7 @@ describe('resumenesDeClientes', () => {
 
     expect(resumen?.facturado).toBe(150_000);
     expect(resumen?.facturados).toBe(2);
-    expect(resumen?.enSeguimiento).toBe(1);
+    expect(resumen?.enConsultas).toBe(1);
   });
 
   it('el saldo es lo que falta cobrar de lo que está en curso o entregado', () => {

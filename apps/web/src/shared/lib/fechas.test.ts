@@ -7,8 +7,10 @@ import {
   diasHasta,
   diaYMes,
   diaYMesCorto,
+  errorDeLaFechaDeLaPlata,
   fechaLarga,
   haceCuanto,
+  hoyEnElTaller,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
@@ -44,6 +46,38 @@ describe('hoyLocal', () => {
   it('usa el día del reloj del dispositivo, no el UTC', () => {
     expect(hoyLocal(new Date(2026, 8, 11, 23, 30))).toBe('2026-09-11');
     expect(hoyLocal(new Date(2026, 0, 1, 0, 5))).toBe('2026-01-01');
+  });
+});
+
+describe('hoyEnElTaller', () => {
+  it('es el día de Argentina: a las 23:30 del 22 todavía es el 22, aunque en UTC ya sea el 23', () => {
+    expect(hoyEnElTaller(new Date('2026-09-23T02:30:00Z'))).toBe('2026-09-22');
+    expect(hoyEnElTaller(new Date('2026-09-23T03:00:00Z'))).toBe('2026-09-23');
+  });
+
+  it('y cruza el año como cualquier otro día', () => {
+    expect(hoyEnElTaller(new Date('2027-01-01T02:59:59Z'))).toBe('2026-12-31');
+    expect(hoyEnElTaller(new Date('2027-01-01T03:00:00Z'))).toBe('2027-01-01');
+  });
+});
+
+describe('errorDeLaFechaDeLaPlata', () => {
+  it('hoy y cualquier día de antes valen', () => {
+    expect(errorDeLaFechaDeLaPlata('2026-09-22', '2026-09-22')).toBeUndefined();
+    expect(errorDeLaFechaDeLaPlata('2025-07-20', '2026-09-22')).toBeUndefined();
+  });
+
+  it('un día que todavía no llegó no vale', () => {
+    expect(errorDeLaFechaDeLaPlata('2026-09-23', '2026-09-22')).toBe(
+      'Esa fecha todavía no llegó: tiene que ser hoy o antes.',
+    );
+  });
+
+  it('sin día no hay plata que fechar', () => {
+    expect(errorDeLaFechaDeLaPlata('', '2026-09-22')).toBe('Poné el día en que entró la plata.');
+    expect(errorDeLaFechaDeLaPlata('22/09/2026', '2026-09-22')).toBe(
+      'Poné el día en que entró la plata.',
+    );
   });
 });
 

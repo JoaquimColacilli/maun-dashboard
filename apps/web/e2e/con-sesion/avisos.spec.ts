@@ -28,6 +28,7 @@ const AVISOS_DE_SIEMPRE = {
   entregas: { activo: true, anticipacion: 2 },
   visitas: { activo: true, anticipacion: 1 },
   presupuestos: { activo: true, anticipacion: 1 },
+  seguimientos: { activo: true, anticipacion: 0 },
   anotaciones: { activo: false, anticipacion: 0 },
 };
 
@@ -176,6 +177,10 @@ test('con los avisos activos, qué avisa, la hora y la zona quedan guardados en 
   await anotaciones.click();
   await expect(anotaciones).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByLabel('Anticipación de Mis anotaciones')).toBeEnabled();
+  const seguimientos = page.getByRole('switch', { name: 'Volver a escribirle' });
+  await expect(seguimientos).toHaveAttribute('aria-checked', 'true');
+  await seguimientos.click();
+  await expect(seguimientos).toHaveAttribute('aria-checked', 'false');
   await page.getByLabel('Anticipación de Entregas').selectOption('3');
   await page.getByRole('button', { name: '06:30' }).click();
   await expect(page.getByRole('button', { name: '06:30' })).toHaveAttribute('aria-pressed', 'true');
@@ -189,6 +194,7 @@ test('con los avisos activos, qué avisa, la hora y la zona quedan guardados en 
       avisos: {
         ...AVISOS_DE_SIEMPRE,
         entregas: { activo: true, anticipacion: 3 },
+        seguimientos: { activo: false, anticipacion: 0 },
         anotaciones: { activo: true, anticipacion: 0 },
       },
     });
@@ -224,6 +230,8 @@ test('el teclado recorre la configuración en orden y cambia cada cosa', async (
     'Visitas y relevamientos',
     'Anticipación de Presupuestos por vencer',
     'Presupuestos por vencer',
+    'Anticipación de Volver a escribirle',
+    'Volver a escribirle',
     'Mis anotaciones',
     '06:30',
     '07:30',

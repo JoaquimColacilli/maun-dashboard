@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { rutaDelProyecto } from '@/entities/proyecto';
-import { HojaDeContacto } from '@/features/seguir-contacto';
+import { HojaDeContacto } from '@/features/avanzar-la-consulta';
 import { fechaDelEnlace, PARAMETRO_DE_VISITA, useCerrarHoja } from '@/shared/lib';
 
 export function ContactoNuevoPage() {

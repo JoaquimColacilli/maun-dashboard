@@ -1,12 +1,19 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 
-import type { AccionesDeLaAgenda } from '@/entities/agenda';
+import { idDelProximoContacto, type AccionesDeLaAgenda } from '@/entities/agenda';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filaPorId } from '@/shared/api';
 import { rutaDelProyecto } from '@/shared/lib';
 
-import { borrar, marcar, marcarDelTrabajo, tildar, type Avisador } from '../model/acciones';
+import {
+  borrar,
+  marcar,
+  marcarDelTrabajo,
+  marcarElSeguimiento,
+  tildar,
+  type Avisador,
+} from '../model/acciones';
 
 export function useAccionesDeLaAgenda(avisar?: Avisador): AccionesDeLaAgenda {
   const cliente = useQueryClient();
@@ -23,6 +30,11 @@ export function useAccionesDeLaAgenda(avisar?: Avisador): AccionesDeLaAgenda {
     alMarcar: (evento) => {
       if (evento.clase === 'propia') {
         marcar(cliente, evento, avisar);
+        return;
+      }
+      const proximo = idDelProximoContacto(evento);
+      if (proximo !== null) {
+        marcarElSeguimiento(cliente, evento, proximo, avisar);
         return;
       }
       const proyecto = filaPorId(replica, 'proyectos', evento.proyectoId);

@@ -26,6 +26,7 @@ describe('el formulario de «Ya fui a relevar»', () => {
       vencimiento: '2026-09-17',
       vencimientoAMano: false,
       pago: null,
+      pagoEnLaApertura: true,
     });
     expect(valoresDelRelevamiento(contacto('2026-09-18'), HOY).dia).toBe(HOY);
     expect(valoresDelRelevamiento(contacto(null), HOY)).toMatchObject({
@@ -77,8 +78,23 @@ describe('el formulario de «Ya fui a relevar»', () => {
         fecha: '2026-09-10',
         concepto: CONCEPTO_DE_LA_SENA,
         monto_centavos: 3_000_000,
+        ya_en_la_apertura: false,
       },
     ]);
+  });
+
+  it('una seña de una visita anterior a la apertura queda marcada, salvo que la destilde', () => {
+    const antes = { ...valoresDelRelevamiento(contacto('2026-07-20'), HOY), pago: 3_000_000 };
+    expect(pasoDelRelevamiento(antes, 'pago', '2026-09-14').pagos[0]).toMatchObject({
+      fecha: '2026-07-20',
+      ya_en_la_apertura: true,
+    });
+    expect(
+      pasoDelRelevamiento({ ...antes, pagoEnLaApertura: false }, 'pago', '2026-09-14').pagos[0],
+    ).toMatchObject({ ya_en_la_apertura: false });
+    expect(pasoDelRelevamiento(antes, 'pago', null).pagos[0]).toMatchObject({
+      ya_en_la_apertura: false,
+    });
   });
 
   it('pasar a presupuestar desde el estimativo, con la visita ya pasada, la deja hecha; sin visita o con la visita por venir, no', () => {
@@ -93,11 +109,20 @@ describe('el formulario de «Ya fui a relevar»', () => {
     expect(cambiosAlPasarAPresupuestar(contacto(null), HOY)).toEqual({ estado: 'a_presupuestar' });
   });
 
-  it('pasar a presupuestar desde el estimativo lleva el pago de hoy si lo escribió, y cero es no tener pago', () => {
+  it('pasar a presupuestar desde el estimativo lleva el pago con el día que se eligió, y cero es no tener pago', () => {
     expect(pagoAntesDePresupuestar(null, 'p', HOY)).toEqual([]);
     expect(pagoAntesDePresupuestar(0, 'p', HOY)).toEqual([]);
-    expect(pagoAntesDePresupuestar(2_000_000, 'p', HOY)).toEqual([
-      { id: 'p', fecha: HOY, concepto: CONCEPTO_DE_LA_SENA, monto_centavos: 2_000_000 },
+    expect(pagoAntesDePresupuestar(2_000_000, 'p', '2026-09-12')).toEqual([
+      {
+        id: 'p',
+        fecha: '2026-09-12',
+        concepto: CONCEPTO_DE_LA_SENA,
+        monto_centavos: 2_000_000,
+        ya_en_la_apertura: false,
+      },
     ]);
+    expect(pagoAntesDePresupuestar(2_000_000, 'p', '2026-07-12', true)[0]).toMatchObject({
+      ya_en_la_apertura: true,
+    });
   });
 });

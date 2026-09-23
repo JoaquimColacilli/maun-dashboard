@@ -22,8 +22,9 @@ src/
   features/    acciones del usuario (iniciar-sesion, crear-cuenta, recuperar-acceso,
                desbloquear-la-app, activar-huella,
                cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
-               editar-cliente, editar-proyecto, liquidar-proyecto, seguir-contacto,
-               llevar-la-agenda, recibir-avisos, adjuntar-archivos, ver-novedades)
+               editar-cliente, editar-proyecto, liquidar-proyecto, avanzar-la-consulta,
+               hacer-el-seguimiento, llevar-la-agenda, recibir-avisos, adjuntar-archivos,
+               ver-novedades)
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
                proyecto, movimiento y agenda
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
@@ -51,7 +52,7 @@ src/
 - **El registro es auto-servicio:** quien confirma su mail sale con su propio taller, creado por un trigger de `auth.users` en la misma transacción que la cuenta. No hay pantalla de "sin acceso" y no la agregues: una sesión sin taller es un alta que quedó a medias, y cae en el error genérico con reintentar.
 - Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso, y al revés tampoco: son mensajes distintos sobre el mismo `ErrorDeCarga`.
 - `RutaConAcceso` trata `isPaused` igual que `isError`. Sin nada guardado y sin red, la query de la réplica queda **en pausa, no en error**: sin ese caso la pantalla se quedaba en el skeleton para siempre, sin mensaje y sin forma de salir.
-- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/agenda` (con la hoja `/agenda/anotar`), `/seguimiento`, `/proyectos`, `/clientes`, `/finanzas`, `/diezmo`, `/ajustes` y `/ajustes/avisos`.
+- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/agenda` (con la hoja `/agenda/anotar`), `/consultas` (las viejas `/seguimiento` y `/seguimiento/nuevo` redirigen, ADR 0064), `/proyectos` (el seguimiento es `?etapa=seguimiento`), `/clientes`, `/finanzas`, `/diezmo`, `/ajustes` y `/ajustes/avisos`.
 - **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
 
@@ -94,7 +95,7 @@ src/
 - **La app renderiza desde la réplica local, nunca desde la red.** La réplica llega por contexto (`useReplicaDelTaller()`), provista por `RutaConAcceso`, que ya la tiene resuelta antes de dejar pasar. **Ninguna pantalla adentro del marco tiene estado de carga**: si te encontrás escribiendo un skeleton para una de ellas, la pantalla no puede quedarse sin datos y el skeleton está de más. La única excepción es Avisos (`/ajustes/avisos`), que no sale de la réplica (ADR 0036).
 - Sin `lazy` ni Suspense con spinner para las pantallas del taller: se importan directo. El code splitting queda para las de acceso, que son las únicas que dependen de la red.
 - **En el celular, la foto del encabezado de Inicio abre la hoja de lo que no entra en la barra** (ADR 0024 y 0057): Opiniones, Diezmo, Agenda y, bajo «La app», Ajustes y Cerrar sesión (`HojaDelPerfil`, en `pages/inicio`). Ajustes ya no es un ícono suelto, y ahí sigue viviendo el registro de lo que la base rechazó. La barra inferior no se toca: **un destino nuevo que no entre en ella va a esta hoja**. `destinos-en-celular.spec.ts` recorre el camino a cada uno.
-- `app/layout/destinos.ts` es el modelo de la navegación: los destinos, cuáles se ven en cada ancho y `destinoResaltado`, que marca Proyectos cuando estás en Seguimiento y no hay destino propio. `Navegacion.tsx` elige **una sola** de las tres barras con `matchMedia`: tres `<nav>` en el DOM son tres landmarks.
+- `app/layout/destinos.ts` es el modelo de la navegación: los destinos, cuáles se ven en cada ancho y `destinoResaltado`, que marca Proyectos cuando estás en Consultas y no hay destino propio. `Navegacion.tsx` elige **una sola** de las tres barras con `matchMedia`: tres `<nav>` en el DOM son tres landmarks.
 - El foco y el anuncio al cambiar de ruta los hace `Marco.tsx` sobre el `<main>`, no cada pantalla. Las pantallas **no** renderizan `<main>`: ya hay uno.
 - Las transiciones van con `conTransicion()` (`document.startViewTransition` + `flushSync`), nunca con el componente `<ViewTransition>` de React.
 - El nodo raíz está anclado con `position: fixed; inset: 0` por el problema de `100vh` en PWA instalada.
@@ -137,6 +138,7 @@ src/
 - **El `onMutate` de toda mutación encolable termina en `await guardarCacheAhora()`**, después de aplicar la fila optimista. `PersistQueryClientProvider` guarda solo, pero sin esperar a nadie: la escritura a IndexedDB puede quedar a mitad de camino si la app se recarga en ese instante, y ahí se pierden las dos cosas que no se pueden perder, la mutación en cola y la fila optimista que la acompaña (al restaurar, `reanudarCola` reenvía la mutación pero **no** vuelve a correr `onMutate`). Esperarlo cuesta milisegundos y garantiza que nada sale a la red antes de estar en disco. Lo mismo hacen `anotarAviso` y `descartarAviso`, que por eso devuelven una promesa (ADR 0018).
 - `onMutate` cancela las sincronizaciones en vuelo antes de tocar el cache, y `sincronizar()` mezcla sobre el cache fresco: si no, la respuesta de la base pisa lo que la cola escribió mientras tanto.
 - La réplica del household es una sola entrada del cache (`['replica', usuarioId]`). Se arma con `bootstrap()` y se mantiene con `delta(cursor)`; el reconcile completo corre al entrar y cada 24 horas, salvo que haya cola pendiente. Las pantallas leen de ahí: nada consulta PostgREST por su cuenta.
+- **La app abierta se entera sola de lo que cambia en la base** (ADR 0065). Mientras está a la vista escucha el canal privado `cambios:<household_id>` de Realtime: cada transacción que escribe en una tabla del delta manda ahí un aviso vacío, y la app pide el delta (`useCambiosEnVivo` en `entities/replica`, montado donde vive la réplica). Al ocultarse deja el canal; al volver, al recuperar la señal y al reconectarse pide el delta sin esperar ningún aviso. Entre dos pedidos pasan por lo menos `MINIMO_ENTRE_PEDIDOS_MS` (5 s), y lo que llega en el medio se junta en uno sin perderse. **El aviso es un timbre, no un dato**: no le agregues filas ni leas nada del canal, porque Broadcast autoriza por canal y no por fila, y el delta es el único camino de entrada a la réplica. Sin canal (Realtime caído o bloqueado) la app anda igual y se pone al día al volver. Por eso la réplica tiene apagados `refetchOnWindowFocus` y `refetchOnReconnect`: el hook los reemplaza sin depender del `staleTime`, que cualquier guardado local reinicia.
 - Forma de las mutaciones (ADR 0010): alta, upsert de la fila completa por id (UUIDv7 generado en el cliente con `uuidv7()`); edición, update por id con solo las columnas que cambiaron; baja, update de `deleted_at` con la marca fijada al encolar. `ajustes` solo se edita.
 - Cada mutación se aplica optimista a la réplica con `aplicarFilaLocal` y, si la base la rechaza, se saca con `quitarFilaLocal`.
 - Los rechazos con SQLSTATE `MNxxx` y `42501` no se reintentan: se le muestran al usuario. Tampoco se reintenta ningún otro SQLSTATE definitivo (una violación de check nunca va a andar y tapa la cola, que drena de a una). La red, los timeouts y las clases transitorias sí.
@@ -197,10 +199,10 @@ src/
 - El select de estado ofrece solo el estado actual y sus transiciones válidas (`estadosDisponibles`): un estado inválido rebota con `MN007`, que es definitivo y tapa la cola.
 - **En la ficha el estado se cambia con acciones, no con la insignia** (ADR 0029). `cambiosDeEstado` saca los destinos de `TRANSICIONES` y nunca ofrece `cobrado` ni `perdido`: cobrar y dar por perdido siguen afuera del panel, con sus pantallas. No escribas a mano en una pantalla qué estados se ofrecen. Las dos fichas usan `PanelDePaso` y guardan con `guardadoDeUnPaso`, que ya pasa por `ultimoContactoAlGuardar`. Lo que avanza va primero y lo que retrocede después, en la misma `FilaDeAcciones`: un botón solo ocupa todo el ancho, así que el doble toque ya no se evita por posición (ADR 0033).
 - **El foco de una fila nueva lo pone `shouldFocus` de `useFieldArray`.** No agregues otro foco propio: compiten y el que llega tarde escribe en el campo equivocado.
-- Las tres pestañas (`Seguimiento · Activos · Historial`) son rutas, no estado local: `/seguimiento` y `/proyectos` montan la misma pantalla. No hay `pages/seguimiento`.
+- Las cuatro pestañas (`Consultas · Seguimiento · Activos · Historial`, ADR 0064) son rutas, no estado local: `/consultas`, `/proyectos?etapa=seguimiento`, `/proyectos` y `/proyectos?etapa=historial` montan la misma pantalla. No hay `pages/consultas` ni `pages/seguimiento`. Debajo de 34rem la barra es de dos por dos (`@container` con `@min-[34rem]:grid-cols-4`): las cuatro entran enteras en 360, y `seguimiento.spec.ts` lo mide.
 - `despieceDelProyecto` y `DistribucionDespiece` los comparten la ficha y la pantalla de cobro: lo que cambia entre las dos es el modo (`real` o `proyeccion`), no la cuenta. La proyección sale de `calcularLiquidacion` del dominio, nunca del `despiece` del diseño, que reparte sobre el presupuesto.
 - **Todo título de un trabajo y todo nombre de un cliente que se muestra lleva a su ficha** (`rutaDelProyecto` y `rutaDelCliente`, las dos en `shared/lib`). Una fila de una lista usa el link estirado de `TarjetaDeProyecto` (el título es el `Link` con `data-tarjeta` y `after:absolute after:inset-0`, la fila es `relative`); un nombre de cliente suelto usa `EnlaceACliente`. No llevan enlace: el encabezado de la propia ficha, un control de formulario (combobox, select, input), un texto que ya vive adentro de un botón que navega (la fila de Clientes, el chip del libro) y los avisos transitorios. `enlaces.spec.ts` recorre los lugares donde faltaba.
-- **Toda tarjeta de una lista de proyectos es `TarjetaDeProyecto`** (`entities/proyecto`), dentro de `TarjetasDeProyectos`: Seguimiento, Activos e Historial en el celular. El borde, el enlace estirado, el foco y la marca de liquidación viven ahí; el cliente entra por `cliente` (un slice de `entities` no importa a otro) y lo de abajo por `pie`. Si una lista de proyectos se ve distinta, no le copies clases: usá el componente.
+- **Toda tarjeta de una lista de proyectos es `TarjetaDeProyecto`** (`entities/proyecto`), dentro de `TarjetasDeProyectos`: Consultas, Seguimiento, Activos e Historial en el celular. El borde, el enlace estirado, el foco y la marca de liquidación viven ahí; el cliente entra por `cliente` (un slice de `entities` no importa a otro) y lo de abajo por `pie`. Si una lista de proyectos se ve distinta, no le copies clases: usá el componente.
 - **El ordenamiento de listas es `shared/lib/orden.ts`**, compartido con Clientes. Lo que falta va al final en los dos sentidos y el desempate es estable. Si agregás una columna, es un `Criterio` más, no otro `sort`.
 - `entregaEstimada` cuenta solo días de semana: acepta feriados por parámetro, pero **nadie le pasa una lista todavía**.
 
@@ -247,6 +249,12 @@ src/
 - **`vaciarTaller` del e2e descongela antes de borrar** (`descongelarProyectos`): un liquidado con pagos o gastos no se borra (`MN001`) y sin borrarlo tampoco se borra su cliente (`MN003`).
 - `useLiquidacionEnVuelo` filtra **todas** las mutaciones pendientes, y el guardado del agregado también lleva un `pedido`: lo que distingue a una liquidación es que el suyo trae `proyectoId`. Si agregás otra mutación con esa forma, ajustá el filtro.
 
+## La fecha de la plata (ADR 0063)
+
+- **Toda plata que entra lleva una fecha editable, con hoy por defecto, y la fecha viaja con la mutación.** Hoy es `hoyEnElTaller()` de `@/shared/lib`, el día en Argentina: nunca `toISOString()`, que después de las 21 ya es mañana. La base no inventa ninguna: rechaza la que falta (`MN016`) y la que todavía no llegó (`MN017`), y la pantalla lo avisa antes con `errorDeLaFechaDeLaPlata`.
+- **El cobro toma por defecto el día del último pago** (`fechaDelCobroPropuesta`), también el del pago final que se carga en la misma pantalla, y reabrir deja puesta la fecha del cobro original.
+- **Si la fecha es anterior a la apertura, `CasillaDeLaApertura` pregunta si esa plata ya estaba en los saldos**, tildada por defecto: queda en el libro con su fecha y no mueve los tesoros. Solo aparece antes de la apertura; marcar algo posterior lo rechaza la base (`MN018`).
+
 ## Finanzas, el diezmo y los movimientos (ADR 0018)
 
 - **El libro se arma con `lineasDelTaller`, no con `asientosDelLibro`.** Una línea es una operación
@@ -267,13 +275,21 @@ src/
 - Sin virtualización de listas y sin librería de gráficos. El gráfico del mes es `aria-hidden` y la
   tabla con los mismos números vive detrás de «Ver los números», visible para cualquiera.
 
-## Seguimiento (ADR 0019)
+## Seguimiento: los «por ahora no» (ADR 0064)
 
-- **Un contacto es una fila de `proyectos` en fase de seguimiento.** No tiene tabla ni mutación
+- **En seguimiento es un estado, `en_seguimiento`, con su próximo contacto** (`proximos_contactos`). Se entra desde cualquier consulta con `HojaDePonerEnSeguimiento` y se sale registrando el contacto (`HojaDeRegistrarElContacto`): vuelve a una consulta, sigue con otra fecha o no va, que lleva al cierre del perdido. Los dos viajan en `MUTACION_DE_PROYECTO` con `proximos`, en el mismo guardado que el estado: nunca los guardes por separado, la base exige los dos juntos (`MN019`). La ficha es `FichaDeSeguimiento`, elegida por la fase como las otras.
+- **No se aprueba desde seguimiento**: la ficha no ofrece aprobar. Se vuelve a una consulta y se aprueba por el camino de siempre, donde se carga la seña.
+- **En la agenda es un derivado que no se arrastra**: cambiar el día es registrar el contacto, que deja historia. La marca de importante vive en la fila del contacto y va por `MUTACION_DE_MARCA_DEL_SEGUIMIENTO`.
+- **La fecha del próximo contacto se elige con `CuandoLeEscribis`** (una semana, un mes, tres meses u otro día desde hoy). La misma pieza sirve para entrar y para «todavía no».
+
+## Consultas: el embudo (ADR 0019, 0038 y 0064)
+
+- Hasta el ADR 0064 esta pestaña se llamaba Seguimiento; en el código del front se dice consultas (`ListaDeConsultas`, `features/avanzar-la-consulta`, `RUTA_DE_CONSULTAS`), y en la base quedan los nombres viejos.
+- **Un contacto es una fila de `proyectos` en fase de consultas.** No tiene tabla ni mutación
   propia: todo pasa por `MUTACION_DE_PROYECTO`, y la seña es un pago del agregado. No agregues una
   tabla de leads: la seña tendría que mudarse al aprobar, y eso es lo que no puede pasar.
 - **La ficha es `/proyectos/:id` y elige la vista por la fase** (`FichaDeContacto` o la de obra). No
-  agregues `/seguimiento/:id`: los avisos, el cierre y `rutaDelProyecto` ya apuntan a la otra.
+  agregues `/consultas/:id`: los avisos, el cierre y `rutaDelProyecto` ya apuntan a la otra.
 - **El orden y el próximo paso se derivan, no se cargan.** La espera cuenta desde
   `proyectos.ultimo_contacto`, que escriben solos los pasos y no las ediciones: cargar el contacto,
   cambiar de etapa y aprobarlo pasan por `ultimoContactoAlGuardar`. Si está vacío, cuenta desde el día
@@ -299,7 +315,7 @@ src/
 - **La seña se edita desde la hoja solo si hay cero o un pago.** Con varios, el campo muestra el total y
   manda al detalle.
 - **`Marco` no enfoca el `<main>` si el foco ya está adentro de un `dialog[open]`**: si no, una hoja
-  abierta por ruta (`/seguimiento/nuevo`, `/finanzas/nuevo`) perdía el foco del primer campo.
+  abierta por ruta (`/consultas/nueva`, `/finanzas/nuevo`) perdía el foco del primer campo.
 - **Una hoja por ruta se abre encima de la pantalla desde la que se abrió** (`shared/lib/hojas.ts`,
   ADR 0020). El link manda `state={conFondo(location)}`, `Marco` renderiza las pantallas con esa
   ubicación de fondo y las hojas en su propia capa. Cerrar es `useCerrarHoja()`: con fondo es volver
@@ -317,7 +333,7 @@ src/
 - **Los gastos de un contacto salen de MAUN desde que se cargan** (ADR 0011). Es una diferencia
   deliberada con el sistema viejo, decidida con el dueño (ADR 0019), y el e2e la deja escrita: no la
   «arregles».
-- Proyecto nuevo solo ofrece estados de obra: un contacto entra por Seguimiento.
+- Proyecto nuevo solo ofrece estados de obra: un contacto entra por Consultas.
 - **El presupuesto estimativo es una etapa, y lo que sigue se sugiere, no se impone** (ADR 0038). `situacionDelContacto` recibe lo cobrado (`resumen.cobrado`) y mira las tareas: devuelve la `sugerencia`, y `pasosDelContacto` arma los botones, el sugerido primero. **No agregues una guarda, un `check` ni un botón deshabilitado que mire los pagos para dejar pasar de etapa**: el dueño pidió poder presupuestar sin haber cobrado la visita. Si alguien quiere volverlo obligatorio, se habla con el dueño antes.
 - **Las tareas de presupuestar son cuatro columnas booleanas, no estados** (`TAREAS_DEL_PRESUPUESTO`, `MUTACION_DE_TAREAS`). Cada tilde es un update de su columna sola y `guardar_proyecto` no las escribe. Una fila de la réplica guardada antes de que existieran puede no traerlas: leelas con `tareaHecha`, nunca con la columna directa.
 - **«Ya fui a relevar» pide el día** (`FormularioDelRelevamiento`, `model/relevamiento.ts`), propone el vencimiento y, sin pagos, anota la seña en el mismo guardado (`guardadoDeUnPaso` acepta pagos). Corregir el día después corre el vencimiento solo si era el propuesto (`valoresConOtraVisita`).
@@ -434,18 +450,18 @@ src/
 
 - **`getByLabel` matchea por subcadena, y también matchea el `aria-label` de una sección.** Una etiqueta o un landmark nuevo cuyo nombre contenga el de un campo que ya existe rompe los specs de todas las demás pantallas: pasó con «Seña de este trabajo (%)» contra `getByLabel('Trabajo')` y con una sección «Opciones de presupuesto» contra `getByLabel('Presupuesto')`. Antes de nombrar un campo o una región, fijate qué otros nombres hay en esa pantalla. Es lo mismo que ya documentaba «Contraseña».
 - **Antes de `context.setOffline(true)` hay que esperar dos cosas**: `navigator.serviceWorker.ready`, porque el service worker es el que sirve el shell al reabrir, y que la réplica ya esté guardada en IndexedDB. Sin lo segundo, reabrir sin señal encuentra el dispositivo vacío.
-- **La réplica tiene `staleTime` de 60 segundos: algo que se escribe en la base desde afuera de la app (por REST, o el cliente contestando la encuesta) no aparece con un `goto`.** La app arranca con lo guardado y no vuelve a pedir. Para traerlo, «Sincronizar ahora» en Ajustes, que es el camino sin gesto (`sincronizarEIrAInicio` en `opiniones.spec.ts`), o crear los datos antes de abrir la app.
+- **Lo que se escribe en la base desde afuera de la app (por REST, o el cliente contestando la encuesta) aparece solo, en menos de un segundo**: lo trae el aviso de cambios (ADR 0065). En un test se espera con el timeout del `expect`, no con un `goto`. Si el spec corta el WebSocket de Realtime (`page.routeWebSocket`), ocultar y volver a mostrar la página pide el delta; «Sincronizar ahora» en Ajustes sigue siendo el camino sin gesto (`sincronizarEIrAInicio` en `opiniones.spec.ts`).
+- **Un `visibilitychange` simulado lleva `bubbles: true`** (`ponerLaVisibilidad` en `la-opinion-llega-sola.spec.ts`). El del navegador sube hasta `window`, que es donde escucha TanStack. Sin `bubbles`, la medición de la demora de las opiniones salió falsa la primera vez: ningún delta en noventa segundos.
 - **Los radios y las casillas de la encuesta son nativos y visualmente ocultos**: `.check()` sobre el input espera a que sea visible y vence. Se toca la etiqueta que lo envuelve y se verifica con `toBeChecked()` (`elegir` en `encuesta-publica.spec.ts`).
 - **`page.goto` reinicia la app**, y una mutación recién encolada puede no haber llegado todavía a IndexedDB: un cobro sin señal seguido de un `goto` se pierde. Para encadenar dos operaciones sin señal, navegá por la interfaz (los `Link`) en vez de recargar. Cerrar y reabrir la app sí se prueba, pero después de esperar a que el cambio esté aplicado.
 - **PostgREST rechaza un `PATCH` sin filtro** con un `21000` («UPDATE requires a WHERE clause»), aunque la RLS ya deje una sola fila a la vista: los helpers que editan por REST llevan el filtro igual.
 - El navegador **normaliza `0ms` a `0s`** al leer una custom property computada: para afirmar sobre una duración, comparar el número y no el texto.
 - **`saldosEnInicio` vive en `e2e/apoyo/pantalla.ts`** y la tarjeta de DIEZMO no trae importe cuando está al día: el helper devuelve 0 en ese caso y negativo cuando dice «de más». Un helper que asume «siempre hay un `$`» se rompe con el taller vacío.
-- **Un cambio hecho por REST después de que la app cargó no aparece con un `page.goto`.** La réplica tiene `staleTime` de 60 s: al volver a montar, TanStack la considera fresca y no refetchea. O se hace el cambio **antes** del primer `goto`, o se cambia desde la interfaz.
 - **`contactoPorRpc` crea el cliente como «Cliente de {título}»**, así que `getByRole('link', { name: título })`
   sin `exact: true` encuentra dos enlaces (el del trabajo y el del cliente) y rompe por modo estricto.
 - **La primera carga de un contexto nuevo puede pasar de cinco segundos** en «Trayendo los datos del
   taller»: no hay nada en IndexedDB y la réplica sale de `bootstrap()`. Un recorrido con `Tab` que
-  arranca ahí no encuentra nada. `abrir()` de `seguimiento.spec.ts` espera al `<main>` antes de seguir.
+  arranca ahí no encuentra nada. `abrir()` de `consultas.spec.ts` espera al `<main>` antes de seguir.
 - **`page.clock.setFixedTime` antes del `goto` manda al login**: con el reloj adelantado días, el token
   guardado está vencido. Para probar «hace N días» se adelanta el reloj **después** de que la app cargó y
   se fuerza un render navegando (una pestaña y vuelta).

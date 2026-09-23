@@ -75,6 +75,20 @@ export function sumarDias(desde: string, cantidad: number): string {
   return fechaDesdeDia(diaDesdeEpoca(desde) + cantidad);
 }
 
+export function sumarMeses(desde: string, cantidad: number): string {
+  if (!Number.isInteger(cantidad)) {
+    throw new RangeError(`La cantidad de meses es un entero: ${String(cantidad)} no.`);
+  }
+  const instante = new Date(diaDesdeEpoca(desde) * MS_POR_DIA);
+  const meses = instante.getUTCFullYear() * 12 + instante.getUTCMonth() + cantidad;
+  const anioNuevo = Math.floor(meses / 12);
+  const mesNuevo = meses - anioNuevo * 12;
+  const ultimoDelMes = new Date(Date.UTC(anioNuevo, mesNuevo + 1, 0)).getUTCDate();
+  return fechaDesdeDia(
+    Date.UTC(anioNuevo, mesNuevo, Math.min(instante.getUTCDate(), ultimoDelMes)) / MS_POR_DIA,
+  );
+}
+
 export function diasEntre(desde: string, hasta: string): number {
   return diaDesdeEpoca(hasta) - diaDesdeEpoca(desde);
 }

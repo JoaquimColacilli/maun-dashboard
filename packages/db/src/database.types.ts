@@ -770,6 +770,7 @@ export type Database = {
           proyecto_id: string;
           updated_at: string;
           version: number;
+          ya_en_la_apertura: boolean;
         };
         Insert: {
           concepto?: string;
@@ -782,6 +783,7 @@ export type Database = {
           proyecto_id: string;
           updated_at?: string;
           version?: number;
+          ya_en_la_apertura?: boolean;
         };
         Update: {
           concepto?: string;
@@ -794,6 +796,7 @@ export type Database = {
           proyecto_id?: string;
           updated_at?: string;
           version?: number;
+          ya_en_la_apertura?: boolean;
         };
         Relationships: [
           {
@@ -890,6 +893,72 @@ export type Database = {
           },
         ];
       };
+      proximos_contactos: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          etapa_previa: Database['public']['Enums']['estado_proyecto'];
+          fecha: string;
+          hecho_el: string | null;
+          household_id: string;
+          id: string;
+          importante: boolean;
+          nota: string;
+          proyecto_id: string;
+          respuesta: string;
+          resultado: string | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          etapa_previa: Database['public']['Enums']['estado_proyecto'];
+          fecha: string;
+          hecho_el?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          nota?: string;
+          proyecto_id: string;
+          respuesta?: string;
+          resultado?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          etapa_previa?: Database['public']['Enums']['estado_proyecto'];
+          fecha?: string;
+          hecho_el?: string | null;
+          household_id?: string;
+          id?: string;
+          importante?: boolean;
+          nota?: string;
+          proyecto_id?: string;
+          respuesta?: string;
+          resultado?: string | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'proximos_contactos_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'proximos_contactos_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       proyectos: {
         Row: {
           cliente_id: string;
@@ -941,6 +1010,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1001,6 +1071,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
           reapertura_sueldo_mensual?: boolean | null;
+          reparto_ya_en_la_apertura?: boolean;
           sena_bp?: number | null;
           titulo: string;
           ultimo_contacto?: string | null;
@@ -1061,6 +1132,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
           reapertura_sueldo_mensual?: boolean | null;
+          reparto_ya_en_la_apertura?: boolean;
           sena_bp?: number | null;
           titulo?: string;
           ultimo_contacto?: string | null;
@@ -1227,6 +1299,7 @@ export type Database = {
           origen: string | null;
           proyecto_id: string | null;
           tesoro: Database['public']['Enums']['tesoro'] | null;
+          ya_en_la_apertura: boolean | null;
         };
         Relationships: [];
       };
@@ -1258,6 +1331,7 @@ export type Database = {
           p_tope_fijos_centavos: number;
           p_tope_sueldo_centavos: number;
           p_version: number;
+          p_ya_en_la_apertura?: boolean;
         };
         Returns: {
           cliente_id: string;
@@ -1309,6 +1383,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1341,6 +1416,7 @@ export type Database = {
           p_tope_fijos_centavos: number;
           p_tope_sueldo_centavos: number;
           p_version: number;
+          p_ya_en_la_apertura?: boolean;
         };
         Returns: {
           cliente_id: string;
@@ -1392,6 +1468,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1430,6 +1507,7 @@ export type Database = {
           p_necesidades?: Json;
           p_opciones?: Json;
           p_pagos: Json;
+          p_proximos?: Json;
           p_proyecto: Json;
         };
         Returns: Json;
@@ -1486,6 +1564,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1559,6 +1638,7 @@ export type Database = {
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
           reapertura_sueldo_mensual: boolean | null;
+          reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
           titulo: string;
           ultimo_contacto: string | null;
@@ -1604,6 +1684,7 @@ export type Database = {
         | 'relevamiento'
         | 'a_presupuestar'
         | 'presupuesto_enviado'
+        | 'en_seguimiento'
         | 'perdido'
         | 'en_curso'
         | 'entregado'
@@ -1748,6 +1829,7 @@ export const Constants = {
         'relevamiento',
         'a_presupuestar',
         'presupuesto_enviado',
+        'en_seguimiento',
         'perdido',
         'en_curso',
         'entregado',

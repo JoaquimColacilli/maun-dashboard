@@ -1,49 +1,38 @@
-import { ESTADOS_DE_SEGUIMIENTO, type EstadoProyecto } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
 
 import { AccionesDeContacto, EnlaceACliente } from '@/entities/cliente';
 import {
   buscarProyectos,
-  contactosEnOrden,
   ESTADO,
-  RUTA_DE_CONTACTO_NUEVO,
+  etapaAlVolver,
+  seguimientosEnOrden,
   TarjetaDeProyecto,
   TarjetasDeProyectos,
-  type ContactoEnLista,
+  type EnSeguimiento,
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
-import { conFondo, fechaLarga, formatearPesos } from '@/shared/lib';
+import { fechaLarga, formatearPesos, relativa } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
-function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: string }) {
-  const { resumen, situacion } = contacto;
-  const { proyecto, cliente } = resumen;
+function cuandoLeToca({ pendiente, atrasado, esHoy }: EnSeguimiento, hoy: string): string {
+  if (pendiente === undefined) return 'Sin fecha para volver a escribirle';
+  if (esHoy) return 'Le toca hoy';
+  if (atrasado) {
+    return `Atrasado: le tocaba el ${fechaLarga(pendiente.fecha, hoy)}, ${relativa(pendiente.fecha, hoy)}`;
+  }
+  return `El ${fechaLarga(pendiente.fecha, hoy)}, ${relativa(pendiente.fecha, hoy)}`;
+}
 
-  const datos: { clave: string; valor: string; tono: string }[] = [];
-  if (proyecto.fecha_visita !== null) {
-    datos.push({ clave: 'Visita', valor: fechaLarga(proyecto.fecha_visita, hoy), tono: '' });
-  }
-  if (resumen.cobrado > 0) {
-    datos.push({
-      clave: 'Seña cobrada',
-      valor: formatearPesos(resumen.cobrado),
-      tono: 'text-hogar',
-    });
-  }
-  if (proyecto.presupuesto_centavos !== null) {
-    datos.push({
-      clave: 'Presupuesto',
-      valor: formatearPesos(proyecto.presupuesto_centavos),
-      tono: '',
-    });
-  }
+function TarjetaDeSeguimiento({ fila, hoy }: { fila: EnSeguimiento; hoy: string }) {
+  const { resumen, pendiente, atrasado, esHoy } = fila;
+  const { proyecto, cliente } = resumen;
+  const nota = pendiente?.nota.trim() ?? '';
 
   return (
     <TarjetaDeProyecto
       resumen={resumen}
-      atencion={situacion.fria}
+      atencion={atrasado}
       cliente={
         cliente === undefined ? (
           <span className="text-meta text-text-3">{resumen.nombreDelCliente}</span>
@@ -63,31 +52,35 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
       }
     >
       <div>
-        <p className="text-label font-semibold">{situacion.proximoPaso}</p>
+        <p className="text-label font-semibold">Volver a escribirle</p>
         <p
           className={`mt-0.5 flex items-center gap-1.5 text-meta ${
-            situacion.fria ? 'font-semibold text-atencion' : 'text-text-2'
+            atrasado || esHoy ? 'font-semibold text-atencion' : 'text-text-2'
           }`}
         >
-          <Icono nombre={situacion.agendada ? 'calendar' : 'clock'} tamano={13} />
-          {situacion.espera}
+          <Icono nombre="calendar" tamano={13} />
+          {cuandoLeToca(fila, hoy)}
         </p>
       </div>
 
-      {datos.length > 0 && (
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-meta tabular-nums">
-          {datos.map((dato) => (
-            <div key={dato.clave} className="contents">
-              <dt className="text-text-3">{dato.clave}</dt>
-              <dd className={`font-medium ${dato.tono}`}>{dato.valor}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      {nota !== '' && <p className="line-clamp-2 text-meta leading-snug text-text-2">{nota}</p>}
 
-      {proyecto.notas !== '' && (
-        <p className="line-clamp-2 text-meta leading-snug text-text-2">{proyecto.notas}</p>
-      )}
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-meta tabular-nums">
+        <dt className="text-text-3">Estaba en</dt>
+        <dd className="font-medium">{ESTADO[etapaAlVolver(pendiente)].etiqueta}</dd>
+        {proyecto.presupuesto_centavos !== null && (
+          <>
+            <dt className="text-text-3">Presupuesto</dt>
+            <dd className="font-medium">{formatearPesos(proyecto.presupuesto_centavos)}</dd>
+          </>
+        )}
+        {resumen.cobrado > 0 && (
+          <>
+            <dt className="text-text-3">Seña cobrada</dt>
+            <dd className="font-medium text-hogar">{formatearPesos(resumen.cobrado)}</dd>
+          </>
+        )}
+      </dl>
     </TarjetaDeProyecto>
   );
 }
@@ -99,50 +92,33 @@ export interface ListaDeSeguimientoProps {
 }
 
 export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimientoProps) {
-  const navegar = useNavigate();
-  const location = useLocation();
   const [consulta, setConsulta] = useState('');
-  const [filtro, setFiltro] = useState<EstadoProyecto | 'todos'>('todos');
 
-  const contactos = useMemo(
-    () => contactosEnOrden(resumenes, replica, hoy),
+  const enSeguimiento = useMemo(
+    () => seguimientosEnOrden(resumenes, replica, hoy),
     [resumenes, replica, hoy],
   );
 
   const visibles = useMemo(() => {
     const coinciden = new Set(buscarProyectos(resumenes, consulta).map((r) => r.proyecto.id));
-    return contactos.filter(
-      (contacto) =>
-        coinciden.has(contacto.resumen.proyecto.id) &&
-        (filtro === 'todos' || contacto.resumen.proyecto.estado === filtro),
-    );
-  }, [contactos, resumenes, consulta, filtro]);
+    return enSeguimiento.filter((fila) => coinciden.has(fila.resumen.proyecto.id));
+  }, [enSeguimiento, resumenes, consulta]);
 
-  if (contactos.length === 0) {
+  if (enSeguimiento.length === 0) {
     return (
       <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
         <span className="flex size-12 items-center justify-center rounded-field bg-surface">
-          <Icono nombre="route" tamano={24} />
+          <Icono nombre="clock" tamano={24} />
         </span>
-        <h2 className="mt-1 text-h1 leading-tight font-semibold">Nadie en seguimiento por ahora</h2>
+        <h2 className="mt-1 text-h1 leading-tight font-semibold">Nadie en seguimiento</h2>
         <p className="text-body leading-relaxed text-text-2">
-          Cuando te llame alguien, cargalo acá con lo que pide y la fecha de la visita. Si en la
-          visita te dejó una seña, anotala: entra a la caja del taller desde ese día. Cuando lo
-          apruebe, pasa a Activos.
+          Cuando una consulta te diga «por ahora no», pasala a seguimiento desde su ficha con el día
+          en que le volvés a escribir. Acá quedan en orden, los atrasados primero, y la agenda te
+          avisa cuándo toca.
         </p>
-        <Button
-          onClick={() => {
-            void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
-          }}
-        >
-          <Icono nombre="user-plus" tamano={18} />
-          Cargar el primer contacto
-        </Button>
       </section>
     );
   }
-
-  const buscando = consulta.trim() !== '';
 
   return (
     <>
@@ -156,43 +132,21 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
               setConsulta(evento.target.value);
             }}
             placeholder="Buscar por cliente o trabajo"
-            aria-label="Buscar contacto"
+            aria-label="Buscar en seguimiento"
             className="min-w-0 flex-1 bg-transparent text-label outline-none"
           />
         </label>
-
-        {(['todos', ...ESTADOS_DE_SEGUIMIENTO] as const).map((estado) => {
-          const activo = filtro === estado;
-          return (
-            <button
-              key={estado}
-              type="button"
-              aria-pressed={activo}
-              onClick={() => {
-                setFiltro(estado);
-              }}
-              className={`h-9 rounded-control border px-3 text-label font-medium ${
-                activo ? 'border-ink bg-ink text-paper' : 'border-border text-ink'
-              }`}
-            >
-              {estado === 'todos' ? 'Todos' : ESTADO[estado].etiqueta}
-            </button>
-          );
-        })}
       </div>
 
       {visibles.length === 0 ? (
         <div className="flex flex-col items-start gap-3 py-7">
           <p className="text-body-lg text-text-2">
-            {buscando
-              ? `Ningún contacto coincide con «${consulta}».`
-              : 'Ningún contacto está en esa etapa.'}
+            Nadie en seguimiento coincide con «{consulta}».
           </p>
           <Button
             variant="secundario"
             onClick={() => {
               setConsulta('');
-              setFiltro('todos');
             }}
           >
             Limpiar la búsqueda
@@ -201,11 +155,11 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
       ) : (
         <>
           <p className="mb-2.5 text-meta text-text-2">
-            Primero lo que hace más que espera; las visitas agendadas, al final.
+            Por el día en que le volvés a escribir: los atrasados, primero.
           </p>
-          <TarjetasDeProyectos etiqueta="Contactos">
-            {visibles.map((contacto) => (
-              <TarjetaDeContacto key={contacto.resumen.proyecto.id} contacto={contacto} hoy={hoy} />
+          <TarjetasDeProyectos etiqueta="En seguimiento">
+            {visibles.map((fila) => (
+              <TarjetaDeSeguimiento key={fila.resumen.proyecto.id} fila={fila} hoy={hoy} />
             ))}
           </TarjetasDeProyectos>
         </>

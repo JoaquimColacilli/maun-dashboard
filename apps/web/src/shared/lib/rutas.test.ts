@@ -49,9 +49,9 @@ describe('el filtro de tesoro en la URL de Finanzas', () => {
 
 describe('el día que viaja en el enlace a cargar un contacto o un proyecto', () => {
   it('cada enlace lleva la fecha en su parámetro, y sin fecha va solo', () => {
-    expect(rutaDeContactoNuevo('2026-09-15')).toBe('/seguimiento/nuevo?visita=2026-09-15');
+    expect(rutaDeContactoNuevo('2026-09-15')).toBe('/consultas/nueva?visita=2026-09-15');
     expect(rutaDeProyectoNuevo('2026-09-15')).toBe('/proyectos/nuevo?entrega=2026-09-15');
-    expect(rutaDeContactoNuevo()).toBe('/seguimiento/nuevo');
+    expect(rutaDeContactoNuevo()).toBe('/consultas/nueva');
     expect(rutaDeProyectoNuevo()).toBe('/proyectos/nuevo');
   });
 

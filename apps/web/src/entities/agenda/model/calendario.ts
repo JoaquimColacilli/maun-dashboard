@@ -178,10 +178,15 @@ export function textoDelEvento(evento: EventoDeLaAgenda): string {
   return evento.clase === 'propia' ? evento.texto : evento.titulo;
 }
 
+export function idDelProximoContacto(evento: EventoDeLaAgenda): string | null {
+  if (evento.clase !== 'derivada' || evento.categoria !== 'seguimiento') return null;
+  return evento.id.replace(/^seguimiento:/, '');
+}
+
 export function nombreDelEvento(evento: EventoDeLaAgenda): string {
   return evento.clase === 'propia'
     ? evento.texto
-    : `${DERIVADA[evento.categoria].accion}: ${evento.titulo}`;
+    : `${DERIVADA[evento.categoria].accion}${DERIVADA[evento.categoria].conector}${evento.titulo}`;
 }
 
 export function detalleDelEvento(evento: EventoDeLaAgenda): string {

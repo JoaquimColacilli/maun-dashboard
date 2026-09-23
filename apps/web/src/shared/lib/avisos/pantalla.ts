@@ -86,6 +86,16 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Paso del contacto anotado sin señal: se guarda solo cuando vuelva.',
     error: 'No se guardó el paso del contacto.',
   },
+  pasoASeguimiento: {
+    hecho: 'Quedó en seguimiento: la agenda te avisa cuándo volver a escribirle.',
+    enCola: 'Quedó en seguimiento sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pasó a seguimiento.',
+  },
+  contactoRegistrado: {
+    hecho: 'Contacto registrado.',
+    enCola: 'Contacto registrado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se registró el contacto.',
+  },
   tareaDelPresupuesto: {
     hecho: 'Tarea del presupuesto guardada.',
     enCola: 'Tarea del presupuesto anotada sin señal: se guarda sola cuando vuelva.',

@@ -11,6 +11,7 @@ import {
   guardarLasFormasDeCobro,
   guardarLosCostosEstimados,
   householdDe,
+  marcarElProximoContacto,
   marcarEnLaAgenda,
   marcarTareasDelPresupuesto,
   quitarFilaLocal,
@@ -33,13 +34,14 @@ import { datosActualesDelProyecto } from '../model/liquidacion';
 import { cambiaAlgunaForma } from '../model/cobro';
 import { cambiaAlgunCosto } from '../model/costos';
 import { cambiaAlgunaMarca } from '../model/marcas';
-import { ultimoContactoAlGuardar } from '../model/seguimiento';
+import { ultimoContactoAlGuardar } from '../model/consultas';
 import { cambiaAlgunaTarea } from '../model/tareas';
 
 export const CLAVE_DE_PROYECTO = ['proyectos', 'guardar'] as const;
 export const CLAVE_DE_NOTAS = ['proyectos', 'notas'] as const;
 export const CLAVE_DE_TAREAS = ['proyectos', 'tareas'] as const;
 export const CLAVE_DE_MARCAS = ['proyectos', 'marcas'] as const;
+export const CLAVE_DE_MARCA_DEL_SEGUIMIENTO = ['proyectos', 'marca-del-seguimiento'] as const;
 export const CLAVE_DE_COSTOS = ['proyectos', 'costos'] as const;
 export const CLAVE_DE_FORMAS_DE_COBRO = ['proyectos', 'formas-de-cobro'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
@@ -56,6 +58,7 @@ export interface GuardadoDeProyecto {
     gastos: readonly FilaDe<'gastos'>[];
     opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
     necesidades: readonly FilaDe<'necesidades'>[];
+    proximos?: readonly FilaDe<'proximos_contactos'>[];
   };
 }
 
@@ -80,6 +83,12 @@ export interface MarcaDeLaAgenda {
   version: number;
 }
 
+export interface MarcaDelSeguimiento {
+  id: string;
+  importante: boolean;
+  previa: boolean;
+}
+
 export interface CostosDelTrabajo {
   id: string;
   cambios: CambiosDeCostos;
@@ -96,6 +105,7 @@ export interface BajaDeProyecto {
     gastos: readonly FilaDe<'gastos'>[];
     opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
     necesidades: readonly FilaDe<'necesidades'>[];
+    proximos?: readonly FilaDe<'proximos_contactos'>[];
   };
 }
 
@@ -113,6 +123,7 @@ export function hijosDelProyecto(
   gastos: FilaDe<'gastos'>[];
   opciones: FilaDe<'opciones_de_presupuesto'>[];
   necesidades: FilaDe<'necesidades'>[];
+  proximos: FilaDe<'proximos_contactos'>[];
 } {
   return {
     pagos: filasDe(replica, 'pagos').filter((pago) => pago.proyecto_id === proyectoId),
@@ -122,6 +133,9 @@ export function hijosDelProyecto(
     ),
     necesidades: filasDe(replica, 'necesidades').filter(
       (necesidad) => necesidad.proyecto_id === proyectoId,
+    ),
+    proximos: filasDe(replica, 'proximos_contactos').filter(
+      (proximo) => proximo.proyecto_id === proyectoId,
     ),
   };
 }
@@ -253,6 +267,7 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         reapertura_objetivo_fijos_centavos: null,
         reapertura_sueldo_mensual: null,
         reapertura_fecha_cobro: null,
+        reparto_ya_en_la_apertura: false,
       } satisfies FilaDe<'proyectos'>);
 
   let siguiente = aplicarFilaLocal(replica, 'proyectos', fila);
@@ -270,6 +285,7 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
       fecha: pago.fecha,
       concepto: pago.concepto,
       monto_centavos: pago.monto_centavos,
+      ya_en_la_apertura: pago.ya_en_la_apertura ?? previo?.ya_en_la_apertura ?? false,
       created_at: previo?.created_at ?? ahora,
       updated_at: ahora,
       deleted_at: null,
@@ -338,6 +354,30 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
     });
   }
 
+  for (const proximo of pedido.proximos ?? []) {
+    if (proximo.borrado === true) {
+      siguiente = quitarFilaLocal(siguiente, 'proximos_contactos', proximo.id);
+      continue;
+    }
+    const previo = filaPorId(siguiente, 'proximos_contactos', proximo.id);
+    siguiente = aplicarFilaLocal(siguiente, 'proximos_contactos', {
+      id: proximo.id,
+      household_id: household.id,
+      proyecto_id: pedido.id,
+      fecha: proximo.fecha,
+      nota: proximo.nota,
+      etapa_previa: proximo.etapa_previa,
+      hecho_el: proximo.hecho_el,
+      resultado: proximo.resultado,
+      respuesta: proximo.respuesta,
+      importante: previo?.importante ?? false,
+      created_at: previo?.created_at ?? ahora,
+      updated_at: ahora,
+      deleted_at: null,
+      version: previo?.version ?? 1,
+    });
+  }
+
   return siguiente;
 }
 
@@ -367,6 +407,9 @@ function conLoQueVolvio(
   for (const necesidad of guardado.necesidades) {
     siguiente = aplicarFilaLocal(siguiente, 'necesidades', necesidad);
   }
+  for (const proximo of guardado.proximos) {
+    siguiente = aplicarFilaLocal(siguiente, 'proximos_contactos', proximo);
+  }
   return siguiente;
 }
 
@@ -384,6 +427,9 @@ function comoEstaba(replica: Replica, { pedido, previos }: GuardadoDeProyecto): 
   for (const necesidad of pedido.necesidades ?? []) {
     siguiente = quitarFilaLocal(siguiente, 'necesidades', necesidad.id);
   }
+  for (const proximo of pedido.proximos ?? []) {
+    siguiente = quitarFilaLocal(siguiente, 'proximos_contactos', proximo.id);
+  }
   for (const pago of previos.pagos) siguiente = aplicarFilaLocal(siguiente, 'pagos', pago);
   for (const gasto of previos.gastos) siguiente = aplicarFilaLocal(siguiente, 'gastos', gasto);
   for (const opcion of previos.opciones) {
@@ -391,6 +437,9 @@ function comoEstaba(replica: Replica, { pedido, previos }: GuardadoDeProyecto): 
   }
   for (const necesidad of previos.necesidades) {
     siguiente = aplicarFilaLocal(siguiente, 'necesidades', necesidad);
+  }
+  for (const proximo of previos.proximos ?? []) {
+    siguiente = aplicarFilaLocal(siguiente, 'proximos_contactos', proximo);
   }
   return siguiente;
 }
@@ -535,6 +584,35 @@ export const MUTACION_DE_MARCAS: MutationOptions<FilaDe<'proyectos'>, unknown, M
   },
 };
 
+function conLaMarcaDelSeguimiento(replica: Replica, id: string, importante: boolean): Replica {
+  const actual = filaPorId(replica, 'proximos_contactos', id);
+  if (!actual) return replica;
+  return aplicarFilaLocal(replica, 'proximos_contactos', { ...actual, importante });
+}
+
+export const MUTACION_DE_MARCA_DEL_SEGUIMIENTO: MutationOptions<
+  FilaDe<'proximos_contactos'>,
+  unknown,
+  MarcaDelSeguimiento
+> = {
+  mutationKey: CLAVE_DE_MARCA_DEL_SEGUIMIENTO,
+  mutationFn: ({ id, importante }) => marcarElProximoContacto(id, importante),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id, importante }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) => conLaMarcaDelSeguimiento(replica, id, importante));
+    await guardarCacheAhora();
+  },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarFilaLocal(replica, 'proximos_contactos', fila));
+  },
+  onError: (_error, { id, previa }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => conLaMarcaDelSeguimiento(replica, id, previa));
+  },
+};
+
 export const MUTACION_DE_COSTOS: MutationOptions<FilaDe<'proyectos'>, unknown, CostosDelTrabajo> = {
   mutationKey: CLAVE_DE_COSTOS,
   mutationFn: ({ id, cambios }) => guardarLosCostosEstimados(id, cambios),
@@ -582,7 +660,7 @@ export const MUTACION_DE_FORMAS_DE_COBRO: MutationOptions<
 };
 
 function sinElProyecto(replica: Replica, id: string): Replica {
-  const { pagos, gastos, opciones, necesidades } = hijosDelProyecto(replica, id);
+  const { pagos, gastos, opciones, necesidades, proximos } = hijosDelProyecto(replica, id);
   let siguiente = quitarFilaLocal(replica, 'proyectos', id);
   for (const pago of pagos) siguiente = quitarFilaLocal(siguiente, 'pagos', pago.id);
   for (const gasto of gastos) siguiente = quitarFilaLocal(siguiente, 'gastos', gasto.id);
@@ -591,6 +669,9 @@ function sinElProyecto(replica: Replica, id: string): Replica {
   }
   for (const necesidad of necesidades) {
     siguiente = quitarFilaLocal(siguiente, 'necesidades', necesidad.id);
+  }
+  for (const proximo of proximos) {
+    siguiente = quitarFilaLocal(siguiente, 'proximos_contactos', proximo.id);
   }
   return siguiente;
 }
@@ -623,6 +704,9 @@ export const MUTACION_DE_BAJA_DE_PROYECTO: MutationOptions<
       }
       for (const necesidad of previos.necesidades) {
         siguiente = aplicarFilaLocal(siguiente, 'necesidades', necesidad);
+      }
+      for (const proximo of previos.proximos ?? []) {
+        siguiente = aplicarFilaLocal(siguiente, 'proximos_contactos', proximo);
       }
       return siguiente;
     });

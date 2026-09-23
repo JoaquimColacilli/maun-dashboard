@@ -227,7 +227,8 @@ export interface BajaDeFilaHija {
   borrado: true;
 }
 
-export type PagoParaGuardar = (FilaHijaViva & { concepto: string }) | BajaDeFilaHija;
+export type PagoParaGuardar =
+  (FilaHijaViva & { concepto: string; ya_en_la_apertura?: boolean }) | BajaDeFilaHija;
 
 export type GastoParaGuardar = (FilaHijaViva & { descripcion: string }) | BajaDeFilaHija;
 
@@ -252,6 +253,21 @@ export type NecesidadParaGuardar =
     }
   | BajaDeFilaHija;
 
+export type ResultadoDelContacto = NonNullable<FilaDe<'proximos_contactos'>['resultado']>;
+
+export type ProximoParaGuardar =
+  | {
+      id: string;
+      fecha: string;
+      nota: string;
+      etapa_previa: FilaDe<'proximos_contactos'>['etapa_previa'];
+      hecho_el: string | null;
+      resultado: ResultadoDelContacto | null;
+      respuesta: string;
+      borrado?: false;
+    }
+  | BajaDeFilaHija;
+
 export interface ProyectoParaGuardar {
   id: string;
   version: number | null;
@@ -260,6 +276,7 @@ export interface ProyectoParaGuardar {
   gastos: readonly GastoParaGuardar[];
   opciones?: readonly OpcionParaGuardar[];
   necesidades?: readonly NecesidadParaGuardar[];
+  proximos?: readonly ProximoParaGuardar[];
 }
 
 export interface ProyectoGuardado {
@@ -268,12 +285,12 @@ export interface ProyectoGuardado {
   gastos: readonly FilaDe<'gastos'>[];
   opciones: readonly FilaDe<'opciones_de_presupuesto'>[];
   necesidades: readonly FilaDe<'necesidades'>[];
+  proximos: readonly FilaDe<'proximos_contactos'>[];
 }
 
-function filasDelAgregado<T extends 'pagos' | 'gastos' | 'opciones_de_presupuesto' | 'necesidades'>(
-  valor: unknown,
-  tabla: T,
-): FilaDe<T>[] {
+function filasDelAgregado<
+  T extends 'pagos' | 'gastos' | 'opciones_de_presupuesto' | 'necesidades' | 'proximos_contactos',
+>(valor: unknown, tabla: T): FilaDe<T>[] {
   if (!Array.isArray(valor)) {
     throw new RespuestaInvalidaError(`guardar_proyecto no devolvió la lista de ${tabla}.`);
   }
@@ -308,6 +325,7 @@ export function leerProyectoGuardado(valor: unknown): ProyectoGuardado {
     gastos: filasDelAgregado(cuerpo.gastos, 'gastos'),
     opciones: filasDelAgregado(cuerpo.opciones_de_presupuesto, 'opciones_de_presupuesto'),
     necesidades: filasDelAgregado(cuerpo.necesidades, 'necesidades'),
+    proximos: filasDelAgregado(cuerpo.proximos_contactos, 'proximos_contactos'),
   };
 }
 
@@ -321,6 +339,7 @@ export async function guardarProyecto(
     p_gastos: pedido.gastos as unknown as Json,
     p_opciones: (pedido.opciones ?? null) as unknown as Json,
     p_necesidades: (pedido.necesidades ?? null) as unknown as Json,
+    p_proximos: (pedido.proximos ?? null) as unknown as Json,
   });
   if (error) throw error;
   return leerProyectoGuardado(data);
@@ -428,6 +447,21 @@ export async function guardarMarcasDeLaAgenda(
   const { data, error } = await cliente
     .from('proyectos')
     .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function guardarMarcaDelProximoContacto(
+  cliente: ClienteMaun,
+  id: string,
+  importante: boolean,
+): Promise<FilaDe<'proximos_contactos'>> {
+  const { data, error } = await cliente
+    .from('proximos_contactos')
+    .update({ importante })
     .eq('id', id)
     .select()
     .single();
@@ -763,6 +797,7 @@ export interface PedidoDeLiquidacion {
   remanenteCentavos: number;
   sueldoPrevioCentavos: number;
   fijosPrevioCentavos: number;
+  yaEnLaApertura?: boolean;
 }
 
 export interface PedidoDeReversion {
@@ -789,6 +824,7 @@ export async function liquidarProyecto(
     p_remanente_centavos: pedido.remanenteCentavos,
     p_sueldo_previo_centavos: pedido.sueldoPrevioCentavos,
     p_fijos_previo_centavos: pedido.fijosPrevioCentavos,
+    p_ya_en_la_apertura: pedido.yaEnLaApertura ?? false,
   };
 
   const { data, error } =

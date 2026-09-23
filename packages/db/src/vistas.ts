@@ -1,4 +1,5 @@
 import {
+  fechaDeApertura,
   saldosDelLibro,
   type DatosDelLibro,
   type EstadoLiquidado,
@@ -29,6 +30,7 @@ export function datosDelLibro(replica: Replica): DatosDelLibro {
       fecha: pago.fecha,
       concepto: pago.concepto,
       monto: dinero(pago.monto_centavos),
+      yaEnLaApertura: (pago as Partial<typeof pago>).ya_en_la_apertura === true,
     })),
     gastos: filasDe(replica, 'gastos').map((gasto) => ({
       id: gasto.id,
@@ -44,12 +46,18 @@ export function datosDelLibro(replica: Replica): DatosDelLibro {
       fechaCobro: proyecto.fecha_cobro,
       diezmo: dinero(proyecto.dist_diezmo_centavos ?? 0),
       sueldo: dinero(proyecto.dist_sueldo_centavos ?? 0),
+      repartoYaEnLaApertura:
+        (proyecto as Partial<typeof proyecto>).reparto_ya_en_la_apertura === true,
     })),
   };
 }
 
 export function saldosDeLaReplica(replica: Replica): SaldosPorTesoro {
   return saldosDelLibro(datosDelLibro(replica));
+}
+
+export function aperturaDeLaReplica(replica: Replica): string | null {
+  return fechaDeApertura(datosDelLibro(replica).movimientos);
 }
 
 export interface TotalesDelProyecto {

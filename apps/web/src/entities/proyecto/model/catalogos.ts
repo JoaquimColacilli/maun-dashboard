@@ -1,4 +1,4 @@
-import { ESTADOS, ESTADOS_DE_SEGUIMIENTO, type EstadoProyecto, type Fase } from '@maun/domain';
+import { ESTADOS, ESTADOS_DE_CONSULTA, type EstadoProyecto, type Fase } from '@maun/domain';
 
 import type { FilaDe } from '@/shared/api';
 
@@ -30,6 +30,11 @@ export const ESTADO: Readonly<Record<EstadoProyecto, DatosDelEstado>> = {
   presupuesto_enviado: {
     id: 'presupuesto_enviado',
     etiqueta: 'Presupuesto enviado',
+    tono: 'border-border text-text-2',
+  },
+  en_seguimiento: {
+    id: 'en_seguimiento',
+    etiqueta: 'En seguimiento',
     tono: 'border-border text-text-2',
   },
   perdido: { id: 'perdido', etiqueta: 'Perdido', tono: 'border-border text-text-3' },
@@ -92,13 +97,15 @@ export interface Etapa {
 }
 
 export const ETAPAS: readonly Etapa[] = [
-  { id: 'seguimiento', etiqueta: 'Seguimiento', ruta: '/seguimiento' },
+  { id: 'consultas', etiqueta: 'Consultas', ruta: '/consultas' },
+  { id: 'seguimiento', etiqueta: 'Seguimiento', ruta: '/proyectos?etapa=seguimiento' },
   { id: 'activos', etiqueta: 'Activos', ruta: '/proyectos' },
   { id: 'historial', etiqueta: 'Historial', ruta: '/proyectos?etapa=historial' },
 ];
 
 export const FILTROS_POR_ETAPA: Readonly<Record<Fase, readonly EstadoProyecto[]>> = {
-  seguimiento: ESTADOS_DE_SEGUIMIENTO,
+  consultas: ESTADOS_DE_CONSULTA,
+  seguimiento: ['en_seguimiento'],
   activos: ['en_curso', 'entregado'],
   historial: ['cobrado', 'perdido'],
 };

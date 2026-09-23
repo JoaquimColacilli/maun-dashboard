@@ -44,7 +44,7 @@ export function CaminosALosTrabajos({ fecha, alIr }: CaminosALosTrabajosProps) {
           >
             <MarcaDeCategoria categoria="visita" />
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block text-body font-medium">Cargar un contacto de seguimiento</span>
+              <span className="block text-body font-medium">Cargar una consulta</span>
               <span className="block text-meta text-text-2">con la visita ese día</span>
             </span>
             <Icono nombre="chevron-right" tamano={16} className="text-text-3" />

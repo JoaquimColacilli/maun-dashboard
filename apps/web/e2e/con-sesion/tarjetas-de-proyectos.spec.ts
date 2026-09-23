@@ -21,7 +21,7 @@ async function estiloDeLaTarjeta(tarjeta: Locator) {
   });
 }
 
-test('en el celular, las tarjetas de Activos y las de Seguimiento son la misma, con su borde', async ({
+test('en el celular, las tarjetas de Activos y las de Consultas son la misma, con su borde', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'celular', 'en escritorio Activos es una tabla');
@@ -48,12 +48,12 @@ test('en el celular, las tarjetas de Activos y las de Seguimiento son la misma, 
   await expect(activa).toBeVisible({ timeout: 30_000 });
   const deActivos = await estiloDeLaTarjeta(activa);
 
-  await page.getByRole('tab', { name: /Seguimiento/ }).click();
+  await page.getByRole('tab', { name: /Consultas/ }).click();
   const contacto = page.getByRole('list', { name: 'Contactos' }).getByRole('listitem').first();
   await expect(contacto).toBeVisible();
-  const deSeguimiento = await estiloDeLaTarjeta(contacto);
+  const deConsultas = await estiloDeLaTarjeta(contacto);
 
-  expect(deActivos).toEqual(deSeguimiento);
+  expect(deActivos).toEqual(deConsultas);
   expect(deActivos.borde).toBe('1px 1px 1px 1px');
   expect(deActivos.enlaceEstirado).toBe(true);
 });

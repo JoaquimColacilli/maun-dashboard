@@ -115,6 +115,33 @@ describe('los MN00x traducidos a castellano de taller', () => {
     );
   });
 
+  it('MN016: falta la fecha, en el cobro y en un pago', () => {
+    expect(texto('MN016', { operacion: 'cobro', sujeto: 'Placard' })).toBe(
+      'Falta el día del cobro. No se guardó nada. Poné el día en que entró la plata y volvé a guardarlo: la fecha no se inventa.',
+    );
+    expect(texto('MN016', { operacion: 'proyecto', sujeto: 'Placard' })).toBe(
+      'A un pago le falta el día. No se guardó nada. Poné el día en que entró la plata y volvé a guardarlo: la fecha no se inventa.',
+    );
+  });
+
+  it('MN017: una fecha que todavía no llegó', () => {
+    expect(texto('MN017', { operacion: 'cierre' })).toBe(
+      'Esa fecha todavía no llegó. No se guardó nada. Poné el día en que entró la plata, que tiene que ser hoy o antes, y volvé a guardarlo.',
+    );
+  });
+
+  it('MN018: la plata no es de antes de la apertura', () => {
+    expect(texto('MN018', { operacion: 'proyecto' })).toBe(
+      'Esa plata no es de antes de que empezaras con la app. Solo lo que entró antes de la apertura puede estar en tus saldos de arranque. Destildá esa opción, o revisá la fecha, y volvé a guardarlo.',
+    );
+  });
+
+  it('MN019: el seguimiento quedó a medias', () => {
+    expect(texto('MN019', { operacion: 'proyecto', sujeto: 'Placard' })).toBe(
+      'El seguimiento de este trabajo quedó a medias. No se guardó nada. Pasa si lo cambiaste desde otro lado al mismo tiempo. Abrilo de nuevo: si está en seguimiento, registrá el contacto desde ahí; si no, ponelo en seguimiento con su fecha.',
+    );
+  });
+
   it('42501: la cuenta no tiene acceso', () => {
     expect(texto('42501', { operacion: 'cobro', sujeto: 'Placard' })).toBe(
       'Tu cuenta no tiene acceso a esto. Puede que el trabajo sea de otro taller, o que tu cuenta ' +

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Proyecto } from './catalogos';
-import { vencimientoPropuesto } from './seguimiento';
+import { vencimientoPropuesto } from './consultas';
 
 const HOY = '2026-09-14';
 

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { Control, FieldErrors, UseFieldArrayReturn, UseFormRegister } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 
+import { CasillaDeLaApertura } from '@/entities/movimiento';
 import { filaVacia, totalDeLasFilas, type FormularioDeProyecto } from '@/entities/proyecto';
-import { formatearPesos, hoyLocal, uuidv7 } from '@/shared/lib';
+import { formatearPesos, hoyEnElTaller, uuidv7 } from '@/shared/lib';
 import { Button, Icono, MoneyInput } from '@/shared/ui';
 
 type Lista = 'pagos' | 'gastos';
@@ -21,6 +22,7 @@ export interface FilasDinamicasProps {
   errores: FieldErrors<FormularioDeProyecto>;
   campos: UseFieldArrayReturn<FormularioDeProyecto, Lista, 'clave'>;
   bloqueado: boolean;
+  apertura?: string | null;
 }
 
 interface Deshacer {
@@ -42,6 +44,7 @@ export function FilasDinamicas({
   errores,
   campos,
   bloqueado,
+  apertura = null,
 }: FilasDinamicasProps) {
   const [deshacer, setDeshacer] = useState<Deshacer | null>(null);
   const contenedor = useRef<HTMLDivElement>(null);
@@ -60,7 +63,7 @@ export function FilasDinamicas({
   }, [deshacer]);
 
   function agregar(): void {
-    const nueva = filaVacia(uuidv7(), hoyLocal());
+    const nueva = filaVacia(uuidv7(), hoyEnElTaller());
     campos.append(nueva);
     requestAnimationFrame(() => {
       contenedor.current
@@ -136,6 +139,7 @@ export function FilasDinamicas({
               <input
                 {...register(`${lista}.${indice}.fecha` as const)}
                 type="date"
+                max={lista === 'pagos' ? hoyEnElTaller() : undefined}
                 aria-label={`Fecha ${String(indice + 1)}`}
                 disabled={bloqueado}
                 className={`h-11 min-w-0 rounded-field border bg-paper px-2.5 text-body text-ink ${
@@ -186,6 +190,22 @@ export function FilasDinamicas({
                 >
                   {errorDeFila.monto?.message ?? errorDeFila.fecha?.message}
                 </span>
+              )}
+              {lista === 'pagos' && (
+                <Controller
+                  control={control}
+                  name={`pagos.${indice}.enLaApertura` as const}
+                  render={({ field }) => (
+                    <CasillaDeLaApertura
+                      className="col-span-3 @lg/filas:col-span-4"
+                      fecha={filas[indice]?.fecha ?? ''}
+                      apertura={apertura}
+                      marcada={field.value}
+                      alCambiar={field.onChange}
+                      disabled={bloqueado}
+                    />
+                  )}
+                />
               )}
             </li>
           );

@@ -4,6 +4,7 @@ export const ESTADOS = [
   'relevamiento',
   'a_presupuestar',
   'presupuesto_enviado',
+  'en_seguimiento',
   'perdido',
   'en_curso',
   'entregado',
@@ -14,9 +15,9 @@ export type EstadoProyecto = (typeof ESTADOS)[number];
 
 export type EstadoLiquidado = Extract<EstadoProyecto, 'cobrado' | 'perdido'>;
 
-export type Fase = 'seguimiento' | 'activos' | 'historial';
+export type Fase = 'consultas' | 'seguimiento' | 'activos' | 'historial';
 
-export const ESTADOS_DE_SEGUIMIENTO = [
+export const ESTADOS_DE_CONSULTA = [
   'contacto',
   'presupuesto_estimativo',
   'relevamiento',
@@ -24,12 +25,17 @@ export const ESTADOS_DE_SEGUIMIENTO = [
   'presupuesto_enviado',
 ] as const satisfies readonly EstadoProyecto[];
 
+export type EstadoDeConsulta = (typeof ESTADOS_DE_CONSULTA)[number];
+
+export const EN_SEGUIMIENTO = 'en_seguimiento' satisfies EstadoProyecto;
+
 const FASES: Readonly<Record<EstadoProyecto, Fase>> = {
-  contacto: 'seguimiento',
-  presupuesto_estimativo: 'seguimiento',
-  relevamiento: 'seguimiento',
-  a_presupuestar: 'seguimiento',
-  presupuesto_enviado: 'seguimiento',
+  contacto: 'consultas',
+  presupuesto_estimativo: 'consultas',
+  relevamiento: 'consultas',
+  a_presupuestar: 'consultas',
+  presupuesto_enviado: 'consultas',
+  en_seguimiento: 'seguimiento',
   perdido: 'historial',
   en_curso: 'activos',
   entregado: 'activos',
@@ -42,6 +48,7 @@ export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyec
     'relevamiento',
     'a_presupuestar',
     'presupuesto_enviado',
+    'en_seguimiento',
     'en_curso',
   ],
   presupuesto_estimativo: [
@@ -49,6 +56,7 @@ export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyec
     'relevamiento',
     'a_presupuestar',
     'presupuesto_enviado',
+    'en_seguimiento',
     'en_curso',
   ],
   relevamiento: [
@@ -56,6 +64,7 @@ export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyec
     'presupuesto_estimativo',
     'a_presupuestar',
     'presupuesto_enviado',
+    'en_seguimiento',
     'en_curso',
   ],
   a_presupuestar: [
@@ -63,6 +72,7 @@ export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyec
     'presupuesto_estimativo',
     'relevamiento',
     'presupuesto_enviado',
+    'en_seguimiento',
     'en_curso',
   ],
   presupuesto_enviado: [
@@ -70,7 +80,15 @@ export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyec
     'presupuesto_estimativo',
     'relevamiento',
     'a_presupuestar',
+    'en_seguimiento',
     'en_curso',
+  ],
+  en_seguimiento: [
+    'contacto',
+    'presupuesto_estimativo',
+    'relevamiento',
+    'a_presupuestar',
+    'presupuesto_enviado',
   ],
   perdido: [],
   en_curso: ['presupuesto_enviado', 'entregado'],
@@ -80,16 +98,20 @@ export const TRANSICIONES: Readonly<Record<EstadoProyecto, readonly EstadoProyec
 
 const ORIGENES_DE_LIQUIDACION: Readonly<Record<EstadoLiquidado, readonly EstadoProyecto[]>> = {
   cobrado: ['entregado'],
-  perdido: [...ESTADOS_DE_SEGUIMIENTO, 'en_curso'],
+  perdido: [...ESTADOS_DE_CONSULTA, EN_SEGUIMIENTO, 'en_curso'],
 };
 
 const DESTINOS_DE_REVERSION: Readonly<Record<EstadoLiquidado, readonly EstadoProyecto[]>> = {
   cobrado: ['entregado'],
-  perdido: ESTADOS_DE_SEGUIMIENTO,
+  perdido: ESTADOS_DE_CONSULTA,
 };
 
 export function esEstado(valor: string): valor is EstadoProyecto {
   return (ESTADOS as readonly string[]).includes(valor);
+}
+
+export function esEstadoDeConsulta(estado: EstadoProyecto): estado is EstadoDeConsulta {
+  return (ESTADOS_DE_CONSULTA as readonly EstadoProyecto[]).includes(estado);
 }
 
 export function faseDe(estado: EstadoProyecto): Fase {
@@ -102,6 +124,10 @@ export function estaLiquidado(estado: EstadoProyecto): estado is EstadoLiquidado
 
 export function puedeCambiarEstado(desde: EstadoProyecto, hasta: EstadoProyecto): boolean {
   return TRANSICIONES[desde].includes(hasta);
+}
+
+export function puedePasarASeguimiento(estado: EstadoProyecto): boolean {
+  return puedeCambiarEstado(estado, EN_SEGUIMIENTO);
 }
 
 export function puedeLiquidar(desde: EstadoProyecto, hacia: EstadoProyecto): boolean {

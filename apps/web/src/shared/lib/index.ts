@@ -18,13 +18,16 @@ export {
   diasHasta,
   diaYMes,
   diaYMesCorto,
+  errorDeLaFechaDeLaPlata,
   fechaLarga,
   haceCuanto,
+  hoyEnElTaller,
   hoyLocal,
   mesAnterior,
   mesDeLaFecha,
   nombreDelMes,
   relativa,
+  ZONA_DEL_TALLER,
 } from './fechas';
 export {
   alternar,
@@ -154,6 +157,7 @@ export {
   RUTA_DE_MOVIMIENTO_NUEVO,
   RUTA_DE_PROYECTO_NUEVO,
   RUTA_DE_PROYECTOS,
+  RUTA_DE_CONSULTAS,
   RUTA_DE_SEGUIMIENTO,
 } from './rutas';
 export { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from './tesoros';

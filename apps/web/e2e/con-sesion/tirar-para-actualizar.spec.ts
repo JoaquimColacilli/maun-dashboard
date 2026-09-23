@@ -117,7 +117,12 @@ async function tallerCargado(page: Page): Promise<void> {
   ).toHaveCount(0, CARGA_DEL_TALLER);
 }
 
-test.beforeEach(async () => {
+const CANAL_DE_AVISOS = /\/realtime\/v1\/websocket/;
+
+test.beforeEach(async ({ context }) => {
+  await context.routeWebSocket(CANAL_DE_AVISOS, (canal) => {
+    void canal.close();
+  });
   await vaciarTaller(await iniciarSesionDePrueba());
 });
 

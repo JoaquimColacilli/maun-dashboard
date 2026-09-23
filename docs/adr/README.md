@@ -66,3 +66,6 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0060](0060-materiales-la-edicion-en-la-fila-y-el-monto-que-entra.md)       | Materiales, editar en la fila y el monto que entra                | Aceptada             |
 | [0061](0061-el-aviso-de-version-sale-del-registro.md)                       | El aviso de versión nueva sale del registro, y refrescar pregunta | Aceptada             |
 | [0062](0062-el-reparto-en-la-compu.md)                                      | En la compu, tres repartos: filas, principal y apoyo, y tablero   | Aceptada, corregida  |
+| [0063](0063-la-fecha-de-la-plata-es-la-del-dia-en-que-paso.md)              | La fecha de la plata es la del día en que pasó                    | Aceptada             |
+| [0064](0064-el-seguimiento-de-verdad-y-las-consultas.md)                    | El seguimiento de verdad, y el embudo se llama Consultas          | Aceptada             |
+| [0065](0065-la-app-abierta-se-entera-sola.md)                               | La app abierta se entera sola: un aviso vacío y el delta          | Aceptada             |

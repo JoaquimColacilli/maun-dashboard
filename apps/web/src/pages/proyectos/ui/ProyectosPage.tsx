@@ -36,11 +36,14 @@ import {
 } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
+import { ListaDeConsultas } from './ListaDeConsultas';
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
 function etapaDeLaRuta(pathname: string, busqueda: URLSearchParams): Fase {
-  if (pathname === '/seguimiento') return 'seguimiento';
-  return busqueda.get('etapa') === 'historial' ? 'historial' : 'activos';
+  if (pathname === '/consultas') return 'consultas';
+  const pedida = busqueda.get('etapa');
+  if (pedida === 'historial' || pedida === 'seguimiento') return pedida;
+  return 'activos';
 }
 
 function Metricas({ resumenes }: { resumenes: readonly ResumenDeProyecto[] }) {
@@ -276,13 +279,16 @@ function HojaDeOrden({
   );
 }
 
-function Vacio({ etapa }: { etapa: Exclude<Fase, 'seguimiento'> }) {
+function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> }) {
   const navegar = useNavigate();
-  const textos: Record<Exclude<Fase, 'seguimiento'>, { titulo: string; detalle: string }> = {
+  const textos: Record<
+    Exclude<Fase, 'consultas' | 'seguimiento'>,
+    { titulo: string; detalle: string }
+  > = {
     activos: {
       titulo: 'Todavía no hay proyectos activos',
       detalle:
-        'Acá están los trabajos que te aprobaron. Los contactos y los presupuestos que esperan respuesta viven en Seguimiento, y pasan solos a esta pestaña cuando los aprobás.',
+        'Acá están los trabajos que te aprobaron. Los contactos y los presupuestos que esperan respuesta viven en Consultas, y pasan solos a esta pestaña cuando los aprobás.',
     },
     historial: {
       titulo: 'Todavía no cerraste ningún proyecto',
@@ -357,7 +363,7 @@ export function ProyectosPage() {
     <Pagina>
       <header className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
-        {etapa === 'seguimiento' ? (
+        {etapa === 'consultas' || etapa === 'seguimiento' ? (
           <Button
             onClick={() => {
               void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
@@ -378,37 +384,41 @@ export function ProyectosPage() {
         )}
       </header>
 
-      <div
-        role="tablist"
-        aria-label="Etapa"
-        className="mb-4 flex max-w-[520px] gap-0.5 rounded-panel bg-surface-2 p-1"
-      >
-        {ETAPAS.map((opcion) => {
-          const activa = opcion.id === etapa;
-          const cuantos = resumenes.filter((resumen) => resumen.fase === opcion.id).length;
-          return (
-            <button
-              key={opcion.id}
-              type="button"
-              role="tab"
-              aria-selected={activa}
-              onClick={() => {
-                void navegar(opcion.ruta);
-              }}
-              className={`flex h-9.5 flex-1 items-center justify-center gap-1.5 rounded-field text-label ${
-                activa
-                  ? 'bg-elevado font-semibold text-ink shadow-float'
-                  : 'font-medium text-text-2'
-              }`}
-            >
-              {opcion.etiqueta}
-              <span className="text-meta text-text-3 tabular-nums">{cuantos}</span>
-            </button>
-          );
-        })}
+      <div className="@container mb-4 max-w-[640px]">
+        <div
+          role="tablist"
+          aria-label="Etapa"
+          className="grid grid-cols-2 gap-0.5 rounded-panel bg-surface-2 p-1 @min-[34rem]:grid-cols-4"
+        >
+          {ETAPAS.map((opcion) => {
+            const activa = opcion.id === etapa;
+            const cuantos = resumenes.filter((resumen) => resumen.fase === opcion.id).length;
+            return (
+              <button
+                key={opcion.id}
+                type="button"
+                role="tab"
+                aria-selected={activa}
+                onClick={() => {
+                  void navegar(opcion.ruta);
+                }}
+                className={`flex h-9.5 min-w-0 items-center justify-center gap-1.5 rounded-field text-label whitespace-nowrap ${
+                  activa
+                    ? 'bg-elevado font-semibold text-ink shadow-float'
+                    : 'font-medium text-text-2'
+                }`}
+              >
+                {opcion.etiqueta}
+                <span className="text-meta text-text-3 tabular-nums">{cuantos}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {etapa === 'seguimiento' ? (
+      {etapa === 'consultas' ? (
+        <ListaDeConsultas resumenes={deLaEtapa} replica={replica} hoy={hoy} />
+      ) : etapa === 'seguimiento' ? (
         <ListaDeSeguimiento resumenes={deLaEtapa} replica={replica} hoy={hoy} />
       ) : deLaEtapa.length === 0 ? (
         <Vacio etapa={etapa} />

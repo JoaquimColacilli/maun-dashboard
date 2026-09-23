@@ -93,7 +93,7 @@ select throws_ok(
 
 select throws_ok(
   $$ select public.cobrar_proyecto('aaaaaaaa-0000-7000-8000-000000000010', 1, null, 0, 0, 0, 0, 0, 0, 0, 0) $$,
-  '22004', null, 'el cobro necesita todos sus parámetros'
+  'MN016', null, 'el cobro necesita su fecha: la base no la inventa'
 );
 
 
@@ -270,11 +270,15 @@ select throws_ok(
   'MN006', null, 'volver a cobrar con los ajustes de hoy se rechaza: la historia no se reescribe'
 );
 
+select set_config('maun.hoy_en_el_taller', '2026-09-12', true);
+
 select throws_ok(
-  format($$ select public.cobrar_proyecto('aaaaaaaa-0000-7000-8000-000000000010', %s, '2026-09-11', 105000000, 30000000, 180000000, 25000000, 7500000, 67500000, 0, 0) $$,
+  format($$ select public.cobrar_proyecto('aaaaaaaa-0000-7000-8000-000000000010', %s, '2026-09-13', 105000000, 30000000, 180000000, 25000000, 7500000, 67500000, 0, 0) $$,
          (select version from public.proyectos where id = 'aaaaaaaa-0000-7000-8000-000000000010')),
-  'MN006', null, 'y con otra fecha también: corregir no mueve la distribución en el libro mayor'
+  'MN017', null, 'volver a cobrar con un día que todavía no llegó se rechaza: la fecha se corrige, pero no hacia el futuro'
 );
+
+select set_config('maun.hoy_en_el_taller', '2099-12-31', true);
 
 select results_eq(
   format(

@@ -31,6 +31,8 @@ export interface ValoresDelPasaje {
   inicio: string;
   entrega: string;
   direccion: string;
+  diaDeLaSena: string;
+  senaEnLaApertura: boolean;
 }
 
 type LoQueDecideElPresupuesto = Pick<ValoresDelPasaje, 'presupuesto' | 'opcion'>;
@@ -110,9 +112,21 @@ export function formaSugerida(
   return unaSolaForma(formasDeLaSena) ?? 'transferencia';
 }
 
-function pagoDeLaSena(monto: number | null, id: string, fecha: string): PagoParaGuardar[] {
-  if (monto === null || monto <= 0) return [];
-  return [{ id, fecha, concepto: CONCEPTO_DE_LA_SENA_AL_APROBAR, monto_centavos: monto }];
+export function haySenaAhora(sena: number | null): boolean {
+  return sena !== null && sena > 0;
+}
+
+function pagoDeLaSena(valores: ValoresDelPasaje, id: string): PagoParaGuardar[] {
+  if (valores.sena === null || !haySenaAhora(valores.sena)) return [];
+  return [
+    {
+      id,
+      fecha: valores.diaDeLaSena,
+      concepto: CONCEPTO_DE_LA_SENA_AL_APROBAR,
+      monto_centavos: valores.sena,
+      ya_en_la_apertura: valores.senaEnLaApertura,
+    },
+  ];
 }
 
 export function guardadoDelPasaje(
@@ -134,7 +148,7 @@ export function guardadoDelPasaje(
     direccion_entrega: valores.direccion.trim(),
   };
 
-  const pagos = pagoDeLaSena(valores.sena, idDelPago, valores.inicio === '' ? hoy : valores.inicio);
+  const pagos = pagoDeLaSena(valores, idDelPago);
 
   const elegida = opcionElegida(opciones, valores.opcion);
   if (elegida === undefined || elegida.id === opcionAprobada(opciones)?.id) {

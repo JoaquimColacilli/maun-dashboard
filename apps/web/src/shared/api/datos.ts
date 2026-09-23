@@ -16,6 +16,7 @@ import {
   guardarClienteNuevo,
   guardarCostosEstimados,
   guardarFormasDeCobro,
+  guardarMarcaDelProximoContacto,
   guardarMarcasDeLaAgenda,
   guardarMovimiento,
   guardarNombreDelTaller,
@@ -157,6 +158,13 @@ export async function marcarEnLaAgenda(
   cambios: CambiosDeMarcas,
 ): Promise<FilaDe<'proyectos'>> {
   return guardarMarcasDeLaAgenda(clienteMaun(), id, cambios);
+}
+
+export async function marcarElProximoContacto(
+  id: string,
+  importante: boolean,
+): Promise<FilaDe<'proximos_contactos'>> {
+  return guardarMarcaDelProximoContacto(clienteMaun(), id, importante);
 }
 
 export async function darDeBajaCliente(id: string, borradoEn: string): Promise<FilaDe<'clientes'>> {

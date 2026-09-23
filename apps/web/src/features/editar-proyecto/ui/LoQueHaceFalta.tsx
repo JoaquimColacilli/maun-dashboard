@@ -208,14 +208,14 @@ export function LoQueHaceFalta({ proyecto, abiertoAlPrincipio }: LoQueHaceFaltaP
     aviso?.();
   }
 
-  const enSeguimiento = faseDe(proyecto.estado) === 'seguimiento';
+  const enConsultas = faseDe(proyecto.estado) === 'consultas';
   const bloqueado = proyecto.estado === 'cobrado' || proyecto.estado === 'perdido';
   const { cuantas, listas } = cuentaDeLoQueHaceFalta(todas);
 
   return (
     <BloquePlegable
       titulo="Lo que hace falta"
-      abiertoAlPrincipio={abiertoAlPrincipio ?? (enSeguimiento || proyecto.estado === 'en_curso')}
+      abiertoAlPrincipio={abiertoAlPrincipio ?? (enConsultas || proyecto.estado === 'en_curso')}
       ayuda="Los materiales y los herrajes que hay que pedir, y las herramientas que hay que tener el día que lo hagas. Se te sugieren los que ya usaste."
       resumen={
         cuantas === 0

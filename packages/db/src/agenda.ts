@@ -1,4 +1,4 @@
-import type { CategoriaDerivada, CategoriaPropia, DatosDeLaAgenda } from '@maun/domain';
+import type { CategoriaDelTrabajo, CategoriaPropia, DatosDeLaAgenda } from '@maun/domain';
 
 import { filasDe, type FilaDe, type Replica } from './replica.ts';
 
@@ -6,6 +6,7 @@ export interface FilasDeLaAgenda {
   proyectos: readonly FilaDe<'proyectos'>[];
   clientes: readonly FilaDe<'clientes'>[];
   anotaciones: readonly FilaDe<'anotaciones'>[];
+  proximos_contactos?: readonly FilaDe<'proximos_contactos'>[];
 }
 
 export const COLUMNAS_DE_MARCAS = [
@@ -16,7 +17,7 @@ export const COLUMNAS_DE_MARCAS = [
 
 export type ColumnaDeMarca = (typeof COLUMNAS_DE_MARCAS)[number];
 
-export const COLUMNA_DE_LA_MARCA: Readonly<Record<CategoriaDerivada, ColumnaDeMarca>> = {
+export const COLUMNA_DE_LA_MARCA: Readonly<Record<CategoriaDelTrabajo, ColumnaDeMarca>> = {
   presupuesto: 'presupuesto_importante',
   visita: 'visita_importante',
   entrega: 'entrega_importante',
@@ -32,7 +33,7 @@ export type ColumnaDeLaFecha = (typeof COLUMNAS_DE_LA_FECHA)[number];
 
 // De dónde sale la fecha de cada evento derivado, que es también la única columna donde esa fecha
 // puede vivir: arrastrarlo en la agenda escribe acá (ADR 0045).
-export const COLUMNA_DE_LA_FECHA: Readonly<Record<CategoriaDerivada, ColumnaDeLaFecha>> = {
+export const COLUMNA_DE_LA_FECHA: Readonly<Record<CategoriaDelTrabajo, ColumnaDeLaFecha>> = {
   presupuesto: 'vencimiento_presupuesto',
   visita: 'fecha_visita',
   entrega: 'entrega_estimada',
@@ -48,7 +49,7 @@ export function visitaHecha(proyecto: FilaDe<'proyectos'>): boolean {
 
 export function marcadaComoImportante(
   proyecto: FilaDe<'proyectos'>,
-  categoria: CategoriaDerivada,
+  categoria: CategoriaDelTrabajo,
 ): boolean {
   return (proyecto as FilaQuizasSinLoHechoNiLasMarcas)[COLUMNA_DE_LA_MARCA[categoria]] === true;
 }
@@ -100,6 +101,16 @@ export function datosDeLaAgenda(filas: FilasDeLaAgenda): DatosDeLaAgenda {
       hecha: anotacion.hecha,
       importante: anotacion.importante,
     })),
+    proximos: (filas.proximos_contactos ?? [])
+      .filter((proximo) => proximo.deleted_at === null)
+      .map((proximo) => ({
+        id: proximo.id,
+        proyectoId: proximo.proyecto_id,
+        fecha: proximo.fecha,
+        hechoEl: proximo.hecho_el,
+        nota: proximo.nota,
+        importante: proximo.importante,
+      })),
   };
 }
 
@@ -108,5 +119,6 @@ export function datosDeLaAgendaDeLaReplica(replica: Replica): DatosDeLaAgenda {
     proyectos: filasDe(replica, 'proyectos'),
     clientes: filasDe(replica, 'clientes'),
     anotaciones: filasDe(replica, 'anotaciones'),
+    proximos_contactos: filasDe(replica, 'proximos_contactos'),
   });
 }

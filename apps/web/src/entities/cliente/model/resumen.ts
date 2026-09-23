@@ -11,7 +11,7 @@ const ESTADOS_CON_SALDO: readonly EstadoProyecto[] = ['en_curso', 'entregado'];
 export interface ResumenDeCliente {
   cliente: Cliente;
   proyectos: readonly Proyecto[];
-  enSeguimiento: number;
+  enConsultas: number;
   facturados: number;
   ultimo: Proyecto | undefined;
   fechaDelUltimo: string | undefined;
@@ -61,7 +61,8 @@ export function resumenesDeClientes(replica: Replica): ResumenDeCliente[] {
     let saldo = 0;
     let facturados = 0;
     for (const proyecto of proyectos) {
-      if (faseDe(proyecto.estado) === 'seguimiento') continue;
+      if (faseDe(proyecto.estado) === 'consultas' || faseDe(proyecto.estado) === 'seguimiento')
+        continue;
       facturados += 1;
       facturado += proyecto.presupuesto_centavos ?? 0;
       if (!ESTADOS_CON_SALDO.includes(proyecto.estado)) continue;
@@ -73,7 +74,7 @@ export function resumenesDeClientes(replica: Replica): ResumenDeCliente[] {
     return {
       cliente,
       proyectos,
-      enSeguimiento: proyectos.length - facturados,
+      enConsultas: proyectos.length - facturados,
       facturados,
       ultimo,
       fechaDelUltimo: ultimo ? fechaDelProyecto(ultimo) : undefined,

@@ -96,7 +96,7 @@ test('la ficha del cliente lleva a cada trabajo de su historial, se toque el tí
   await historial
     .getByRole('listitem')
     .filter({ hasText: 'Rack del living' })
-    .getByText('Seguimiento')
+    .getByText('Consulta', { exact: true })
     .click({ force: true });
   await expect(page).toHaveURL(new RegExp(`/proyectos/${contacto.id}$`));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Rack del living');

@@ -1,7 +1,7 @@
 import {
   centavos,
   ESTADOS,
-  ESTADOS_DE_SEGUIMIENTO,
+  ESTADOS_DE_CONSULTA,
   TRANSICIONES,
   type EstadoProyecto,
 } from '@maun/domain';
@@ -71,6 +71,7 @@ function proyecto(extra: Partial<Proyecto> = {}): Proyecto {
     reapertura_objetivo_fijos_centavos: null,
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
+    reparto_ya_en_la_apertura: false,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
@@ -142,7 +143,7 @@ describe('los cambios de estado que ofrece una ficha', () => {
   });
 
   it('aprobar un contacto no es un cambio rápido: pasa por la pantalla del pasaje', () => {
-    for (const etapa of ESTADOS_DE_SEGUIMIENTO) {
+    for (const etapa of ESTADOS_DE_CONSULTA) {
       const aprobar = cambiosDeEstado(etapa).find((cambio) => cambio.hacia === 'en_curso');
       expect(aprobar).toMatchObject({ etiqueta: 'Ya lo aprobó', camino: 'pasaje' });
     }

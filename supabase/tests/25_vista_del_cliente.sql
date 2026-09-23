@@ -27,8 +27,8 @@ select tests.guardar('household_b', private.crear_household('Taller de Beto', te
 -- crudo, viaja el de la instancia que toca, pasado por private.formas_de_cobro(). Todas las demás
 -- no salen de la base, y eso incluye los costos estimados, el margen que se deriva de ellos, las
 -- tareas de presupuestar, las notas de obra, la distribución congelada, las marcas de la agenda, la
--- hora de la visita, el vencimiento del presupuesto y sena_bp, que es el porcentaje y sigue sin
--- viajar: lo que viaja es el importe que falta.
+-- hora de la visita, el vencimiento del presupuesto, si el reparto ya estaba en la apertura y sena_bp,
+-- que es el porcentaje y sigue sin viajar: lo que viaja es el importe que falta.
 select set_eq(
   $$
     select a.attname::text
@@ -51,7 +51,7 @@ select set_eq(
     'dist_objetivo_sueldo_centavos', 'dist_objetivo_fijos_centavos', 'dist_sueldo_mensual',
     'dist_sueldo_previo_centavos', 'dist_fijos_previo_centavos', 'dist_liquidado_at',
     'reapertura_objetivo_sueldo_centavos', 'reapertura_objetivo_fijos_centavos',
-    'reapertura_sueldo_mensual', 'reapertura_fecha_cobro',
+    'reapertura_sueldo_mensual', 'reapertura_fecha_cobro', 'reparto_ya_en_la_apertura',
     'presupuesto_diseno', 'presupuesto_despiece', 'presupuesto_cotizacion', 'presupuesto_pdf',
     'visita_importante', 'entrega_importante', 'presupuesto_importante',
     'sena_bp', 'entrega_hora', 'visita_hora',
