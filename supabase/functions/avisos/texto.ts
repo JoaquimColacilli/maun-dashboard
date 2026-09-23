@@ -8,9 +8,10 @@ export interface CargaDelAviso {
 }
 
 const ACCION: Readonly<Record<CategoriaDerivada, string>> = {
-  entrega: 'Entregar',
-  visita: 'Relevamiento',
-  presupuesto: 'Entregar presupuesto',
+  entrega: 'Entregar: ',
+  visita: 'Relevamiento: ',
+  presupuesto: 'Entregar presupuesto: ',
+  seguimiento: 'Volver a escribirle a ',
 };
 
 const MAXIMO_DE_RENGLONES = 4;
@@ -24,7 +25,7 @@ function cuando(dia: string, fecha: string): string {
 
 function renglon(evento: EventoDeLaAgenda, dia: string): string {
   const que =
-    evento.clase === 'propia' ? evento.texto : `${ACCION[evento.categoria]}: ${evento.titulo}`;
+    evento.clase === 'propia' ? evento.texto : `${ACCION[evento.categoria]}${evento.titulo}`;
   return `${que} (${cuando(dia, evento.fecha)})`;
 }
 

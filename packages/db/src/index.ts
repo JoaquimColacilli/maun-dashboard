@@ -112,6 +112,7 @@ export {
   COLUMNAS_DE_FORMAS_DE_COBRO,
   guardarCostosEstimados,
   guardarFormasDeCobro,
+  guardarMarcaDelProximoContacto,
   guardarMarcasDeLaAgenda,
   guardarAnotacionNueva,
   guardarCambiosDeAnotacion,

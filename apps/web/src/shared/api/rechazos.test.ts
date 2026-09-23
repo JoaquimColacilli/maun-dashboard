@@ -136,6 +136,12 @@ describe('los MN00x traducidos a castellano de taller', () => {
     );
   });
 
+  it('MN019: el seguimiento quedó a medias', () => {
+    expect(texto('MN019', { operacion: 'proyecto', sujeto: 'Placard' })).toBe(
+      'El seguimiento de este trabajo quedó a medias. No se guardó nada. Pasa si lo cambiaste desde otro lado al mismo tiempo. Abrilo de nuevo: si está en seguimiento, registrá el contacto desde ahí; si no, ponelo en seguimiento con su fecha.',
+    );
+  });
+
   it('42501: la cuenta no tiene acceso', () => {
     expect(texto('42501', { operacion: 'cobro', sujeto: 'Placard' })).toBe(
       'Tu cuenta no tiene acceso a esto. Puede que el trabajo sea de otro taller, o que tu cuenta ' +

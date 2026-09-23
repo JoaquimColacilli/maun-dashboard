@@ -17,6 +17,7 @@ export {
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_COSTOS,
   CLAVE_DE_FORMAS_DE_COBRO,
+  CLAVE_DE_MARCA_DEL_SEGUIMIENTO,
   CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
@@ -27,6 +28,7 @@ export {
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_COSTOS,
   MUTACION_DE_FORMAS_DE_COBRO,
+  MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
   MUTACION_DE_MARCAS,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
@@ -37,6 +39,7 @@ export {
   type FormasDeCobroDelTrabajo,
   type GuardadoDeProyecto,
   type MarcaDeLaAgenda,
+  type MarcaDelSeguimiento,
   type MarcaDeTareas,
 } from './api/mutacion';
 export {
@@ -188,6 +191,17 @@ export {
   type SugerenciaDelContacto,
 } from './model/consultas';
 export {
+  contactosDelSeguimiento,
+  etapaAlVolver,
+  historiaDelSeguimiento,
+  pendienteDelSeguimiento,
+  RESULTADO_DEL_CONTACTO,
+  seguimientosEnOrden,
+  textoDelResultado,
+  type EnSeguimiento,
+  type ProximoContacto,
+} from './model/seguimiento';
+export {
   marcaDeLaTarea,
   presupuestoArmado,
   TAREAS_DEL_PRESUPUESTO,
@@ -209,6 +223,7 @@ export {
   RUTA_DE_PROYECTO_NUEVO,
   RUTA_DE_PROYECTOS,
   RUTA_DE_CONSULTAS,
+  RUTA_DE_SEGUIMIENTO,
   rutaDeAprobacion,
   rutaDeCierre,
   rutaDeCobro,

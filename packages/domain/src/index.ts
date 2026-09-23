@@ -216,14 +216,25 @@ export {
   mesDe,
   sumarDias,
   sumarDiasHabiles,
+  sumarMeses,
   vencimientoDelPresupuesto,
 } from './fechas.ts';
+
+export {
+  fechaDelPlazo,
+  PLAZOS_DEL_SEGUIMIENTO,
+  plazoDeLaFecha,
+  RESULTADOS_DEL_CONTACTO,
+  type PlazoDelSeguimiento,
+  type ResultadoDelContacto,
+} from './seguimiento.ts';
 
 export {
   ANTICIPACIONES,
   AVISO_DE_LA_CATEGORIA,
   AVISOS_DE_LA_AGENDA,
   CATEGORIAS_DE_AGENDA,
+  CATEGORIAS_DEL_TRABAJO,
   CATEGORIAS_DERIVADAS,
   CATEGORIAS_PROPIAS,
   diaPorHoras,
@@ -239,6 +250,7 @@ export {
   type AnotacionDeLaAgenda,
   type AvisoDeLaAgenda,
   type CategoriaDeAgenda,
+  type CategoriaDelTrabajo,
   type CategoriaDerivada,
   type CategoriaPropia,
   type ClienteDeLaAgenda,
@@ -250,6 +262,7 @@ export {
   type FranjaDelDia,
   type PreferenciaDeAviso,
   type PreferenciasDeAvisos,
+  type ProximoDeLaAgenda,
   type ProyectoDeLaAgenda,
   type RangoDeHoras,
   type RangoDeLaAgenda,

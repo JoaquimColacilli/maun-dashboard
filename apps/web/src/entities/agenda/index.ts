@@ -26,6 +26,7 @@ export {
   mesEnPalabras,
   mesPrevio,
   mesSiguiente,
+  idDelProximoContacto,
   nombreDelEvento,
   numeroDelDia,
   rangoDeLaGrilla,

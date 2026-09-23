@@ -1,11 +1,15 @@
 import { faseDe, type EstadoProyecto } from './estados.ts';
 import { diasEntre, sumarDias } from './fechas.ts';
 
-export const CATEGORIAS_DERIVADAS = ['presupuesto', 'visita', 'entrega'] as const;
+export const CATEGORIAS_DEL_TRABAJO = ['presupuesto', 'visita', 'entrega'] as const;
+
+export const CATEGORIAS_DERIVADAS = [...CATEGORIAS_DEL_TRABAJO, 'seguimiento'] as const;
 
 export const CATEGORIAS_PROPIAS = ['materiales', 'taller'] as const;
 
 export const CATEGORIAS_DE_AGENDA = [...CATEGORIAS_DERIVADAS, ...CATEGORIAS_PROPIAS] as const;
+
+export type CategoriaDelTrabajo = (typeof CATEGORIAS_DEL_TRABAJO)[number];
 
 export type CategoriaDerivada = (typeof CATEGORIAS_DERIVADAS)[number];
 
@@ -25,7 +29,7 @@ export interface ProyectoDeLaAgenda {
   entregaHora: string | null;
   vencimientoPresupuesto: string | null;
   direccionEntrega: string;
-  importante: Readonly<Record<CategoriaDerivada, boolean>>;
+  importante: Readonly<Record<CategoriaDelTrabajo, boolean>>;
 }
 
 export interface ClienteDeLaAgenda {
@@ -45,10 +49,20 @@ export interface AnotacionDeLaAgenda {
   importante: boolean;
 }
 
+export interface ProximoDeLaAgenda {
+  id: string;
+  proyectoId: string;
+  fecha: string;
+  hechoEl: string | null;
+  nota: string;
+  importante: boolean;
+}
+
 export interface DatosDeLaAgenda {
   proyectos: readonly ProyectoDeLaAgenda[];
   clientes: readonly ClienteDeLaAgenda[];
   anotaciones: readonly AnotacionDeLaAgenda[];
+  proximos: readonly ProximoDeLaAgenda[];
 }
 
 export interface RangoDeLaAgenda {
@@ -92,8 +106,9 @@ const PESO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, number>> = {
   presupuesto: 0,
   visita: 1,
   entrega: 2,
-  materiales: 3,
-  taller: 4,
+  seguimiento: 3,
+  materiales: 4,
+  taller: 5,
 };
 
 function entregaHecha(estado: EstadoProyecto): boolean {
@@ -160,6 +175,29 @@ function derivadosDelProyecto(
   return eventos;
 }
 
+function derivadoDelSeguimiento(
+  proximo: ProximoDeLaAgenda,
+  proyecto: ProyectoDeLaAgenda,
+  cliente: ClienteDeLaAgenda | undefined,
+): EventoDerivado {
+  const nombre = cliente?.nombre.trim() ?? '';
+  const nota = proximo.nota.trim();
+  return {
+    clase: 'derivada',
+    id: `seguimiento:${proximo.id}`,
+    categoria: 'seguimiento',
+    fecha: proximo.hechoEl ?? proximo.fecha,
+    hora: null,
+    proyectoId: proyecto.id,
+    clienteId: proyecto.clienteId,
+    titulo: nombre === '' ? proyecto.titulo : nombre,
+    cliente: '',
+    lugar: nota === '' ? proyecto.titulo : `${proyecto.titulo} · ${nota}`,
+    hecha: proximo.hechoEl !== null,
+    importante: proximo.importante,
+  };
+}
+
 function propioDeLaAnotacion(
   anotacion: AnotacionDeLaAgenda,
   proyecto: ProyectoDeLaAgenda | undefined,
@@ -221,6 +259,12 @@ export function eventosDeLaAgenda(
     for (const evento of derivadosDelProyecto(proyecto, clientes.get(proyecto.clienteId))) {
       if (adentro(evento.fecha)) eventos.push(evento);
     }
+  }
+  for (const proximo of datos.proximos) {
+    const proyecto = proyectos.get(proximo.proyectoId);
+    if (proyecto === undefined) continue;
+    const evento = derivadoDelSeguimiento(proximo, proyecto, clientes.get(proyecto.clienteId));
+    if (adentro(evento.fecha)) eventos.push(evento);
   }
   for (const anotacion of datos.anotaciones) {
     if (!adentro(anotacion.fecha)) continue;
@@ -298,7 +342,7 @@ export function diaPorHoras(
 }
 
 export function puedeArrastrarse(evento: EventoDeLaAgenda): boolean {
-  return !evento.hecha;
+  return !evento.hecha && evento.categoria !== 'seguimiento';
 }
 
 export const AVISOS_DE_LA_AGENDA = ['entregas', 'visitas', 'presupuestos', 'anotaciones'] as const;
@@ -323,10 +367,11 @@ export const PREFERENCIAS_INICIALES: PreferenciasDeAvisos = {
   anotaciones: { activo: false, anticipacion: 0 },
 };
 
-export const AVISO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, AvisoDeLaAgenda>> = {
+export const AVISO_DE_LA_CATEGORIA: Readonly<Record<CategoriaDeAgenda, AvisoDeLaAgenda | null>> = {
   entrega: 'entregas',
   visita: 'visitas',
   presupuesto: 'presupuestos',
+  seguimiento: null,
   materiales: 'anotaciones',
   taller: 'anotaciones',
 };
@@ -339,7 +384,9 @@ export function eventosParaAvisar(
   const mayor = Math.max(...AVISOS_DE_LA_AGENDA.map((aviso) => preferencias[aviso].anticipacion));
 
   return eventosDeLaAgenda(datos, { desde: hoy, hasta: sumarDias(hoy, mayor) }).filter((evento) => {
-    const preferencia = preferencias[AVISO_DE_LA_CATEGORIA[evento.categoria]];
+    const aviso = AVISO_DE_LA_CATEGORIA[evento.categoria];
+    if (aviso === null) return false;
+    const preferencia = preferencias[aviso];
     if (!preferencia.activo) return false;
     if (evento.hecha) return false;
     return diasEntre(hoy, evento.fecha) <= preferencia.anticipacion;

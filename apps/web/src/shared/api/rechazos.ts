@@ -177,6 +177,12 @@ const PARA_TODOS: Readonly<Record<string, (contexto: ContextoDelRechazo) => Rech
       'Solo lo que entró antes de la apertura puede estar en tus saldos de arranque. Destildá esa opción, o revisá la fecha, y volvé a guardarlo.',
     codigo: '',
   }),
+  MN019: () => ({
+    titulo: 'El seguimiento de este trabajo quedó a medias.',
+    queHacer:
+      'No se guardó nada. Pasa si lo cambiaste desde otro lado al mismo tiempo. Abrilo de nuevo: si está en seguimiento, registrá el contacto desde ahí; si no, ponelo en seguimiento con su fecha.',
+    codigo: '',
+  }),
   MN008: (contexto) => ({
     titulo: 'Esta app quedó vieja y no saca la misma cuenta que el servidor.',
     queHacer:

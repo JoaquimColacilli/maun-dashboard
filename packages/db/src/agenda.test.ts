@@ -44,6 +44,19 @@ const CLIENTE = {
   zona: 'Morón',
 } as unknown as FilaDe<'clientes'>;
 
+const PROXIMO: FilaDe<'proximos_contactos'> = {
+  ...METADATOS,
+  id: 's1',
+  proyecto_id: 'p1',
+  fecha: '2026-10-01',
+  nota: 'Después de las vacaciones',
+  etapa_previa: 'presupuesto_enviado',
+  hecho_el: null,
+  resultado: null,
+  respuesta: '',
+  importante: true,
+};
+
 const ANOTACION: FilaDe<'anotaciones'> = {
   ...METADATOS,
   id: 'n1',
@@ -95,17 +108,49 @@ describe('datosDeLaAgenda', () => {
         },
         expect.objectContaining({ id: 'n2', hora: null }),
       ],
+      proximos: [],
     });
   });
 
-  it('desde la réplica lee las mismas tres tablas', () => {
+  it('el seguimiento viaja con su día, lo hecho y la marca, sin las filas borradas', () => {
+    expect(
+      datosDeLaAgenda({
+        proyectos: [],
+        clientes: [],
+        anotaciones: [],
+        proximos_contactos: [
+          PROXIMO,
+          { ...PROXIMO, id: 's2', hecho_el: '2026-09-20', resultado: 'otra_fecha' },
+          { ...PROXIMO, id: 's3', deleted_at: '2026-09-21T12:00:00Z' },
+        ],
+      }).proximos,
+    ).toEqual([
+      {
+        id: 's1',
+        proyectoId: 'p1',
+        fecha: '2026-10-01',
+        hechoEl: null,
+        nota: 'Después de las vacaciones',
+        importante: true,
+      },
+      expect.objectContaining({ id: 's2', hechoEl: '2026-09-20' }),
+    ]);
+  });
+
+  it('desde la réplica lee las mismas cuatro tablas', () => {
     let replica = replicaVacia('u');
     replica = aplicarFilaLocal(replica, 'proyectos', PROYECTO);
     replica = aplicarFilaLocal(replica, 'clientes', CLIENTE);
     replica = aplicarFilaLocal(replica, 'anotaciones', ANOTACION);
+    replica = aplicarFilaLocal(replica, 'proximos_contactos', PROXIMO);
 
     expect(datosDeLaAgendaDeLaReplica(replica)).toEqual(
-      datosDeLaAgenda({ proyectos: [PROYECTO], clientes: [CLIENTE], anotaciones: [ANOTACION] }),
+      datosDeLaAgenda({
+        proyectos: [PROYECTO],
+        clientes: [CLIENTE],
+        anotaciones: [ANOTACION],
+        proximos_contactos: [PROXIMO],
+      }),
     );
   });
 

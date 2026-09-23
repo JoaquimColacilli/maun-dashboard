@@ -45,6 +45,7 @@ import {
   CLAVE_DE_COSTOS,
   CLAVE_DE_FORMAS_DE_COBRO,
   CLAVE_DE_LIQUIDACION,
+  CLAVE_DE_MARCA_DEL_SEGUIMIENTO,
   CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
   CLAVE_DE_PROYECTO,
@@ -54,6 +55,7 @@ import {
   MUTACION_DE_COSTOS,
   MUTACION_DE_FORMAS_DE_COBRO,
   MUTACION_DE_LIQUIDACION,
+  MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
   MUTACION_DE_MARCAS,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
@@ -123,6 +125,12 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_MARCAS, MUTACION_DE_MARCAS);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(
+      CLAVE_DE_MARCA_DEL_SEGUIMIENTO,
+      MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
+    );
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_COSTOS, MUTACION_DE_COSTOS);

@@ -454,6 +454,21 @@ export async function guardarMarcasDeLaAgenda(
   return data;
 }
 
+export async function guardarMarcaDelProximoContacto(
+  cliente: ClienteMaun,
+  id: string,
+  importante: boolean,
+): Promise<FilaDe<'proximos_contactos'>> {
+  const { data, error } = await cliente
+    .from('proximos_contactos')
+    .update({ importante })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function borrarCliente(
   cliente: ClienteMaun,
   id: string,

@@ -122,8 +122,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
         <ol className="list-none">
           {proyectos.map((proyecto) => {
             const fecha = fechaDelProyecto(proyecto);
-            const enConsultas =
-              faseDe(proyecto.estado) !== 'activos' && faseDe(proyecto.estado) !== 'historial';
+            const fase = faseDe(proyecto.estado);
             return (
               <li
                 key={proyecto.id}
@@ -138,7 +137,11 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
                     {proyecto.titulo}
                   </Link>
                   <span className="mt-0.5 block text-meta text-text-3">
-                    {enConsultas ? 'Consulta' : 'Obra'}
+                    {fase === 'consultas'
+                      ? 'Consulta'
+                      : fase === 'seguimiento'
+                        ? 'Seguimiento'
+                        : 'Obra'}
                     {fecha === undefined ? '' : `, ${relativa(fecha, hoy)}`}
                   </span>
                 </span>

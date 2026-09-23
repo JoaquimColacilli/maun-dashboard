@@ -21,6 +21,7 @@ export interface TallerSembrado {
   entregado: string;
   contacto: string;
   enviado: string;
+  enSeguimiento: string;
   cliente: string;
   enlace: string;
   encuesta: string;
@@ -238,6 +239,71 @@ function movimiento(indice: number): Record<string, unknown> {
   };
 }
 
+async function enSeguimiento(
+  sesion: SesionDePrueba,
+  datos: { cliente: string; titulo: string; historia: number },
+): Promise<string> {
+  const id = await obra(sesion, {
+    cliente: datos.cliente,
+    titulo: datos.titulo,
+    estado: 'presupuesto_enviado',
+    presupuesto: 38_000_000,
+    pagos: 0,
+    gastos: 0,
+  });
+  const proyecto = {
+    id,
+    version: null,
+    cliente_id: datos.cliente,
+    titulo: datos.titulo,
+    estado: 'en_seguimiento',
+    presupuesto_centavos: 38_000_000,
+    comprobante: 'sin_comprobante',
+  };
+  const vueltas = datos.historia;
+  let pendiente = crypto.randomUUID();
+  await guardarProyectoPorRpc(sesion, {
+    proyecto,
+    pagos: [],
+    gastos: [],
+    proximos: [
+      {
+        id: pendiente,
+        fecha: dia(-2 - vueltas - vueltas),
+        nota: 'Después de las vacaciones',
+        etapa_previa: 'presupuesto_enviado',
+      },
+    ],
+  });
+  for (let vuelta = 0; vuelta < vueltas; vuelta += 1) {
+    const siguiente = crypto.randomUUID();
+    const restan = vueltas - vuelta;
+    await guardarProyectoPorRpc(sesion, {
+      proyecto,
+      pagos: [],
+      gastos: [],
+      proximos: [
+        {
+          id: pendiente,
+          fecha: dia(-2 - restan - restan),
+          etapa_previa: 'presupuesto_enviado',
+          hecho_el: dia(-1 - restan - restan),
+          resultado: 'otra_fecha',
+          respuesta: `Vuelta ${String(vuelta + 1)}: que le escriba más adelante, que todavía no cobró.`,
+        },
+        {
+          id: siguiente,
+          fecha: restan === 1 ? dia(5) : dia(-restan - restan),
+          nota: 'Cuando cobre el aguinaldo',
+          etapa_previa: 'presupuesto_enviado',
+        },
+      ],
+    });
+    pendiente = siguiente;
+  }
+  return id;
+}
+
 export async function sembrarPocos(sesion: SesionDePrueba): Promise<TallerSembrado> {
   await vaciarTaller(sesion);
   await escribirAjustes(sesion, AJUSTES_COMPLETOS);
@@ -287,6 +353,11 @@ export async function sembrarPocos(sesion: SesionDePrueba): Promise<TallerSembra
     pagos: 0,
     gastos: 0,
   });
+  const seguido = await enSeguimiento(sesion, {
+    cliente: tercero,
+    titulo: 'Vestidor del dormitorio',
+    historia: 1,
+  });
 
   await archivoPorRest(sesion, { proyectoId: obraId, nombre: 'Plano general.pdf', visible: true });
   await archivoPorRest(sesion, {
@@ -305,7 +376,16 @@ export async function sembrarPocos(sesion: SesionDePrueba): Promise<TallerSembra
     { id: crypto.randomUUID(), fecha: dia(2), texto: 'Afilar la sierra', categoria: 'taller' },
   ]);
 
-  return { obra: obraId, entregado, contacto, enviado, cliente, enlace, encuesta };
+  return {
+    obra: obraId,
+    entregado,
+    contacto,
+    enviado,
+    enSeguimiento: seguido,
+    cliente,
+    enlace,
+    encuesta,
+  };
 }
 
 export async function sembrarMuchos(sesion: SesionDePrueba): Promise<TallerSembrado> {
@@ -366,6 +446,18 @@ export async function sembrarMuchos(sesion: SesionDePrueba): Promise<TallerSembr
     pagos: 0,
     gastos: 0,
   });
+  const seguido = await enSeguimiento(sesion, {
+    cliente: clientes[2] ?? cliente,
+    titulo: 'Vestidor del dormitorio con puertas espejadas y cajonera interna',
+    historia: 6,
+  });
+  for (let indice = 0; indice < 7; indice += 1) {
+    await enSeguimiento(sesion, {
+      cliente: clientes[(indice % (clientes.length - 3)) + 3] ?? cliente,
+      titulo: `Por ahora no ${String(indice + 1)}: placard de pasillo`,
+      historia: indice % 3,
+    });
+  }
 
   const estados = ['en_curso', 'a_presupuestar', 'contacto', 'entregado', 'presupuesto_enviado'];
   for (let indice = 0; indice < 20; indice += 1) {
@@ -426,5 +518,14 @@ export async function sembrarMuchos(sesion: SesionDePrueba): Promise<TallerSembr
     })),
   );
 
-  return { obra: obraId, entregado, contacto, enviado, cliente, enlace, encuesta };
+  return {
+    obra: obraId,
+    entregado,
+    contacto,
+    enviado,
+    enSeguimiento: seguido,
+    cliente,
+    enlace,
+    encuesta,
+  };
 }

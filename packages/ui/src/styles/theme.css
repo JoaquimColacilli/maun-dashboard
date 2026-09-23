@@ -152,6 +152,7 @@
   --color-ag-visita: var(--ag-visita);
   --color-ag-materiales: var(--ag-materiales);
   --color-ag-taller: var(--ag-taller);
+  --color-ag-seguimiento: var(--ag-seguimiento);
   --color-ag-marca: var(--ag-marca);
   --color-op-bien: var(--op-bien);
   --color-op-neutro: var(--op-neutro);
@@ -204,6 +205,7 @@
   --ag-visita: #0e5c63;
   --ag-materiales: #4e6b22;
   --ag-taller: #6a6660;
+  --ag-seguimiento: #3f5675;
   --ag-marca: #c2185b;
 
   /* Las opiniones: dos tintas con gris en el medio, y ninguna es un color de tesoro. El color nunca
@@ -307,6 +309,7 @@
     --ag-visita: #64b8bd;
     --ag-materiales: #a6c86d;
     --ag-taller: #b3afa8;
+    --ag-seguimiento: #9cb2d3;
     --ag-marca: #ff90b4;
 
     --op-neutro: #6e6c68;

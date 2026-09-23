@@ -46,6 +46,7 @@ import {
 import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
+import { FichaDeSeguimiento } from './FichaDeSeguimiento';
 
 function vieneDe(estado: unknown, marca: 'recienLiquidado' | 'recienAprobado'): boolean {
   return typeof estado === 'object' && estado !== null && marca in estado;
@@ -103,6 +104,10 @@ export function ProyectoFichaPage() {
 
   if (esEtapaDeConsulta(proyecto.estado)) {
     return <FichaDeContacto key={proyecto.id} resumen={resumen} etapa={proyecto.estado} />;
+  }
+
+  if (proyecto.estado === 'en_seguimiento') {
+    return <FichaDeSeguimiento key={proyecto.id} resumen={resumen} />;
   }
 
   const pagos = pagosDelProyecto(replica, proyecto.id);

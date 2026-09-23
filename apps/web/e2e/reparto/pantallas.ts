@@ -38,6 +38,12 @@ export const PANTALLAS: readonly Pantalla[] = [
   { clave: 'inicio', nombre: 'Inicio', ruta: () => '/', listo: enElMarco },
   { clave: 'agenda', nombre: 'Agenda', ruta: () => '/agenda', listo: enElMarco },
   { clave: 'consultas', nombre: 'Consultas', ruta: () => '/consultas', listo: enElMarco },
+  {
+    clave: 'seguimiento',
+    nombre: 'Proyectos: seguimiento',
+    ruta: () => '/proyectos?etapa=seguimiento',
+    listo: enElMarco,
+  },
   { clave: 'activos', nombre: 'Proyectos: activos', ruta: () => '/proyectos', listo: enElMarco },
   {
     clave: 'historial',
@@ -61,6 +67,12 @@ export const PANTALLAS: readonly Pantalla[] = [
     clave: 'contacto',
     nombre: 'Ficha de un contacto',
     ruta: (t) => `/proyectos/${t.contacto}`,
+    listo: enElMarco,
+  },
+  {
+    clave: 'en-seguimiento',
+    nombre: 'Ficha de un trabajo en seguimiento',
+    ruta: (t) => `/proyectos/${t.enSeguimiento}`,
     listo: enElMarco,
   },
   {

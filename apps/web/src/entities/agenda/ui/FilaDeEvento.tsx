@@ -18,6 +18,7 @@ export interface AccionesDeLaAgenda {
   alTildar: (evento: EventoPropio) => void;
   alMarcar: (evento: EventoDeLaAgenda) => void;
   alBorrar: (evento: EventoPropio) => void;
+  alRegistrar?: (evento: EventoDerivado) => void;
 }
 
 export interface FilaDeEventoProps {
@@ -168,6 +169,10 @@ function FilaDerivada({
   const abrir = () => {
     acciones.alAbrirTrabajo(evento);
   };
+  const registrar =
+    evento.categoria === 'seguimiento' && acciones.alRegistrar !== undefined
+      ? acciones.alRegistrar
+      : undefined;
 
   return (
     <li
@@ -194,10 +199,22 @@ function FilaDerivada({
               <Icono nombre="link-2" tamano={14} />
               <span className="min-w-[10rem] flex-1">
                 {derivada.origen}.{' '}
-                {conGrilla
-                  ? 'Arrastrala en el mes para moverla, o cambiá la fecha ahí.'
-                  : 'Para moverla, cambiá la fecha ahí.'}
+                {evento.categoria === 'seguimiento'
+                  ? 'Cuando le escribas, registralo: ahí elegís si vuelve, si sigue con otra fecha o si no va.'
+                  : conGrilla
+                    ? 'Arrastrala en el mes para moverla, o cambiá la fecha ahí.'
+                    : 'Para moverla, cambiá la fecha ahí.'}
               </span>
+              {registrar !== undefined && (
+                <Button
+                  size="chico"
+                  onClick={() => {
+                    registrar(evento);
+                  }}
+                >
+                  Registrar el contacto
+                </Button>
+              )}
               <Button variant="secundario" size="chico" onClick={abrir}>
                 {derivada.abrir}
               </Button>

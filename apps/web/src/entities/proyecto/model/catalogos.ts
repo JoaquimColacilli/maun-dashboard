@@ -98,6 +98,7 @@ export interface Etapa {
 
 export const ETAPAS: readonly Etapa[] = [
   { id: 'consultas', etiqueta: 'Consultas', ruta: '/consultas' },
+  { id: 'seguimiento', etiqueta: 'Seguimiento', ruta: '/proyectos?etapa=seguimiento' },
   { id: 'activos', etiqueta: 'Activos', ruta: '/proyectos' },
   { id: 'historial', etiqueta: 'Historial', ruta: '/proyectos?etapa=historial' },
 ];

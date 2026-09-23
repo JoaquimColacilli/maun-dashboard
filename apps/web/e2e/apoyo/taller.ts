@@ -724,6 +724,7 @@ export async function guardarProyectoPorRpc(
     gastos: unknown[];
     opciones?: unknown[];
     necesidades?: unknown[];
+    proximos?: unknown[];
   },
 ): Promise<unknown> {
   return pedir(entorno, '/rest/v1/rpc/guardar_proyecto', {
@@ -735,8 +736,65 @@ export async function guardarProyectoPorRpc(
       p_gastos: pedido.gastos,
       p_opciones: pedido.opciones ?? null,
       p_necesidades: pedido.necesidades ?? null,
+      p_proximos: pedido.proximos ?? null,
     }),
   });
+}
+
+export interface FilaDeProximoContacto {
+  id: string;
+  fecha: string;
+  nota: string;
+  etapa_previa: string;
+  hecho_el: string | null;
+  resultado: string | null;
+  respuesta: string;
+  importante: boolean;
+}
+
+export async function proximosContactosDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<FilaDeProximoContacto[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/proximos_contactos?select=id,fecha,nota,etapa_previa,hecho_el,resultado,respuesta,importante&deleted_at=is.null&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as FilaDeProximoContacto[];
+}
+
+export async function seguimientoPorRpc(
+  sesion: SesionDePrueba,
+  datos: { titulo: string; fecha: string; nota?: string; telefono?: string },
+): Promise<ContactoDePrueba> {
+  const contacto = await contactoPorRpc(sesion, {
+    titulo: datos.titulo,
+    estado: 'presupuesto_enviado',
+    telefono: datos.telefono,
+  });
+  const fila = await leerProyecto(sesion, datos.titulo);
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id: contacto.id,
+      version: fila?.version ?? 1,
+      cliente_id: contacto.clienteId,
+      titulo: datos.titulo,
+      estado: 'en_seguimiento',
+      presupuesto_centavos: null,
+      comprobante: 'sin_comprobante',
+    },
+    pagos: [],
+    gastos: [],
+    proximos: [
+      {
+        id: crypto.randomUUID(),
+        fecha: datos.fecha,
+        nota: datos.nota ?? '',
+        etapa_previa: 'presupuesto_enviado',
+      },
+    ],
+  });
+  return contacto;
 }
 
 export interface FilaDeNecesidad {

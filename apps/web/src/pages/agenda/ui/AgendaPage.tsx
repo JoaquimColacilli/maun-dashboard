@@ -3,6 +3,7 @@ import {
   eventosDeLaAgenda,
   type CategoriaDeAgenda,
   type EventoDeLaAgenda,
+  type EventoDerivado,
 } from '@maun/domain';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
@@ -18,6 +19,7 @@ import {
   eventosDelDia,
   fechasDelMes,
   FilaDeEvento,
+  idDelProximoContacto,
   GrillaDelMes,
   MarcaDeCategoria,
   mesEnPalabras,
@@ -33,12 +35,13 @@ import {
   type AvisoDelDia,
 } from '@/entities/agenda';
 import { useReplicaDelTaller } from '@/entities/replica';
+import { HojaDeRegistrarElContacto } from '@/features/hacer-el-seguimiento';
 import {
   HojaDeAnotacion,
   useAccionesDeLaAgenda,
   useMoverEnLaAgenda,
 } from '@/features/llevar-la-agenda';
-import { datosDeLaAgendaDeLaReplica } from '@/shared/api';
+import { datosDeLaAgendaDeLaReplica, filaPorId } from '@/shared/api';
 import { hoyLocal, useAnchoDePantalla, type NuevoAviso } from '@/shared/lib';
 import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
 
@@ -276,10 +279,20 @@ export function AgendaPage() {
   const capaDelDia = useRef<HTMLElement>(null);
   const idDeLaCapa = useId();
 
+  const [registrando, setRegistrando] = useState<EventoDerivado | null>(null);
+
   const avisarEnElDia = useCallback((aviso: NuevoAviso) => {
     setAvisoDelDia({ texto: aviso.texto, accion: aviso.accion ?? null });
   }, []);
-  const accionesDelDia = useAccionesDeLaAgenda(avisarEnElDia);
+  const accionesBaseDelDia = useAccionesDeLaAgenda(avisarEnElDia);
+  const accionesDelDia: AccionesDeLaAgenda = {
+    ...accionesBaseDelDia,
+    alRegistrar: (evento) => {
+      setDiaAbierto(null);
+      setAvisoDelDia(null);
+      setRegistrando(evento);
+    },
+  };
 
   useEffect(() => {
     if (avisoDelDia === null) return;
@@ -365,6 +378,34 @@ export function AgendaPage() {
           avisar={anotandoDesdeElDia ? avisarEnElDia : undefined}
         />
       )}
+    </ConSalida>
+  );
+
+  const hojaDeRegistrar = (
+    <ConSalida valor={registrando}>
+      {(evento) => {
+        const proyecto = filaPorId(replica, 'proyectos', evento.proyectoId);
+        const idDelPendiente = idDelProximoContacto(evento);
+        const pendiente =
+          idDelPendiente === null
+            ? undefined
+            : filaPorId(replica, 'proximos_contactos', idDelPendiente);
+        if (proyecto === undefined || pendiente === undefined || pendiente.hecho_el !== null) {
+          return null;
+        }
+        const cliente = filaPorId(replica, 'clientes', proyecto.cliente_id);
+        return (
+          <HojaDeRegistrarElContacto
+            proyecto={proyecto}
+            pendiente={pendiente}
+            nombre={cliente?.nombre ?? evento.titulo}
+            telefono={cliente?.telefono ?? ''}
+            alCerrar={() => {
+              setRegistrando(null);
+            }}
+          />
+        );
+      }}
     </ConSalida>
   );
 
@@ -466,6 +507,7 @@ export function AgendaPage() {
           )}
         </ConSalida>
         {hojaDeAnotar}
+        {hojaDeRegistrar}
       </Pagina>
     );
   }
@@ -661,6 +703,7 @@ export function AgendaPage() {
         )}
       </div>
       {hojaDeAnotar}
+      {hojaDeRegistrar}
     </Pagina>
   );
 }

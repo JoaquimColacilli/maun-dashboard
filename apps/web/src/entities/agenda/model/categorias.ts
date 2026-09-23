@@ -2,7 +2,7 @@ import type { CategoriaDeAgenda, CategoriaDerivada, CategoriaPropia } from '@mau
 
 import type { NombreDeIcono } from '@/shared/ui';
 
-export type FormaDeLaMarca = 'cuadrado' | 'punteado' | 'rombo' | 'circulo' | 'barra';
+export type FormaDeLaMarca = 'cuadrado' | 'punteado' | 'rombo' | 'circulo' | 'barra' | 'triangulo';
 
 export interface DatosDeLaCategoria {
   etiqueta: string;
@@ -38,6 +38,14 @@ export const CATEGORIA: Readonly<Record<CategoriaDeAgenda, DatosDeLaCategoria>> 
     fondo: 'bg-ag-visita',
     borde: 'border-ag-visita',
   },
+  seguimiento: {
+    etiqueta: 'Seguimiento',
+    icono: 'message-circle',
+    forma: 'triangulo',
+    texto: 'text-ag-seguimiento',
+    fondo: 'bg-ag-seguimiento',
+    borde: 'border-ag-seguimiento',
+  },
   materiales: {
     etiqueta: 'Materiales',
     icono: 'package',
@@ -59,6 +67,7 @@ export const CATEGORIA: Readonly<Record<CategoriaDeAgenda, DatosDeLaCategoria>> 
 export interface DatosDeLaDerivada {
   accion: string;
   corta: string;
+  conector: string;
   origen: string;
   queCambia: string;
   abrir: string;
@@ -69,6 +78,7 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
   entrega: {
     accion: 'Entregar',
     corta: 'Entrega',
+    conector: ': ',
     origen: 'Sale de la entrega estimada del proyecto',
     queCambia: 'la entrega estimada del proyecto',
     abrir: 'Abrir el proyecto',
@@ -77,6 +87,7 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
   visita: {
     accion: 'Relevamiento',
     corta: 'Relevamiento',
+    conector: ': ',
     origen: 'Sale de la fecha de visita del contacto',
     queCambia: 'el día de la visita',
     abrir: 'Abrir el contacto',
@@ -85,10 +96,20 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
   presupuesto: {
     accion: 'Entregar presupuesto',
     corta: 'Presupuesto',
+    conector: ': ',
     origen: 'Sale de la fecha límite del presupuesto del contacto',
     queCambia: 'el plazo del presupuesto',
     abrir: 'Abrir el contacto',
     hecha: 'enviado',
+  },
+  seguimiento: {
+    accion: 'Volver a escribirle a',
+    corta: 'Escribirle a',
+    conector: ' ',
+    origen: 'Sale del seguimiento del trabajo',
+    queCambia: 'el día en que le volvés a escribir',
+    abrir: 'Abrir el seguimiento',
+    hecha: 'ya le escribiste',
   },
 };
 
