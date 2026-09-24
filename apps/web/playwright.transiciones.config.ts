@@ -27,7 +27,7 @@ export default defineConfig({
   projects: [
     {
       name: 'celular-claro',
-      testMatch: /(movimientos|vivos)\.spec\.ts/,
+      testMatch: /(movimientos|vivos|rendimiento|video)\.spec\.ts/,
       use: { ...CELULAR, colorScheme: 'light' },
     },
     {

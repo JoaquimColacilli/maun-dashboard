@@ -12,6 +12,7 @@ export interface TransicionVista {
   salteada: boolean;
   terminada: boolean;
   hojaAbiertaAlEmpezar: boolean;
+  duracion: number;
 }
 
 interface Registro extends TransicionVista {
@@ -60,6 +61,7 @@ export async function espiarLasTransiciones(context: BrowserContext): Promise<vo
             salteada: false,
             terminada: false,
             hojaAbiertaAlEmpezar: document.querySelector('dialog[open]') !== null,
+            duracion: 0,
             transicion,
             animaciones: [],
             fin: 0,
@@ -79,6 +81,7 @@ export async function espiarLasTransiciones(context: BrowserContext): Promise<vo
                   Number(animacion.effect?.getComputedTiming().endTime ?? 0),
                 ),
               );
+              registro.duracion = registro.fin;
               for (const animacion of registro.animaciones) {
                 animacion.pause();
                 animacion.currentTime = 0;
@@ -118,12 +121,13 @@ export async function olvidarLasTransiciones(page: Page): Promise<void> {
 export function transicionesVistas(page: Page): Promise<TransicionVista[]> {
   return page.evaluate(() =>
     (window as unknown as Espia).transicionesVistas.map(
-      ({ alcance, tipos, salteada, terminada, hojaAbiertaAlEmpezar }) => ({
+      ({ alcance, tipos, salteada, terminada, hojaAbiertaAlEmpezar, duracion }) => ({
         alcance,
         tipos,
         salteada,
         terminada,
         hojaAbiertaAlEmpezar,
+        duracion,
       }),
     ),
   );
@@ -146,6 +150,7 @@ export async function esperarCongelada(page: Page): Promise<TransicionVista> {
         salteada: ultima.salteada,
         terminada: ultima.terminada,
         hojaAbiertaAlEmpezar: ultima.hojaAbiertaAlEmpezar,
+        duracion: ultima.duracion,
       };
     },
     undefined,

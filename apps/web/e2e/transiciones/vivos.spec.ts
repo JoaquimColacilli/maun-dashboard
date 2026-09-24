@@ -312,6 +312,49 @@ test('borrar desde la ficha: la ficha no cambia detrás de la hoja y recién cer
   await expect(page.getByRole('link', { name: 'Repisa para borrar', exact: true })).toHaveCount(0);
 });
 
+test('con ?camara-lenta cada movimiento dura cinco veces más, la dirección queda limpia y se apaga con =0', async ({
+  page,
+}) => {
+  const barra = page.getByRole('navigation', { name: 'Principal' });
+  const duracionDe = async (hacer: () => Promise<void>): Promise<number> => {
+    await congelarLaProxima(page);
+    await hacer();
+    const vista = await esperarCongelada(page);
+    await soltar(page);
+    await esperarQueTermine(page);
+    return vista.duracion;
+  };
+  const deIdaYVuelta = async (): Promise<number> => {
+    const ida = await duracionDe(() =>
+      barra.getByRole('button', { name: 'Clientes', exact: true }).click(),
+    );
+    await barra.getByRole('button', { name: 'Inicio', exact: true }).click();
+    await expect(titulo(page, 'Inicio')).toBeVisible();
+    await sinTransicionEnCurso(page);
+    return ida;
+  };
+
+  await page.goto('/');
+  await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+  const normal = await deIdaYVuelta();
+
+  await page.goto('/?camara-lenta');
+  await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+  await expect(page).toHaveURL(/\/$/);
+  const lenta = await deIdaYVuelta();
+  expect(lenta / normal).toBeGreaterThan(4.9);
+  expect(lenta / normal).toBeLessThan(5.1);
+
+  await page.reload();
+  await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+  expect((await deIdaYVuelta()) / normal).toBeGreaterThan(4.9);
+
+  await page.goto('/?camara-lenta=0');
+  await expect(titulo(page, 'Inicio')).toBeVisible(CARGA);
+  const otraVez = await deIdaYVuelta();
+  expect(otraVez / normal).toBeLessThan(1.1);
+});
+
 test.describe('con menos movimiento', () => {
   test.use({ reducedMotion: 'reduce' });
 

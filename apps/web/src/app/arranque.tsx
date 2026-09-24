@@ -8,6 +8,7 @@ import { EnvInvalidoError, leerEnv } from '@/shared/config';
 import { esUnaPaginaPublica, vigilarLaVersionNueva } from '@/shared/lib';
 
 import { App } from './App';
+import { ponerLaCamaraLenta } from './navegacion/camara-lenta';
 import { crearCompuerta } from './navegacion/compuerta';
 import { crearCoordinador } from './navegacion/coordinador';
 import { escenarioDelNavegador } from './navegacion/escenario';
@@ -33,6 +34,7 @@ export function arrancar(raiz: HTMLElement): void {
 
   if (!esUnaPaginaPublica(globalThis.location.pathname)) vigilarLaVersionNueva();
 
+  ponerLaCamaraLenta();
   const compuerta = crearCompuerta(window);
   const router = crearRouter(compuerta.ventana);
   const coordinador = crearCoordinador({
