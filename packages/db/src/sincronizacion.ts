@@ -41,6 +41,7 @@ export const COLUMNAS_DE_AJUSTES = [
   'cobro_cuit',
   'cobro_link',
   'resena_link',
+  'presupuesto_vale_dias',
 ] as const;
 
 export type ColumnaDeAjustes = (typeof COLUMNAS_DE_AJUSTES)[number];
@@ -207,6 +208,7 @@ export const COLUMNAS_DE_PROYECTO = [
   'sena_bp',
   'entrega_hora',
   'visita_hora',
+  'presupuesto_vale_hasta',
 ] as const;
 
 export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];

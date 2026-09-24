@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState, type SyntheticEvent } from 'react';
 
+import { diasQueValeElPresupuesto } from '@/entities/proyecto';
 import { mensajeDeSincronizacion, type CambiosDeAjustes, type FilaDe } from '@/shared/api';
 import {
   formatearPorcentaje,
@@ -12,10 +13,17 @@ import { Button, Campo, CamposJuntos, MoneyInput } from '@/shared/ui';
 
 import { MUTACION_DE_AJUSTES, MUTACION_DEL_NOMBRE } from '../api/mutacion';
 import { diferencias } from '../model/cambios';
+import { DIAS_MAXIMOS_DE_UN_PRESUPUESTO, parsearDias } from '../model/vigencia';
 
 const LARGO_DEL_NOMBRE = 120;
 
-type CampoDelFormulario = 'nombre' | 'sueldo' | 'fijos' | 'meta' | 'tasa' | 'sena';
+type CampoDelFormulario = 'nombre' | 'sueldo' | 'fijos' | 'meta' | 'tasa' | 'sena' | 'vigencia';
+
+const MENSAJE: Readonly<Partial<Record<CampoDelFormulario, string>>> = {
+  tasa: 'Escribí la tasa como un porcentaje, por ejemplo 40. Podés dejarla en 0.',
+  sena: 'Escribí la seña como un porcentaje entre 0 y 100, por ejemplo 50.',
+  vigencia: `Escribí cuántos días vale un presupuesto, entre 1 y ${String(DIAS_MAXIMOS_DE_UN_PRESUPUESTO)}. Lo normal son 15.`,
+};
 
 interface ErrorDelFormulario {
   campo: CampoDelFormulario;
@@ -35,6 +43,7 @@ export function FormularioDeConfiguracion({
   const [meta, setMeta] = useState<number | null>(ajustes.meta_cocos_centavos);
   const [tasa, setTasa] = useState(() => formatearPorcentaje(ajustes.tasa_cocos_anual_bp));
   const [sena, setSena] = useState(() => formatearPorcentaje(ajustes.sena_bp));
+  const [vigencia, setVigencia] = useState(() => String(diasQueValeElPresupuesto(ajustes)));
   const [error, setError] = useState<ErrorDelFormulario | undefined>(undefined);
 
   const mutacionDeAjustes = useMutation(MUTACION_DE_AJUSTES);
@@ -68,6 +77,7 @@ export function FormularioDeConfiguracion({
       meta_cocos_centavos: meta,
       tasa_cocos_anual_bp: parsearPorcentaje(tasa),
       sena_bp: parsearPorcentaje(sena, SENA_MAXIMA_BP),
+      presupuesto_vale_dias: parsearDias(vigencia),
     };
 
     const faltante: [CampoDelFormulario, number | null | undefined][] = [
@@ -76,17 +86,14 @@ export function FormularioDeConfiguracion({
       ['meta', valores.meta_cocos_centavos],
       ['tasa', valores.tasa_cocos_anual_bp],
       ['sena', valores.sena_bp],
+      ['vigencia', valores.presupuesto_vale_dias],
     ];
     const invalido = faltante.find(([, valor]) => valor === undefined || valor === null);
     if (invalido) {
       setError({
         campo: invalido[0],
         mensaje:
-          invalido[0] === 'tasa'
-            ? 'Escribí la tasa como un porcentaje, por ejemplo 40. Podés dejarla en 0.'
-            : invalido[0] === 'sena'
-              ? 'Escribí la seña como un porcentaje entre 0 y 100, por ejemplo 50.'
-              : 'Escribí un importe, por ejemplo 1.800.000. Podés dejarlo en 0.',
+          MENSAJE[invalido[0]] ?? 'Escribí un importe, por ejemplo 1.800.000. Podés dejarlo en 0.',
       });
       return;
     }
@@ -147,6 +154,16 @@ export function FormularioDeConfiguracion({
           error={error?.campo === 'sena' ? error.mensaje : undefined}
           onChange={(evento) => {
             setSena(evento.target.value);
+          }}
+        />
+        <Campo
+          etiqueta="Días que vale un presupuesto"
+          inputMode="numeric"
+          ayuda="Se cuentan desde el día que lo mandás. Tu cliente ve hasta cuándo puede dejar la seña, y en cada trabajo la fecha se puede cambiar."
+          value={vigencia}
+          error={error?.campo === 'vigencia' ? error.mensaje : undefined}
+          onChange={(evento) => {
+            setVigencia(evento.target.value);
           }}
         />
         <Campo

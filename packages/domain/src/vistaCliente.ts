@@ -2,6 +2,7 @@ import type { EstadoProyecto } from './estados.ts';
 import { diasEntre, entregaEstimada } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
 import { montoParaPegar, ofrece, type FormaDeCobro, type InstanciaDePago } from './pagos.ts';
+import { vencioElPresupuesto } from './vigencia.ts';
 
 export type HitoDelTrabajo =
   'estimativo' | 'presupuesto' | 'aprobado' | 'fabricacion' | 'entregado' | 'pagado';
@@ -466,7 +467,7 @@ export function proyeccionDeLaEntrega(
   hoy: string,
 ): ProyeccionDeLaEntrega {
   if (valeHasta === null) return { situacion: 'sin-fecha' };
-  if (valeHasta < hoy) return { situacion: 'vencida', vencio: valeHasta };
+  if (vencioElPresupuesto(valeHasta, hoy)) return { situacion: 'vencida', vencio: valeHasta };
   return {
     situacion: 'vigente',
     senarAntesDe: valeHasta,

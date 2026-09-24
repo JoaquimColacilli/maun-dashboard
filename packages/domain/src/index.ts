@@ -244,6 +244,13 @@ export {
 } from './fechas.ts';
 
 export {
+  DIAS_QUE_VALE_UN_PRESUPUESTO,
+  seMandaElPresupuesto,
+  vencioElPresupuesto,
+  vigenciaAlMandar,
+} from './vigencia.ts';
+
+export {
   fechaDelPlazo,
   PLAZOS_DEL_SEGUIMIENTO,
   plazoDeLaFecha,

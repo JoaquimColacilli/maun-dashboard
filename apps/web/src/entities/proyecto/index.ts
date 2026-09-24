@@ -202,6 +202,12 @@ export {
   type ProximoContacto,
 } from './model/seguimiento';
 export {
+  conLaVigenciaAlMandar,
+  diasQueValeElPresupuesto,
+  presupuestoVencido,
+  vigenciaDelPresupuesto,
+} from './model/vigencia';
+export {
   marcaDeLaTarea,
   presupuestoArmado,
   TAREAS_DEL_PRESUPUESTO,

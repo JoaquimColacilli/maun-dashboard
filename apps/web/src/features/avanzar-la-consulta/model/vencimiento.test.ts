@@ -24,6 +24,7 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     senaEnLaApertura: true,
     notas: '',
     vencimiento: '',
+    valeHasta: '',
     ...extra,
   };
 }

@@ -21,6 +21,7 @@ import {
   hayCambiosEnElContacto,
   hayQueGuardar,
   muestraElVencimiento,
+  muestraLaVigencia,
   ofreceMarcarLaVisita,
   pedidoDelContacto,
   senaEditable,
@@ -34,6 +35,7 @@ export interface HojaDeContactoProps {
   proyecto?: Proyecto;
   visitaInicial?: string;
   enfocarLaVisita?: boolean;
+  enfocarLaVigencia?: boolean;
   alCerrar: () => void;
   alGuardar?: (id: string) => void;
 }
@@ -42,6 +44,7 @@ export function HojaDeContacto({
   proyecto,
   visitaInicial,
   enfocarLaVisita = false,
+  enfocarLaVigencia = false,
   alCerrar,
   alGuardar,
 }: HojaDeContactoProps) {
@@ -65,7 +68,13 @@ export function HojaDeContacto({
   const [errores, setErrores] = useState<ErroresDelContacto>({});
   const [rechazo, setRechazo] = useState<unknown>(null);
   const yaTermino = useRef(false);
-  const enfocarAlAbrir = useRef(enfocarLaVisita);
+  const enfocarAlAbrir = useRef(
+    enfocarLaVigencia && muestraLaVigencia(proyecto)
+      ? 'input[name="vale_hasta"]'
+      : enfocarLaVisita
+        ? 'input[name="visita"]'
+        : 'input',
+  );
 
   const guardar = useMutation({
     ...MUTACION_DE_PROYECTO,
@@ -77,8 +86,7 @@ export function HojaDeContacto({
   const telefonoVisible = telefono ?? cliente?.telefono ?? '';
 
   useEffect(() => {
-    const selector = enfocarAlAbrir.current ? 'input[name="visita"]' : 'input';
-    cuerpo.current?.querySelector<HTMLInputElement>(selector)?.focus();
+    cuerpo.current?.querySelector<HTMLInputElement>(enfocarAlAbrir.current)?.focus();
   }, []);
 
   useEffect(() => {
@@ -316,6 +324,19 @@ export function HojaDeContacto({
                     ? 'Sale en la agenda hasta que lo mandes. Si cambiás el día del relevamiento se corre sola, salvo que la hayas puesto a mano.'
                     : 'Sale en la agenda hasta que marques que lo mandaste.'
                 }
+              />
+            )}
+
+            {muestraLaVigencia(proyecto) && (
+              <Campo
+                etiqueta="El presupuesto vale hasta"
+                name="vale_hasta"
+                type="date"
+                value={valores.valeHasta}
+                onChange={(evento) => {
+                  cambiar('valeHasta', evento.target.value);
+                }}
+                ayuda="Tu cliente lo ve en su página: si deja la seña antes de ese día, le dice para cuándo podría estar listo. Pasado el día, le dice que venció. Sin fecha, no le promete ninguna."
               />
             )}
 

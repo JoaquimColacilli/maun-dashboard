@@ -6,6 +6,7 @@ import {
   CONCEPTO_DE_LA_SENA,
   erroresDelContacto,
   hayQueGuardar,
+  muestraLaVigencia,
   ofreceMarcarLaVisita,
   pedidoDelContacto,
   senaEditable,
@@ -28,6 +29,7 @@ function valores(extra: Partial<ValoresDelContacto> = {}): ValoresDelContacto {
     senaEnLaApertura: true,
     notas: '',
     vencimiento: '',
+    valeHasta: '',
     ...extra,
   };
 }
@@ -458,5 +460,56 @@ describe('erroresDelContacto', () => {
       diaDeLaSena: 'Poné el día en que entró la plata.',
     });
     expect(erroresDelContacto(valores({ sena: 1_000, visita: '2026-09-20' }), '', HOY)).toEqual({});
+  });
+});
+
+describe('hasta cuándo vale el presupuesto, en la hoja del contacto', () => {
+  const mandado = proyecto({ estado: 'presupuesto_enviado', presupuesto_vale_hasta: '2026-09-27' });
+
+  function pedidoCon(fila: FilaDe<'proyectos'>, cambios: Partial<ValoresDelContacto> = {}) {
+    return pedidoDelContacto({
+      id: 'p',
+      proyecto: fila,
+      valores: { ...valoresDelContacto(fila, undefined), ...cambios },
+      sena: undefined,
+      idDeSenaNueva: 'nueva',
+      hoy: HOY,
+    });
+  }
+
+  it('el campo aparece solo con el presupuesto mandado', () => {
+    expect(muestraLaVigencia(mandado)).toBe(true);
+    expect(muestraLaVigencia(proyecto({ estado: 'a_presupuestar' }))).toBe(false);
+    expect(muestraLaVigencia(undefined)).toBe(false);
+  });
+
+  it('abre con la fecha guardada, y guardar sin tocarla no manda nada', () => {
+    expect(valoresDelContacto(mandado, undefined).valeHasta).toBe('2026-09-27');
+    const pedido = pedidoCon(mandado);
+    expect(pedido.datos.presupuesto_vale_hasta).toBe('2026-09-27');
+    expect(hayQueGuardar(mandado, pedido)).toBe(false);
+  });
+
+  it('cambiarla la manda, y borrarla deja el presupuesto sin fecha', () => {
+    expect(pedidoCon(mandado, { valeHasta: '2026-10-15' }).datos.presupuesto_vale_hasta).toBe(
+      '2026-10-15',
+    );
+    expect(pedidoCon(mandado, { valeHasta: '' }).datos.presupuesto_vale_hasta).toBeNull();
+  });
+
+  it('en otra etapa el campo no está, y lo que haya guardado queda como estaba', () => {
+    const relevado = proyecto({ estado: 'a_presupuestar', presupuesto_vale_hasta: '2026-08-01' });
+    expect(pedidoCon(relevado, { valeHasta: '2026-12-31' }).datos.presupuesto_vale_hasta).toBe(
+      '2026-08-01',
+    );
+  });
+
+  it('una fila guardada antes de la columna abre sin fecha y, sin tocarla, no manda la clave', () => {
+    const vieja: Partial<FilaDe<'proyectos'>> = { ...proyecto({ estado: 'presupuesto_enviado' }) };
+    delete vieja.presupuesto_vale_hasta;
+    const fila = vieja as FilaDe<'proyectos'>;
+
+    expect(valoresDelContacto(fila, undefined).valeHasta).toBe('');
+    expect(JSON.stringify(pedidoCon(fila).datos)).not.toContain('presupuesto_vale_hasta');
   });
 });
