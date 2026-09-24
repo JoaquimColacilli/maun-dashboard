@@ -118,6 +118,17 @@
     }
   }
 
+  /* La mano del dueño: una marca de las ilustraciones que se traza sola una vez, con
+     pathLength="1". Con prefers-reduced-motion --dur-trazo pasa a cero y la marca aparece hecha. */
+  @keyframes maun-trazo {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
   @keyframes maun-shimmer {
     0% {
       background-position: 200% 0;
@@ -244,6 +255,7 @@
   --dur-medium: 220ms;
   --dur-corte: 500ms;
   --dur-corte-stagger: 400ms;
+  --dur-trazo: 600ms;
 
   /* Los resortes del esquema estándar de Material 3, como curvas: cada uno es un par de curva
      (linear()) y duración, que es el tiempo en que asienta a un milésimo. Salen de amortiguación y
@@ -606,6 +618,7 @@
     --dur-medium: 0ms;
     --dur-corte: 0ms;
     --dur-corte-stagger: 0ms;
+    --dur-trazo: 0ms;
     /* resortes sin movimiento: los escribe `pnpm --filter @maun/ui resortes` */
     --dur-espacial: 0ms;
     --dur-espacial-rapido: 0ms;
@@ -622,6 +635,153 @@
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Las ilustraciones son un plano de taller (ADR 0068): dibujos de línea con una sola tinta sobre
+   el papel, y los tipos de línea del dibujo técnico usados como vocabulario. No agregan colores:
+   todo sale de los tokens de arriba, así que el oscuro viene solo, y el color de los tesoros entra
+   únicamente por el canto de una pieza cuando lo que se dibuja es plata. El trazo no escala con el
+   dibujo: es el mismo en todas. La marca que se traza sola es la excepción, porque con
+   non-scaling-stroke el pathLength deja de medir la línea en cuanto el dibujo se agranda. Las piezas
+   de trazos del tablero proyectado toman el mouse en toda su cara, para que salga su título. */
+@layer components {
+  .ilustracion {
+    --il-tinta: var(--color-ink);
+    --il-cara: var(--color-paper);
+    --il-costado: var(--color-surface-2);
+    --il-renglon: var(--color-border);
+    --il-letra: var(--color-text-2);
+
+    display: block;
+    flex: none;
+    overflow: visible;
+    fill: none;
+    stroke: var(--il-tinta);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ilustracion :where(path, line, polyline, polygon, rect, circle, ellipse) {
+    vector-effect: non-scaling-stroke;
+  }
+
+  .ilustracion .fina {
+    stroke-width: 0.75;
+  }
+
+  .ilustracion .trazos {
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+    stroke-linecap: butt;
+  }
+
+  .ilustracion [data-pieza] > .trazos {
+    pointer-events: fill;
+  }
+
+  .ilustracion .eje {
+    stroke-width: 0.75;
+    stroke-dasharray: 12 3 2 3;
+    stroke-linecap: butt;
+  }
+
+  .ilustracion .mano {
+    stroke-width: 1.75;
+  }
+
+  .ilustracion .trazar {
+    vector-effect: none;
+    stroke-dasharray: 1;
+    animation: maun-trazo var(--dur-trazo) var(--ease-out) var(--dur-medium) both;
+  }
+
+  .ilustracion .sin-linea {
+    stroke: none;
+  }
+
+  .ilustracion .cara {
+    fill: var(--il-cara);
+  }
+
+  .ilustracion .costado {
+    fill: var(--il-costado);
+  }
+
+  .ilustracion .tinta {
+    fill: var(--il-tinta);
+  }
+
+  .ilustracion .hogar {
+    fill: var(--tesoro-hogar);
+  }
+
+  .ilustracion .maun {
+    fill: var(--tesoro-maun);
+  }
+
+  .ilustracion .diezmo {
+    fill: var(--tesoro-diezmo);
+  }
+
+  .ilustracion .cocos {
+    fill: var(--tesoro-cocos);
+  }
+
+  .ilustracion .renglon {
+    stroke: var(--il-renglon);
+    stroke-width: 0.75;
+  }
+
+  .ilustracion :is(.rotulo, .cota) {
+    stroke: none;
+    font-family: var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ilustracion .rotulo {
+    fill: var(--il-tinta);
+    font-size: 12px;
+    font-weight: 500;
+    paint-order: stroke;
+    stroke: var(--il-cara);
+    stroke-width: 3px;
+  }
+
+  .ilustracion .cota {
+    fill: var(--il-letra);
+    font-size: 11px;
+    font-weight: 500;
+  }
+}
+
+/* La lámina es el lugar de los dibujos (ADR 0068): una placa apenas entonada con la grilla de puntos
+   de la isométrica, con el mismo radio que la tarjeta menos su relleno. Ningún dibujo va afuera de
+   una lámina, y la grilla no aparece en ningún otro lado: nunca detrás de un texto o de un monto. */
+@layer components {
+  .lamina {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 12px;
+    border-radius: var(--radius-lamina);
+    background-color: var(--color-lamina);
+    background-image:
+      radial-gradient(circle, var(--punto-de-la-lamina) 0.9px, transparent 1.3px),
+      radial-gradient(circle, var(--punto-de-la-lamina) 0.9px, transparent 1.3px);
+    background-size: 24px 13.8564px;
+    background-position:
+      0 0,
+      12px 6.9282px;
+  }
+
+  .lamina > .ilustracion {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
   }
 }
 
