@@ -3,10 +3,7 @@ import type { CSSProperties } from 'react';
 import { formatearPesos, TESORO } from '@/shared/lib';
 
 import type { Despiece } from '../model/despiece';
-
-function porcentaje(parte: number): string {
-  return `${String(Math.round(parte * 100))}%`;
-}
+import { porcentaje } from '../model/porcentaje';
 
 function animacionDelCorte(indice: number): CSSProperties {
   return {

@@ -179,26 +179,31 @@ function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
   ];
 }
 
+export function distribucionCongelada(proyecto: Proyecto): Distribucion | null {
+  if (!estaLiquidado(proyecto.estado) || proyecto.dist_cobrado_centavos === null) return null;
+  return {
+    cobrado: dinero(proyecto.dist_cobrado_centavos),
+    gastos: dinero(proyecto.dist_gastos_centavos ?? 0),
+    diezmoBp: puntosBasicos(proyecto.dist_diezmo_bp ?? 0),
+    topeSueldo: dinero(proyecto.dist_tope_sueldo_centavos ?? 0),
+    topeFijos: dinero(proyecto.dist_tope_fijos_centavos ?? 0),
+    neta: dinero(proyecto.dist_cobrado_centavos - (proyecto.dist_gastos_centavos ?? 0)),
+    diezmo: dinero(proyecto.dist_diezmo_centavos ?? 0),
+    sueldo: dinero(proyecto.dist_sueldo_centavos ?? 0),
+    fijos: dinero(proyecto.dist_fijos_centavos ?? 0),
+    remanente: dinero(proyecto.dist_remanente_centavos ?? 0),
+    faltaSueldo: dinero(
+      (proyecto.dist_tope_sueldo_centavos ?? 0) - (proyecto.dist_sueldo_centavos ?? 0),
+    ),
+    faltaFijos: dinero(
+      (proyecto.dist_tope_fijos_centavos ?? 0) - (proyecto.dist_fijos_centavos ?? 0),
+    ),
+  };
+}
+
 export function despieceDelProyecto(replica: Replica, proyecto: Proyecto, hoy: string): Despiece {
-  if (estaLiquidado(proyecto.estado) && proyecto.dist_cobrado_centavos !== null) {
-    const congelada: Distribucion = {
-      cobrado: dinero(proyecto.dist_cobrado_centavos),
-      gastos: dinero(proyecto.dist_gastos_centavos ?? 0),
-      diezmoBp: puntosBasicos(proyecto.dist_diezmo_bp ?? 0),
-      topeSueldo: dinero(proyecto.dist_tope_sueldo_centavos ?? 0),
-      topeFijos: dinero(proyecto.dist_tope_fijos_centavos ?? 0),
-      neta: dinero(proyecto.dist_cobrado_centavos - (proyecto.dist_gastos_centavos ?? 0)),
-      diezmo: dinero(proyecto.dist_diezmo_centavos ?? 0),
-      sueldo: dinero(proyecto.dist_sueldo_centavos ?? 0),
-      fijos: dinero(proyecto.dist_fijos_centavos ?? 0),
-      remanente: dinero(proyecto.dist_remanente_centavos ?? 0),
-      faltaSueldo: dinero(
-        (proyecto.dist_tope_sueldo_centavos ?? 0) - (proyecto.dist_sueldo_centavos ?? 0),
-      ),
-      faltaFijos: dinero(
-        (proyecto.dist_tope_fijos_centavos ?? 0) - (proyecto.dist_fijos_centavos ?? 0),
-      ),
-    };
+  const congelada = distribucionCongelada(proyecto);
+  if (congelada !== null) {
     return {
       modo: 'real',
       cobrado: congelada.cobrado,
