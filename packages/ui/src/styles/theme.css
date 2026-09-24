@@ -185,6 +185,11 @@
   --sombra-menu: 0 12px 32px rgba(20, 20, 20, 0.14);
   --sombra-toast: 0 8px 24px rgba(20, 20, 20, 0.25);
 
+  /* Lo que se ve de la pantalla que entra por el costado, y cuánto se apaga la de abajo cuando sube
+     la capa del proyecto: son de los movimientos del celular (ADR 0066). */
+  --sombra-del-empuje: -12px 0 24px rgba(20, 20, 20, 0.14);
+  --atenuado-de-la-subida: 0.9;
+
   --tesoro-hogar: #0f6e56;
   --tesoro-hogar-tint: #e3f0eb;
   --tesoro-maun: #8a5612;
@@ -543,6 +548,8 @@
     --sombra-sheet: 0 -8px 30px rgba(0, 0, 0, 0.5);
     --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.5);
     --sombra-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --sombra-del-empuje: -12px 0 24px rgba(0, 0, 0, 0.55);
+    --atenuado-de-la-subida: 0.7;
 
     --negativo-fondo: #3a1c19;
     --negativo-texto: #ffdad5;

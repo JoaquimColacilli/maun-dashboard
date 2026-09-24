@@ -1,5 +1,6 @@
 @import 'tailwindcss' source(none);
 @import '@maun/ui/theme.css';
+@import './transiciones.css';
 
 @source '../..';
 @source not '../../../../../design-reference';

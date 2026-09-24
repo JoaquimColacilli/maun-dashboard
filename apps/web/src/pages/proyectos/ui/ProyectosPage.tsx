@@ -404,106 +404,121 @@ export function ProyectosPage() {
                 onClick={() => {
                   ir(opcion.ruta);
                 }}
-                className={`flex h-9.5 min-w-0 items-center justify-center gap-1.5 rounded-field text-label whitespace-nowrap ${
-                  activa
-                    ? 'bg-elevado font-semibold text-ink shadow-float'
-                    : 'font-medium text-text-2'
+                className={`relative flex h-9.5 min-w-0 items-center justify-center gap-1.5 rounded-field text-label whitespace-nowrap ${
+                  activa ? 'font-semibold text-ink' : 'font-medium text-text-2'
                 }`}
               >
-                {opcion.etiqueta}
-                <span className="text-meta text-text-3 tabular-nums">{cuantos}</span>
+                {activa && (
+                  <span
+                    aria-hidden
+                    data-fondo-de-la-pestana
+                    className="absolute inset-0 rounded-field bg-elevado shadow-float"
+                  />
+                )}
+                <span data-etiqueta-de-la-pestana className="relative flex items-center gap-1.5">
+                  {opcion.etiqueta}
+                  <span className="text-meta text-text-3 tabular-nums">{cuantos}</span>
+                </span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {etapa === 'consultas' ? (
-        <ListaDeConsultas resumenes={deLaEtapa} replica={replica} hoy={hoy} />
-      ) : etapa === 'seguimiento' ? (
-        <ListaDeSeguimiento resumenes={deLaEtapa} replica={replica} hoy={hoy} />
-      ) : deLaEtapa.length === 0 ? (
-        <Vacio etapa={etapa} />
-      ) : (
-        <>
-          <Metricas resumenes={resumenes} />
+      <div data-bajo-las-pestanas className="flex flex-col">
+        {etapa === 'consultas' ? (
+          <ListaDeConsultas resumenes={deLaEtapa} replica={replica} hoy={hoy} />
+        ) : etapa === 'seguimiento' ? (
+          <ListaDeSeguimiento resumenes={deLaEtapa} replica={replica} hoy={hoy} />
+        ) : deLaEtapa.length === 0 ? (
+          <Vacio etapa={etapa} />
+        ) : (
+          <>
+            <Metricas resumenes={resumenes} />
 
-          <div className="mt-3.5 mb-3 flex flex-wrap items-center gap-2">
-            <label className="flex h-9 max-w-full min-w-[180px] flex-1 items-center gap-2 rounded-field border border-border px-3 md:max-w-[320px]">
-              <Icono nombre="search" tamano={16} className="flex-none text-text-2" />
-              <input
-                type="search"
-                value={consulta}
-                onChange={(evento) => {
-                  setConsulta(evento.target.value);
-                }}
-                placeholder="Buscar por cliente"
-                aria-label="Buscar por cliente"
-                className="min-w-0 flex-1 bg-transparent text-label outline-none"
-              />
-            </label>
-
-            {(['todos', ...FILTROS_POR_ETAPA[etapa]] as const).map((estado) => {
-              const activo = filtro === estado;
-              return (
-                <button
-                  key={estado}
-                  type="button"
-                  aria-pressed={activo}
-                  onClick={() => {
-                    setFiltro(estado);
+            <div className="mt-3.5 mb-3 flex flex-wrap items-center gap-2">
+              <label className="flex h-9 max-w-full min-w-[180px] flex-1 items-center gap-2 rounded-field border border-border px-3 md:max-w-[320px]">
+                <Icono nombre="search" tamano={16} className="flex-none text-text-2" />
+                <input
+                  type="search"
+                  value={consulta}
+                  onChange={(evento) => {
+                    setConsulta(evento.target.value);
                   }}
-                  className={`h-9 rounded-control border px-3 text-label font-medium ${
-                    activo ? 'border-ink bg-ink text-paper' : 'border-border text-ink'
-                  }`}
+                  placeholder="Buscar por cliente"
+                  aria-label="Buscar por cliente"
+                  className="min-w-0 flex-1 bg-transparent text-label outline-none"
+                />
+              </label>
+
+              {(['todos', ...FILTROS_POR_ETAPA[etapa]] as const).map((estado) => {
+                const activo = filtro === estado;
+                return (
+                  <button
+                    key={estado}
+                    type="button"
+                    aria-pressed={activo}
+                    onClick={() => {
+                      setFiltro(estado);
+                    }}
+                    className={`h-9 rounded-control border px-3 text-label font-medium ${
+                      activo ? 'border-ink bg-ink text-paper' : 'border-border text-ink'
+                    }`}
+                  >
+                    {estado === 'todos' ? 'Todos' : ESTADO[estado].etiqueta}
+                  </button>
+                );
+              })}
+
+              {!enEscritorio && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHojaAbierta(true);
+                  }}
+                  className="ml-auto flex h-9 items-center gap-1.5 rounded-control border border-border px-3 text-label font-medium"
                 >
-                  {estado === 'todos' ? 'Todos' : ESTADO[estado].etiqueta}
+                  <Icono nombre="arrow-up-down" tamano={14} />
+                  {CRITERIOS.find((criterio) => criterio.id === orden)?.etiqueta ?? 'Ordenar'}
                 </button>
-              );
-            })}
-
-            {!enEscritorio && (
-              <button
-                type="button"
-                onClick={() => {
-                  setHojaAbierta(true);
-                }}
-                className="ml-auto flex h-9 items-center gap-1.5 rounded-control border border-border px-3 text-label font-medium"
-              >
-                <Icono nombre="arrow-up-down" tamano={14} />
-                {CRITERIOS.find((criterio) => criterio.id === orden)?.etiqueta ?? 'Ordenar'}
-              </button>
-            )}
-          </div>
-
-          {filas.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 py-7">
-              <p className="text-body-lg text-text-2">
-                {buscando
-                  ? `Ningún proyecto coincide con «${consulta}».`
-                  : 'Ningún proyecto está en ese estado.'}
-              </p>
-              <Button
-                variant="secundario"
-                onClick={() => {
-                  setConsulta('');
-                  setFiltro('todos');
-                }}
-              >
-                Limpiar la búsqueda
-              </Button>
+              )}
             </div>
-          ) : enEscritorio ? (
-            <Tabla filas={filas} hoy={hoy} orden={orden} sentido={sentido} alOrdenar={ordenarPor} />
-          ) : (
-            <TarjetasDeProyectos etiqueta="Proyectos">
-              {filas.map((resumen) => (
-                <Tarjeta key={resumen.proyecto.id} resumen={resumen} hoy={hoy} />
-              ))}
-            </TarjetasDeProyectos>
-          )}
-        </>
-      )}
+
+            {filas.length === 0 ? (
+              <div className="flex flex-col items-start gap-3 py-7">
+                <p className="text-body-lg text-text-2">
+                  {buscando
+                    ? `Ningún proyecto coincide con «${consulta}».`
+                    : 'Ningún proyecto está en ese estado.'}
+                </p>
+                <Button
+                  variant="secundario"
+                  onClick={() => {
+                    setConsulta('');
+                    setFiltro('todos');
+                  }}
+                >
+                  Limpiar la búsqueda
+                </Button>
+              </div>
+            ) : enEscritorio ? (
+              <Tabla
+                filas={filas}
+                hoy={hoy}
+                orden={orden}
+                sentido={sentido}
+                alOrdenar={ordenarPor}
+              />
+            ) : (
+              <TarjetasDeProyectos etiqueta="Proyectos">
+                {filas.map((resumen) => (
+                  <Tarjeta key={resumen.proyecto.id} resumen={resumen} hoy={hoy} />
+                ))}
+              </TarjetasDeProyectos>
+            )}
+          </>
+        )}
+      </div>
 
       <ConSalida valor={hojaAbierta}>
         {() => (

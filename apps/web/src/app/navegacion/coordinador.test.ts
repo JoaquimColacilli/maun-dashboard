@@ -26,6 +26,7 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
   const decisionesPropias: QueHacerConElAtras[] = [];
   const empezadas: { donde: Element | Document; tipos: readonly string[] | null }[] = [];
   const salteadas = vi.fn();
+  const nombres: { momento: number; piezas: string[] }[] = [];
   const entregadas = vi.fn();
   let terminarLaTransicion: () => void = () => undefined;
   const valores = new Map<string, string>();
@@ -81,6 +82,12 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
   };
 
   const escenario: Escenario = {
+    nombrar: (_donde, piezas) => {
+      nombres.push({ momento: empezadas.length, piezas: piezas.map((pieza) => pieza.nombre) });
+    },
+    olvidarLosNombres: () => {
+      nombres.push({ momento: empezadas.length, piezas: [] });
+    },
     conAlcanceEnElementos: () => true,
     conTransicionesDelDocumento: () => true,
     aLaVista: () => true,
@@ -120,6 +127,7 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
     llamadas,
     decisionesPropias,
     empezadas,
+    nombres,
     salteadas,
     entregadas,
     memoria,
@@ -245,6 +253,21 @@ describe('el coordinador', () => {
     await soltar();
     expect(avisos).toEqual([prueba.claveDelRouter(), null]);
     expect(prueba.pila()).toEqual(['/', '/clientes', '/clientes/1']);
+  });
+
+  it('entre pestañas nombra el fondo y lo de abajo antes de capturar y después de actualizar, y los olvida al terminar', async () => {
+    const prueba = armar(['/', '/proyectos']);
+    prueba.coordinador.ir('/proyectos?etapa=historial', {});
+    await soltar();
+    expect(prueba.empezadas).toEqual([{ donde: prueba.main, tipos: ['pestana-adelante'] }]);
+    const piezas = ['fondo-de-la-pestana', 'etiqueta-de-la-pestana', 'contenido-de-la-pestana'];
+    expect(prueba.nombres).toEqual([
+      { momento: 0, piezas },
+      { momento: 1, piezas },
+    ]);
+    prueba.terminarLaTransicion();
+    await soltar();
+    expect(prueba.nombres.at(-1)).toEqual({ momento: 1, piezas: [] });
   });
 
   it('la etiqueta de volver sale de la entrada anterior', () => {

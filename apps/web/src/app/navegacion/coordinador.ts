@@ -1,7 +1,7 @@
 import type { OpcionesDeIr, PuertoDeNavegacion } from '@/shared/lib';
 
 import type { Compuerta } from './compuerta';
-import type { Escenario, TransicionEnCurso } from './escenario';
+import type { Escenario, Pieza, TransicionEnCurso } from './escenario';
 import type { HistorialQueEscucha } from './historial';
 import type { Memoria } from './memoria';
 import {
@@ -17,12 +17,28 @@ import {
   movimientoAlApilar,
   type Decision,
   type EntradaDeLaPolitica,
+  type Movimiento,
   type NavegacionDeLaPolitica,
 } from './politica';
 
 export const TOPE_DE_UN_PASO_MS = 1_500;
 export const TOPE_DEL_MARCO_MS = 1_000;
 export const TOPE_DE_LA_COLA_MS = 2_000;
+
+const PIEZAS_DE_LA_PESTANA: readonly Pieza[] = [
+  { selector: '[data-fondo-de-la-pestana]', nombre: 'fondo-de-la-pestana' },
+  {
+    selector: '[data-etiqueta-de-la-pestana]',
+    nombre: 'etiqueta-de-la-pestana',
+    todas: { clase: 'etiqueta-de-la-pestana' },
+  },
+  { selector: '[data-bajo-las-pestanas]', nombre: 'contenido-de-la-pestana' },
+];
+
+export const PIEZAS: Partial<Record<Movimiento, readonly Pieza[]>> = {
+  'pestana-adelante': PIEZAS_DE_LA_PESTANA,
+  'pestana-atras': PIEZAS_DE_LA_PESTANA,
+};
 
 export interface UbicacionDelRouter {
   pathname: string;
@@ -187,27 +203,33 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
     }
     const donde = decision.tipo === 'movimiento' && decision.alcance === 'main' ? main : document;
     const tipos = decision.tipo === 'movimiento' ? [decision.movimiento] : null;
+    const piezas = decision.tipo === 'movimiento' ? (PIEZAS[decision.movimiento] ?? []) : [];
     let terminarLaActualizacion: () => void = () => undefined;
     const actualizada = new Promise<void>((listo) => {
       terminarLaActualizacion = listo;
     });
+    if (donde !== null) d.escenario.nombrar(donde, piezas);
     const transicion =
       donde === null
         ? null
         : d.escenario.empezar(donde, tipos, async () => {
             try {
               await actualizar();
+              d.escenario.nombrar(donde, piezas);
             } finally {
               terminarLaActualizacion();
             }
           });
     if (transicion === null) {
+      d.escenario.olvidarLosNombres();
       await actualizar();
       return;
     }
     enCurso = transicion;
     void transicion.terminada.then(() => {
-      if (enCurso === transicion) enCurso = null;
+      if (enCurso !== transicion) return;
+      enCurso = null;
+      d.escenario.olvidarLosNombres();
     });
     await actualizada;
   };

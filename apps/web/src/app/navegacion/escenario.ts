@@ -9,7 +9,15 @@ export interface TransicionEnCurso {
 
 export type ActualizacionDeLaTransicion = () => Promise<void>;
 
+export interface Pieza {
+  selector: string;
+  nombre: string;
+  todas?: { clase: string };
+}
+
 export interface Escenario {
+  nombrar: (donde: Element | Document, piezas: readonly Pieza[]) => void;
+  olvidarLosNombres: () => void;
   conAlcanceEnElementos: () => boolean;
   conTransicionesDelDocumento: () => boolean;
   aLaVista: () => boolean;
@@ -49,7 +57,34 @@ function consulta(medio: string): boolean {
 }
 
 export function escenarioDelNavegador(): Escenario {
+  const nombrados = new Set<HTMLElement>();
+  const olvidar = () => {
+    for (const elemento of nombrados) {
+      elemento.style.viewTransitionName = '';
+      elemento.style.removeProperty('view-transition-class');
+    }
+    nombrados.clear();
+  };
+  const ponerNombre = (elemento: Element | null, nombre: string, clase?: string) => {
+    if (!(elemento instanceof HTMLElement)) return;
+    elemento.style.viewTransitionName = nombre;
+    if (clase !== undefined) elemento.style.setProperty('view-transition-class', clase);
+    nombrados.add(elemento);
+  };
   return {
+    nombrar: (donde, piezas) => {
+      olvidar();
+      for (const { selector, nombre, todas } of piezas) {
+        if (todas === undefined) {
+          ponerNombre(donde.querySelector(selector), nombre);
+          continue;
+        }
+        for (const [indice, elemento] of [...donde.querySelectorAll(selector)].entries()) {
+          ponerNombre(elemento, `${nombre}-${String(indice + 1)}`, todas.clase);
+        }
+      }
+    },
+    olvidarLosNombres: olvidar,
     conAlcanceEnElementos: () =>
       typeof Reflect.get(Element.prototype, 'startViewTransition') === 'function',
     conTransicionesDelDocumento: () => empezarDe(document) !== null,

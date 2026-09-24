@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { RUTA_DE_OPINIONES, RUTA_DE_PREGUNTAS, Ir } from '@/shared/lib';
+import { Ir, RUTA_DE_OPINIONES, RUTA_DE_PREGUNTAS } from '@/shared/lib';
 import { Pagina } from '@/shared/ui';
 
 type Seccion = 'resultados' | 'preguntas';
@@ -29,13 +29,20 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
               key={opcion.id}
               a={opcion.ruta}
               aria-current={activa ? 'page' : undefined}
-              className={`flex h-9 items-center rounded-field px-3.5 text-body-sm no-underline ${
-                activa
-                  ? 'bg-paper font-semibold text-ink shadow-float'
-                  : 'font-medium text-text-2 hover:text-ink'
+              className={`relative flex h-9 items-center rounded-field px-3.5 text-body-sm no-underline ${
+                activa ? 'font-semibold text-ink' : 'font-medium text-text-2 hover:text-ink'
               }`}
             >
-              {opcion.etiqueta}
+              {activa && (
+                <span
+                  aria-hidden
+                  data-fondo-de-la-pestana
+                  className="absolute inset-0 rounded-field bg-paper shadow-float"
+                />
+              )}
+              <span data-etiqueta-de-la-pestana className="relative">
+                {opcion.etiqueta}
+              </span>
             </Ir>
           );
         })}
@@ -54,7 +61,9 @@ export function PaginaDeOpiniones({
   return (
     <Pagina className="pb-10">
       <EncabezadoDeOpiniones seccion={seccion} />
-      {children}
+      <div data-bajo-las-pestanas className="flex flex-col">
+        {children}
+      </div>
     </Pagina>
   );
 }
