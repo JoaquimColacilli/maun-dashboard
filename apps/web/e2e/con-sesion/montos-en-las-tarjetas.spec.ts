@@ -92,6 +92,13 @@ const PANTALLAS: readonly Pantalla[] = [
     },
   },
   {
+    nombre: 'Lo que ve el cliente antes de aprobar',
+    ruta: ({ contactoId }) => `/proyectos/${contactoId}/vista-cliente`,
+    listo: async (page) => {
+      await expect(page.getByRole('region', { name: 'Para cuándo' })).toBeVisible(CARGA);
+    },
+  },
+  {
     nombre: 'Ficha del contacto',
     ruta: ({ contactoId }) => `/proyectos/${contactoId}`,
     listo: async (page) => {

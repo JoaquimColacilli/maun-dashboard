@@ -96,6 +96,14 @@ export function fechaLarga(fecha: string, hoy: string = hoyLocal()): string {
   return `${DIAS[dia.getUTCDay()] ?? ''} ${String(dia.getUTCDate())} ${MESES_CORTOS[dia.getUTCMonth()] ?? ''}${sufijo}`;
 }
 
+export function fechaEnUnaFrase(fecha: string, hoy: string = hoyLocal()): string {
+  const dia = comoUtc(fecha);
+  const anio = dia.getUTCFullYear();
+  const mes = (MESES[dia.getUTCMonth()] ?? '').toLowerCase();
+  const sufijo = anio === comoUtc(hoy).getUTCFullYear() ? '' : ` de ${String(anio)}`;
+  return `${DIAS[dia.getUTCDay()] ?? ''} ${String(dia.getUTCDate())} de ${mes}${sufijo}`;
+}
+
 export function diaLocal(momento: string): string {
   return hoyLocal(new Date(momento));
 }

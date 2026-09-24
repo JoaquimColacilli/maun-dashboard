@@ -1,15 +1,33 @@
 import {
-  comoPagar,
   notaDelRelevamiento,
+  textoDeLaProyeccion,
   type ArchivoDelCliente,
+  type DatosDelTrabajo,
+  type ProyeccionDeLaEntrega,
+  type SenaDeLaVista,
+  type VistaAntesDelPresupuesto,
+  type VistaAprobada,
   type VistaDelCliente as Vista,
+  type VistaEsperandoLaSena,
 } from '@maun/domain';
 
 import { urlDelArchivo } from '@/shared/api';
-import { diaYMesCorto, fechaLarga, formatearPesos } from '@/shared/lib';
+import { diaYMesCorto, fechaEnUnaFrase, fechaLarga, formatearPesos } from '@/shared/lib';
 import { Icono, MontoQueEntra, Pagina, PrincipalYApoyo } from '@/shared/ui';
 
-import { pieDeLosPagos, sinPagosTodavia } from '../model/textos';
+import {
+  A_CONFIRMAR,
+  A_CUENTA_DE_LA_SENA,
+  bajadaDeLaEntrega,
+  claveDeLaEntrega,
+  lineaDeLaSena,
+  pieDeLosPagos,
+  QUEDA_A_CUENTA,
+  saldoDeLaVista,
+  sinPagosTodavia,
+  textoDeLaSenaAcordada,
+  valorDeLaEntrega,
+} from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
 import { ComoPagar } from './ComoPagar';
 
@@ -23,6 +41,8 @@ const TIPO: Readonly<Record<string, string>> = {
   'image/jpeg': 'Imagen',
   'application/pdf': 'PDF',
 };
+
+const PRIMERO_EN_EL_APOYO = 'mt-7 @min-[52rem]/apoyo:mt-0';
 
 function esImagen(archivo: ArchivoDelCliente): boolean {
   return archivo.tipo === 'image/webp' || archivo.tipo === 'image/jpeg';
@@ -72,32 +92,240 @@ function Dato({
   );
 }
 
+function Titular({ texto, bajada }: { texto: string; bajada: string }) {
+  return (
+    <div className="mt-3 flex flex-col gap-1">
+      <span className="text-money-xl leading-tight font-semibold text-pretty">{texto}</span>
+      {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
+    </div>
+  );
+}
+
+function CifrasDeLaSena({ sena }: { sena: SenaDeLaVista }) {
+  switch (sena.situacion) {
+    case 'sin-presupuesto':
+      return null;
+    case 'falta':
+    case 'cubierta':
+      return <Cifra clave="Seña para arrancar" valor={formatearPesos(sena.sena)} />;
+  }
+}
+
+function EntradaAntesDelPresupuesto({
+  vista,
+  titular,
+  bajada,
+}: {
+  vista: VistaAntesDelPresupuesto;
+  titular: string;
+  bajada: string;
+}) {
+  return (
+    <>
+      <Titular texto={titular} bajada={bajada} />
+      {vista.pagado > 0 && (
+        <>
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+            <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
+          </div>
+          <p className="mt-2.5 text-body leading-relaxed text-text-2">{QUEDA_A_CUENTA}</p>
+        </>
+      )}
+    </>
+  );
+}
+
+function EntradaEsperandoLaSena({
+  vista,
+  titular,
+  bajada,
+}: {
+  vista: VistaEsperandoLaSena;
+  titular: string;
+  bajada: string;
+}) {
+  const linea = lineaDeLaSena(vista.sena, vista.pagado);
+  return (
+    <>
+      <Titular texto={titular} bajada={bajada} />
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+        <Cifra
+          clave="Presupuesto"
+          valor={vista.presupuesto === null ? '—' : formatearPesos(vista.presupuesto)}
+          grande
+        />
+        <CifrasDeLaSena sena={vista.sena} />
+        <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
+      </div>
+      {linea !== '' && <p className="mt-2.5 text-body leading-relaxed text-text-2">{linea}</p>}
+    </>
+  );
+}
+
+function EntradaAprobada({
+  vista,
+  titular,
+  hoy,
+}: {
+  vista: VistaAprobada;
+  titular: string;
+  hoy: string;
+}) {
+  const saldo = saldoDeLaVista(vista);
+  const bajada = bajadaDeLaEntrega(vista.datos.entrega, hoy);
+  const precio = vista.precio === null ? '—' : formatearPesos(vista.precio);
+
+  if (vista.foco === 'saldo') {
+    return (
+      <>
+        <div className="mt-3 flex flex-col gap-0.5">
+          <span className="text-body text-text-2">{saldo.etiqueta}</span>
+          <MontoQueEntra tamano="destacado" className={`leading-tight font-semibold ${saldo.tono}`}>
+            {saldo.texto}
+          </MontoQueEntra>
+        </div>
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
+          <span className="flex items-baseline gap-2">
+            <span className="text-text-2">Vale</span>
+            <span className="font-semibold tabular-nums">{precio}</span>
+          </span>
+          <span className="flex items-baseline gap-2">
+            <span className="text-text-2">Pagaste</span>
+            <span className="font-semibold tabular-nums">{formatearPesos(vista.pagado)}</span>
+          </span>
+        </div>
+        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
+          <span className="text-body-lg font-semibold">{titular}</span>
+          {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Titular texto={titular} bajada={bajada} />
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+        <Cifra clave={saldo.etiqueta} valor={saldo.texto} grande tono={saldo.tono} />
+        <Cifra clave="Vale" valor={precio} />
+        <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
+      </div>
+    </>
+  );
+}
+
+function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string; hoy: string }) {
+  const titular = vista.hitos[vista.hitoIndex]?.texto ?? '';
+  switch (vista.etapa) {
+    case 'antes-del-presupuesto':
+      return <EntradaAntesDelPresupuesto vista={vista} titular={titular} bajada={bajada} />;
+    case 'esperando-la-sena':
+      return <EntradaEsperandoLaSena vista={vista} titular={titular} bajada={bajada} />;
+    case 'aprobado':
+    case 'fabricacion':
+    case 'entregado':
+    case 'pagado':
+      return <EntradaAprobada vista={vista} titular={titular} hoy={hoy} />;
+  }
+}
+
+function TarjetaDelTrabajo({ datos, hoy }: { datos: DatosDelTrabajo; hoy: string }) {
+  return (
+    <section aria-label="Datos del trabajo" className={PRIMERO_EN_EL_APOYO}>
+      <dl className="rounded-panel border border-hairline px-3.5 py-1">
+        <Dato clave="Dirección" valor={datos.direccion ?? A_CONFIRMAR} />
+        <Dato
+          clave="Empezamos"
+          valor={datos.inicio === null ? 'Todavía no' : fechaLarga(datos.inicio, hoy)}
+        />
+        <Dato
+          clave={claveDeLaEntrega(datos.entrega)}
+          valor={valorDeLaEntrega(datos.entrega, hoy)}
+          fuerte
+        />
+        <Dato clave="Seña" valor={textoDeLaSenaAcordada(datos.sena)} />
+      </dl>
+    </section>
+  );
+}
+
+function ParaCuando({ proyeccion, hoy }: { proyeccion: ProyeccionDeLaEntrega; hoy: string }) {
+  const [principal, ...resto] = textoDeLaProyeccion(proyeccion, {
+    enUnaFrase: (fecha) => fechaEnUnaFrase(fecha, hoy),
+  });
+  return (
+    <section aria-label="Para cuándo" className={PRIMERO_EN_EL_APOYO}>
+      <div className="rounded-panel border border-hairline px-3.5 py-3">
+        <p className="text-body leading-relaxed font-medium text-pretty">{principal}</p>
+        {resto.map((linea) => (
+          <p key={linea} className="mt-1.5 text-label leading-relaxed text-text-2">
+            {linea}
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
+  switch (vista.etapa) {
+    case 'antes-del-presupuesto':
+      return <ComoPagar como={vista.comoPagar} margen={PRIMERO_EN_EL_APOYO} />;
+    case 'esperando-la-sena':
+      return (
+        <>
+          <ParaCuando proyeccion={vista.proyeccion} hoy={hoy} />
+          <ComoPagar como={vista.comoPagar} />
+        </>
+      );
+    case 'aprobado':
+    case 'fabricacion':
+    case 'entregado':
+    case 'pagado':
+      return (
+        <>
+          <TarjetaDelTrabajo datos={vista.datos} hoy={hoy} />
+          <ComoPagar como={vista.comoPagar} />
+        </>
+      );
+  }
+}
+
+function CierreDeLosPagos({ vista }: { vista: Vista }) {
+  switch (vista.etapa) {
+    case 'antes-del-presupuesto':
+    case 'esperando-la-sena':
+      return vista.pagos.length === 0 ? null : (
+        <div className="flex min-h-12 items-baseline justify-between border-t border-ink py-3 text-body font-semibold">
+          <span>{A_CUENTA_DE_LA_SENA}</span>
+          <span className="tabular-nums">{formatearPesos(vista.pagado)}</span>
+        </div>
+      );
+    case 'aprobado':
+    case 'fabricacion':
+    case 'entregado':
+    case 'pagado': {
+      const saldo = saldoDeLaVista(vista);
+      return (
+        <div className="flex min-h-12 items-baseline justify-between border-t border-ink py-3 text-body font-semibold">
+          <span>{saldo.etiqueta}</span>
+          <span className={`tabular-nums ${saldo.tono}`}>{saldo.texto}</span>
+        </div>
+      );
+    }
+  }
+}
+
 export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
-  const { trabajo } = vista;
-  const saldado = vista.saldado || vista.saldo === null;
-  const etiquetaDelSaldo =
-    vista.saldo === null ? 'Falta el presupuesto' : saldado ? 'Está saldado' : 'Te falta pagar';
-  const textoDelSaldo = vista.saldo === null ? '—' : formatearPesos(saldado ? 0 : vista.saldo);
-  const tonoDelSaldo = saldado && vista.saldo !== null ? 'text-hogar' : '';
-  const etapa = vista.hitos[vista.hitoIndex];
-
-  const entrega =
-    trabajo.fechas.entregado !== null
-      ? `Entregado el ${fechaLarga(trabajo.fechas.entregado, hoy)}`
-      : trabajo.fechas.entregaPautada !== null
-        ? `Entrega pautada para el ${fechaLarga(trabajo.fechas.entregaPautada, hoy)}`
-        : '';
-
   const nota = notaDelRelevamiento(vista, {
     larga: (fecha) => fechaLarga(fecha, hoy),
     corta: diaYMesCorto,
   });
-  const bajada = [nota?.resumen ?? '', entrega].filter((parte) => parte !== '').join(' · ');
 
-  const visuales = trabajo.archivos.filter(esImagen);
-  const documentos = trabajo.archivos.filter((archivo) => !esImagen(archivo));
+  const visuales = vista.archivos.filter(esImagen);
+  const documentos = vista.archivos.filter((archivo) => !esImagen(archivo));
 
-  const como = comoPagar(trabajo);
+  const como = vista.comoPagar;
   const hayComoPagar = como !== null && (como.transferencia || como.efectivo);
   const textoSinPagos = sinPagosTodavia(vista);
   const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
@@ -105,7 +333,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
   return (
     <Pagina>
       <header className="flex items-center justify-between gap-3 border-b border-hairline pb-3.5">
-        <span className="min-w-0 font-display text-lema leading-tight">{trabajo.taller}</span>
+        <span className="min-w-0 font-display text-lema leading-tight">{vista.taller}</span>
       </header>
 
       <PrincipalYApoyo
@@ -114,43 +342,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
         className="mt-4"
         apoyo={
           <div className="@container">
-            <section aria-label="Datos del trabajo" className="mt-7 @min-[52rem]/apoyo:mt-0">
-              <dl className="rounded-panel border border-hairline px-3.5 py-1">
-                <Dato
-                  clave="Dirección"
-                  valor={trabajo.direccion.trim() === '' ? 'A confirmar' : trabajo.direccion}
-                />
-                <Dato
-                  clave="Empezamos"
-                  valor={
-                    trabajo.fechas.inicio === null
-                      ? 'Todavía no'
-                      : fechaLarga(trabajo.fechas.inicio, hoy)
-                  }
-                />
-                <Dato
-                  clave={trabajo.fechas.entregado === null ? 'Entrega pautada' : 'Entregado'}
-                  valor={
-                    trabajo.fechas.entregado !== null
-                      ? fechaLarga(trabajo.fechas.entregado, hoy)
-                      : trabajo.fechas.entregaPautada !== null
-                        ? fechaLarga(trabajo.fechas.entregaPautada, hoy)
-                        : 'A confirmar'
-                  }
-                  fuerte
-                />
-                <Dato
-                  clave="Seña"
-                  valor={
-                    trabajo.pagos[0] === undefined
-                      ? 'Pendiente'
-                      : `${formatearPesos(trabajo.pagos[0].monto)} · ${fechaLarga(trabajo.pagos[0].fecha, hoy)}`
-                  }
-                />
-              </dl>
-            </section>
-
-            <ComoPagar trabajo={trabajo} />
+            <ApoyoDeLaVista vista={vista} hoy={hoy} />
 
             <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
               Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
@@ -161,64 +353,12 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
       >
         <div className="@container">
           <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
-            <span className="text-body text-text-2">{trabajo.cliente}</span>
+            <span className="text-body text-text-2">{vista.cliente}</span>
             <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
-              {trabajo.trabajo}
+              {vista.titulo}
             </h1>
 
-            {vista.foco === 'saldo' ? (
-              <>
-                <div className="mt-3 flex flex-col gap-0.5">
-                  <span className="text-body text-text-2">{etiquetaDelSaldo}</span>
-                  <MontoQueEntra
-                    tamano="destacado"
-                    className={`leading-tight font-semibold ${tonoDelSaldo}`}
-                  >
-                    {textoDelSaldo}
-                  </MontoQueEntra>
-                </div>
-                <div className="mt-3 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-body">
-                  <span className="flex items-baseline gap-2">
-                    <span className="text-text-2">Vale</span>
-                    <span className="font-semibold tabular-nums">
-                      {trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
-                    </span>
-                  </span>
-                  <span className="flex items-baseline gap-2">
-                    <span className="text-text-2">Pagaste</span>
-                    <span className="font-semibold tabular-nums">
-                      {formatearPesos(vista.pagado)}
-                    </span>
-                  </span>
-                </div>
-                <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
-                  <span className="text-body-lg font-semibold">{etapa?.texto}</span>
-                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mt-3 flex flex-col gap-1">
-                  <span className="text-money-xl leading-tight font-semibold text-pretty">
-                    {etapa?.texto}
-                  </span>
-                  {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
-                </div>
-                <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
-                  <Cifra
-                    clave={etiquetaDelSaldo}
-                    valor={textoDelSaldo}
-                    grande
-                    tono={tonoDelSaldo}
-                  />
-                  <Cifra
-                    clave="Vale"
-                    valor={trabajo.precio === null ? '—' : formatearPesos(trabajo.precio)}
-                  />
-                  <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
-                </div>
-              </>
-            )}
+            <EntradaDeLaVista vista={vista} bajada={nota?.resumen ?? ''} hoy={hoy} />
           </section>
 
           <section aria-label="En qué anda" className="mt-7">
@@ -268,7 +408,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
 
           <section aria-label="Lo que pagaste" className="mt-7">
             <h2 className="mb-1.5 text-section font-semibold">Lo que pagaste</h2>
-            {trabajo.pagos.length === 0 ? (
+            {vista.pagos.length === 0 ? (
               textoSinPagos !== '' && (
                 <p className="border-t border-hairline py-3.5 text-body leading-normal text-text-2">
                   {textoSinPagos}
@@ -276,7 +416,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
               )
             ) : (
               <ul className="list-none">
-                {trabajo.pagos.map((pago) => (
+                {vista.pagos.map((pago) => (
                   <li
                     key={pago.id}
                     className="flex min-h-12 items-baseline gap-3 border-t border-hairline-soft py-2.5"
@@ -296,26 +436,23 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                 ))}
               </ul>
             )}
-            <div className="flex min-h-12 items-baseline justify-between border-t border-ink py-3 text-body font-semibold">
-              <span>{etiquetaDelSaldo}</span>
-              <span className={`tabular-nums ${tonoDelSaldo}`}>{textoDelSaldo}</span>
-            </div>
+            <CierreDeLosPagos vista={vista} />
             <p className="mt-2.5 text-label leading-normal text-text-3">{textoDelPie}</p>
           </section>
 
           <section aria-label="Fotos y planos" className="mt-8">
             <div className="mb-3 flex items-baseline justify-between gap-2.5">
               <h2 className="text-section font-semibold">Fotos y planos</h2>
-              {trabajo.archivos.length > 0 && (
+              {vista.archivos.length > 0 && (
                 <span className="text-label text-text-3">
-                  {trabajo.archivos.length === 1
+                  {vista.archivos.length === 1
                     ? '1 archivo'
-                    : `${String(trabajo.archivos.length)} archivos`}
+                    : `${String(vista.archivos.length)} archivos`}
                 </span>
               )}
             </div>
 
-            {trabajo.archivos.length === 0 ? (
+            {vista.archivos.length === 0 ? (
               <div className="flex flex-col gap-2 rounded-panel border border-dashed border-border px-4 py-5">
                 <span className="text-body font-medium">Todavía no hay fotos</span>
                 <span className="text-body leading-normal text-text-2">

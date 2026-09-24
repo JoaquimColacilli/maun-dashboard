@@ -19,6 +19,7 @@ export {
   diaYMes,
   diaYMesCorto,
   errorDeLaFechaDeLaPlata,
+  fechaEnUnaFrase,
   fechaLarga,
   haceCuanto,
   hoyEnElTaller,

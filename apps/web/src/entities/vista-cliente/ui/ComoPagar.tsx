@@ -1,18 +1,17 @@
 import {
   claveBancariaDe,
-  comoPagar,
   formatearCbu,
   O_POR_MERCADO_PAGO,
   PEDILE_LOS_DATOS,
   type ComoPagar as Como,
-  type TrabajoDelCliente,
 } from '@maun/domain';
 
 import { formatearPesos } from '@/shared/lib';
 import { DatoCopiable, Icono, LogoDeMercadoPago } from '@/shared/ui';
 
 export interface ComoPagarProps {
-  trabajo: TrabajoDelCliente;
+  como: Como | null;
+  margen?: string;
 }
 
 export const PAGAR_CON_MERCADO_PAGO = 'Pagar con Mercado Pago';
@@ -44,18 +43,17 @@ function PorMercadoPago({ link }: { link: string }) {
   );
 }
 
-export function ComoPagar({ trabajo }: ComoPagarProps) {
-  const como = comoPagar(trabajo);
+export function ComoPagar({ como, margen = 'mt-5' }: ComoPagarProps) {
   if (como === null) return null;
   if (!como.transferencia && !como.efectivo && !como.faltanLosDatos) return null;
 
-  const { cobro } = trabajo;
+  const cobro = como.cuenta;
   const clave = cobro.cbu === null ? null : claveBancariaDe(cobro.cbu);
 
   return (
     <section
       aria-label="Cómo pagar"
-      className="relative mt-5 rounded-panel border border-hairline bg-surface px-4 py-3.5"
+      className={`relative ${margen} rounded-panel border border-hairline bg-surface px-4 py-3.5`}
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-section font-semibold">{como.titulo}</h2>
