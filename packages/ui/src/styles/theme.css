@@ -93,6 +93,10 @@
 
   --animate-maun-spin: maun-spin 0.8s linear infinite;
   --animate-maun-shimmer: maun-shimmer 1.4s linear infinite;
+  /* Tailwind solo emite los @keyframes de @theme que nombra el CSS, con una variable --animate-* o con
+     una declaración animation. El corte se usa desde un style en línea, que no cuenta, así que sin
+     esta variable el build lo descarta y no se anima. */
+  --animate-maun-corte: maun-corte var(--dur-corte) var(--ease-out) both;
 
   @keyframes maun-spin {
     to {

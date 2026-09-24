@@ -118,6 +118,18 @@ test('el despiece se ve antes de cobrar y la distribución queda congelada despu
 
   await page.getByRole('button', { name: /^Cobrar y repartir/ }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${id}$`));
+  await expect
+    .poll(() =>
+      despiece.evaluate((region) =>
+        region
+          .getAnimations({ subtree: true })
+          .some(
+            (animacion) =>
+              animacion instanceof CSSAnimation && animacion.animationName === 'maun-corte',
+          ),
+      ),
+    )
+    .toBe(true);
 
   await esperarEstado(id, 'cobrado');
   const congelada = await distribucionDe(sesion, id);
