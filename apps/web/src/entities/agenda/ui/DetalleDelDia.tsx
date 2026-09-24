@@ -63,7 +63,7 @@ export function DetalleDelDia({
                 <span aria-hidden>{mesEnPalabras(fecha.slice(0, 7), hoy)}</span>
               </span>
               {etiqueta !== null && (
-                <span className="rounded-control bg-ink px-1.5 py-0.5 text-badge font-semibold text-paper">
+                <span className="rounded-pill bg-ink px-2 py-0.5 text-badge font-semibold text-paper">
                   {etiqueta}
                 </span>
               )}
@@ -75,7 +75,7 @@ export function DetalleDelDia({
               type="button"
               aria-label="Cerrar el día"
               onClick={alCerrar}
-              className="flex size-10 flex-none items-center justify-center rounded-field hover:bg-surface"
+              className="flex size-10 flex-none items-center justify-center rounded-pill hover:bg-surface"
             >
               <Icono nombre="x" tamano={20} />
             </button>
@@ -118,7 +118,7 @@ export function DetalleDelDia({
                     alDescartarElAviso();
                     accionDelAviso.alTocar();
                   }}
-                  className="h-8 flex-none rounded-field bg-paper/15 px-2.5 font-semibold"
+                  className="h-8 flex-none rounded-pill bg-paper/15 px-2.5 font-semibold"
                 >
                   {accionDelAviso.etiqueta}
                 </button>
@@ -132,7 +132,7 @@ export function DetalleDelDia({
         <button
           type="button"
           onClick={alAnotar}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-field border border-dashed border-border bg-paper font-medium hover:border-ink hover:bg-surface"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-pill border border-dashed border-border bg-paper font-medium hover:border-ink hover:bg-surface"
         >
           <Icono nombre="plus" tamano={18} />
           Anotar algo para este día

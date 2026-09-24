@@ -34,7 +34,7 @@ function SinEnviar() {
   const { terminados, sinPedir } = useMemo(() => trabajosParaPedir(replica), [replica]);
 
   return (
-    <div className="mt-6.5">
+    <div>
       <div className="flex max-w-[560px] flex-col items-start gap-3">
         <span aria-hidden className="flex h-6.5 items-end gap-1.5">
           {[0, 1, 2].map((indice) => (
@@ -89,7 +89,7 @@ function SinRespuestas({
 
   return (
     <>
-      <div className="mt-6.5">
+      <div className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5">
         <div className="flex max-w-[560px] flex-col items-start gap-3">
           <span className="text-body text-text-2">
             {enviadas === 1
@@ -158,7 +158,7 @@ export function ResultadosPage() {
   return (
     <PaginaDeOpiniones seccion="resultados">
       {estadoSync.tipo === 'sin-conexion' && (
-        <div className="mt-3.5 flex items-center gap-2 rounded-panel bg-ink px-3 py-2.25 text-label leading-snug text-paper">
+        <div className="flex items-center gap-2 rounded-panel bg-ink px-3 py-2.25 text-label leading-snug text-paper">
           <Icono nombre="cloud-off" tamano={14} />
           Sin conexión. Estás viendo lo último que se sincronizó.
         </div>
@@ -171,7 +171,7 @@ export function ResultadosPage() {
       )}
 
       {resumen.situacion === 'con-respuestas' && (
-        <div>
+        <div className="flex flex-col gap-3 md:gap-4">
           <Titular resumen={resumen} />
           <LoQueEscribieron resumen={resumen} hoy={hoy} alAbrir={abrir} />
           <PreguntaPorPregunta resumen={resumen} hoy={hoy} />

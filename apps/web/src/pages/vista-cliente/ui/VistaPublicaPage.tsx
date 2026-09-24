@@ -12,7 +12,7 @@ export function VistaPublicaPage() {
   const resultado = useVistaCompartida(token);
 
   return (
-    <main className="min-h-dvh bg-paper pb-10">
+    <main className="min-h-dvh bg-mesa pb-10">
       <PantallaDeLaVista
         resultado={resultado}
         tituloMuerto={TITULO_MUERTO}

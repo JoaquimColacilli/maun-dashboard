@@ -7,7 +7,7 @@ import { MarcaDelTaller } from './EncuestaDelCliente';
 
 function MarcaDePropia() {
   return (
-    <span className="mt-1.5 inline-block rounded-control border border-border px-1.75 py-0.5 text-badge font-semibold text-text-2">
+    <span className="mt-1.5 inline-block rounded-pill border border-border px-2 py-0.5 text-badge font-semibold text-text-2">
       Pregunta propia de este trabajo
     </span>
   );
@@ -75,7 +75,7 @@ export function LoQueContestaste({ taller, fecha, hoy, lineas }: LoQueContestast
           Contestaste el {diaYMes(fecha, hoy)}. Esto es lo que pusiste. No se puede cambiar, pero si
           te quedó algo en el tintero, escribinos.
         </p>
-        <div className="mt-5.5">
+        <div className="mt-5.5 rounded-panel border border-hairline bg-paper px-4 pt-0.75 pb-4 [&_li:last-child]:border-b-0 [&_li:last-child]:pb-0">
           <LineasDeLaRespuesta lineas={lineas} />
         </div>
       </div>

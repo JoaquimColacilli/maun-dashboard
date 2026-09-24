@@ -59,9 +59,9 @@ function Metricas({ resumenes }: { resumenes: readonly ResumenDeProyecto[] }) {
 
   return (
     <div className="@container">
-      <dl className="grid grid-cols-2 border-t border-b border-hairline @xs:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-y-3 rounded-panel border border-hairline bg-paper py-3 @min-[22rem]:grid-cols-4 @min-[22rem]:gap-y-0 @min-[22rem]:divide-x @min-[22rem]:divide-hairline-soft">
         {filas.map((fila) => (
-          <div key={fila.etiqueta} className="min-w-0 py-3 pr-3">
+          <div key={fila.etiqueta} className="min-w-0 px-3">
             <dd className="text-money-lg leading-tight font-semibold tabular-nums">{fila.valor}</dd>
             <dt className="mt-0.5 text-meta leading-snug text-text-2">{fila.etiqueta}</dt>
           </div>
@@ -147,105 +147,107 @@ function Tabla({
   alOrdenar: (id: string) => void;
 }) {
   return (
-    <table className="w-full border-collapse text-body">
-      <thead>
-        <tr>
-          {CRITERIOS.map((criterio) => {
-            const activo = criterio.id === orden;
-            const aLaDerecha = criterio.tipo === 'numero';
-            return (
-              <th
-                key={criterio.id}
-                scope="col"
-                aria-sort={activo ? (sentido === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="border-b border-ink p-0"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    alOrdenar(criterio.id);
-                  }}
-                  className={`flex h-10 w-full items-center gap-1.5 px-2.5 text-meta whitespace-nowrap hover:bg-surface ${
-                    aLaDerecha ? 'justify-end' : 'justify-start'
-                  } ${activo ? 'bg-surface font-semibold text-ink' : 'font-medium text-text-3'}`}
+    <div className="rounded-panel border border-hairline bg-paper p-1.5">
+      <table className="w-full border-collapse text-body">
+        <thead>
+          <tr>
+            {CRITERIOS.map((criterio) => {
+              const activo = criterio.id === orden;
+              const aLaDerecha = criterio.tipo === 'numero';
+              return (
+                <th
+                  key={criterio.id}
+                  scope="col"
+                  aria-sort={activo ? (sentido === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  className="border-b border-hairline p-0"
                 >
-                  {criterio.etiqueta}
-                  <Icono
-                    nombre={
-                      activo ? (sentido === 'asc' ? 'arrow-up' : 'arrow-down') : 'arrow-up-down'
-                    }
-                    tamano={14}
-                    grosor={activo ? 2.25 : 1.5}
-                  />
-                </button>
-              </th>
-            );
-          })}
-        </tr>
-      </thead>
-      <tbody>
-        {filas.map((resumen) => (
-          <tr
-            key={resumen.proyecto.id}
-            className="h-13 border-b border-hairline hover:bg-surface-3"
-          >
-            <td className="px-2.5 whitespace-nowrap">
-              {resumen.cliente === undefined ? (
-                <span className="text-text-3">{resumen.nombreDelCliente}</span>
-              ) : (
-                <EnlaceACliente id={resumen.cliente.id} nombre={resumen.cliente.nombre} />
-              )}
-            </td>
-            <td className="w-full max-w-0 px-2.5">
-              <Ir
-                a={rutaDelProyecto(resumen.proyecto.id)}
-                className="block truncate font-medium"
-                title={resumen.proyecto.titulo}
-              >
-                {resumen.proyecto.titulo}
-              </Ir>
-            </td>
-            <td className="px-2.5 text-right tabular-nums whitespace-nowrap">
-              {resumen.proyecto.presupuesto_centavos === null
-                ? '—'
-                : formatearPesos(resumen.presupuesto)}
-            </td>
-            <td className="px-2.5 text-right tabular-nums whitespace-nowrap">
-              {formatearPesos(resumen.cobrado)}
-            </td>
-            <td
-              className={`px-2.5 text-right font-semibold tabular-nums whitespace-nowrap ${
-                resumen.saldo === null
-                  ? 'text-text-3'
-                  : resumen.saldo > 0
-                    ? 'text-ink'
-                    : 'text-hogar'
-              }`}
-            >
-              {resumen.saldo === null
-                ? '—'
-                : resumen.saldo > 0
-                  ? formatearPesos(resumen.saldo)
-                  : 'Sin saldo'}
-            </td>
-            <td className="px-2.5 whitespace-nowrap">
-              <EntregaRelativa
-                entregaEstimada={resumen.proyecto.entrega_estimada}
-                urgencia={resumen.urgencia}
-                hoy={hoy}
-                conFecha
-              />
-            </td>
-            <td className="px-2.5 whitespace-nowrap">
-              <span className="flex flex-col items-start gap-1">
-                <EstadoBadge estado={resumen.proyecto.estado} />
-                <MarcaDeLiquidacion proyectoId={resumen.proyecto.id} />
-              </span>
-            </td>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alOrdenar(criterio.id);
+                    }}
+                    className={`flex h-10 w-full items-center gap-1.5 px-2.5 text-meta whitespace-nowrap hover:bg-surface ${
+                      aLaDerecha ? 'justify-end' : 'justify-start'
+                    } ${activo ? 'bg-surface font-semibold text-ink' : 'font-medium text-text-3'}`}
+                  >
+                    {criterio.etiqueta}
+                    <Icono
+                      nombre={
+                        activo ? (sentido === 'asc' ? 'arrow-up' : 'arrow-down') : 'arrow-up-down'
+                      }
+                      tamano={14}
+                      grosor={activo ? 2.25 : 1.5}
+                    />
+                  </button>
+                </th>
+              );
+            })}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {filas.map((resumen) => (
+            <tr
+              key={resumen.proyecto.id}
+              className="h-13 border-t border-hairline-soft hover:bg-surface-3"
+            >
+              <td className="px-2.5 whitespace-nowrap">
+                {resumen.cliente === undefined ? (
+                  <span className="text-text-3">{resumen.nombreDelCliente}</span>
+                ) : (
+                  <EnlaceACliente id={resumen.cliente.id} nombre={resumen.cliente.nombre} />
+                )}
+              </td>
+              <td className="w-full max-w-0 px-2.5">
+                <Ir
+                  a={rutaDelProyecto(resumen.proyecto.id)}
+                  className="block truncate font-medium"
+                  title={resumen.proyecto.titulo}
+                >
+                  {resumen.proyecto.titulo}
+                </Ir>
+              </td>
+              <td className="px-2.5 text-right tabular-nums whitespace-nowrap">
+                {resumen.proyecto.presupuesto_centavos === null
+                  ? '—'
+                  : formatearPesos(resumen.presupuesto)}
+              </td>
+              <td className="px-2.5 text-right tabular-nums whitespace-nowrap">
+                {formatearPesos(resumen.cobrado)}
+              </td>
+              <td
+                className={`px-2.5 text-right font-semibold tabular-nums whitespace-nowrap ${
+                  resumen.saldo === null
+                    ? 'text-text-3'
+                    : resumen.saldo > 0
+                      ? 'text-ink'
+                      : 'text-hogar'
+                }`}
+              >
+                {resumen.saldo === null
+                  ? '—'
+                  : resumen.saldo > 0
+                    ? formatearPesos(resumen.saldo)
+                    : 'Sin saldo'}
+              </td>
+              <td className="px-2.5 whitespace-nowrap">
+                <EntregaRelativa
+                  entregaEstimada={resumen.proyecto.entrega_estimada}
+                  urgencia={resumen.urgencia}
+                  hoy={hoy}
+                  conFecha
+                />
+              </td>
+              <td className="px-2.5 whitespace-nowrap">
+                <span className="flex flex-col items-start gap-1">
+                  <EstadoBadge estado={resumen.proyecto.estado} />
+                  <MarcaDeLiquidacion proyectoId={resumen.proyecto.id} />
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -303,7 +305,7 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> })
 
   return (
     <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-      <span className="flex size-12 items-center justify-center rounded-field bg-surface">
+      <span className="flex size-12 items-center justify-center rounded-field bg-ink/6">
         <Icono nombre="folder-kanban" tamano={24} />
       </span>
       <h2 className="mt-1 text-h1 leading-tight font-semibold">{texto.titulo}</h2>
@@ -362,8 +364,8 @@ export function ProyectosPage() {
   }
 
   return (
-    <Pagina>
-      <header className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
+    <Pagina className="gap-3 md:gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Proyectos</h1>
         {etapa === 'consultas' || etapa === 'seguimiento' ? (
           <Button
@@ -386,11 +388,11 @@ export function ProyectosPage() {
         )}
       </header>
 
-      <div className="@container mb-4 max-w-[640px]">
+      <div className="@container max-w-[640px]">
         <div
           role="tablist"
           aria-label="Etapa"
-          className="grid grid-cols-2 gap-0.5 rounded-panel bg-surface-2 p-1 @min-[34rem]:grid-cols-4"
+          className="grid grid-cols-2 gap-1 rounded-panel bg-ink/6 p-1 @min-[34rem]:grid-cols-4"
         >
           {ETAPAS.map((opcion) => {
             const activa = opcion.id === etapa;
@@ -404,7 +406,7 @@ export function ProyectosPage() {
                 onClick={() => {
                   ir(opcion.ruta);
                 }}
-                className={`relative flex h-9.5 min-w-0 items-center justify-center gap-1.5 rounded-field text-label whitespace-nowrap ${
+                className={`relative flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-[16px] text-label whitespace-nowrap ${
                   activa ? 'font-semibold text-ink' : 'font-medium text-text-2'
                 }`}
               >
@@ -412,7 +414,7 @@ export function ProyectosPage() {
                   <span
                     aria-hidden
                     data-fondo-de-la-pestana
-                    className="absolute inset-0 rounded-field bg-elevado shadow-float"
+                    className="absolute inset-0 rounded-[16px] bg-elevado shadow-float"
                   />
                 )}
                 <span data-etiqueta-de-la-pestana className="relative flex items-center gap-1.5">
@@ -425,7 +427,7 @@ export function ProyectosPage() {
         </div>
       </div>
 
-      <div data-bajo-las-pestanas className="flex flex-col">
+      <div data-bajo-las-pestanas className="flex flex-col gap-3 md:gap-4">
         {etapa === 'consultas' ? (
           <ListaDeConsultas resumenes={deLaEtapa} replica={replica} hoy={hoy} />
         ) : etapa === 'seguimiento' ? (
@@ -436,8 +438,8 @@ export function ProyectosPage() {
           <>
             <Metricas resumenes={resumenes} />
 
-            <div className="mt-3.5 mb-3 flex flex-wrap items-center gap-2">
-              <label className="flex h-9 max-w-full min-w-[180px] flex-1 items-center gap-2 rounded-field border border-border px-3 md:max-w-[320px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex h-9 w-full items-center gap-2 rounded-pill border border-hairline bg-paper px-3.5 md:w-auto md:max-w-[320px] md:min-w-[180px] md:flex-1">
                 <Icono nombre="search" tamano={16} className="flex-none text-text-2" />
                 <input
                   type="search"
@@ -461,8 +463,8 @@ export function ProyectosPage() {
                     onClick={() => {
                       setFiltro(estado);
                     }}
-                    className={`h-9 rounded-control border px-3 text-label font-medium ${
-                      activo ? 'border-ink bg-ink text-paper' : 'border-border text-ink'
+                    className={`h-9 rounded-pill border px-3.5 text-label font-medium ${
+                      activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
                     }`}
                   >
                     {estado === 'todos' ? 'Todos' : ESTADO[estado].etiqueta}
@@ -476,7 +478,7 @@ export function ProyectosPage() {
                   onClick={() => {
                     setHojaAbierta(true);
                   }}
-                  className="ml-auto flex h-9 items-center gap-1.5 rounded-control border border-border px-3 text-label font-medium"
+                  className="ml-auto flex h-9 items-center gap-1.5 rounded-pill border border-hairline bg-paper px-3.5 text-label font-medium"
                 >
                   <Icono nombre="arrow-up-down" tamano={14} />
                   {CRITERIOS.find((criterio) => criterio.id === orden)?.etiqueta ?? 'Ordenar'}
@@ -485,7 +487,7 @@ export function ProyectosPage() {
             </div>
 
             {filas.length === 0 ? (
-              <div className="flex flex-col items-start gap-3 py-7">
+              <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-border px-5 py-6 text-center">
                 <p className="text-body-lg text-text-2">
                   {buscando
                     ? `Ningún proyecto coincide con «${consulta}».`

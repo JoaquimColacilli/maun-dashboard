@@ -36,7 +36,10 @@ export function Titular({ resumen }: { resumen: ResumenDeOpiniones }) {
   const { enviadas, contestadas } = resumen;
 
   return (
-    <section aria-label="El titular" className="@container mt-5.5">
+    <section
+      aria-label="El titular"
+      className="@container rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="grid grid-cols-1 items-end gap-4.5 @xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] @xl:gap-x-10 @xl:gap-y-0">
         <div className="min-w-0">
           <div className="text-body-sm text-text-2">Qué tan conformes quedaron</div>
@@ -82,10 +85,12 @@ function UnComentario({
   alAbrir: AlAbrir;
 }) {
   const { titular, trabajo } = comentario;
-  const filo = titular?.polo ? BORDE_DEL_POLO[titular.polo] : 'border-hairline';
+  const filo = titular?.polo ? BORDE_DEL_POLO[titular.polo] : '';
 
   return (
-    <li className={`flex min-w-0 flex-col gap-2.5 border-t-2 pt-3.5 ${filo}`}>
+    <li
+      className={`flex min-w-0 flex-col gap-2.5 rounded-panel border border-t-2 border-hairline bg-paper px-4 pt-3.5 pb-4 md:px-5 ${filo}`}
+    >
       <p className="max-w-[42rem] text-body-lg leading-relaxed whitespace-pre-line text-pretty @lg:text-subtitulo">
         {comentario.texto}
       </p>
@@ -131,8 +136,8 @@ export function LoQueEscribieron({
   const escribieron = new Set(comentarios.map((comentario) => comentario.respuestaId)).size;
 
   return (
-    <section aria-labelledby={idDelTitulo} className="@container mt-8.5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2.5">
+    <section aria-labelledby={idDelTitulo} className="@container flex flex-col gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2.5 px-1">
         <h2 id={idDelTitulo} className={TITULO_DE_SECCION}>
           Lo que escribieron
         </h2>
@@ -143,7 +148,7 @@ export function LoQueEscribieron({
         )}
       </div>
       {comentarios.length === 0 ? (
-        <p className="mt-2.5 border-t border-hairline py-3.5 text-body-sm leading-relaxed text-text-2">
+        <p className="rounded-panel border border-hairline bg-paper px-4 py-4 text-body-sm leading-relaxed text-text-2 md:px-5">
           Nadie escribió nada todavía. El comentario es opcional, así que muchos contestan las
           escalas y listo.
         </p>
@@ -152,7 +157,7 @@ export function LoQueEscribieron({
           tarjetaMinima="27rem"
           completar
           como="ul"
-          className="mt-3 list-none grid-cols-1 gap-5.5 p-0 @min-[56rem]/tablero:gap-x-8 @min-[56rem]/tablero:gap-y-6.5"
+          className="list-none grid-cols-1 gap-3 p-0 md:gap-4"
         >
           {comentarios.map((comentario) => (
             <UnComentario
@@ -241,7 +246,7 @@ function UnaPregunta({
   return (
     <div
       id={`pregunta-${pregunta.id}`}
-      className="scroll-mt-4 border-t border-hairline-soft py-4.5"
+      className="scroll-mt-4 border-t border-hairline-soft py-4.5 first:border-t-0"
     >
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
         <h3 className="text-body leading-snug font-medium text-pretty">{pregunta.texto}</h3>
@@ -285,48 +290,60 @@ export function PreguntaPorPregunta({
         : `${repartidas} Las que tienen menos de ${String(UMBRAL_BARRAS)} respuestas van de a una: cada punto es una persona.`;
 
   return (
-    <section aria-labelledby={idDelTitulo} className="mt-9">
-      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2.5">
-        <h2 id={idDelTitulo} className={TITULO_DE_SECCION}>
-          Pregunta por pregunta
-        </h2>
-        <button
-          type="button"
-          aria-pressed={conNumeros}
-          onClick={() => {
-            setConNumeros((actual) => !actual);
-          }}
-          className="flex h-8.5 items-center gap-1.75 rounded-field border border-border bg-paper px-2.75 text-label font-medium hover:bg-surface"
-        >
-          <Icono nombre="table" tamano={15} />
-          {conNumeros ? 'Ocultar los números' : 'Ver los números'}
-        </button>
+    <section aria-labelledby={idDelTitulo} className="flex flex-col gap-3 md:gap-4">
+      <div className="flex flex-col gap-2">
+        <div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2.5 pl-1">
+            <h2 id={idDelTitulo} className={TITULO_DE_SECCION}>
+              Pregunta por pregunta
+            </h2>
+            <button
+              type="button"
+              aria-pressed={conNumeros}
+              onClick={() => {
+                setConNumeros((actual) => !actual);
+              }}
+              className="flex h-8.5 items-center gap-1.75 rounded-pill border border-border bg-paper px-2.75 text-label font-medium hover:bg-ink/5"
+            >
+              <Icono nombre="table" tamano={15} />
+              {conNumeros ? 'Ocultar los números' : 'Ver los números'}
+            </button>
+          </div>
+          <p className="mt-1 px-1 text-label leading-relaxed text-text-3">{nota}</p>
+        </div>
+        {resumen.preguntas.length > 0 && (
+          <div className="rounded-panel border border-hairline bg-paper px-4">
+            {resumen.preguntas.map((resultado) => (
+              <UnaPregunta
+                key={resultado.pregunta.id}
+                resultado={resultado}
+                hoy={hoy}
+                conNumeros={conNumeros}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      <p className="mb-2.5 text-label leading-relaxed text-text-3">{nota}</p>
-      {resumen.preguntas.map((resultado) => (
-        <UnaPregunta
-          key={resultado.pregunta.id}
-          resultado={resultado}
-          hoy={hoy}
-          conNumeros={conNumeros}
-        />
-      ))}
       {resumen.archivadas.length > 0 && (
-        <div aria-labelledby={idDeLasArchivadas} role="group" className="mt-6">
-          <h3 id={idDeLasArchivadas} className="text-body font-semibold">
-            Las que ya no preguntás
-          </h3>
-          <p className="mt-0.5 mb-2 text-label leading-relaxed text-text-3">
-            No se preguntan más, pero lo que contestaron queda acá.
-          </p>
-          {resumen.archivadas.map((resultado) => (
-            <UnaPregunta
-              key={resultado.pregunta.id}
-              resultado={resultado}
-              hoy={hoy}
-              conNumeros={conNumeros}
-            />
-          ))}
+        <div aria-labelledby={idDeLasArchivadas} role="group" className="flex flex-col gap-2">
+          <div className="px-1">
+            <h3 id={idDeLasArchivadas} className="text-body font-semibold">
+              Las que ya no preguntás
+            </h3>
+            <p className="mt-0.5 text-label leading-relaxed text-text-3">
+              No se preguntan más, pero lo que contestaron queda acá.
+            </p>
+          </div>
+          <div className="rounded-panel border border-hairline bg-paper px-4">
+            {resumen.archivadas.map((resultado) => (
+              <UnaPregunta
+                key={resultado.pregunta.id}
+                resultado={resultado}
+                hoy={hoy}
+                conNumeros={conNumeros}
+              />
+            ))}
+          </div>
         </div>
       )}
     </section>
@@ -338,7 +355,10 @@ export function EnElTiempo({ resumen }: { resumen: ResumenDeOpiniones }) {
   const { conEvolucion, puntos } = resumen.evolucion;
 
   return (
-    <section aria-labelledby={idDelTitulo} className="mt-8">
+    <section
+      aria-labelledby={idDelTitulo}
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <h2 id={idDelTitulo} className={`mb-1 ${TITULO_DE_SECCION}`}>
         En el tiempo
       </h2>
@@ -381,14 +401,14 @@ function ContenidoDeLaFila({ fila, hoy }: { fila: FilaDeTrabajo; hoy: string }) 
         <span className="block truncate text-label text-text-3">{trabajo.trabajo}</span>
       </span>
       {fila.propias > 0 && (
-        <span className="flex-none rounded-control border border-border px-1.75 py-0.5 text-badge font-semibold text-text-2">
+        <span className="flex-none rounded-pill border border-border px-2 py-0.5 text-badge font-semibold text-text-2">
           +{fila.propias} {fila.propias === 1 ? 'propia' : 'propias'}
         </span>
       )}
-      <span className="flex flex-none items-center gap-2">
+      <span className="flex min-w-0 items-center gap-2">
         {contesto && <Carita paso={fila.titular} tamano={18} />}
         <span
-          className={`text-label whitespace-nowrap ${contesto ? 'font-medium text-ink' : 'text-text-3'}`}
+          className={`text-right text-label ${contesto ? 'font-medium text-ink' : 'text-text-3'}`}
         >
           {estadoDeLaFila(fila, hoy)}
         </span>
@@ -398,7 +418,7 @@ function ContenidoDeLaFila({ fila, hoy }: { fila: FilaDeTrabajo; hoy: string }) 
 }
 
 const FILA =
-  'flex min-h-15 w-full items-center gap-3 border-t border-hairline-soft py-2.75 text-left text-ink no-underline hover:bg-surface';
+  'flex min-h-15 w-full items-center gap-3 py-2.75 text-left text-ink no-underline hover:bg-surface';
 
 export function TrabajoPorTrabajo({
   trabajos,
@@ -414,15 +434,18 @@ export function TrabajoPorTrabajo({
   const idDelTitulo = useId();
 
   return (
-    <section id={id} aria-labelledby={idDelTitulo} className="mt-8.5">
-      <h2 id={idDelTitulo} className={`mb-2.5 ${TITULO_DE_SECCION}`}>
+    <section id={id} aria-labelledby={idDelTitulo} className="flex flex-col gap-2">
+      <h2 id={idDelTitulo} className={`px-1 ${TITULO_DE_SECCION}`}>
         Trabajo por trabajo
       </h2>
-      <ul className="list-none p-0">
+      <ul className="list-none rounded-panel border border-hairline bg-paper px-4">
         {trabajos.map((fila) => {
           const respuestaId = fila.pedido.envio.respuestaId;
           return (
-            <li key={fila.trabajo.proyectoId}>
+            <li
+              key={fila.trabajo.proyectoId}
+              className="border-t border-hairline-soft first:border-t-0"
+            >
               {respuestaId === null ? (
                 <Ir a={rutaDelProyecto(fila.trabajo.proyectoId)} className={FILA}>
                   <ContenidoDeLaFila fila={fila} hoy={hoy} />

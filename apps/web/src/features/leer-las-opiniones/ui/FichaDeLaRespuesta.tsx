@@ -10,7 +10,7 @@ import { FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
 import { marcarLeida } from '../model/acciones';
 
 const BOTON =
-  'inline-flex min-h-button items-center justify-center gap-2 rounded-field border border-border bg-paper px-3.5 text-body-sm font-medium text-ink no-underline hover:bg-surface';
+  'inline-flex min-h-button items-center justify-center gap-2 rounded-pill border border-border bg-paper px-3.5 text-body-sm font-medium text-ink no-underline hover:bg-surface';
 
 export interface FichaDeLaRespuestaProps {
   respuestaId: string;

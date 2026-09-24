@@ -60,8 +60,8 @@ function Chip({
       type="button"
       aria-pressed={activo}
       onClick={alElegir}
-      className={`flex min-h-tap items-center gap-2 rounded-control border px-3 text-label font-medium ${
-        activo ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
+      className={`flex min-h-tap items-center gap-2 rounded-pill border px-3 text-label font-medium ${
+        activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
       }`}
     >
       {punto !== undefined && (
@@ -136,7 +136,7 @@ export function FinanzasPage() {
   }
 
   return (
-    <Pagina className="gap-4">
+    <Pagina className="gap-3 md:gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Finanzas</h1>
         <Button
@@ -152,7 +152,7 @@ export function FinanzasPage() {
       <PrincipalYApoyo
         apoyoPrimero
         amplio
-        separacion="gap-y-4"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
           <ComparacionMensual
             titulo={`${nombreDelMes(mes)} contra ${nombreDelMes(mesAnterior(mes)).toLowerCase()}`}
@@ -185,118 +185,125 @@ export function FinanzasPage() {
           />
         }
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="contents @min-[52rem]/apoyo:flex @min-[52rem]/apoyo:flex-wrap @min-[52rem]/apoyo:items-center @min-[52rem]/apoyo:gap-2">
-            <Chip
-              activo={filtro.tesoro === 'todos'}
-              etiqueta="Todos"
-              alElegir={() => {
-                cambiar({ tesoro: 'todos' });
-              }}
-            />
-            {TESOROS_EN_ORDEN.map((id: Tesoro) => (
-              <Chip
-                key={id}
-                activo={filtro.tesoro === id}
-                etiqueta={TESORO[id].nombre}
-                punto={TESORO[id].barra}
-                alElegir={() => {
-                  cambiar({ tesoro: id });
-                }}
-              />
-            ))}
-          </div>
-          <span aria-hidden className="mx-0.5 h-6 w-px bg-hairline @min-[52rem]/apoyo:hidden" />
-          <div className="contents @min-[52rem]/apoyo:flex @min-[52rem]/apoyo:flex-wrap @min-[52rem]/apoyo:items-center @min-[52rem]/apoyo:gap-2">
-            {SENTIDOS.map((sentido) => (
-              <Chip
-                key={sentido.id}
-                activo={filtro.sentido === sentido.id}
-                etiqueta={sentido.etiqueta}
-                alElegir={() => {
-                  cambiar({ sentido: sentido.id });
-                }}
-              />
-            ))}
-          </div>
-        </div>
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="contents @min-[52rem]/apoyo:flex @min-[52rem]/apoyo:flex-wrap @min-[52rem]/apoyo:items-center @min-[52rem]/apoyo:gap-2">
+                <Chip
+                  activo={filtro.tesoro === 'todos'}
+                  etiqueta="Todos"
+                  alElegir={() => {
+                    cambiar({ tesoro: 'todos' });
+                  }}
+                />
+                {TESOROS_EN_ORDEN.map((id: Tesoro) => (
+                  <Chip
+                    key={id}
+                    activo={filtro.tesoro === id}
+                    etiqueta={TESORO[id].nombre}
+                    punto={TESORO[id].barra}
+                    alElegir={() => {
+                      cambiar({ tesoro: id });
+                    }}
+                  />
+                ))}
+              </div>
+              <span aria-hidden className="mx-0.5 h-6 w-px bg-hairline @min-[52rem]/apoyo:hidden" />
+              <div className="contents @min-[52rem]/apoyo:flex @min-[52rem]/apoyo:flex-wrap @min-[52rem]/apoyo:items-center @min-[52rem]/apoyo:gap-2">
+                {SENTIDOS.map((sentido) => (
+                  <Chip
+                    key={sentido.id}
+                    activo={filtro.sentido === sentido.id}
+                    etiqueta={sentido.etiqueta}
+                    alElegir={() => {
+                      cambiar({ sentido: sentido.id });
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
 
-        <div className="mt-2.5 flex gap-2">
-          <label className="flex h-field min-w-0 flex-1 items-center gap-2 rounded-field border border-border px-3">
-            <span aria-hidden className="flex-none text-text-2">
-              <Icono nombre="search" tamano={16} />
-            </span>
-            <input
-              value={filtro.texto}
-              aria-label="Buscar en el libro"
-              placeholder="Buscar por lo que anotaste"
-              onChange={(evento) => {
-                cambiar({ texto: evento.target.value });
-              }}
-              className="min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-none"
-            />
-          </label>
-          <select
-            value={filtro.mes}
-            aria-label="Mes"
-            onChange={(evento) => {
-              cambiar({ mes: evento.target.value });
-            }}
-            className="h-field rounded-field border border-border bg-paper px-3 text-body text-ink"
-          >
-            {meses.map((opcion) => (
-              <option key={opcion} value={opcion}>
-                {nombreDelMes(opcion)} {opcion.slice(0, 4)}
-              </option>
-            ))}
-            <option value={TODOS_LOS_MESES}>Todos los meses</option>
-          </select>
-        </div>
-
-        {visibles.length === 0 ? (
-          <div className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-            <span
-              aria-hidden
-              className="flex size-12 items-center justify-center rounded-field bg-surface text-text-2"
-            >
-              <Icono nombre="wallet" tamano={24} />
-            </span>
-            <h2 className="text-section font-semibold">
-              {conFiltro ? 'Nada con esos filtros' : 'Todavía no hay movimientos'}
-            </h2>
-            <p className="text-body leading-relaxed text-text-2">
-              {conFiltro
-                ? 'Probá con otro mes o sacá los filtros.'
-                : 'Cargá el primer gasto o ingreso. Los cobros y las compras de cada trabajo se anotan solos desde el trabajo.'}
-            </p>
-            {conFiltro ? (
-              <Button
-                variant="secundario"
-                onClick={() => {
-                  cambiar(filtroInicial(mes));
+            <div className="flex flex-wrap gap-2">
+              <label className="flex h-field min-w-0 grow basis-[18rem] items-center gap-2 rounded-pill border border-hairline bg-paper px-3.5">
+                <span aria-hidden className="flex-none text-text-2">
+                  <Icono nombre="search" tamano={16} />
+                </span>
+                <input
+                  value={filtro.texto}
+                  aria-label="Buscar en el libro"
+                  placeholder="Buscar por lo que anotaste"
+                  onChange={(evento) => {
+                    cambiar({ texto: evento.target.value });
+                  }}
+                  className="min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-none"
+                />
+              </label>
+              <select
+                value={filtro.mes}
+                aria-label="Mes"
+                onChange={(evento) => {
+                  cambiar({ mes: evento.target.value });
                 }}
+                className="h-field max-w-full rounded-pill border border-hairline bg-paper px-4 text-body text-ink"
               >
-                Limpiar los filtros
-              </Button>
+                {meses.map((opcion) => (
+                  <option key={opcion} value={opcion}>
+                    {nombreDelMes(opcion)} {opcion.slice(0, 4)}
+                  </option>
+                ))}
+                <option value={TODOS_LOS_MESES}>Todos los meses</option>
+              </select>
+            </div>
+          </div>
+
+          {visibles.length === 0 ? (
+            conFiltro ? (
+              <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-border px-5 py-6 text-center">
+                <h2 className="text-section font-semibold">Nada con esos filtros</h2>
+                <p className="text-body leading-relaxed text-text-2">
+                  Probá con otro mes o sacá los filtros.
+                </p>
+                <Button
+                  variant="secundario"
+                  onClick={() => {
+                    cambiar(filtroInicial(mes));
+                  }}
+                >
+                  Limpiar los filtros
+                </Button>
+              </div>
             ) : (
-              <Button
-                onClick={() => {
-                  abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
-                }}
-              >
-                Cargar el primero
-              </Button>
-            )}
-          </div>
-        ) : (
-          <ListaDelLibro
-            dias={dias}
-            tesoro={filtro.tesoro}
-            hoy={hoy}
-            sinConfirmar={sinConfirmar}
-            alAbrir={abrir}
-          />
-        )}
+              <div className="flex max-w-[520px] flex-col items-start gap-3 py-8">
+                <span
+                  aria-hidden
+                  className="flex size-12 items-center justify-center rounded-field bg-ink/6 text-text-2"
+                >
+                  <Icono nombre="wallet" tamano={24} />
+                </span>
+                <h2 className="text-section font-semibold">Todavía no hay movimientos</h2>
+                <p className="text-body leading-relaxed text-text-2">
+                  Cargá el primer gasto o ingreso. Los cobros y las compras de cada trabajo se
+                  anotan solos desde el trabajo.
+                </p>
+                <Button
+                  onClick={() => {
+                    abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
+                  }}
+                >
+                  Cargar el primero
+                </Button>
+              </div>
+            )
+          ) : (
+            <ListaDelLibro
+              dias={dias}
+              tesoro={filtro.tesoro}
+              hoy={hoy}
+              sinConfirmar={sinConfirmar}
+              alAbrir={abrir}
+            />
+          )}
+        </div>
       </PrincipalYApoyo>
 
       <ConSalida valor={ficha}>

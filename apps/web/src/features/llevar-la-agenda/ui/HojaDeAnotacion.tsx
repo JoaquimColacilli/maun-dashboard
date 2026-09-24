@@ -188,7 +188,7 @@ export function HojaDeAnotacion({
                     onClick={() => {
                       cambiar('fecha', atajo.fecha);
                     }}
-                    className={`h-11 rounded-field border px-3.5 text-body font-medium ${
+                    className={`h-11 rounded-pill border px-3.5 text-body font-medium ${
                       elegido ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
                     }`}
                   >

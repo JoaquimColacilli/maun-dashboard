@@ -173,7 +173,7 @@ function Lista({ segmento, todas, bloqueado, alCambiar }: ListaProps) {
             onClick={() => {
               agregar();
             }}
-            className="flex size-11 flex-none items-center justify-center rounded-field border border-border text-text-2 hover:bg-surface disabled:opacity-40"
+            className="flex size-11 flex-none items-center justify-center rounded-pill border border-border text-text-2 hover:bg-surface disabled:opacity-40"
           >
             <Icono nombre="plus" tamano={18} />
           </button>

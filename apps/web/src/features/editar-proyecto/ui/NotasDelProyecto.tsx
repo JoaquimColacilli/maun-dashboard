@@ -46,7 +46,10 @@ export function NotasDelProyecto({ proyecto, titulo, placeholder }: NotasDelProy
   }
 
   return (
-    <section aria-label={titulo}>
+    <section
+      aria-label={titulo}
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h2 className="text-section font-semibold">{titulo}</h2>
         <EstadoDeGuardado

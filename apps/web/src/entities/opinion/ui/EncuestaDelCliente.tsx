@@ -32,8 +32,8 @@ export function MarcaDelTaller({ taller, conLema = false }: { taller: string; co
 }
 
 function marcoDeLaOpcion(elegida: boolean): string {
-  return `relative flex cursor-pointer rounded-field border-[1.5px] transition-colors duration-(--dur-fast) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
-    elegida ? 'border-ink bg-surface' : 'border-border bg-paper hover:border-text-3'
+  return `relative flex cursor-pointer rounded-field border-[1.5px] bg-paper transition-colors duration-(--dur-fast) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
+    elegida ? 'border-ink' : 'border-border hover:border-text-3'
   }`;
 }
 
@@ -334,7 +334,7 @@ export function FormularioDeLaEncuesta({
             <button
               type="submit"
               aria-disabled={enviando}
-              className={`flex min-h-14 w-full items-center justify-center gap-2.5 rounded-panel bg-ink text-subtitulo font-medium text-paper ${
+              className={`flex min-h-14 w-full items-center justify-center gap-2.5 rounded-pill bg-ink text-subtitulo font-medium text-paper ${
                 enviando ? 'opacity-70' : 'hover:bg-ink-hover'
               }`}
             >
@@ -374,7 +374,7 @@ export function GraciasPorContestar({ taller, cliente, resena }: GraciasPorConte
           Lo leemos nosotros, no un sistema. Lo que nos marcaste nos sirve para el próximo mueble.
         </p>
         {resena !== null && (
-          <div className="mt-2 flex w-full flex-col gap-2.5 rounded-panel bg-surface px-4.5 py-4">
+          <div className="mt-2 flex w-full flex-col gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4">
             <span className="text-body font-semibold">¿Nos dejás la misma reseña en Google?</span>
             <span className="text-body-sm leading-relaxed text-text-2">
               Se lo pedimos a todos los clientes, contesten lo que contesten. A un taller chico le
@@ -384,7 +384,7 @@ export function GraciasPorContestar({ taller, cliente, resena }: GraciasPorConte
               href={resena}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-12 w-fit items-center gap-2 rounded-field border border-border px-4.5 text-body font-medium no-underline hover:bg-paper"
+              className="flex min-h-12 w-fit items-center gap-2 rounded-pill border border-border px-4.5 text-body font-medium no-underline hover:bg-surface"
             >
               <Icono nombre="star" tamano={17} />
               Dejar una reseña

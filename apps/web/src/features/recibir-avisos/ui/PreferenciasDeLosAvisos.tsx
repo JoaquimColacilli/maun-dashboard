@@ -33,6 +33,7 @@ export interface PreferenciasDeLosAvisosProps {
 }
 
 const TITULO_DE_SECCION = 'text-body-lg font-semibold';
+const TARJETA = 'rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5';
 
 export function PreferenciasDeLosAvisos({
   estado,
@@ -53,8 +54,8 @@ export function PreferenciasDeLosAvisos({
   }
 
   return (
-    <div className="flex flex-col gap-6.5">
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-panel bg-surface px-3.5 py-2.5">
+    <div className="flex flex-col gap-3 md:gap-4">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-panel border border-hairline bg-paper px-4 py-3 md:px-5">
         <Icono nombre="bell" tamano={18} className="flex-none" />
         <p className="min-w-[12rem] flex-1 text-body leading-tight">
           Avisos activos en este dispositivo. {cuandoSalio(estado.ultimoEnvio)}
@@ -65,7 +66,7 @@ export function PreferenciasDeLosAvisos({
         </Button>
       </div>
 
-      <section aria-labelledby={`${id}-que`}>
+      <section aria-labelledby={`${id}-que`} className={TARJETA}>
         <h2 id={`${id}-que`} className={`mb-0.5 ${TITULO_DE_SECCION}`}>
           Qué te avisa
         </h2>
@@ -121,7 +122,7 @@ export function PreferenciasDeLosAvisos({
         })}
       </section>
 
-      <section aria-labelledby={`${id}-hora`}>
+      <section aria-labelledby={`${id}-hora`} className={TARJETA}>
         <h2 id={`${id}-hora`} className={`mb-2.5 ${TITULO_DE_SECCION}`}>
           A qué hora
         </h2>
@@ -136,7 +137,7 @@ export function PreferenciasDeLosAvisos({
                 onClick={() => {
                   if (!elegida) alCambiar({ ...preferencias, hora });
                 }}
-                className={`min-h-tap rounded-field border px-3.5 text-body font-medium tabular-nums ${
+                className={`min-h-tap rounded-pill border px-3.5 text-body font-medium tabular-nums ${
                   elegida
                     ? 'border-ink bg-ink text-paper'
                     : 'border-border bg-paper text-ink hover:bg-surface'
@@ -159,7 +160,7 @@ export function PreferenciasDeLosAvisos({
         </div>
       </section>
 
-      <section aria-labelledby={`${id}-zona`}>
+      <section aria-labelledby={`${id}-zona`} className={TARJETA}>
         <h2 id={`${id}-zona`} className={`mb-1.5 ${TITULO_DE_SECCION}`}>
           ¿Dónde vivís?
         </h2>
@@ -185,7 +186,7 @@ export function PreferenciasDeLosAvisos({
 
       <section
         aria-labelledby={`${id}-dispositivo`}
-        className="flex flex-col items-start gap-2 border-t border-hairline pt-5"
+        className={`flex flex-col items-start gap-2 ${TARJETA}`}
       >
         <h2 id={`${id}-dispositivo`} className={TITULO_DE_SECCION}>
           En este dispositivo

@@ -30,7 +30,7 @@ export function PanelDePaso({
   return (
     <section
       aria-label={titulo}
-      className="@container rounded-panel border border-hairline px-4 py-3.5"
+      className="@container rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
     >
       <h2 className="text-meta font-medium text-text-2">{titulo}</h2>
       <p className="mt-0.5 text-body-lg leading-snug font-semibold">{paso}</p>

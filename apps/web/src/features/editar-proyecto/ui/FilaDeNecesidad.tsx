@@ -149,7 +149,7 @@ export function FilaDeNecesidad({
         disabled={bloqueado}
         aria-label={`Sacar ${nombreConCantidad(necesidad)} de la lista`}
         onClick={alQuitar}
-        className="mt-0.5 flex size-10 flex-none items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
+        className="mt-0.5 flex size-10 flex-none items-center justify-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta"
       >
         <Icono nombre="trash-2" tamano={16} />
       </button>

@@ -165,7 +165,7 @@ export function EncuestaPublicaPage() {
   }
 
   return (
-    <main ref={principal} className="min-h-dvh bg-paper text-ink">
+    <main ref={principal} className="min-h-dvh bg-mesa text-ink">
       {contenido}
     </main>
   );

@@ -80,7 +80,7 @@ function BotonesDelMes({
         type="button"
         aria-label="Mes anterior"
         onClick={alAnterior}
-        className="flex size-10 items-center justify-center rounded-field hover:bg-surface"
+        className="flex size-tap items-center justify-center rounded-pill border border-hairline bg-paper hover:bg-ink/5"
       >
         <Icono nombre="chevron-left" tamano={20} />
       </button>
@@ -88,7 +88,7 @@ function BotonesDelMes({
         type="button"
         aria-label="Mes siguiente"
         onClick={alSiguiente}
-        className="flex size-10 items-center justify-center rounded-field hover:bg-surface"
+        className="flex size-tap items-center justify-center rounded-pill border border-hairline bg-paper hover:bg-ink/5"
       >
         <Icono nombre="chevron-right" tamano={20} />
       </button>
@@ -158,7 +158,7 @@ function ListaDelMes({
         <button
           type="button"
           onClick={alVerAnteriores}
-          className="mt-2 flex h-10 w-full items-center justify-center gap-1.5 border-b border-hairline-soft text-label font-medium text-text-2"
+          className="mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-pill border border-hairline bg-paper text-label font-medium text-text-2"
         >
           <Icono nombre="chevron-up" tamano={14} />
           Días anteriores
@@ -169,12 +169,12 @@ function ListaDelMes({
         const etiqueta = etiquetaDelDia(fecha, hoy);
         const pasado = fecha < hoy;
         return (
-          <section key={fecha} aria-label={diaEnPalabras(fecha)} className="pt-4">
-            <div
-              className={`flex items-center gap-2 border-b pb-2 ${
-                etiqueta === 'hoy' ? 'border-ink' : 'border-hairline'
-              }`}
-            >
+          <section
+            key={fecha}
+            aria-label={diaEnPalabras(fecha)}
+            className="flex flex-col gap-1.5 pt-4"
+          >
+            <div className="flex items-center gap-2 px-1">
               <span
                 aria-hidden
                 className={`font-display text-lema leading-none ${pasado ? 'text-text-3' : ''}`}
@@ -189,7 +189,7 @@ function ListaDelMes({
               </span>
               {etiqueta !== null && (
                 <span
-                  className={`rounded-control px-1.5 py-0.5 text-badge font-semibold ${
+                  className={`rounded-pill px-2 py-0.5 text-badge font-semibold ${
                     etiqueta === 'hoy' ? 'bg-ink text-paper' : 'bg-ink/6 text-text-2'
                   }`}
                 >
@@ -204,7 +204,7 @@ function ListaDelMes({
                   onClick={() => {
                     alAnotar(fecha);
                   }}
-                  className="-my-1 flex h-9 items-center gap-1.5 rounded-field border border-dashed border-border px-3 text-label font-medium"
+                  className="flex h-9 items-center gap-1.5 rounded-pill border border-dashed border-border px-3 text-label font-medium"
                 >
                   <Icono nombre="plus" tamano={14} />
                   Anotar
@@ -216,13 +216,13 @@ function ListaDelMes({
                 onClick={() => {
                   alAbrirElDia(fecha);
                 }}
-                className="-my-1 -mr-1.5 flex size-9 items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-ink"
+                className="-mr-1 flex size-9 items-center justify-center rounded-pill text-text-3 hover:bg-ink/5 hover:text-ink"
               >
                 <Icono nombre="maximize-2" tamano={14} />
               </button>
             </div>
             {delDia.length === 0 ? (
-              <div className="flex items-center justify-between gap-2.5 pt-3.5 pb-3">
+              <div className="flex items-center justify-between gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-3">
                 <span className="text-body text-text-3">Nada anotado para este día</span>
                 <button
                   type="button"
@@ -230,14 +230,14 @@ function ListaDelMes({
                   onClick={() => {
                     alAnotar(fecha);
                   }}
-                  className="flex h-9 items-center gap-1.5 rounded-field border border-dashed border-border px-3 text-label font-medium"
+                  className="flex h-9 items-center gap-1.5 rounded-pill border border-dashed border-border px-3 text-label font-medium"
                 >
                   <Icono nombre="plus" tamano={14} />
                   Anotar
                 </button>
               </div>
             ) : (
-              <ul>
+              <ul className="rounded-panel border border-hairline bg-paper px-4">
                 {conLoHechoAlFinal(delDia).map((evento) => (
                   <FilaDeEvento
                     key={evento.id}
@@ -418,12 +418,12 @@ export function AgendaPage() {
             <p className="text-label text-text-2">hoy es {diaEnPalabras(hoy)}</p>
             <h1 className="font-display text-h1 leading-tight">Agenda</h1>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-2">
             {fueraDeHoy && (
               <button
                 type="button"
                 onClick={irAHoy}
-                className="mr-1 h-9 rounded-pill border border-ink px-3 text-label font-semibold"
+                className="h-9 rounded-pill border border-ink px-3 text-label font-semibold"
               >
                 Hoy
               </button>
@@ -562,7 +562,7 @@ export function AgendaPage() {
                 setDiaAbierto(null);
                 irAlMes(mesPrevio(mes));
               }}
-              className="flex size-10 items-center justify-center rounded-l-field border border-r-0 border-border bg-paper hover:bg-surface"
+              className="flex size-10 items-center justify-center rounded-l-pill border border-r-0 border-border bg-paper hover:bg-surface"
             >
               <Icono nombre="chevron-left" tamano={18} />
             </button>
@@ -582,7 +582,7 @@ export function AgendaPage() {
                 setDiaAbierto(null);
                 irAlMes(mesSiguiente(mes));
               }}
-              className="flex size-10 items-center justify-center rounded-r-field border border-l-0 border-border bg-paper hover:bg-surface"
+              className="flex size-10 items-center justify-center rounded-r-pill border border-l-0 border-border bg-paper hover:bg-surface"
             >
               <Icono nombre="chevron-right" tamano={18} />
             </button>
@@ -613,8 +613,8 @@ export function AgendaPage() {
               onClick={() => {
                 setFiltro(id);
               }}
-              className={`flex h-[34px] items-center gap-1.5 rounded-control border px-2.5 text-label font-medium ${
-                activo ? 'border-ink bg-ink text-paper' : 'border-border bg-paper text-ink'
+              className={`flex h-[34px] items-center gap-1.5 rounded-pill border px-2.5 text-label font-medium ${
+                activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
               }`}
             >
               {id === 'marcado' && (

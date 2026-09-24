@@ -80,7 +80,7 @@ export function FichaDelMovimiento({ linea, hoy, alCerrar }: FichaDelMovimientoP
         {linea.proyectoId !== null && (
           <Ir
             a={rutaDelProyecto(linea.proyectoId)}
-            className="flex h-button items-center justify-center gap-2 rounded-field bg-ink px-[18px] text-body font-medium text-paper"
+            className="flex h-button items-center justify-center gap-2 rounded-pill bg-ink px-[18px] text-body font-medium text-paper"
           >
             Ver «{linea.proyectoTitulo ?? 'el trabajo'}»
           </Ir>

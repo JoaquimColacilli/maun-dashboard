@@ -31,7 +31,7 @@ describe('SeccionesEnFilas', () => {
     const { lista, contenedor } = listaDe(screen.getByRole('region', { name: 'Tu perfil' }));
     expect(contenedor).toHaveAttribute('data-reparto', 'filas');
     expect(contenedor).toHaveClass('md:@container/secciones');
-    expect(lista).toHaveClass('flex', 'flex-col', 'gap-8');
+    expect(lista).toHaveClass('flex', 'flex-col', 'gap-3', '@min-[40rem]/secciones:gap-4');
   });
 
   it('cada sección es una fila con su título nombrándola, y los controles después', () => {
@@ -50,7 +50,7 @@ describe('SeccionesEnFilas', () => {
     expect(cuerpo).toContainElement(screen.getByRole('textbox', { name: 'Nombre' }));
   });
 
-  it('en angosto es la misma sección de siempre: una columna de 560 con su línea arriba', () => {
+  it('cada sección es una tarjeta de papel a todo el ancho, con su título arriba en angosto', () => {
     render(<Ajustes />);
 
     const perfil = screen.getByRole('region', { name: 'Tu perfil' });
@@ -59,11 +59,15 @@ describe('SeccionesEnFilas', () => {
       'flex',
       'flex-col',
       'gap-3.5',
-      'max-w-[560px]',
-      'border-t',
+      'rounded-panel',
+      'border',
       'border-hairline',
-      'pt-5',
+      'bg-paper',
+      'px-4',
+      'py-4',
+      'md:px-5',
     );
+    expect(perfil.className).not.toMatch(/max-w-|border-t\b/);
   });
 
   it('los campos se achican a lo que llevan solo cuando entran las dos columnas', () => {
@@ -86,7 +90,7 @@ describe('SeccionesEnFilas', () => {
 
     const lista = screen.getByText('Datos del trabajo').parentElement;
     expect(lista).toHaveClass('gap-6');
-    expect(lista).not.toHaveClass('gap-8');
+    expect(lista).not.toHaveClass('gap-3');
   });
 
   it('el cuerpo acepta lo que la sección necesita sin tocar la fila', () => {

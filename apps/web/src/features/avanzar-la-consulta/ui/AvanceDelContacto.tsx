@@ -200,7 +200,7 @@ export function AvanceDelContacto({
         <div
           role="radiogroup"
           aria-label="Etapa"
-          className="mt-1 grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @md:grid-cols-3"
+          className="mt-1 grid grid-cols-2 gap-1 rounded-panel bg-ink/6 p-1 @md:grid-cols-3"
         >
           {etapas.map((estado) => (
             <button
@@ -211,7 +211,7 @@ export function AvanceDelContacto({
               onClick={() => {
                 if (estado !== etapa) mover({ estado });
               }}
-              className={`min-h-tap rounded-control px-1 text-label leading-tight ${
+              className={`min-h-tap rounded-[16px] px-1 text-label leading-tight ${
                 estado === etapa
                   ? 'bg-elevado font-semibold text-ink shadow-float'
                   : 'font-medium text-text-2'

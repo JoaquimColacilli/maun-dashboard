@@ -32,7 +32,7 @@ function Fila({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string }) {
   const { cliente } = resumen;
 
   return (
-    <li className="border-b border-hairline">
+    <li className="border-t border-hairline-soft first:border-t-0">
       <button
         type="button"
         onClick={() => {
@@ -57,7 +57,7 @@ function Fila({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string }) {
         </span>
         <span className="text-right whitespace-nowrap">
           {resumen.saldo > 0 ? (
-            <span className="inline-block rounded-control bg-atencion-tint px-1.5 py-0.5 text-badge font-semibold text-atencion tabular-nums">
+            <span className="inline-block rounded-pill bg-atencion-tint px-2 py-0.5 text-badge font-semibold text-atencion tabular-nums">
               debe {formatearPesos(resumen.saldo)}
             </span>
           ) : (
@@ -75,7 +75,10 @@ function DeDondeVienen({ resumenes }: { resumenes: readonly ResumenDeCliente[] }
   if (cortes.length === 0) return null;
 
   return (
-    <section aria-label="De dónde vienen los trabajos" className="mt-4">
+    <section
+      aria-label="De dónde vienen los trabajos"
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="mb-2 flex items-baseline justify-between">
         <span className="text-label font-semibold">De dónde vienen los trabajos</span>
         <span className="text-meta text-text-2 tabular-nums">
@@ -124,8 +127,8 @@ export function ClientesPage() {
   const buscando = consulta.trim() !== '';
 
   return (
-    <Pagina>
-      <header className="mb-3.5 flex items-end justify-between gap-3">
+    <Pagina className="gap-3 md:gap-4">
+      <header className="flex items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Clientes</h1>
         <Button
           onClick={() => {
@@ -139,7 +142,7 @@ export function ClientesPage() {
 
       {resumenes.length === 0 ? (
         <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-          <span className="flex size-12 items-center justify-center rounded-field bg-surface">
+          <span className="flex size-12 items-center justify-center rounded-field bg-ink/6">
             <Icono nombre="users" tamano={24} />
           </span>
           <h2 className="mt-1 text-h1 leading-tight font-semibold">
@@ -159,7 +162,7 @@ export function ClientesPage() {
         </section>
       ) : (
         <>
-          <label className="flex h-field max-w-full items-center gap-2 rounded-field border border-border px-3 md:max-w-[420px]">
+          <label className="flex h-field max-w-full items-center gap-2 rounded-pill border border-hairline bg-paper px-3.5 md:max-w-[420px]">
             <Icono nombre="search" tamano={18} className="flex-none text-text-2" />
             <input
               type="search"
@@ -175,8 +178,8 @@ export function ClientesPage() {
 
           <DeDondeVienen resumenes={resumenes} />
 
-          <div className="@container mt-5">
-            <div className="flex flex-col items-stretch gap-1.5 border-b border-ink pb-2 @min-[21.5rem]:flex-row @min-[21.5rem]:items-center @min-[21.5rem]:justify-between @min-[21.5rem]:gap-3">
+          <div className="@container">
+            <div className="flex flex-col items-stretch gap-1.5 px-1 @min-[22rem]:flex-row @min-[22rem]:items-center @min-[22rem]:justify-between @min-[22rem]:gap-3">
               <span className="text-meta text-text-2 tabular-nums">
                 {buscando
                   ? `${String(filas.length)} de ${String(resumenes.length)}`
@@ -185,7 +188,7 @@ export function ClientesPage() {
               <div
                 role="radiogroup"
                 aria-label="Ordenar por"
-                className="grid grid-cols-3 gap-0.5 @min-[21.5rem]:flex"
+                className="grid grid-cols-3 gap-0.5 rounded-pill bg-ink/6 p-1 @min-[22rem]:flex"
               >
                 {ORDENES.map((opcion) => (
                   <button
@@ -196,9 +199,9 @@ export function ClientesPage() {
                     onClick={() => {
                       setOrden(opcion.id);
                     }}
-                    className={`min-h-tap rounded-field px-2.5 text-meta ${
+                    className={`min-h-tap rounded-pill px-2 text-meta ${
                       orden === opcion.id
-                        ? 'bg-surface font-semibold text-ink'
+                        ? 'bg-elevado font-semibold text-ink shadow-float'
                         : 'font-medium text-text-2'
                     }`}
                   >
@@ -210,7 +213,7 @@ export function ClientesPage() {
           </div>
 
           {filas.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 py-7">
+            <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-border px-5 py-6 text-center">
               <span className="text-body-lg text-text-2">Nadie coincide con «{consulta}».</span>
               <Button
                 onClick={() => {
@@ -221,7 +224,7 @@ export function ClientesPage() {
               </Button>
             </div>
           ) : (
-            <ul className="list-none">
+            <ul className="list-none rounded-panel border border-hairline bg-paper px-4">
               {filas.map((resumen) => (
                 <Fila key={resumen.cliente.id} resumen={resumen} hoy={hoy} />
               ))}

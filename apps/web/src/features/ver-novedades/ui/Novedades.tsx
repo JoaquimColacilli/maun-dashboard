@@ -70,7 +70,7 @@ function Capa({ abiertas }: { abiertas: NovedadesAbiertas }) {
           type="button"
           onClick={cerrar}
           aria-label="Cerrar las novedades"
-          className="flex size-11 flex-none items-center justify-center rounded-field text-text-2 hover:bg-surface"
+          className="flex size-11 flex-none items-center justify-center rounded-pill text-text-2 hover:bg-surface"
         >
           <Icono nombre="x" tamano={20} />
         </button>

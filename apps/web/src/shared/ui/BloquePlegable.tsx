@@ -8,6 +8,7 @@ export interface BloquePlegableProps {
   resumen?: ReactNode;
   ayuda?: string;
   children: ReactNode;
+  enTarjeta?: boolean;
   className?: string;
 }
 
@@ -17,15 +18,23 @@ export function BloquePlegable({
   resumen,
   ayuda,
   children,
+  enTarjeta = true,
   className = '',
 }: BloquePlegableProps) {
   const id = useId();
 
   return (
-    <details open={abiertoAlPrincipio} className={`group ${className}`}>
+    <details
+      open={abiertoAlPrincipio}
+      className={`group ${
+        enTarjeta ? 'rounded-panel border border-hairline bg-paper px-4 md:px-5' : ''
+      } ${className}`}
+    >
       <summary
         aria-describedby={ayuda === undefined ? undefined : id}
-        className="flex min-h-tap cursor-pointer list-none items-baseline gap-3 rounded-field [&::-webkit-details-marker]:hidden"
+        className={`flex ${
+          enTarjeta ? 'min-h-14 items-center' : 'min-h-tap items-baseline'
+        } cursor-pointer list-none gap-3 rounded-field [&::-webkit-details-marker]:hidden`}
       >
         <span className="flex min-w-0 flex-1 items-baseline gap-2">
           <Icono
@@ -44,7 +53,7 @@ export function BloquePlegable({
           {ayuda}
         </p>
       )}
-      <div className="mt-1.5">{children}</div>
+      <div className={enTarjeta ? 'mt-1.5 pb-4' : 'mt-1.5'}>{children}</div>
     </details>
   );
 }

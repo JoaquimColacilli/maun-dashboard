@@ -85,7 +85,10 @@ export function PreguntasDelTrabajo({
   }
 
   return (
-    <section aria-labelledby={`${id}-titulo`} className="mt-7">
+    <section
+      aria-labelledby={`${id}-titulo`}
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2.5">
         <h2 id={`${id}-titulo`} className="text-body-lg font-semibold">
           Algo puntual de este trabajo
@@ -119,7 +122,7 @@ export function PreguntasDelTrabajo({
                   onClick={() => {
                     sacarPropia(cliente, propia);
                   }}
-                  className="flex size-9.5 flex-none items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
+                  className="flex size-9.5 flex-none items-center justify-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta"
                 >
                   <Icono nombre="x" tamano={16} />
                 </button>
@@ -130,7 +133,7 @@ export function PreguntasDelTrabajo({
       )}
 
       {abiertas && agregando && (
-        <div className="mt-3.5 flex flex-col gap-3.5 rounded-panel border border-border p-4">
+        <div className="mt-3.5 flex flex-col gap-3.5 rounded-field border border-border p-4">
           <div className="flex flex-col gap-1.75 text-label text-text-2">
             <label htmlFor={`${id}-texto`}>Qué le querés preguntar a {nombre}</label>
             <textarea
@@ -201,7 +204,7 @@ export function PreguntasDelTrabajo({
           onClick={() => {
             setAgregando(true);
           }}
-          className="mt-3.5 flex h-12 items-center gap-2 rounded-field border border-dashed border-border bg-transparent px-4 text-body font-medium hover:bg-surface"
+          className="mt-3.5 flex h-12 items-center gap-2 rounded-pill border border-dashed border-border bg-transparent px-4 text-body font-medium hover:bg-surface"
         >
           <Icono nombre="plus" tamano={18} />
           Agregar una pregunta para este trabajo

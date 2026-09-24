@@ -21,7 +21,7 @@ export function VistaPrevia({ taller, preguntas, resena, alCerrar }: VistaPrevia
       alCerrar={alCerrar}
     >
       <div className="flex min-h-0 flex-1 justify-center overflow-auto bg-surface p-4.5">
-        <div className="h-fit w-[390px] max-w-full flex-none overflow-hidden rounded-telefono border border-border bg-paper shadow-float">
+        <div className="h-fit w-[390px] max-w-full flex-none overflow-hidden rounded-telefono border border-border bg-mesa shadow-float">
           {contestada ? (
             <GraciasPorContestar taller={taller} cliente={null} resena={resena} />
           ) : (

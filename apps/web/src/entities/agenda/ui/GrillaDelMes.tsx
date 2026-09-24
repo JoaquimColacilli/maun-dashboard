@@ -60,7 +60,7 @@ export function GrillaDelMes({
   return (
     <div
       data-grilla-del-mes
-      className="flex flex-col overflow-hidden rounded-panel border border-hairline"
+      className="flex flex-col overflow-hidden rounded-panel border border-hairline bg-paper"
     >
       {arrastre !== undefined && (
         <p id={idDeLaAyuda} className="sr-only">

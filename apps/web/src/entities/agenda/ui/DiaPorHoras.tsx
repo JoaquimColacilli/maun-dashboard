@@ -136,7 +136,7 @@ export function DiaPorHoras({ fecha, hoy, eventos, acciones, ahora }: DiaPorHora
           onClick={() => {
             setTodoElReloj((previo) => !previo);
           }}
-          className="mt-2 mb-1 flex min-h-tap w-full items-center justify-center gap-1.5 rounded-field text-label font-medium text-text-2 hover:bg-surface"
+          className="mt-2 mb-1 flex min-h-tap w-full items-center justify-center gap-1.5 rounded-pill text-label font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre={todoElReloj ? 'chevron-up' : 'clock'} tamano={14} />
           {todoElReloj ? 'Ver solo el horario del taller' : 'Ver las demás horas'}

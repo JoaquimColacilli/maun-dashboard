@@ -208,7 +208,7 @@ export function EditorDeUnaPregunta({
                       opciones: (borrador.opciones ?? []).filter((_, otra) => otra !== indice),
                     });
                   }}
-                  className="flex size-11 flex-none items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
+                  className="flex size-11 flex-none items-center justify-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta"
                 >
                   <Icono nombre="x" tamano={16} />
                 </button>
@@ -220,7 +220,7 @@ export function EditorDeUnaPregunta({
             onClick={() => {
               cambiar({ opciones: [...(borrador.opciones ?? []), ''] });
             }}
-            className="flex h-11 w-fit items-center gap-2 rounded-field border border-dashed border-border px-3.5 text-body-sm font-medium hover:bg-surface"
+            className="flex h-11 w-fit items-center gap-2 rounded-pill border border-dashed border-border px-3.5 text-body-sm font-medium hover:bg-surface"
           >
             <Icono nombre="plus" tamano={16} />
             Agregar una opción
@@ -261,7 +261,7 @@ export function EditorDeUnaPregunta({
       </button>
 
       {avisar && (
-        <div className="flex flex-col gap-2.5 rounded-panel border border-atencion bg-atencion-tint px-4 py-3.5">
+        <div className="flex flex-col gap-2.5 rounded-field border border-atencion bg-atencion-tint px-4 py-3.5">
           <span className="flex items-center gap-2.25 text-body font-semibold">
             <Icono nombre="history" tamano={18} />
             {como.respuestas === 1

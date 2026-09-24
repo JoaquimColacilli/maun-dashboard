@@ -86,10 +86,10 @@ export function FilasDeOpciones({
   return (
     <section
       aria-label="Opciones que le presentaste"
-      className="@container/opciones flex flex-col gap-2"
+      className="@container/opciones flex flex-col gap-2 rounded-panel border border-hairline bg-paper px-4 pb-4 md:px-5"
       ref={contenedor}
     >
-      <div className="flex flex-col gap-2 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2.5">
+      <div className="flex flex-col gap-2 bg-paper pt-4 md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pb-2.5">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-section font-semibold">Opciones que le presentaste</h2>
@@ -194,7 +194,7 @@ export function FilasDeOpciones({
                 }}
                 disabled={bloqueado}
                 aria-label={`Quitar la opción ${String(indice + 1)}`}
-                className="col-start-3 row-start-1 flex size-11 items-center justify-center justify-self-center rounded-field text-text-3 hover:bg-surface hover:text-alerta @lg/opciones:col-start-auto @lg/opciones:row-start-auto"
+                className="col-start-3 row-start-1 flex size-11 items-center justify-center justify-self-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta @lg/opciones:col-start-auto @lg/opciones:row-start-auto"
               >
                 <Icono nombre="trash-2" tamano={18} />
               </button>

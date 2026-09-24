@@ -177,7 +177,7 @@ function FilaDerivada({
     <li
       data-derivada={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-t first:border-t-0'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >
@@ -229,7 +229,7 @@ function FilaDerivada({
               type="button"
               aria-label={`${derivada.abrir}: ${evento.titulo}`}
               onClick={abrir}
-              className="flex size-9 items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-ink"
+              className="flex size-9 items-center justify-center rounded-pill text-text-3 hover:bg-surface hover:text-ink"
             >
               <Icono nombre="chevron-right" tamano={16} />
             </button>
@@ -268,7 +268,7 @@ export function FilaDeEvento({
     <li
       data-anotacion={evento.id}
       data-hecha={String(evento.hecha)}
-      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-b'} border-hairline-soft ${
+      className={`flex gap-3 ${sinBorde ? '' : enElDia ? 'border-t' : 'border-t first:border-t-0'} border-hairline-soft ${
         evento.hecha ? 'items-center py-2' : 'items-start py-3'
       }`}
     >
@@ -302,7 +302,7 @@ export function FilaDeEvento({
             onClick={() => {
               acciones.alBorrar(evento);
             }}
-            className="flex size-9 items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
+            className="flex size-9 items-center justify-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta"
           >
             <Icono nombre="trash-2" tamano={16} />
           </button>

@@ -371,8 +371,8 @@ export function AyudaDeLaVista({ conTexto = false }: AyudaDeLaVistaProps) {
   return (
     <>
       <Button
-        variant="secundario"
-        size={conTexto ? 'normal' : 'chico'}
+        variant={conTexto ? 'secundario' : 'herramienta'}
+        size={conTexto ? 'normal' : 'herramienta'}
         aria-label="Cómo lo ve tu cliente"
         title="Cómo lo ve tu cliente"
         onClick={() => {

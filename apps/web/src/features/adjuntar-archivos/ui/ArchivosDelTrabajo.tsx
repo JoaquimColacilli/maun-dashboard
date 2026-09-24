@@ -146,7 +146,10 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
   }
 
   return (
-    <section aria-labelledby={idTitulo}>
+    <section
+      aria-labelledby={idTitulo}
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <h2 id={idTitulo} className="text-section font-semibold">
           Archivos
@@ -163,7 +166,7 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
       </p>
 
       {vistos.ninguno && (
-        <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-hairline py-3 text-label leading-relaxed text-text-2">
+        <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-hairline-soft py-3 text-label leading-relaxed text-text-2">
           <Icono nombre="eye-off" tamano={15} className="flex-none translate-y-0.5 text-text-3" />
           <span>El cliente no ve ninguno: un archivo sube privado y se comparte de a uno.</span>
           <Ir
@@ -176,7 +179,7 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
       )}
 
       {archivos.length === 0 && (
-        <p className="mt-2 border-t border-hairline py-3 text-label text-text-2">
+        <p className="mt-2 border-t border-hairline-soft py-3 text-label text-text-2">
           Todavía no hay archivos de este trabajo.
         </p>
       )}
@@ -236,7 +239,7 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
                 onClick={() => {
                   borrar(documento);
                 }}
-                className="flex size-tap flex-none items-center justify-center rounded-field text-text-3 hover:bg-surface hover:text-alerta"
+                className="flex size-tap flex-none items-center justify-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta"
               >
                 <Icono nombre="trash-2" tamano={16} />
               </button>

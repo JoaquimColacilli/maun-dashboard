@@ -4,7 +4,8 @@ import { Button, Icono } from '@/shared/ui';
 
 import { PASOS_EN_EL_IPHONE, pasosParaDesbloquear } from '../model/textos';
 
-const TARJETA = 'flex flex-col gap-2.5 rounded-panel border border-hairline p-5';
+const TARJETA =
+  'flex flex-col gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5';
 const TITULO = 'flex items-center gap-2.5 text-section leading-tight font-semibold';
 const TEXTO = 'text-body leading-relaxed text-text-2';
 const PASOS = 'flex list-decimal flex-col gap-1.5 pl-5 text-body leading-relaxed';
@@ -12,23 +13,24 @@ const FILAS_DEL_ESQUELETO = ['entregas', 'visitas', 'presupuestos', 'seguimiento
 
 export function EsqueletoDeLosAvisos() {
   return (
-    <div role="status" aria-busy="true" className="flex flex-col gap-4">
+    <div role="status" aria-busy="true" className="flex flex-col gap-3 md:gap-4">
       <span className="sr-only">Leyendo tus avisos…</span>
       <div aria-hidden className="h-[92px] rounded-panel border border-hairline bg-paper" />
-      {FILAS_DEL_ESQUELETO.map((fila) => (
-        <div
-          key={fila}
-          aria-hidden
-          className="flex items-center gap-3.5 border-t border-hairline-soft py-3.5"
-        >
-          <div className="size-[22px] rounded-control bg-ink/6" />
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="h-3.5 w-2/5 rounded-control bg-ink/6" />
-            <div className="h-3 w-[70%] rounded-control bg-ink/6" />
+      <div aria-hidden className="rounded-panel border border-hairline bg-paper px-4 md:px-5">
+        {FILAS_DEL_ESQUELETO.map((fila) => (
+          <div
+            key={fila}
+            className="flex items-center gap-3.5 border-t border-hairline-soft py-3.5 first:border-t-0"
+          >
+            <div className="size-[22px] rounded-control bg-ink/6" />
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="h-3.5 w-2/5 rounded-control bg-ink/6" />
+              <div className="h-3 w-[70%] rounded-control bg-ink/6" />
+            </div>
+            <div className="h-9 w-[120px] rounded-field bg-ink/6" />
           </div>
-          <div className="h-9 w-[120px] rounded-field bg-ink/6" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -79,12 +81,12 @@ export function SinClaves() {
 export function InstalarEnElIphone() {
   const id = useId();
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 md:gap-4">
       <section
         aria-labelledby={id}
-        className="overflow-hidden rounded-panel border border-hairline"
+        className="overflow-hidden rounded-panel border border-hairline bg-paper"
       >
-        <div className="flex flex-col gap-2.5 border-b border-hairline p-5">
+        <div className="flex flex-col gap-2.5 border-b border-hairline px-4 py-4 md:px-5">
           <h2 id={id} className={TITULO}>
             <Icono nombre="smartphone" tamano={20} className="flex-none" />
             Primero agregá MAUN a la pantalla de inicio
@@ -95,7 +97,7 @@ export function InstalarEnElIphone() {
             rápido.
           </p>
         </div>
-        <div className="flex flex-col gap-2 px-5 py-4.5">
+        <div className="flex flex-col gap-2 px-4 py-4 md:px-5">
           <h3 className="text-body font-semibold">iPhone, en Safari</h3>
           <ol className={`${PASOS} text-text-2`}>
             {PASOS_EN_EL_IPHONE.map((paso) => (
@@ -140,7 +142,7 @@ export function AvisosBloqueados({
   return (
     <section
       aria-labelledby={id}
-      className="flex flex-col gap-3 rounded-panel border border-alerta bg-alerta-tint p-5"
+      className="flex flex-col gap-3 rounded-panel border border-alerta bg-alerta-tint px-4 py-4 md:px-5"
     >
       <h2 id={id} className={TITULO}>
         <Icono nombre="bell-off" tamano={20} className="flex-none" />

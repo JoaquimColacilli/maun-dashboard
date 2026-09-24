@@ -38,8 +38,8 @@ export function AccionesDeContacto({ nombre, telefono, amplias = false }: Accion
   ];
 
   const forma = amplias
-    ? 'flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1.5 rounded-field border border-border text-meta font-medium'
-    : 'flex size-11 flex-none items-center justify-center rounded-field border border-border';
+    ? 'flex min-h-[60px] flex-1 flex-col items-center justify-center gap-1.5 rounded-panel border border-hairline bg-paper text-meta font-medium'
+    : 'flex size-11 flex-none items-center justify-center rounded-pill border border-border';
 
   return (
     <div className={amplias ? 'flex flex-col gap-1.5' : 'flex gap-2'}>
@@ -73,7 +73,7 @@ export function AccionesDeContacto({ nombre, telefono, amplias = false }: Accion
         )}
       </div>
       {amplias && telefono.trim() === '' && (
-        <p className="text-meta text-text-3">
+        <p className="px-1 text-meta text-text-3">
           Sin teléfono cargado: agregalo desde Editar para poder llamar o escribir.
         </p>
       )}

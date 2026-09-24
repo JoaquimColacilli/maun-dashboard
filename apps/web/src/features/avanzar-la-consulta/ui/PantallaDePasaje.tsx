@@ -238,11 +238,11 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
   );
 
   return (
-    <Pagina>
+    <Pagina className="gap-3 md:gap-4">
       <Ir
         a={rutaDelProyecto(proyecto.id)}
         alTocar={vuelta.volver}
-        className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+        className="-ml-1 flex min-h-tap w-fit items-center gap-1 rounded-pill pr-3 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
       >
         <Icono nombre="chevron-left" tamano={20} />
         {vuelta.etiqueta}
@@ -250,9 +250,9 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
 
       <header>
         <p aria-hidden className="mb-2 flex items-center gap-1.5 text-meta text-text-2">
-          <span className="rounded-control border border-border px-1.5">Consultas</span>
+          <span className="rounded-pill border border-hairline bg-paper px-2">Consultas</span>
           <Icono nombre="chevron-right" tamano={14} />
-          <span className="rounded-control border border-ink px-1.5 font-semibold text-ink">
+          <span className="rounded-pill border border-ink bg-paper px-2 font-semibold text-ink">
             Activos
           </span>
         </p>
@@ -272,254 +272,256 @@ export function PantallaDePasaje({ resumen, opciones }: PantallaDePasajeProps) {
         </p>
       </header>
 
-      <form noValidate onSubmit={aprobar} className="@container mt-5 flex flex-col gap-5">
-        {hayOpciones ? (
-          <fieldset
-            aria-describedby={
-              falta === undefined
-                ? `${idCampos}-opciones-ayuda`
-                : `${idCampos}-opciones-ayuda ${idCampos}-opciones-error`
-            }
-            className="flex flex-col gap-1.5"
-          >
-            <legend className="mb-1.5 text-label text-text-2">Qué opción aprobó</legend>
-            <div className="flex flex-col gap-2">
-              {opciones.map((una, indice) => (
-                <label
-                  key={una.id}
-                  className={`flex min-h-tap cursor-pointer items-center gap-3 rounded-field border px-3.5 py-3 has-checked:border-ink has-checked:bg-surface ${
-                    falta === undefined ? 'border-border' : 'border-alerta'
-                  }`}
-                >
-                  <input
-                    ref={indice === 0 ? primeraOpcion : undefined}
-                    type="radio"
-                    name={`${idCampos}-opcion`}
-                    value={una.id}
-                    checked={opcion === una.id}
-                    onChange={() => {
-                      elegirOpcion(una.id);
-                    }}
-                    className="size-5 flex-none accent-ink"
-                  />
-                  <span className="min-w-0 flex-1 text-body-lg leading-snug font-medium">
-                    {una.descripcion.trim() === '' ? 'Opción sin detalle' : una.descripcion}
-                  </span>
-                  <span className="flex-none text-money font-semibold tabular-nums">
-                    {formatearPesos(una.monto_centavos)}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p id={`${idCampos}-opciones-ayuda`} className="text-meta leading-normal text-text-3">
-              El presupuesto del trabajo es el importe de la que elijas. Si aprobó otro importe,{' '}
-              <Ir
-                a={rutaDeEdicion(proyecto.id)}
-                className="font-medium text-text-2 underline underline-offset-3"
-              >
-                corregí la opción
-              </Ir>{' '}
-              antes de pasarlo.
-            </p>
-            {falta !== undefined && (
-              <span
-                id={`${idCampos}-opciones-error`}
-                role="alert"
-                className="text-label font-medium text-alerta"
-              >
-                {falta}
-              </span>
-            )}
-          </fieldset>
-        ) : (
-          <CamposJuntos separacion="gap-5">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
-                Presupuesto aprobado
-              </label>
-              <div
-                className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
-                  falta === undefined ? 'border-ink' : 'border-alerta'
-                }`}
-              >
-                <span aria-hidden className="text-money-lg text-text-3">
-                  $
-                </span>
-                <MoneyInput
-                  ref={campoDelPresupuesto}
-                  id={`${idCampos}-presupuesto`}
-                  placeholder="0"
-                  value={presupuesto}
-                  aria-invalid={falta === undefined ? undefined : true}
-                  aria-describedby={
-                    falta === undefined ? undefined : `${idCampos}-presupuesto-error`
-                  }
-                  onChange={(centavos) => {
-                    setPresupuesto(centavos);
-                    setFalta(undefined);
-                    if (!senaAMano) {
-                      setSena(
-                        senaSugerida(
-                          senaDelPasaje(
-                            centavos,
-                            resumen.cobrado,
-                            senaDelTaller(ajustesDe(replica)),
-                            senaDelProyecto(proyecto),
-                          ),
-                        ),
-                      );
-                    }
-                  }}
-                  className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
-                />
+      <form noValidate onSubmit={aprobar} className="flex flex-col gap-3 md:gap-4">
+        <div className="@container flex flex-col gap-5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5">
+          {hayOpciones ? (
+            <fieldset
+              aria-describedby={
+                falta === undefined
+                  ? `${idCampos}-opciones-ayuda`
+                  : `${idCampos}-opciones-ayuda ${idCampos}-opciones-error`
+              }
+              className="flex flex-col gap-1.5"
+            >
+              <legend className="mb-1.5 text-label text-text-2">Qué opción aprobó</legend>
+              <div className="flex flex-col gap-2">
+                {opciones.map((una, indice) => (
+                  <label
+                    key={una.id}
+                    className={`flex min-h-tap cursor-pointer items-center gap-3 rounded-field border px-3.5 py-3 has-checked:border-ink has-checked:bg-surface ${
+                      falta === undefined ? 'border-border' : 'border-alerta'
+                    }`}
+                  >
+                    <input
+                      ref={indice === 0 ? primeraOpcion : undefined}
+                      type="radio"
+                      name={`${idCampos}-opcion`}
+                      value={una.id}
+                      checked={opcion === una.id}
+                      onChange={() => {
+                        elegirOpcion(una.id);
+                      }}
+                      className="size-5 flex-none accent-ink"
+                    />
+                    <span className="min-w-0 flex-1 text-body-lg leading-snug font-medium">
+                      {una.descripcion.trim() === '' ? 'Opción sin detalle' : una.descripcion}
+                    </span>
+                    <span className="flex-none text-money font-semibold tabular-nums">
+                      {formatearPesos(una.monto_centavos)}
+                    </span>
+                  </label>
+                ))}
               </div>
+              <p id={`${idCampos}-opciones-ayuda`} className="text-meta leading-normal text-text-3">
+                El presupuesto del trabajo es el importe de la que elijas. Si aprobó otro importe,{' '}
+                <Ir
+                  a={rutaDeEdicion(proyecto.id)}
+                  className="font-medium text-text-2 underline underline-offset-3"
+                >
+                  corregí la opción
+                </Ir>{' '}
+                antes de pasarlo.
+              </p>
               {falta !== undefined && (
                 <span
-                  id={`${idCampos}-presupuesto-error`}
+                  id={`${idCampos}-opciones-error`}
                   role="alert"
                   className="text-label font-medium text-alerta"
                 >
                   {falta}
                 </span>
               )}
-            </div>
-            {campoDeLaSena}
-          </CamposJuntos>
-        )}
-        {hayOpciones && campoDeLaSena}
+            </fieldset>
+          ) : (
+            <CamposJuntos separacion="gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor={`${idCampos}-presupuesto`} className="text-label text-text-2">
+                  Presupuesto aprobado
+                </label>
+                <div
+                  className={`flex h-15 items-center gap-1.5 rounded-field border px-3.5 ${
+                    falta === undefined ? 'border-ink' : 'border-alerta'
+                  }`}
+                >
+                  <span aria-hidden className="text-money-lg text-text-3">
+                    $
+                  </span>
+                  <MoneyInput
+                    ref={campoDelPresupuesto}
+                    id={`${idCampos}-presupuesto`}
+                    placeholder="0"
+                    value={presupuesto}
+                    aria-invalid={falta === undefined ? undefined : true}
+                    aria-describedby={
+                      falta === undefined ? undefined : `${idCampos}-presupuesto-error`
+                    }
+                    onChange={(centavos) => {
+                      setPresupuesto(centavos);
+                      setFalta(undefined);
+                      if (!senaAMano) {
+                        setSena(
+                          senaSugerida(
+                            senaDelPasaje(
+                              centavos,
+                              resumen.cobrado,
+                              senaDelTaller(ajustesDe(replica)),
+                              senaDelProyecto(proyecto),
+                            ),
+                          ),
+                        );
+                      }
+                    }}
+                    className="min-w-0 flex-1 bg-transparent text-money-lg font-semibold outline-none"
+                  />
+                </div>
+                {falta !== undefined && (
+                  <span
+                    id={`${idCampos}-presupuesto-error`}
+                    role="alert"
+                    className="text-label font-medium text-alerta"
+                  >
+                    {falta}
+                  </span>
+                )}
+              </div>
+              {campoDeLaSena}
+            </CamposJuntos>
+          )}
+          {hayOpciones && campoDeLaSena}
 
-        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-field bg-surface px-3.5 py-3 text-body tabular-nums @min-[44rem]:auto-cols-fr @min-[44rem]:grid-flow-col @min-[44rem]:grid-cols-none @min-[44rem]:gap-x-6">
-          {hayOpciones && (
+          <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-field bg-surface px-3.5 py-3 text-body tabular-nums @min-[44rem]:auto-cols-fr @min-[44rem]:grid-flow-col @min-[44rem]:grid-cols-none @min-[44rem]:gap-x-6">
+            {hayOpciones && (
+              <div className={CIFRA}>
+                <dt className="text-text-2">Presupuesto aprobado</dt>
+                <dd className="text-right font-semibold @min-[44rem]:text-left">
+                  {aprobado === null ? '—' : formatearPesos(aprobado)}
+                </dd>
+              </div>
+            )}
             <div className={CIFRA}>
-              <dt className="text-text-2">Presupuesto aprobado</dt>
+              <dt className="text-text-2">Ya cobrado antes</dt>
+              <dd className="text-right font-medium text-hogar @min-[44rem]:text-left">
+                {formatearPesos(cuenta.antes)}
+              </dd>
+            </div>
+            <div className={CIFRA}>
+              <dt className="text-text-2">Seña que cobrás ahora</dt>
+              <dd className="text-right font-medium text-hogar @min-[44rem]:text-left">
+                {formatearPesos(cuenta.ahora)}
+              </dd>
+            </div>
+            <div className={CIFRA}>
+              <dt className="text-text-2">Cobrado en total</dt>
+              <dd className="text-right font-semibold text-hogar @min-[44rem]:text-left">
+                {formatearPesos(cuenta.cobrado)}
+              </dd>
+            </div>
+            <div className={CIFRA}>
+              <dt className="text-text-2">Saldo a cobrar</dt>
               <dd className="text-right font-semibold @min-[44rem]:text-left">
-                {aprobado === null ? '—' : formatearPesos(aprobado)}
+                {cuenta.saldo === null ? '—' : formatearPesos(cuenta.saldo)}
               </dd>
             </div>
-          )}
-          <div className={CIFRA}>
-            <dt className="text-text-2">Ya cobrado antes</dt>
-            <dd className="text-right font-medium text-hogar @min-[44rem]:text-left">
-              {formatearPesos(cuenta.antes)}
-            </dd>
-          </div>
-          <div className={CIFRA}>
-            <dt className="text-text-2">Seña que cobrás ahora</dt>
-            <dd className="text-right font-medium text-hogar @min-[44rem]:text-left">
-              {formatearPesos(cuenta.ahora)}
-            </dd>
-          </div>
-          <div className={CIFRA}>
-            <dt className="text-text-2">Cobrado en total</dt>
-            <dd className="text-right font-semibold text-hogar @min-[44rem]:text-left">
-              {formatearPesos(cuenta.cobrado)}
-            </dd>
-          </div>
-          <div className={CIFRA}>
-            <dt className="text-text-2">Saldo a cobrar</dt>
-            <dd className="text-right font-semibold @min-[44rem]:text-left">
-              {cuenta.saldo === null ? '—' : formatearPesos(cuenta.saldo)}
-            </dd>
-          </div>
-          {resumen.gastos > 0 && (
-            <div className={CIFRA}>
-              <dt className="text-text-2">Gastos ya cargados</dt>
-              <dd className="text-right font-medium @min-[44rem]:text-left">
-                {formatearPesos(resumen.gastos)}
-              </dd>
-            </div>
-          )}
-        </dl>
+            {resumen.gastos > 0 && (
+              <div className={CIFRA}>
+                <dt className="text-text-2">Gastos ya cargados</dt>
+                <dd className="text-right font-medium @min-[44rem]:text-left">
+                  {formatearPesos(resumen.gastos)}
+                </dd>
+              </div>
+            )}
+          </dl>
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-          <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm:grid-cols-4">
-            {FORMAS_EN_ORDEN.map((opcion) => (
-              <button
-                key={opcion}
-                type="button"
-                role="radio"
-                aria-checked={forma === opcion}
-                onClick={() => {
-                  setForma(opcion);
-                }}
-                className={`min-h-tap rounded-control text-label ${
-                  forma === opcion
-                    ? 'bg-elevado font-semibold text-ink shadow-float'
-                    : 'font-medium text-text-2'
-                }`}
-              >
-                {FORMA_DE_PAGO[opcion]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @sm:gap-x-4 @sm:gap-y-1.5">
-          <Campo
-            etiqueta="Fecha de inicio"
-            type="date"
-            contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
-            value={inicio}
-            onChange={(evento) => {
-              setInicio(evento.target.value);
-              if (entregaAuto && evento.target.value !== '') {
-                setEntrega(entregaEstimada(evento.target.value));
-              }
-            }}
-          />
-          <Campo
-            etiqueta="Entrega estimada"
-            type="date"
-            contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
-            value={entrega}
-            ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
-            onChange={(evento) => {
-              setEntrega(evento.target.value);
-              setEntregaAuto(false);
-            }}
-          />
-        </div>
-
-        <CamposJuntos separacion="gap-5">
-          <Campo
-            etiqueta="Dirección de entrega"
-            placeholder="Calle y número, localidad"
-            maxLength={500}
-            value={direccion}
-            onChange={(evento) => {
-              setDireccion(evento.target.value);
-            }}
-          />
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={`${idCampos}-comprobante`}
-              className="flex items-baseline justify-between gap-2 text-label text-text-2"
-            >
-              Comprobante a emitir
-              {cliente !== undefined && (
-                <span className="text-meta text-text-3">
-                  {CONDICION[cliente.condicion_fiscal].etiqueta}
-                </span>
-              )}
-            </label>
-            <select
-              id={`${idCampos}-comprobante`}
-              value={comprobante}
-              onChange={(evento) => {
-                setComprobante(evento.target.value as Comprobante);
-              }}
-              className="h-field rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
-            >
-              {COMPROBANTES_EN_ORDEN.map((opcion) => (
-                <option key={opcion} value={opcion}>
-                  {COMPROBANTE[opcion]}
-                </option>
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
+            <div className="grid grid-cols-2 gap-1 rounded-panel bg-ink/6 p-1 @sm:grid-cols-4">
+              {FORMAS_EN_ORDEN.map((opcion) => (
+                <button
+                  key={opcion}
+                  type="button"
+                  role="radio"
+                  aria-checked={forma === opcion}
+                  onClick={() => {
+                    setForma(opcion);
+                  }}
+                  className={`min-h-tap rounded-[16px] text-label ${
+                    forma === opcion
+                      ? 'bg-elevado font-semibold text-ink shadow-float'
+                      : 'font-medium text-text-2'
+                  }`}
+                >
+                  {FORMA_DE_PAGO[opcion]}
+                </button>
               ))}
-            </select>
+            </div>
+          </fieldset>
+
+          <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @sm:gap-x-4 @sm:gap-y-1.5">
+            <Campo
+              etiqueta="Fecha de inicio"
+              type="date"
+              contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
+              value={inicio}
+              onChange={(evento) => {
+                setInicio(evento.target.value);
+                if (entregaAuto && evento.target.value !== '') {
+                  setEntrega(entregaEstimada(evento.target.value));
+                }
+              }}
+            />
+            <Campo
+              etiqueta="Entrega estimada"
+              type="date"
+              contenedor="@sm:row-span-3 @sm:grid @sm:grid-rows-subgrid"
+              value={entrega}
+              ayuda={entregaAuto ? 'Calculada a 21 días hábiles del inicio.' : undefined}
+              onChange={(evento) => {
+                setEntrega(evento.target.value);
+                setEntregaAuto(false);
+              }}
+            />
           </div>
-        </CamposJuntos>
+
+          <CamposJuntos separacion="gap-5">
+            <Campo
+              etiqueta="Dirección de entrega"
+              placeholder="Calle y número, localidad"
+              maxLength={500}
+              value={direccion}
+              onChange={(evento) => {
+                setDireccion(evento.target.value);
+              }}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`${idCampos}-comprobante`}
+                className="flex items-baseline justify-between gap-2 text-label text-text-2"
+              >
+                Comprobante a emitir
+                {cliente !== undefined && (
+                  <span className="text-meta text-text-3">
+                    {CONDICION[cliente.condicion_fiscal].etiqueta}
+                  </span>
+                )}
+              </label>
+              <select
+                id={`${idCampos}-comprobante`}
+                value={comprobante}
+                onChange={(evento) => {
+                  setComprobante(evento.target.value as Comprobante);
+                }}
+                className="h-field rounded-field border border-border bg-paper px-3 text-body-lg text-ink"
+              >
+                {COMPROBANTES_EN_ORDEN.map((opcion) => (
+                  <option key={opcion} value={opcion}>
+                    {COMPROBANTE[opcion]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </CamposJuntos>
+        </div>
 
         <div>
           <Button

@@ -83,16 +83,16 @@ function Trio({ resumen }: { resumen: ResumenDeProyecto }) {
   ];
 
   return (
-    <div className="@container mt-4">
-      <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @lg:grid-cols-3">
+    <div className="@container">
+      <dl className="grid grid-cols-1 rounded-panel border border-hairline bg-paper px-4 @lg:grid-cols-3 @lg:px-0">
         {celdas.map((celda, indice) => (
           <div
             key={celda.clave}
-            className={`flex items-baseline justify-between gap-3 py-2.5 @lg:block @lg:py-3 ${
+            className={
               indice === 0
-                ? '@lg:pr-3'
-                : 'border-t border-hairline @lg:border-t-0 @lg:border-l @lg:px-3'
-            }`}
+                ? 'flex items-baseline justify-between gap-2 py-3 @lg:block @lg:px-4 @lg:py-3.5'
+                : 'flex items-baseline justify-between gap-2 border-t border-hairline-soft py-3 @lg:block @lg:border-t-0 @lg:border-l @lg:px-4 @lg:py-3.5'
+            }
           >
             <dt className="text-meta text-text-2">{celda.clave}</dt>
             <dd
@@ -209,11 +209,11 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
   const aRepartir = despiece.piezas.filter((pieza) => pieza.monto > 0);
 
   return (
-    <Pagina>
+    <Pagina className="gap-3 md:gap-4">
       <Ir
         a={rutaDelProyecto(proyecto.id)}
         alTocar={vuelta.volver}
-        className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+        className="-ml-1 flex min-h-tap w-fit items-center gap-1 rounded-pill pr-3 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
       >
         <Icono nombre="chevron-left" tamano={20} />
         {textos.volver}
@@ -234,74 +234,76 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
 
       <Trio resumen={resumen} />
 
-      {faltaCobrar && (
-        <section aria-label="Pago final" className="@container mt-5">
-          <label className="flex min-h-tap items-center gap-2.5 text-body font-medium">
-            <input
-              type="checkbox"
-              checked={conPagoFinal}
-              onChange={(evento) => {
-                setConPagoFinal(evento.target.checked);
-              }}
-              className="size-4 accent-ink"
-            />
-            Registrar el pago final de {formatearPesos(centavos(resumen.saldo ?? 0))}
-          </label>
-          <p className="mt-1 text-meta leading-normal text-text-3">
-            Queda cargado como un pago más del proyecto, y entra en la cuenta de abajo. Si el
-            cliente te quedó debiendo, destildalo y cobrá lo que entró.
-          </p>
-
-          {conPagoFinal && (
-            <div className="mt-3 grid gap-3 @xl:grid-cols-[minmax(0,1fr)_9rem_11.5rem]">
-              <Campo
-                etiqueta="Concepto"
-                value={concepto}
+      <div className="flex flex-col gap-5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5">
+        {faltaCobrar && (
+          <section aria-label="Pago final" className="@container">
+            <label className="flex min-h-tap items-center gap-2.5 text-body font-medium">
+              <input
+                type="checkbox"
+                checked={conPagoFinal}
                 onChange={(evento) => {
-                  setConcepto(evento.target.value);
+                  setConPagoFinal(evento.target.checked);
                 }}
+                className="size-4 accent-ink"
               />
-              <MoneyInput etiqueta="Monto" value={monto} onChange={setMonto} />
-              <Campo
-                etiqueta="Fecha del pago"
-                type="date"
-                max={hoy}
-                value={fechaDelPago}
-                error={errorDelPago}
-                onChange={(evento) => {
-                  setFechaDelPago(evento.target.value);
-                }}
-              />
-            </div>
-          )}
-        </section>
-      )}
+              Registrar el pago final de {formatearPesos(centavos(resumen.saldo ?? 0))}
+            </label>
+            <p className="mt-1 text-meta leading-normal text-text-3">
+              Queda cargado como un pago más del proyecto, y entra en la cuenta de abajo. Si el
+              cliente te quedó debiendo, destildalo y cobrá lo que entró.
+            </p>
 
-      <div className="mt-5 max-w-[32rem]">
-        <Campo
-          etiqueta={textos.dia}
-          type="date"
-          max={hoy}
-          value={fecha}
-          error={errorDelDia}
-          ayuda={errorDelDia === undefined ? ayudaDelDia(destino, fecha) : undefined}
-          onChange={(evento) => {
-            setFechaElegida(evento.target.value);
-          }}
-        />
-        <CasillaDeLaApertura
-          className="mt-2"
-          fecha={repartoAntes ? fechaValida : fechaDelPago}
-          apertura={pagoAntes || repartoAntes ? apertura : null}
-          marcada={enLaApertura}
-          alCambiar={setAperturaElegida}
-        />
+            {conPagoFinal && (
+              <div className="mt-3 grid gap-3 @xl:grid-cols-[minmax(0,1fr)_9rem_11.5rem]">
+                <Campo
+                  etiqueta="Concepto"
+                  value={concepto}
+                  onChange={(evento) => {
+                    setConcepto(evento.target.value);
+                  }}
+                />
+                <MoneyInput etiqueta="Monto" value={monto} onChange={setMonto} />
+                <Campo
+                  etiqueta="Fecha del pago"
+                  type="date"
+                  max={hoy}
+                  value={fechaDelPago}
+                  error={errorDelPago}
+                  onChange={(evento) => {
+                    setFechaDelPago(evento.target.value);
+                  }}
+                />
+              </div>
+            )}
+          </section>
+        )}
+
+        <div className="max-w-[32rem]">
+          <Campo
+            etiqueta={textos.dia}
+            type="date"
+            max={hoy}
+            value={fecha}
+            error={errorDelDia}
+            ayuda={errorDelDia === undefined ? ayudaDelDia(destino, fecha) : undefined}
+            onChange={(evento) => {
+              setFechaElegida(evento.target.value);
+            }}
+          />
+          <CasillaDeLaApertura
+            className="mt-2"
+            fecha={repartoAntes ? fechaValida : fechaDelPago}
+            apertura={pagoAntes || repartoAntes ? apertura : null}
+            marcada={enLaApertura}
+            alCambiar={setAperturaElegida}
+          />
+        </div>
       </div>
 
       {destino === 'perdido' && (
         <section
           aria-label="Qué pasa con la seña"
-          className="mt-5 rounded-panel bg-atencion-tint px-4 py-3.5 text-label leading-relaxed text-atencion"
+          className="rounded-panel bg-atencion-tint px-4 py-3.5 text-label leading-relaxed text-atencion"
         >
           <h2 className="font-semibold">
             Esto mueve plata, aunque sea un presupuesto que no salió
@@ -333,11 +335,11 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
         </section>
       )}
 
-      <div className="mt-5 rounded-panel border border-hairline px-4 pt-4 pb-3.5">
+      <div className="rounded-panel border border-hairline bg-paper px-4 pt-4 pb-3.5">
         <DistribucionDespiece despiece={despiece} />
       </div>
 
-      <div className="mt-5">
+      <div>
         <Button
           className="w-full sm:w-auto"
           cargando={enCurso}

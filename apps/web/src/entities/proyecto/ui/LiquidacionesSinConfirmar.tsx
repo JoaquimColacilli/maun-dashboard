@@ -21,7 +21,7 @@ export function LiquidacionesSinConfirmar({ replica }: LiquidacionesSinConfirmar
   return (
     <p
       role="status"
-      className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-field bg-atencion-tint px-3 py-2 text-meta leading-relaxed text-atencion"
+      className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-field bg-atencion-tint px-3 py-2 text-meta leading-relaxed text-atencion"
     >
       <Icono nombre="cloud-off" tamano={14} />
       <span>

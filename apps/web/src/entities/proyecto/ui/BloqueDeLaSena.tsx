@@ -23,7 +23,10 @@ function Numero({ clave, valor, tono = '' }: { clave: string; valor: string; ton
 export function BloqueDeLaSena({ sena, propia }: BloqueDeLaSenaProps) {
   if (sena.situacion === 'sin-presupuesto') {
     return (
-      <section aria-label="Seña para confirmar" className="rounded-panel bg-surface-3 px-4 py-3.5">
+      <section
+        aria-label="Seña para confirmar"
+        className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+      >
         <h2 className="text-section font-semibold">Seña para confirmar</h2>
         <p className="mt-1 text-label leading-relaxed text-text-2">
           Todavía no hay presupuesto, así que no hay seña que calcular. Cargalo, o tildá la opción
@@ -38,7 +41,7 @@ export function BloqueDeLaSena({ sena, propia }: BloqueDeLaSenaProps) {
   return (
     <section
       aria-label="Seña para confirmar"
-      className="@container rounded-panel bg-surface-3 px-4 py-3.5"
+      className="@container rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-section font-semibold">Seña para confirmar</h2>

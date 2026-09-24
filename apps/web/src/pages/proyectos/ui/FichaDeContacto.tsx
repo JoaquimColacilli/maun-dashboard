@@ -66,7 +66,7 @@ function Dato({
   accion?: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] items-center gap-3 border-t border-hairline py-2.5 text-body">
+    <div className="grid grid-cols-[120px_1fr] items-center gap-3 border-t border-hairline-soft py-2.5 text-body first:border-t-0">
       <dt className="text-text-3">{clave}</dt>
       <dd className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 ${tono}`}>
         <span className="leading-snug font-medium tabular-nums">{valor}</span>
@@ -112,21 +112,22 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const vencido = presupuestoVencido(proyecto, hoy);
 
   return (
-    <Pagina>
-      <div className="mb-2.5 flex items-center justify-between">
+    <Pagina className="gap-3 md:gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-y-2">
         <Ir
           a={RUTA_DE_CONSULTAS}
           alTocar={vuelta.volver}
-          className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+          className="-ml-1 flex min-h-tap items-center gap-1 rounded-pill pr-1 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
         >
           <Icono nombre="chevron-left" tamano={20} />
           {vuelta.etiqueta}
         </Ir>
-        <div className="flex flex-none gap-2">
+        <div className="ml-auto flex flex-none gap-1">
           <AyudaDeLaVista />
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="sm:px-4"
             aria-label="Mostrarle al cliente"
             onClick={() => {
               ir(rutaDeCompartir(proyecto.id));
@@ -143,8 +144,9 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             }}
           />
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="sm:px-4"
             aria-label="Editar"
             onClick={() => {
               setEditando('contacto');
@@ -156,7 +158,10 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       </div>
 
-      <header {...destinoDeLaTarjeta(proyecto.id)} className="flex flex-col gap-2">
+      <header
+        {...destinoDeLaTarjeta(proyecto.id)}
+        className="flex flex-col gap-2 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+      >
         {cliente === undefined ? (
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
@@ -176,17 +181,13 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       </header>
 
-      {avisos.length > 0 && (
-        <div className="mt-4">
-          <PanelDeAvisos avisos={avisos} />
-        </div>
-      )}
+      {avisos.length > 0 && <PanelDeAvisos avisos={avisos} />}
 
       <PrincipalYApoyo
         apoyoPrimero
-        className="mt-4"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3 md:gap-4">
             <section aria-label={`Contactar a ${nombre}`}>
               <AccionesDeContacto nombre={nombre} telefono={cliente?.telefono ?? ''} amplias />
             </section>
@@ -204,7 +205,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
           </div>
         }
       >
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3 md:gap-4">
           <OpcionesDelTrabajo proyecto={proyecto} ofreceCargarLaPrimera />
 
           <BloqueDeLaSena
@@ -214,7 +215,10 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
 
           {etapa !== 'a_presupuestar' && <CostosDeCotizar proyecto={proyecto} />}
 
-          <section aria-label="Datos del contacto">
+          <section
+            aria-label="Datos del contacto"
+            className="rounded-panel border border-hairline bg-paper px-4 pb-1.5 md:px-5"
+          >
             <dl>
               <Dato
                 clave={relevado ? 'Relevamiento' : 'Visita'}
@@ -316,7 +320,10 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
 
           <ArchivosDelTrabajo proyectoId={proyecto.id} />
 
-          <section aria-label="Si no sale" className="rounded-panel bg-surface-3 px-4 py-3.5">
+          <section
+            aria-label="Si no sale"
+            className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+          >
             <h2 className="text-section font-semibold">Si no sale</h2>
             <p className="mt-1 text-label leading-relaxed text-text-2">
               Si te dijo «por ahora no», pasalo a seguimiento con el día en que le volvés a

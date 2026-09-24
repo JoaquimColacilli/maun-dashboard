@@ -182,7 +182,7 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
 
             <fieldset className="flex flex-col gap-1.5">
               <legend className="mb-1.5 text-label text-text-2">Condición frente al IVA</legend>
-              <div className="grid grid-cols-4 gap-0.5 rounded-field bg-surface p-1">
+              <div className="grid grid-cols-4 gap-0.5 rounded-pill bg-ink/6 p-1">
                 {CONDICIONES_EN_ORDEN.map((id) => (
                   <button
                     key={id}
@@ -193,7 +193,7 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
                     onClick={() => {
                       setValue('condicion_fiscal', id, { shouldDirty: true });
                     }}
-                    className={`min-h-tap rounded-control text-label ${
+                    className={`min-h-tap rounded-pill text-label ${
                       condicion === id
                         ? 'bg-elevado font-semibold text-ink shadow-float'
                         : 'font-medium text-text-2'

@@ -42,7 +42,7 @@ export function ActivarLosAvisos({
   return (
     <section
       aria-labelledby={idTitulo}
-      className="flex flex-col gap-4 rounded-panel border border-ink p-5"
+      className="flex flex-col gap-4 rounded-panel border border-ink bg-paper px-4 py-4 md:px-5"
     >
       <div className="flex items-start gap-3">
         <span aria-hidden className="flex flex-none flex-col items-center gap-1.5 pt-1">

@@ -49,7 +49,7 @@ function Dato({
   tono?: string;
 }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] items-center gap-3 border-t border-hairline py-2.5 text-body">
+    <div className="grid grid-cols-[120px_1fr] items-center gap-3 border-t border-hairline-soft py-2.5 text-body first:border-t-0">
       <dt className="text-text-3">{clave}</dt>
       <dd className={`leading-snug font-medium tabular-nums ${tono}`}>{children}</dd>
     </div>
@@ -96,17 +96,17 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
           .join(' · ');
 
   return (
-    <Pagina>
-      <div className="mb-2.5 flex items-center justify-between">
+    <Pagina className="gap-3 md:gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-y-2">
         <Ir
           a={RUTA_DE_SEGUIMIENTO}
           alTocar={vuelta.volver}
-          className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+          className="-ml-1 flex min-h-tap items-center gap-1 rounded-pill pr-1 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
         >
           <Icono nombre="chevron-left" tamano={20} />
           {vuelta.etiqueta}
         </Ir>
-        <div className="flex flex-none gap-2">
+        <div className="ml-auto flex flex-none gap-1">
           <BorradoDelProyecto
             proyecto={proyecto}
             sustantivo="contacto"
@@ -115,8 +115,9 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
             }}
           />
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="sm:px-4"
             aria-label="Editar"
             onClick={() => {
               setHoja('editar');
@@ -128,7 +129,10 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
         </div>
       </div>
 
-      <header {...destinoDeLaTarjeta(proyecto.id)} className="flex flex-col gap-2">
+      <header
+        {...destinoDeLaTarjeta(proyecto.id)}
+        className="flex flex-col gap-2 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+      >
         {cliente === undefined ? (
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (
@@ -148,17 +152,13 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
         </div>
       </header>
 
-      {avisos.length > 0 && (
-        <div className="mt-4">
-          <PanelDeAvisos avisos={avisos} />
-        </div>
-      )}
+      {avisos.length > 0 && <PanelDeAvisos avisos={avisos} />}
 
       <PrincipalYApoyo
         apoyoPrimero
-        className="mt-4"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3 md:gap-4">
             <section aria-label={`Contactar a ${nombre}`}>
               <AccionesDeContacto nombre={nombre} telefono={telefono} amplias />
             </section>
@@ -190,8 +190,11 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
           </div>
         }
       >
-        <div className="flex flex-col gap-5">
-          <section aria-label="Datos del trabajo">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <section
+            aria-label="Datos del trabajo"
+            className="rounded-panel border border-hairline bg-paper px-4 md:px-5"
+          >
             <dl>
               <Dato clave="Estaba en">{ESTADO[etapaAlVolver(pendiente)].etiqueta}</Dato>
               <Dato clave="Presupuesto">
@@ -206,7 +209,10 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
             </dl>
           </section>
 
-          <section aria-labelledby="historia-del-seguimiento">
+          <section
+            aria-labelledby="historia-del-seguimiento"
+            className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+          >
             <h2 id="historia-del-seguimiento" className="text-section font-semibold">
               Historia del seguimiento
             </h2>
@@ -217,7 +223,7 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
             ) : (
               <ol className="mt-1.5 flex list-none flex-col">
                 {historia.map((contacto) => (
-                  <li key={contacto.id} className="border-t border-hairline py-2.5">
+                  <li key={contacto.id} className="border-t border-hairline-soft py-2.5">
                     <p className="text-body">
                       <span className="font-semibold">
                         {fechaLarga(contacto.hecho_el ?? contacto.fecha, hoy)}
@@ -248,7 +254,10 @@ export function FichaDeSeguimiento({ resumen }: FichaDeSeguimientoProps) {
 
           <ArchivosDelTrabajo proyectoId={proyecto.id} />
 
-          <section aria-label="Si no sale" className="rounded-panel bg-surface-3 px-4 py-3.5">
+          <section
+            aria-label="Si no sale"
+            className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+          >
             <h2 className="text-section font-semibold">Si no sale</h2>
             <p className="mt-1 text-label leading-relaxed text-text-2">
               {resumen.cobrado > 0
