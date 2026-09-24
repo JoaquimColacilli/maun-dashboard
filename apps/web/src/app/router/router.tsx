@@ -11,36 +11,43 @@ import { RutaConAcceso, RutaConSesion, RutaPublica } from './guardas';
 import { CrearCuentaPage, NuevaContrasenaPage, RecuperarPage } from './paginas';
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from './rutas';
 
-export const router = createBrowserRouter([
-  { path: RUTA_DE_LA_VISTA_PUBLICA, element: <VistaPublicaPage /> },
-  { path: RUTA_DE_LA_ENCUESTA_PUBLICA, element: <EncuestaPublicaPage /> },
-  {
-    element: <Shell />,
-    children: [
-      { path: '/acceso/nueva-contrasena', element: <NuevaContrasenaPage /> },
+export function crearRouter(ventana: Window) {
+  return createBrowserRouter(
+    [
+      { path: RUTA_DE_LA_VISTA_PUBLICA, element: <VistaPublicaPage /> },
+      { path: RUTA_DE_LA_ENCUESTA_PUBLICA, element: <EncuestaPublicaPage /> },
       {
-        element: <RutaPublica />,
+        element: <Shell />,
         children: [
-          { path: '/acceso', element: <AccesoPage /> },
-          { path: '/acceso/crear-cuenta', element: <CrearCuentaPage /> },
-          { path: '/acceso/recuperar', element: <RecuperarPage /> },
-        ],
-      },
-      {
-        element: <RutaConSesion />,
-        children: [
+          { path: '/acceso/nueva-contrasena', element: <NuevaContrasenaPage /> },
           {
-            element: <RutaConAcceso />,
+            element: <RutaPublica />,
+            children: [
+              { path: '/acceso', element: <AccesoPage /> },
+              { path: '/acceso/crear-cuenta', element: <CrearCuentaPage /> },
+              { path: '/acceso/recuperar', element: <RecuperarPage /> },
+            ],
+          },
+          {
+            element: <RutaConSesion />,
             children: [
               {
-                element: <Marco />,
-                children: [...RUTAS_DE_PANTALLA, ...RUTAS_DE_HOJA],
+                element: <RutaConAcceso />,
+                children: [
+                  {
+                    element: <Marco />,
+                    children: [...RUTAS_DE_PANTALLA, ...RUTAS_DE_HOJA],
+                  },
+                ],
               },
             ],
           },
+          { path: '*', element: <Navigate to="/" replace /> },
         ],
       },
-      { path: '*', element: <Navigate to="/" replace /> },
     ],
-  },
-]);
+    { window: ventana },
+  );
+}
+
+export type RouterDeLaApp = ReturnType<typeof crearRouter>;

@@ -67,6 +67,7 @@ export {
   type BloqueoDelDispositivo,
   type ResultadoDeLaHuella,
 } from './huella';
+export { anotarHojaAbierta, type HojaAbierta } from './hojas-abiertas';
 export { Ir, type IrProps } from './Ir';
 export {
   ContextoDeLaPuerta,

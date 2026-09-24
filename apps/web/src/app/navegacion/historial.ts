@@ -9,6 +9,17 @@ export interface Historial {
   anteriores: () => EntradaDelHistorial[];
 }
 
+export interface Traslado {
+  desde: string;
+  saltos: number;
+  navegadorYaAnimo: boolean;
+}
+
+export interface HistorialQueEscucha extends Historial {
+  escucharLosTraslados: () => () => void;
+  olvidarElTraslado: () => Traslado | null;
+}
+
 interface EntradaDelNavegador {
   key: string;
   url: string | null;
@@ -16,9 +27,17 @@ interface EntradaDelNavegador {
   sameDocument: boolean;
 }
 
+interface EventoDeNavegar {
+  navigationType: string;
+  hasUAVisualTransition?: boolean;
+  destination: { index: number };
+}
+
 interface NavegacionDelNavegador {
   currentEntry: EntradaDelNavegador | null;
   entries: () => EntradaDelNavegador[];
+  addEventListener?: (tipo: 'navigate', oyente: (evento: EventoDeNavegar) => void) => void;
+  removeEventListener?: (tipo: 'navigate', oyente: (evento: EventoDeNavegar) => void) => void;
 }
 
 function caminoDe(url: string | null, origen: string): string | null {
@@ -30,6 +49,39 @@ function caminoDe(url: string | null, origen: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function historialQueEscucha(
+  navegacion: NavegacionDelNavegador | undefined,
+  origen: string,
+): HistorialQueEscucha {
+  let ultimo: Traslado | null = null;
+  const alNavegar = (evento: EventoDeNavegar) => {
+    const desde = navegacion?.currentEntry;
+    if (evento.navigationType !== 'traverse' || !desde) {
+      ultimo = null;
+      return;
+    }
+    ultimo = {
+      desde: desde.key,
+      saltos: evento.destination.index - desde.index,
+      navegadorYaAnimo: evento.hasUAVisualTransition === true,
+    };
+  };
+  return {
+    ...historialDe(navegacion, origen),
+    escucharLosTraslados: () => {
+      navegacion?.addEventListener?.('navigate', alNavegar);
+      return () => {
+        navegacion?.removeEventListener?.('navigate', alNavegar);
+      };
+    },
+    olvidarElTraslado: () => {
+      const traslado = ultimo;
+      ultimo = null;
+      return traslado;
+    },
+  };
 }
 
 export function historialDe(
@@ -61,10 +113,10 @@ export function historialDe(
   };
 }
 
-export function historialDelNavegador(): Historial {
-  const navegacion =
-    'navigation' in globalThis
-      ? (globalThis.navigation as unknown as NavegacionDelNavegador)
-      : undefined;
-  return historialDe(navegacion, globalThis.location.origin);
+function navegacionDelNavegador(): NavegacionDelNavegador | undefined {
+  return 'navigation' in globalThis ? globalThis.navigation : undefined;
+}
+
+export function historialDelNavegador(): HistorialQueEscucha {
+  return historialQueEscucha(navegacionDelNavegador(), globalThis.location.origin);
 }

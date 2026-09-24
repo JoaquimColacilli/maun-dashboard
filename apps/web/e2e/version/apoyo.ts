@@ -102,12 +102,6 @@ export async function conLaBEsperando(page: Page, arnes: Arnes): Promise<void> {
     .toBe(true);
 }
 
-export async function sinTransicionEnCurso(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => !(document as unknown as { activeViewTransition?: unknown }).activeViewTransition,
-  );
-}
-
 type VentanaQueCuenta = Window & { registrosDelServiceWorker: number };
 
 export async function contarLosRegistros(page: Page): Promise<void> {

@@ -87,6 +87,7 @@ export function planDeIr(destino: string, opciones: OpcionesDeIr, situacion: Sit
     if (situacion.conHistorial && anterior && mismaDireccion(anterior.url, destino)) {
       return { tipo: 'terminar', pasos: atras(1) };
     }
+    if (mismaDireccion(situacion.actual, destino)) return { tipo: 'nada', pasos: [] };
     return { tipo: 'terminar', pasos: [{ tipo: 'reemplazar', url: destino, state }] };
   }
   if (situacion.movil && situacion.conHistorial) {

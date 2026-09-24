@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
+import { hojaAbiertaArriba } from './hojas-abiertas';
+import { esRutaDeHoja } from './hojas-por-ruta';
+
 export type ComoIr = 'apilar' | 'reemplazar' | 'terminar';
 
 export type SenalDeUnaVez = 'recienLiquidado' | 'recienAprobado';
@@ -18,9 +21,26 @@ export interface PuertoDeNavegacion {
   volver: (padre: string) => void;
   etiquetaDeVolver: (padre: string, etiqueta: string) => string;
   hayUnaTransicion: () => boolean;
+  cerrarLasHojasAntes: () => boolean;
+  anunciarLaSalida: () => void;
 }
 
 export const ContextoDeLaPuerta = createContext<PuertoDeNavegacion | null>(null);
+
+function despuesDeLaHoja(
+  puerto: PuertoDeNavegacion,
+  pathname: string,
+  destino: string,
+  accion: () => void,
+): void {
+  const hoja = hojaAbiertaArriba();
+  const aOtraPantalla = soloElCamino(destino) !== pathname;
+  if (hoja && aOtraPantalla && puerto.cerrarLasHojasAntes() && !esRutaDeHoja(pathname)) {
+    hoja.cerrarYDespues(accion);
+    return;
+  }
+  accion();
+}
 
 interface SenalPendiente {
   pathname: string;
@@ -69,19 +89,24 @@ export function usePuerta(): PuertoDeNavegacion | null {
 export function useIr(): (destino: string, opciones?: OpcionesDeIr) => void {
   const puerto = useContext(ContextoDeLaPuerta);
   const navegar = useNavigate();
+  const { pathname } = useLocation();
   return useCallback(
     (destino: string, opciones: OpcionesDeIr = {}) => {
-      anotarSenal(destino, opciones.senal);
       if (puerto) {
-        puerto.ir(destino, opciones);
+        puerto.anunciarLaSalida();
+        despuesDeLaHoja(puerto, pathname, destino, () => {
+          anotarSenal(destino, opciones.senal);
+          puerto.ir(destino, opciones);
+        });
         return;
       }
+      anotarSenal(destino, opciones.senal);
       void navegar(destino, {
         replace: opciones.como === 'reemplazar' || opciones.como === 'terminar',
         state: opciones.state,
       });
     },
-    [puerto, navegar],
+    [puerto, navegar, pathname],
   );
 }
 
@@ -97,14 +122,17 @@ export function useVolver(
 ): Vuelta {
   const puerto = useContext(ContextoDeLaPuerta);
   const navegar = useNavigate();
-  useLocation();
+  const { pathname } = useLocation();
   const volver = useCallback(() => {
     if (puerto) {
-      puerto.volver(padre);
+      puerto.anunciarLaSalida();
+      despuesDeLaHoja(puerto, pathname, padre, () => {
+        puerto.volver(padre);
+      });
       return;
     }
     void navegar(padre);
-  }, [puerto, navegar, padre]);
+  }, [puerto, navegar, padre, pathname]);
   return {
     volver,
     etiqueta: fija || !puerto ? etiqueta : puerto.etiquetaDeVolver(padre, etiqueta),

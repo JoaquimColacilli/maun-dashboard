@@ -171,6 +171,21 @@ const SIN_VIEW_TRANSITION_DEL_ROUTER = [
   },
 ];
 
+const SOLO_EL_COORDINADOR_ANIMA = [
+  {
+    selector: "MemberExpression[property.name='startViewTransition']",
+    message:
+      'Solo el coordinador de app/navegacion arranca transiciones (ADR 0066): navegá con <Ir>, useIr o useVolver.',
+  },
+  {
+    selector: "Literal[value='startViewTransition']",
+    message:
+      'Solo el coordinador de app/navegacion arranca transiciones (ADR 0066): navegá con <Ir>, useIr o useVolver.',
+  },
+];
+
+const EL_ESCENARIO_DEL_COORDINADOR = 'src/app/navegacion/escenario.ts';
+
 const LA_PUERTA_Y_EL_COORDINADOR = [
   'src/shared/lib/puerta.ts',
   'src/shared/lib/Ir.tsx',
@@ -262,8 +277,16 @@ export function web(dir) {
           [SISTEMA_DE_DISENO, ACCESO_A_DATOS],
           [NAVEGAR_POR_EL_ROUTER, TRANSICIONES_DEL_ROUTER],
         ),
-        'no-restricted-syntax': ['error', ...SIN_VIEW_TRANSITION_DEL_ROUTER],
+        'no-restricted-syntax': [
+          'error',
+          ...SIN_VIEW_TRANSITION_DEL_ROUTER,
+          ...SOLO_EL_COORDINADOR_ANIMA,
+        ],
       },
+    },
+    {
+      files: [EL_ESCENARIO_DEL_COORDINADOR],
+      rules: { 'no-restricted-syntax': ['error', ...SIN_VIEW_TRANSITION_DEL_ROUTER] },
     },
     {
       files: ['src/shared/ui/**/*.{ts,tsx}'],

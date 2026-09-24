@@ -9,6 +9,7 @@ import {
   vaciarTaller,
   type SesionDePrueba,
 } from '../apoyo/taller';
+import { sinTransicionEnCurso } from '../apoyo/transiciones';
 
 const CARGA = { timeout: 30_000 };
 const UN_DIA_MS = 86_400_000;
@@ -93,6 +94,7 @@ test('la ficha del cliente lleva a cada trabajo de su historial, se toque el tí
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mesa de comedor');
 
   await page.goBack();
+  await sinTransicionEnCurso(page);
   await historial
     .getByRole('listitem')
     .filter({ hasText: 'Rack del living' })

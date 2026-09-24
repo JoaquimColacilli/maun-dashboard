@@ -16,6 +16,7 @@ import {
   visibilidadControlable,
 } from '../apoyo/huella';
 import { listoParaCortar } from '../apoyo/pantalla';
+import { sinTransicionEnCurso } from '../apoyo/transiciones';
 import {
   abrirLaVersionA,
   aviso,
@@ -24,7 +25,6 @@ import {
   contarLosRegistros,
   entrarConLaSesion,
   registrosDelDocumento,
-  sinTransicionEnCurso,
   tallerVacio,
 } from './apoyo';
 import { BUILD_A } from './arnes';

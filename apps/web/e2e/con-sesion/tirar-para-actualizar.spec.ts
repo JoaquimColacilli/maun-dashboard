@@ -14,6 +14,7 @@ import {
 } from '../apoyo/huella';
 import { apoyar, dedo, levantar, mover, tirarYSoltar } from '../apoyo/dedo';
 import { indicadorDeSync, listoParaCortar } from '../apoyo/pantalla';
+import { sinTransicionEnCurso } from '../apoyo/transiciones';
 import {
   ajustarTaller,
   contarClientes,
@@ -102,12 +103,6 @@ async function demorarLaSincronizacion(page: Page, ms: number): Promise<void> {
     await new Promise((resolver) => setTimeout(resolver, ms));
     await ruta.continue();
   });
-}
-
-async function sinTransicionEnCurso(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => !(document as unknown as { activeViewTransition?: unknown }).activeViewTransition,
-  );
 }
 
 async function tallerCargado(page: Page): Promise<void> {

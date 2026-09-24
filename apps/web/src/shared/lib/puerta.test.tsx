@@ -47,6 +47,8 @@ function puertoFalso(): PuertoDeNavegacion & { llamadas: unknown[][] } {
     },
     etiquetaDeVolver: (_padre, etiqueta) => `${etiqueta} (según el historial)`,
     hayUnaTransicion: () => false,
+    cerrarLasHojasAntes: () => false,
+    anunciarLaSalida: () => undefined,
   };
 }
 

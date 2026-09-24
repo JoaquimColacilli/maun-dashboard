@@ -208,6 +208,19 @@ describe('terminar no apila', () => {
       ).pasos,
     ).toEqual([{ tipo: 'reemplazar', url: '/proyectos/1', state: undefined }]);
   });
+
+  it('si ya está en el destino, no hace nada; si además el destino es la anterior, va atrás', () => {
+    expect(
+      planDeIr('/proyectos/1', { como: 'terminar' }, enElCelular('/proyectos/1', '/proyectos')),
+    ).toEqual({ tipo: 'nada', pasos: [] });
+    expect(
+      planDeIr(
+        '/proyectos/1',
+        { como: 'terminar' },
+        enElCelular('/proyectos/1', '/proyectos/1', '/proyectos'),
+      ).pasos,
+    ).toEqual([{ tipo: 'atras', saltos: 1 }]);
+  });
 });
 
 describe('la etiqueta de volver', () => {

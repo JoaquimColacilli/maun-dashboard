@@ -1,5 +1,9 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 
+import { sinTransicionEnCurso } from '../apoyo/transiciones';
+
+export { sinTransicionEnCurso };
+
 export type Alcance = 'documento' | 'main' | 'otro';
 
 export interface TransicionVista {
@@ -7,6 +11,7 @@ export interface TransicionVista {
   tipos: string[];
   salteada: boolean;
   terminada: boolean;
+  hojaAbiertaAlEmpezar: boolean;
 }
 
 interface Registro extends TransicionVista {
@@ -54,6 +59,7 @@ export async function espiarLasTransiciones(context: BrowserContext): Promise<vo
             tipos: [],
             salteada: false,
             terminada: false,
+            hojaAbiertaAlEmpezar: document.querySelector('dialog[open]') !== null,
             transicion,
             animaciones: [],
             fin: 0,
@@ -112,7 +118,13 @@ export async function olvidarLasTransiciones(page: Page): Promise<void> {
 export function transicionesVistas(page: Page): Promise<TransicionVista[]> {
   return page.evaluate(() =>
     (window as unknown as Espia).transicionesVistas.map(
-      ({ alcance, tipos, salteada, terminada }) => ({ alcance, tipos, salteada, terminada }),
+      ({ alcance, tipos, salteada, terminada, hojaAbiertaAlEmpezar }) => ({
+        alcance,
+        tipos,
+        salteada,
+        terminada,
+        hojaAbiertaAlEmpezar,
+      }),
     ),
   );
 }
@@ -133,6 +145,7 @@ export async function esperarCongelada(page: Page): Promise<TransicionVista> {
         tipos: ultima.tipos,
         salteada: ultima.salteada,
         terminada: ultima.terminada,
+        hojaAbiertaAlEmpezar: ultima.hojaAbiertaAlEmpezar,
       };
     },
     undefined,
@@ -156,14 +169,6 @@ export async function soltar(page: Page): Promise<void> {
   await page.evaluate(() => {
     const ultima = (window as unknown as Espia).transicionesVistas.at(-1);
     for (const animacion of ultima?.animaciones ?? []) animacion.play();
-  });
-}
-
-export async function sinTransicionEnCurso(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const conTransicion = (quien: unknown) =>
-      Boolean((quien as { activeViewTransition?: unknown } | null)?.activeViewTransition);
-    return !conTransicion(document) && !conTransicion(document.querySelector('main#contenido'));
   });
 }
 

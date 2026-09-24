@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ContextoDeLaPuerta, Ir, type PuertoDeNavegacion } from '@/shared/lib';
 
 import { ConSalida, Hoja } from './Hoja';
 
@@ -295,5 +298,78 @@ describe('la hoja', () => {
       vi.advanceTimersByTime(500);
     });
     expect(screen.getByText('Contenido')).toBeInTheDocument();
+  });
+});
+
+describe('salir a otra pantalla desde una hoja abierta por estado', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function puertoQue(cerrarAntes: boolean, ir: (destino: string) => void): PuertoDeNavegacion {
+    return {
+      ir,
+      volver: () => undefined,
+      etiquetaDeVolver: (_padre, etiqueta) => etiqueta,
+      hayUnaTransicion: () => false,
+      cerrarLasHojasAntes: () => cerrarAntes,
+      anunciarLaSalida: () => undefined,
+    };
+  }
+
+  function HojaConEnlace({ puerto }: { puerto: PuertoDeNavegacion }) {
+    const [abierta, setAbierta] = useState(true);
+    return (
+      <MemoryRouter initialEntries={['/']}>
+        <ContextoDeLaPuerta value={puerto}>
+          <ConSalida valor={abierta}>
+            {() => (
+              <Hoja
+                titulo="Tu cuenta"
+                alCerrar={() => {
+                  setAbierta(false);
+                }}
+              >
+                <Ir a="/opiniones">Opiniones</Ir>
+              </Hoja>
+            )}
+          </ConSalida>
+        </ContextoDeLaPuerta>
+      </MemoryRouter>
+    );
+  }
+
+  it('en el celular, la hoja se cierra con su animación y recién ahí se mueve la pantalla', () => {
+    const ir = vi.fn();
+    render(<HojaConEnlace puerto={puertoQue(true, ir)} />);
+    fireEvent.click(screen.getByRole('link', { name: 'Opiniones' }));
+    expect(ir).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { hidden: true })).not.toHaveAttribute('open');
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(ir).toHaveBeenCalledTimes(1);
+    expect(ir).toHaveBeenCalledWith('/opiniones', expect.objectContaining({}));
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+    expect(ir).toHaveBeenCalledTimes(1);
+  });
+
+  it('en la tablet y en la compu, como hoy: navega en el acto', () => {
+    const ir = vi.fn();
+    render(<HojaConEnlace puerto={puertoQue(false, ir)} />);
+    fireEvent.click(screen.getByRole('link', { name: 'Opiniones' }));
+    expect(ir).toHaveBeenCalledTimes(1);
   });
 });

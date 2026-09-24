@@ -21,13 +21,17 @@ export async function capturar(page: Page, zona: Zona): Promise<Buffer> {
   if (zona === 'pantalla') return page.screenshot();
   const caja = await page.locator('main#contenido').evaluate((principal) => {
     const rectangulo = principal.getBoundingClientRect();
+    const piezas = [...document.querySelectorAll('[data-lo-que-flota-abajo] > *')]
+      .map((pieza) => pieza.getBoundingClientRect())
+      .filter((pieza) => pieza.height > 0);
+    const flotaDesde = Math.min(window.innerHeight, ...piezas.map((pieza) => pieza.top));
     const izquierda = Math.max(0, rectangulo.left);
     const arriba = Math.max(0, rectangulo.top);
     return {
       x: izquierda,
       y: arriba,
       width: Math.min(window.innerWidth, rectangulo.right) - izquierda,
-      height: Math.min(window.innerHeight, rectangulo.bottom) - arriba,
+      height: Math.floor(Math.min(flotaDesde, rectangulo.bottom) - arriba),
     };
   });
   return page.screenshot({ clip: caja });

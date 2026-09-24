@@ -2,13 +2,13 @@ import { expect, test, type CDPSession, type Page } from '@playwright/test';
 
 import { dedo, tirarYSoltar } from '../apoyo/dedo';
 import { listoParaCortar } from '../apoyo/pantalla';
+import { sinTransicionEnCurso } from '../apoyo/transiciones';
 import {
   abrirLaVersionA,
   aviso,
   conElArnes,
   entrarConLaSesion,
   HASTA_EL_AVISO,
-  sinTransicionEnCurso,
   tallerVacio,
 } from './apoyo';
 
