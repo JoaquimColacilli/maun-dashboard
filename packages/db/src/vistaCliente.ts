@@ -6,6 +6,7 @@ import type {
   FechasDelTrabajo,
   FormaDeCobro,
   InstanciaDePago,
+  Money,
   PagoDelCliente,
   PagoOfrecido,
   PagoPendiente,
@@ -157,7 +158,13 @@ function fechas(valor: unknown): FechasDelTrabajo {
     entregaPautada: fechaONada(crudas.entrega_pautada, 'la entrega pautada'),
     entregado: fechaONada(crudas.entregado, 'la fecha de entrega'),
     cobro: fechaONada(crudas.cobro, 'la fecha de cobro'),
+    valeHasta: fechaONada(crudas.vale_hasta, 'hasta cuándo vale el presupuesto'),
   };
+}
+
+function importeONada(valor: unknown, que: string): Money | null {
+  const importe = numeroONada(valor, que);
+  return importe === null ? null : dinero(importe);
 }
 
 const SIN_VISITA: VisitaDelTrabajo = { dia: null, hecha: false };
@@ -179,10 +186,8 @@ export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
     trabajo: texto(cuerpo.trabajo, 'el trabajo'),
     direccion: texto(cuerpo.direccion, 'la dirección'),
     estado: texto(cuerpo.estado, 'la etapa') as EstadoProyecto,
-    precio: (() => {
-      const precio = numeroONada(cuerpo.precio_centavos, 'el precio');
-      return precio === null ? null : dinero(precio);
-    })(),
+    precio: importeONada(cuerpo.precio_centavos, 'el precio'),
+    sena: importeONada(cuerpo.sena_centavos, 'la seña'),
     fechas: fechas(cuerpo.fechas),
     visita: visita(cuerpo.visita),
     pago: pagoPendiente(cuerpo.pago),
