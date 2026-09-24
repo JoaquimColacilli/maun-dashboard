@@ -4,6 +4,7 @@ import {
   ajustarTaller,
   crearCliente,
   guardarProyectoPorRpc,
+  hoyEnElTaller,
   iniciarSesionDePrueba,
   vaciarTaller,
   type FilaDeMovimiento,
@@ -141,7 +142,7 @@ async function sembrar(escenario: Escenario): Promise<Taller> {
     tasa_cocos_anual_bp: 3000,
   });
 
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyEnElTaller();
   await movimientosPorRest(
     TESOROS.map((tesoro) =>
       tesoro === 'hogar' && escenario.hogarEnNegativo === true
