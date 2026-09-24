@@ -45,14 +45,14 @@ function Esqueleto() {
       <span className="sr-only" role="status">
         Abriendo la encuesta
       </span>
-      <div className="h-4 w-30 rounded-control bg-surface-2" />
-      <div className="h-7.5 w-4/5 rounded-field bg-surface-2" />
+      <div className="h-4 w-30 rounded-control bg-ink/6" />
+      <div className="h-7.5 w-4/5 rounded-field bg-ink/6" />
       {[0, 1].map((bloque) => (
         <div key={bloque} className="flex flex-col gap-2.5">
-          <div className="h-4 w-2/3 rounded-control bg-surface-2" />
+          <div className="h-4 w-2/3 rounded-control bg-ink/6" />
           <div className="flex gap-2">
             {[0, 1, 2, 3, 4].map((paso) => (
-              <div key={paso} className="h-18.5 flex-1 rounded-panel bg-surface-2" />
+              <div key={paso} className="h-18.5 flex-1 rounded-field bg-ink/6" />
             ))}
           </div>
         </div>

@@ -6,6 +6,11 @@ export const CLAVE_DEL_TEMA = 'maun:tema';
 
 const OSCURO = '(prefers-color-scheme: dark)';
 
+const COLOR_DE_LA_MESA: Readonly<Record<'light' | 'dark', string>> = {
+  light: '#f2f1ed',
+  dark: '#0b0b0b',
+};
+
 const oyentes = new Set<() => void>();
 
 function esPreferencia(valor: unknown): valor is PreferenciaDeTema {
@@ -26,8 +31,16 @@ export function preferenciaDeTema(): PreferenciaDeTema {
   return esPreferencia(actual) ? actual : 'system';
 }
 
+function pintarLaBarraDeEstado(preferencia: PreferenciaDeTema): void {
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+    const suyo = meta.getAttribute('media') === OSCURO ? 'dark' : 'light';
+    meta.setAttribute('content', COLOR_DE_LA_MESA[preferencia === 'system' ? suyo : preferencia]);
+  }
+}
+
 export function elegirTema(preferencia: PreferenciaDeTema): void {
   document.documentElement.dataset.theme = preferencia;
+  pintarLaBarraDeEstado(preferencia);
   recordar(preferencia);
   for (const avisar of oyentes) avisar();
 }

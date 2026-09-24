@@ -109,7 +109,7 @@ export function DistribucionDespiece({
                 >
                   <span
                     aria-hidden
-                    className={`size-3 flex-none rounded-control ${
+                    className={`size-3 flex-none rounded-[3px] ${
                       despiece.modo === 'real' ? tesoro.barra : tesoro.fondo
                     }`}
                   />

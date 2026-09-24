@@ -14,19 +14,19 @@ export function EsqueletoDeLosAvisos() {
   return (
     <div role="status" aria-busy="true" className="flex flex-col gap-4">
       <span className="sr-only">Leyendo tus avisos…</span>
-      <div aria-hidden className="h-[92px] rounded-panel bg-surface-2" />
+      <div aria-hidden className="h-[92px] rounded-panel border border-hairline bg-paper" />
       {FILAS_DEL_ESQUELETO.map((fila) => (
         <div
           key={fila}
           aria-hidden
           className="flex items-center gap-3.5 border-t border-hairline-soft py-3.5"
         >
-          <div className="size-[22px] rounded-control bg-surface-2" />
+          <div className="size-[22px] rounded-control bg-ink/6" />
           <div className="flex flex-1 flex-col gap-2">
-            <div className="h-3.5 w-2/5 rounded-control bg-surface-2" />
-            <div className="h-3 w-[70%] rounded-control bg-surface-2" />
+            <div className="h-3.5 w-2/5 rounded-control bg-ink/6" />
+            <div className="h-3 w-[70%] rounded-control bg-ink/6" />
           </div>
-          <div className="h-9 w-[120px] rounded-field bg-surface-2" />
+          <div className="h-9 w-[120px] rounded-field bg-ink/6" />
         </div>
       ))}
     </div>

@@ -257,7 +257,7 @@ export function FinanzasPage() {
           <div className="flex max-w-[520px] flex-col items-start gap-3 py-8">
             <span
               aria-hidden
-              className="flex size-12 items-center justify-center rounded-panel bg-surface text-text-2"
+              className="flex size-12 items-center justify-center rounded-field bg-surface text-text-2"
             >
               <Icono nombre="wallet" tamano={24} />
             </span>

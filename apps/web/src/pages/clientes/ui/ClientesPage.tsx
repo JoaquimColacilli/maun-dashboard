@@ -94,7 +94,7 @@ function DeDondeVienen({ resumenes }: { resumenes: readonly ResumenDeCliente[] }
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-meta text-text-2">
         {cortes.map((corte) => (
           <span key={corte.id} className="flex items-center gap-1.5">
-            <span aria-hidden className={`size-2 rounded-control ${corte.color}`} />
+            <span aria-hidden className={`size-2 rounded-[2px] ${corte.color}`} />
             {corte.etiqueta} <strong className="text-ink tabular-nums">{corte.cantidad}</strong>
           </span>
         ))}

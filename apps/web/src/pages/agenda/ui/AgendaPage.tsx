@@ -190,7 +190,7 @@ function ListaDelMes({
               {etiqueta !== null && (
                 <span
                   className={`rounded-control px-1.5 py-0.5 text-badge font-semibold ${
-                    etiqueta === 'hoy' ? 'bg-ink text-paper' : 'bg-surface text-text-2'
+                    etiqueta === 'hoy' ? 'bg-ink text-paper' : 'bg-ink/6 text-text-2'
                   }`}
                 >
                   {etiqueta}
@@ -446,7 +446,7 @@ export function AgendaPage() {
           <span className="text-meta text-text-3">{resumenDelMes(delMes)}</span>
         </div>
 
-        <div className="sticky top-0 z-10 -mx-(--page-pad-mobile) bg-paper">
+        <div className="sticky top-0 z-10 -mx-(--page-pad-mobile) bg-mesa">
           <TiraDelMes
             mes={mes}
             hoy={hoy}

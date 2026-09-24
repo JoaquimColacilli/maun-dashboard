@@ -185,7 +185,7 @@ export function EditorDeUnaPregunta({
                 <span
                   aria-hidden
                   className={`size-4.5 flex-none border-[1.5px] border-border ${
-                    borrador.tipo === 'varias' ? 'rounded-control' : 'rounded-pill'
+                    borrador.tipo === 'varias' ? 'rounded-[4px]' : 'rounded-pill'
                   }`}
                 />
                 <input

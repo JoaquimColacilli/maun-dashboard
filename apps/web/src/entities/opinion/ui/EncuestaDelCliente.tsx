@@ -32,7 +32,7 @@ export function MarcaDelTaller({ taller, conLema = false }: { taller: string; co
 }
 
 function marcoDeLaOpcion(elegida: boolean): string {
-  return `relative flex cursor-pointer rounded-panel border-[1.5px] transition-colors duration-(--dur-fast) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
+  return `relative flex cursor-pointer rounded-field border-[1.5px] transition-colors duration-(--dur-fast) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
     elegida ? 'border-ink bg-surface' : 'border-border bg-paper hover:border-text-3'
   }`;
 }
@@ -92,7 +92,7 @@ function Punto({ elegida, cuadrado }: { elegida: boolean; cuadrado: boolean }) {
     <span
       aria-hidden
       className={`flex size-5.5 flex-none items-center justify-center border-[1.5px] ${
-        cuadrado ? 'rounded-control' : 'rounded-pill'
+        cuadrado ? 'rounded-[4px]' : 'rounded-pill'
       } ${elegida ? 'border-ink' : 'border-border'} ${cuadrado && elegida ? 'bg-ink text-paper' : ''}`}
     >
       {cuadrado
@@ -164,7 +164,7 @@ function Comentario({
       onChange={(evento) => {
         alCambiar(evento.target.value);
       }}
-      className="papel-rayado w-full resize-y rounded-panel border-[1.5px] border-border bg-position-[0_11px] px-3.5 py-3 text-body-lg leading-7 text-ink placeholder:text-text-3 focus:border-ink"
+      className="papel-rayado w-full resize-y rounded-field border-[1.5px] border-border bg-position-[0_11px] px-3.5 py-3 text-body-lg leading-7 text-ink placeholder:text-text-3 focus:border-ink"
     />
   );
 }

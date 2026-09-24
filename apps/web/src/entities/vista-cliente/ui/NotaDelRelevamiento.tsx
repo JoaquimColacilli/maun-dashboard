@@ -67,7 +67,7 @@ function HojaDeLaNota({
         tocoElFondo.current = false;
         if (fueElFondo) dialogo.current?.close();
       }}
-      className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[calc(100dvh-40px)] w-full max-w-none translate-y-0 overflow-y-auto rounded-t-[16px] bg-paper p-0 text-ink transition-[translate] duration-(--dur-medium) ease-out backdrop:bg-[rgba(10,10,10,0.42)] starting:open:translate-y-full"
+      className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[calc(100dvh-40px)] w-full max-w-none translate-y-0 overflow-y-auto rounded-t-sheet bg-paper p-0 text-ink transition-[translate] duration-(--dur-medium) ease-out backdrop:bg-[rgba(10,10,10,0.42)] starting:open:translate-y-full"
     >
       <div className="p-5 pb-[calc(20px+env(safe-area-inset-bottom))]">
         <span aria-hidden className="mx-auto -mt-2 mb-4 block h-1 w-9 rounded-pill bg-border" />

@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f1ed" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0b" />
     <script>
       try {
         var tema = localStorage.getItem('maun:tema');
@@ -10,6 +12,14 @@
           tema === 'light' || tema === 'dark' ? tema : 'system';
       } catch (error) {
         document.documentElement.dataset.theme = 'system';
+      }
+      var mesaForzada = { light: '#f2f1ed', dark: '#0b0b0b' }[
+        document.documentElement.dataset.theme
+      ];
+      if (mesaForzada) {
+        document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
+          meta.setAttribute('content', mesaForzada);
+        });
       }
       if (location.pathname.indexOf('/v/') === 0 || location.pathname.indexOf('/o/') === 0) {
         document.documentElement.dataset.vista = 'publica';
@@ -19,7 +29,6 @@
         });
       }
     </script>
-    <meta name="theme-color" content="#141414" />
     <meta name="description" content="Finanzas y proyectos del taller MAUN." />
     <meta name="robots" content="noindex, nofollow, noarchive, noimageindex" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />

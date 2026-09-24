@@ -54,11 +54,11 @@ export function ComparacionMensual({
         <span className="text-label font-semibold">{titulo}</span>
         <span className="flex gap-3 text-meta text-text-2">
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-control bg-border" />
+            <span aria-hidden className="size-2 rounded-[2px] bg-border" />
             {etiquetaPrevia}
           </span>
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="size-2 rounded-control bg-ink" />
+            <span aria-hidden className="size-2 rounded-[2px] bg-ink" />
             {etiquetaActual}
           </span>
         </span>

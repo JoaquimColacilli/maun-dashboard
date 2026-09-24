@@ -46,7 +46,7 @@ export function TiraDelMes({ mes, hoy, elegido, eventos, alElegir }: TiraDelMesP
         const fondo = esElegido
           ? 'bg-ink text-paper'
           : esHoy
-            ? 'bg-surface text-ink ring-1 ring-border ring-inset'
+            ? 'bg-ink/6 text-ink ring-1 ring-border ring-inset'
             : 'text-text-2';
         return (
           <button

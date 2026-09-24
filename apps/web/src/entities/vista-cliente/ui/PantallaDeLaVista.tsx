@@ -34,17 +34,17 @@ function Esqueleto() {
         <span className="sr-only" role="status">
           Abriendo tu mueble
         </span>
-        <div className="h-4 w-30 rounded-control bg-surface-2" />
+        <div className="h-4 w-30 rounded-control bg-ink/6" />
         <div className="flex flex-col gap-2.5">
-          <div className="h-5.5 w-3/4 rounded-field bg-surface-2" />
-          <div className="h-13 w-1/2 rounded-field bg-surface-2" />
-          <div className="h-3.5 w-2/5 rounded-control bg-surface-2" />
+          <div className="h-5.5 w-3/4 rounded-field bg-ink/6" />
+          <div className="h-13 w-1/2 rounded-field bg-ink/6" />
+          <div className="h-3.5 w-2/5 rounded-control bg-ink/6" />
         </div>
         <div className="flex gap-2.5 pt-2">
           {[1, 2, 3, 4, 5].map((puesto) => (
             <div key={puesto} className="flex flex-1 flex-col gap-2">
-              <div className="size-3.5 rounded-pill bg-surface-2" />
-              <div className="h-2.5 rounded-control bg-surface-2" />
+              <div className="size-3.5 rounded-pill bg-ink/6" />
+              <div className="h-2.5 rounded-control bg-ink/6" />
             </div>
           ))}
         </div>

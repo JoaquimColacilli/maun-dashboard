@@ -183,11 +183,11 @@
 }
 
 /* Empuje: entrar a algo. La nueva entra por la derecha a todo el ancho con su sombra; la de abajo
-   se corre un 30 % a la izquierda. La de arriba lleva el papel del body: el <main> no tiene fondo
-   propio, y sin él la de abajo se vería a través. */
+   se corre un 30 % a la izquierda. La de arriba lleva la mesa del body: el <main> no tiene fondo
+   propio, y sin ella la de abajo se vería a través. */
 :active-view-transition-type(empuje)::view-transition-new(root) {
   animation: var(--t-espacial) var(--resorte-espacial) both maun-entra-desde-la-derecha;
-  background-color: var(--color-paper);
+  background-color: var(--color-mesa);
   box-shadow: var(--sombra-del-empuje);
 }
 
@@ -200,7 +200,7 @@
 :active-view-transition-type(vuelta)::view-transition-old(root) {
   z-index: 1;
   animation: var(--t-espacial) var(--resorte-espacial) both maun-sale-por-la-derecha;
-  background-color: var(--color-paper);
+  background-color: var(--color-mesa);
   box-shadow: var(--sombra-del-empuje);
 }
 
