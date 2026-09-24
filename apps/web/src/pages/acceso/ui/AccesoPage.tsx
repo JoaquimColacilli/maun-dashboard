@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
 import { useSesion } from '@/entities/sesion';
 import { FormularioDeIngreso } from '@/features/iniciar-sesion';
 import { errorDelEnlace } from '@/shared/api';
+import { Ir, useIr } from '@/shared/lib';
 import { ENLACE_DE_ACCESO, ENLACE_DE_CAMPO, PantallaDeAcceso } from '@/shared/ui';
 
 export function AccesoPage() {
   const sesion = useSesion();
   const vencida = sesion.tipo === 'anonimo' && sesion.vencida;
-  const navegar = useNavigate();
+  const ir = useIr();
   const { pathname } = useLocation();
   const [delEnlace] = useState(() => errorDelEnlace(window.location.href));
 
   useEffect(() => {
-    if (delEnlace !== undefined) void navegar(pathname, { replace: true });
-  }, [delEnlace, navegar, pathname]);
+    if (delEnlace !== undefined) ir(pathname, { como: 'reemplazar' });
+  }, [delEnlace, ir, pathname]);
 
   return (
     <PantallaDeAcceso
@@ -24,9 +25,9 @@ export function AccesoPage() {
       pie={
         <p>
           ¿No tenés cuenta?{' '}
-          <Link to="/acceso/crear-cuenta" className={ENLACE_DE_ACCESO}>
+          <Ir a="/acceso/crear-cuenta" className={ENLACE_DE_ACCESO}>
             Creá una
-          </Link>
+          </Ir>
         </p>
       }
     >
@@ -55,9 +56,9 @@ export function AccesoPage() {
       )}
       <FormularioDeIngreso
         olvido={
-          <Link to="/acceso/recuperar" className={ENLACE_DE_CAMPO}>
+          <Ir a="/acceso/recuperar" className={ENLACE_DE_CAMPO}>
             ¿La olvidaste?
-          </Link>
+          </Ir>
         }
       />
     </PantallaDeAcceso>

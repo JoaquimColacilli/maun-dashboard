@@ -1,8 +1,7 @@
 import { elMueble } from '@maun/domain';
-import { Link } from 'react-router';
 
 import { Carita, type UltimaSinLeer } from '@/entities/opinion';
-import { rutaDeLaRespuesta } from '@/shared/lib';
+import { rutaDeLaRespuesta, Ir } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 export function UltimaOpinion({ ultima }: { ultima: UltimaSinLeer }) {
@@ -11,8 +10,8 @@ export function UltimaOpinion({ ultima }: { ultima: UltimaSinLeer }) {
     ultima.comentario === null ? (ultima.titular?.etiqueta ?? null) : `«${ultima.comentario}»`;
 
   return (
-    <Link
-      to={rutaDeLaRespuesta(ultima.respuestaId)}
+    <Ir
+      a={rutaDeLaRespuesta(ultima.respuestaId)}
       className="flex items-start gap-2.75 rounded-panel border border-op-mal bg-paper px-3.25 py-3 text-left text-ink no-underline hover:bg-surface"
     >
       {ultima.titular !== null && (
@@ -31,6 +30,6 @@ export function UltimaOpinion({ ultima }: { ultima: UltimaSinLeer }) {
       <span aria-hidden className="flex flex-none pt-0.5">
         <Icono nombre="chevron-right" tamano={17} />
       </span>
-    </Link>
+    </Ir>
   );
 }

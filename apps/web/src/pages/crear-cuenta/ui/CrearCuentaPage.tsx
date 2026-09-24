@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 
 import { ConfirmacionDelAlta, FormularioDeRegistro } from '@/features/crear-cuenta';
+import { Ir } from '@/shared/lib';
 import { ENLACE_DE_ACCESO, PantallaDeAcceso } from '@/shared/ui';
 
 export function CrearCuentaPage() {
@@ -33,9 +33,9 @@ export function CrearCuentaPage() {
       pie={
         <p>
           ¿Ya tenés cuenta?{' '}
-          <Link to="/acceso" className={ENLACE_DE_ACCESO}>
+          <Ir a="/acceso" className={ENLACE_DE_ACCESO}>
             Entrá
-          </Link>
+          </Ir>
         </p>
       }
     >

@@ -28,6 +28,13 @@ Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están 
 - Los tesoros del oscuro no son los del claro invertidos: bajan la saturación y suben la luz para leerse sobre `#121212`. Si agregás un color, agregá los dos.
 - `elevado` es la superficie del segmento elegido: en claro es blanco sobre gris, en oscuro es un gris más claro que el fondo. No uses `bg-paper` para eso, que en oscuro se hunde.
 
+## Los resortes (ADR 0066)
+
+- Los movimientos usan los resortes de Material 3: `--resorte-*` es la curva, como `linear()`, y `--dur-*` es lo que tarda en asentarse a una milésima. Espaciales (0,9 de amortiguación), de efectos (1) y uno expresivo (0,6), cada uno con su rigidez.
+- **No se escriben a mano.** Los genera `src/resortes.ts` a partir de la amortiguación y la rigidez; `pnpm --filter @maun/ui resortes` los reescribe en `theme.css` y `resortes.test.ts` falla si el CSS no coincide con la función.
+- Con `prefers-reduced-motion` las duraciones valen cero.
+- La sombra del empuje (`--sombra-del-empuje`) y el atenuado de la subida (`--atenuado-de-la-subida`) son tokens con su par oscuro, como el resto.
+
 ## Molde de pantalla
 
 - **`Pagina` es el único contenedor de pantalla**: ancho máximo, márgenes por ancho y padding vertical. La app no repite `max-w-content px-(--page-pad-*)` a mano.

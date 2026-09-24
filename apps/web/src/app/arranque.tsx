@@ -8,6 +8,13 @@ import { EnvInvalidoError, leerEnv } from '@/shared/config';
 import { esUnaPaginaPublica, vigilarLaVersionNueva } from '@/shared/lib';
 
 import { App } from './App';
+import { ponerLaCamaraLenta } from './navegacion/camara-lenta';
+import { crearCompuerta } from './navegacion/compuerta';
+import { crearCoordinador } from './navegacion/coordinador';
+import { escenarioDelNavegador } from './navegacion/escenario';
+import { historialDelNavegador } from './navegacion/historial';
+import { memoriaDeLaSesion } from './navegacion/memoria';
+import { crearRouter } from './router/router';
 
 function mostrarErrorDeArranque(raiz: HTMLElement, mensaje: string): void {
   const aviso = document.createElement('pre');
@@ -27,9 +34,21 @@ export function arrancar(raiz: HTMLElement): void {
 
   if (!esUnaPaginaPublica(globalThis.location.pathname)) vigilarLaVersionNueva();
 
+  ponerLaCamaraLenta();
+  const compuerta = crearCompuerta(window);
+  const router = crearRouter(compuerta.ventana);
+  const coordinador = crearCoordinador({
+    router,
+    historial: historialDelNavegador(),
+    escenario: escenarioDelNavegador(),
+    memoria: memoriaDeLaSesion(),
+    compuerta,
+  });
+  coordinador.escuchar();
+
   createRoot(raiz).render(
     <StrictMode>
-      <App />
+      <App router={router} coordinador={coordinador} />
     </StrictMode>,
   );
 }

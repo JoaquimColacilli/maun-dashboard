@@ -1,0 +1,300 @@
+/* Los movimientos del celular (ADR 0066). Los arranca el coordinador de app/navegacion con un tipo, y
+   cada regla de acá cuelga de ese tipo: el fundido del navegador de la tablet y la compu no lleva
+   tipo y no las ve. Solo se animan transform y opacity de las imágenes de las pantallas; reemplazar
+   animation-name saca el plus-lighter del navegador de lo que se desliza. Al 0 % y al 100 % cada
+   movimiento es la pantalla quieta: lo que entra arranca afuera con su sombra y lo que sale termina
+   afuera. --camara-lenta multiplica todas las duraciones. */
+
+:root {
+  --camara-lenta: 1;
+  --afuera-a-la-derecha: calc(100% + 40px);
+  --t-espacial: calc(var(--dur-espacial) * var(--camara-lenta));
+  --t-espacial-lento: calc(var(--dur-espacial-lento) * var(--camara-lenta));
+  --t-espacial-rapido: calc(var(--dur-espacial-rapido) * var(--camara-lenta));
+  --t-efectos: calc(var(--dur-efectos) * var(--camara-lenta));
+  --t-efectos-rapidos: calc(var(--dur-efectos-rapidos) * var(--camara-lenta));
+  --t-expresivo-rapido: calc(var(--dur-expresivo-rapido) * var(--camara-lenta));
+  --t-fundido-sale: calc(90ms * var(--camara-lenta));
+  --t-fundido-entra: calc(230ms * var(--camara-lenta));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fundido-sale: 0ms;
+    --t-fundido-entra: 0ms;
+  }
+}
+
+@keyframes maun-se-apaga {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes maun-aparece {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes maun-crece {
+  from {
+    transform: scale(0.92);
+  }
+}
+
+@keyframes maun-entra-desde-la-derecha {
+  from {
+    transform: translateX(var(--afuera-a-la-derecha));
+  }
+}
+
+@keyframes maun-se-corre-a-la-izquierda {
+  to {
+    transform: translateX(-30%);
+  }
+}
+
+@keyframes maun-sale-por-la-derecha {
+  to {
+    transform: translateX(var(--afuera-a-la-derecha));
+  }
+}
+
+@keyframes maun-vuelve-desde-la-izquierda {
+  from {
+    transform: translateX(-30%);
+  }
+}
+
+@keyframes maun-sube-desde-abajo {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes maun-baja-y-se-va {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes maun-se-atenua {
+  to {
+    opacity: var(--atenuado-de-la-subida);
+  }
+}
+
+@keyframes maun-se-aclara {
+  from {
+    opacity: var(--atenuado-de-la-subida);
+  }
+}
+
+@keyframes maun-se-va-a-la-izquierda {
+  to {
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes maun-se-va-a-la-derecha {
+  to {
+    transform: translateX(30px);
+  }
+}
+
+@keyframes maun-llega-desde-la-derecha {
+  from {
+    transform: translateX(30px);
+  }
+}
+
+@keyframes maun-llega-desde-la-izquierda {
+  from {
+    transform: translateX(-30px);
+  }
+}
+
+:active-view-transition-type(
+  fundido,
+  empuje,
+  vuelta,
+  subida,
+  bajada,
+  pestana-adelante,
+  pestana-atras,
+  tarjeta,
+  tarjeta-vuelta
+)::view-transition-group(root) {
+  animation: none;
+}
+
+/* Fundido: el cambio de sección. La que se va se apaga en los primeros 90 ms; la que llega aparece
+   de ahí a los 320 ms y crece de 0,92 a 1. Si al volver de una ficha su tarjeta ya no está a la
+   vista, el coordinador cambia a fundido y el encabezado se apaga en su lugar con la pantalla. */
+:active-view-transition-type(fundido)::view-transition-old(root),
+:active-view-transition-type(fundido)::view-transition-old(tarjeta) {
+  animation: var(--t-fundido-sale) var(--resorte-efectos) both maun-se-apaga;
+}
+
+:active-view-transition-type(fundido)::view-transition-new(root) {
+  animation:
+    var(--t-fundido-entra) var(--resorte-efectos) var(--t-fundido-sale) both maun-aparece,
+    var(--t-fundido-entra) var(--resorte-espacial) var(--t-fundido-sale) both maun-crece;
+}
+
+/* Tarjeta: la tarjeta del proyecto se vuelve el encabezado de su ficha, y al volver el encabezado
+   vuelve a su tarjeta. La pieza viaja con el resorte espacial y recorta lo que le sobra; adentro,
+   lo de antes y lo de después cruzan durante todo el viaje, así la pieza se ve hasta llegar y el
+   ojo la sigue. Atrás, la pantalla que se va se apaga
+   primero y la que llega aparece después, como en el fundido pero sin crecer. Va sobre el
+   documento y no sobre el <main> (ADR 0066), así que lo que flota abajo es una pieza propia que
+   queda quieta: sin eso la barra parpadearía con el resto. */
+::view-transition-group(lo-que-flota),
+::view-transition-new(lo-que-flota) {
+  animation: none;
+}
+
+::view-transition-old(lo-que-flota) {
+  animation: none;
+  opacity: 0;
+}
+
+:active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-old(root) {
+  animation: var(--t-fundido-sale) var(--resorte-efectos) both maun-se-apaga;
+}
+
+:active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-new(root) {
+  animation: var(--t-fundido-entra) var(--resorte-efectos) var(--t-fundido-sale) both maun-aparece;
+}
+
+:active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-group(tarjeta) {
+  overflow: clip;
+  animation-duration: var(--t-espacial);
+  animation-timing-function: var(--resorte-espacial);
+}
+
+:active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-old(tarjeta) {
+  animation: var(--t-espacial) var(--resorte-efectos) both maun-se-apaga;
+}
+
+:active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-new(tarjeta) {
+  animation: var(--t-espacial) var(--resorte-efectos) both maun-aparece;
+}
+
+/* Empuje: entrar a algo. La nueva entra por la derecha a todo el ancho con su sombra; la de abajo
+   se corre un 30 % a la izquierda. La de arriba lleva el papel del body: el <main> no tiene fondo
+   propio, y sin él la de abajo se vería a través. */
+:active-view-transition-type(empuje)::view-transition-new(root) {
+  animation: var(--t-espacial) var(--resorte-espacial) both maun-entra-desde-la-derecha;
+  background-color: var(--color-paper);
+  box-shadow: var(--sombra-del-empuje);
+}
+
+:active-view-transition-type(empuje)::view-transition-old(root) {
+  animation: var(--t-espacial) var(--resorte-espacial) both maun-se-corre-a-la-izquierda;
+}
+
+/* Vuelta: el espejo exacto. La que se va sale por la derecha, por encima; la de abajo vuelve desde
+   el -30 %. */
+:active-view-transition-type(vuelta)::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--t-espacial) var(--resorte-espacial) both maun-sale-por-la-derecha;
+  background-color: var(--color-paper);
+  box-shadow: var(--sombra-del-empuje);
+}
+
+:active-view-transition-type(vuelta)::view-transition-new(root) {
+  animation: var(--t-espacial) var(--resorte-espacial) both maun-vuelve-desde-la-izquierda;
+}
+
+/* Subida y bajada: la capa del proyecto, que tapa todo, barra incluida. La de abajo queda quieta y
+   se apaga apenas sobre negro. */
+:active-view-transition-type(subida, bajada)::view-transition-image-pair(root) {
+  background-color: #000;
+}
+
+:active-view-transition-type(subida)::view-transition-old(root) {
+  animation: var(--t-espacial-lento) var(--resorte-espacial-lento) both maun-se-atenua;
+}
+
+:active-view-transition-type(subida)::view-transition-new(root) {
+  animation: var(--t-espacial-lento) var(--resorte-espacial-lento) both maun-sube-desde-abajo;
+}
+
+:active-view-transition-type(bajada)::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--t-espacial) var(--resorte-espacial) both maun-baja-y-se-va;
+}
+
+:active-view-transition-type(bajada)::view-transition-new(root) {
+  animation: var(--t-espacial) var(--resorte-espacial) both maun-se-aclara;
+}
+
+/* Pestaña: lo de abajo de las pestañas se va 30 px apagándose y lo nuevo llega desde 30 px del otro
+   lado; el fondo de la pestaña elegida viaja con un rebote leve; el resto cruza. Las etiquetas son
+   piezas propias y van por encima del fondo: si no, el fondo que viaja las tapa. */
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-old(root),
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-new(root),
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-old(
+  *.etiqueta-de-la-pestana
+),
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-new(
+  *.etiqueta-de-la-pestana
+) {
+  animation-duration: var(--t-efectos-rapidos);
+  animation-timing-function: var(--resorte-efectos-rapidos);
+}
+
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-group(
+  *.etiqueta-de-la-pestana
+) {
+  z-index: 1;
+  animation: none;
+}
+
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-group(
+  contenido-de-la-pestana
+) {
+  animation: none;
+}
+
+:active-view-transition-type(pestana-adelante)::view-transition-old(contenido-de-la-pestana) {
+  animation:
+    var(--t-efectos-rapidos) var(--resorte-efectos-rapidos) both maun-se-apaga,
+    var(--t-espacial-rapido) var(--resorte-espacial-rapido) both maun-se-va-a-la-izquierda;
+}
+
+:active-view-transition-type(pestana-adelante)::view-transition-new(contenido-de-la-pestana) {
+  animation:
+    var(--t-efectos-rapidos) var(--resorte-efectos-rapidos) both maun-aparece,
+    var(--t-espacial-rapido) var(--resorte-espacial-rapido) both maun-llega-desde-la-derecha;
+}
+
+:active-view-transition-type(pestana-atras)::view-transition-old(contenido-de-la-pestana) {
+  animation:
+    var(--t-efectos-rapidos) var(--resorte-efectos-rapidos) both maun-se-apaga,
+    var(--t-espacial-rapido) var(--resorte-espacial-rapido) both maun-se-va-a-la-derecha;
+}
+
+:active-view-transition-type(pestana-atras)::view-transition-new(contenido-de-la-pestana) {
+  animation:
+    var(--t-efectos-rapidos) var(--resorte-efectos-rapidos) both maun-aparece,
+    var(--t-espacial-rapido) var(--resorte-espacial-rapido) both maun-llega-desde-la-izquierda;
+}
+
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-group(
+  fondo-de-la-pestana
+) {
+  animation-duration: var(--t-expresivo-rapido);
+  animation-timing-function: var(--resorte-expresivo-rapido);
+}
+
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-old(
+  fondo-de-la-pestana
+),
+:active-view-transition-type(pestana-adelante, pestana-atras)::view-transition-new(
+  fondo-de-la-pestana
+) {
+  animation: none;
+}

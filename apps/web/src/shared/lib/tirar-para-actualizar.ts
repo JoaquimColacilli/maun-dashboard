@@ -25,12 +25,14 @@ export function useTirarParaActualizar<R>(
   actualizar: () => Promise<R>,
   contenedor: RefObject<HTMLElement | null>,
   deshabilitado: boolean,
+  enTransicion: () => boolean = () => false,
 ): Tiron<R> {
   const [distancia, setDistancia] = useState(0);
   const [fase, setFase] = useState<FaseDelTiron>('quieto');
   const [desenlace, setDesenlace] = useState<R | null>(null);
   const alActualizar = useRef(actualizar);
   const frenado = useRef(deshabilitado);
+  const enMovimiento = useRef(enTransicion);
   const desde = useRef<number | null>(null);
   const tiron = useRef(0);
   const empezo = useRef(false);
@@ -39,6 +41,7 @@ export function useTirarParaActualizar<R>(
   useLayoutEffect(() => {
     alActualizar.current = actualizar;
     frenado.current = deshabilitado;
+    enMovimiento.current = enTransicion;
   });
 
   useEffect(() => {
@@ -102,6 +105,7 @@ export function useTirarParaActualizar<R>(
       const puedeEmpezar =
         !frenado.current &&
         !ocupado.current &&
+        !enMovimiento.current() &&
         evento.touches.length === 1 &&
         elemento.scrollTop <= 0;
       desde.current = puedeEmpezar && dedo ? dedo.clientY : null;

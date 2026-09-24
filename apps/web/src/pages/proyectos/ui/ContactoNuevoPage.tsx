@@ -1,20 +1,20 @@
 import { useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 
 import { rutaDelProyecto } from '@/entities/proyecto';
 import { HojaDeContacto } from '@/features/avanzar-la-consulta';
-import { fechaDelEnlace, PARAMETRO_DE_VISITA, useCerrarHoja } from '@/shared/lib';
+import { fechaDelEnlace, PARAMETRO_DE_VISITA, useCerrarHoja, useIr } from '@/shared/lib';
 
 export function ContactoNuevoPage() {
-  const navegar = useNavigate();
+  const ir = useIr();
   const cerrar = useCerrarHoja();
   const [parametros] = useSearchParams();
 
   const alGuardar = useCallback(
     (id: string) => {
-      void navegar(rutaDelProyecto(id), { replace: true });
+      ir(rutaDelProyecto(id), { como: 'reemplazar' });
     },
-    [navegar],
+    [ir],
   );
 
   return (

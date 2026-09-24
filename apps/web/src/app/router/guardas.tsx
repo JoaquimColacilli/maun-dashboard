@@ -10,6 +10,7 @@ import { esCelular, useAppBloqueada, useVueltaPorUnAviso, vigilarElBloqueo } fro
 import { Cargando } from '@/shared/ui';
 
 import { CargaQueTarda, ErrorDeCarga } from '../layout/ErrorDeCarga';
+import { ProveedorDeLaPuerta } from '../navegacion/ProveedorDeLaPuerta';
 
 const TOPE_DE_LA_PRIMERA_CARGA_MS = 15_000;
 
@@ -68,7 +69,9 @@ export function RutaConSesion() {
         foto: sesion.foto,
       }}
     >
-      <ConBloqueo usuarioId={sesion.usuarioId} />
+      <ProveedorDeLaPuerta>
+        <ConBloqueo usuarioId={sesion.usuarioId} />
+      </ProveedorDeLaPuerta>
     </ProveedorDeSesion>
   );
 }

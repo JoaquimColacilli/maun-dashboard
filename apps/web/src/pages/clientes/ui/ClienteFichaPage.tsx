@@ -1,7 +1,7 @@
 import { faseDe } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import {
   CONDICION,
@@ -21,7 +21,16 @@ import { EstadoBadge, RUTA_DE_PROYECTO_NUEVO, rutaDelProyecto } from '@/entities
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { fechaLarga, formatearPesos, hoyLocal, metaDeAvisos, relativa } from '@/shared/lib';
+import {
+  fechaLarga,
+  formatearPesos,
+  hoyLocal,
+  Ir,
+  metaDeAvisos,
+  relativa,
+  useIr,
+  useVolver,
+} from '@/shared/lib';
 import {
   Button,
   ConSalida,
@@ -129,13 +138,13 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
                 className="relative flex items-center gap-3 border-b border-hairline py-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink"
               >
                 <span className="min-w-0 flex-1">
-                  <Link
-                    to={rutaDelProyecto(proyecto.id)}
+                  <Ir
+                    a={rutaDelProyecto(proyecto.id)}
                     data-tarjeta
                     className="block truncate text-body-lg font-medium after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
                   >
                     {proyecto.titulo}
-                  </Link>
+                  </Ir>
                   <span className="mt-0.5 block text-meta text-text-3">
                     {fase === 'consultas'
                       ? 'Consulta'
@@ -166,7 +175,8 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
 
 export function ClienteFichaPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
+  const vuelta = useVolver('/clientes', 'Clientes');
   const { id = '' } = useParams();
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
@@ -189,13 +199,7 @@ export function ClienteFichaPage() {
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente de
           otro taller.
         </p>
-        <Button
-          onClick={() => {
-            void navegar('/clientes');
-          }}
-        >
-          Volver a Clientes
-        </Button>
+        <Button onClick={vuelta.volver}>Volver a Clientes</Button>
       </Pagina>
     );
   }
@@ -224,13 +228,14 @@ export function ClienteFichaPage() {
   return (
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
-        <Link
-          to="/clientes"
+        <Ir
+          a="/clientes"
+          alTocar={vuelta.volver}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Clientes
-        </Link>
+          {vuelta.etiqueta}
+        </Ir>
         <div className="flex gap-2">
           <Button
             variant="secundario"
@@ -345,7 +350,7 @@ export function ClienteFichaPage() {
         <Button
           className="mt-4 w-full"
           onClick={() => {
-            void navegar(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
+            ir(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
           }}
         >
           <Icono nombre="folder-plus" tamano={18} />
@@ -404,7 +409,7 @@ export function ClienteFichaPage() {
                       previo: cliente,
                     });
                     setConfirmando(false);
-                    void navegar('/clientes');
+                    ir('/clientes', { como: 'terminar' });
                   }}
                 >
                   Borrar el cliente

@@ -1,7 +1,6 @@
 import { ESTADOS_DE_CONSULTA, type EstadoDeConsulta } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
-import { useNavigate } from 'react-router';
 
 import { AccionesDeContacto } from '@/entities/cliente';
 import {
@@ -13,7 +12,7 @@ import {
   type Proyecto,
 } from '@/entities/proyecto';
 import { mensajeDeSincronizacion } from '@/shared/api';
-import { fechaLarga, hoyEnElTaller, metaDeAvisos, uuidv7 } from '@/shared/lib';
+import { fechaLarga, hoyEnElTaller, metaDeAvisos, uuidv7, useIr } from '@/shared/lib';
 import { Button, Campo, FilaDeAcciones, Hoja } from '@/shared/ui';
 
 import {
@@ -75,7 +74,7 @@ export function HojaDeRegistrarElContacto({
   alCerrar,
 }: HojaDeRegistrarElContactoProps) {
   const ids = useId();
-  const navegar = useNavigate();
+  const ir = useIr();
   const hoy = hoyEnElTaller();
   const [idDelSiguiente] = useState(uuidv7);
   const [dia, setDia] = useState(hoy);
@@ -138,7 +137,7 @@ export function HojaDeRegistrarElContacto({
     if (que === 'no_va') {
       if (respuesta.trim() !== '') guardar.mutate(guardado);
       yaTermino.current = true;
-      void navegar(rutaDeCierre(proyecto.id));
+      ir(rutaDeCierre(proyecto.id));
       return;
     }
 

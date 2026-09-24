@@ -8,6 +8,7 @@ import {
 import {
   describirEstadoSync,
   useEstadoSync,
+  usePuerta,
   useTirarParaActualizar,
   useVersionNueva,
   type EstadoSync,
@@ -125,10 +126,12 @@ export function TirarParaActualizar({
   deshabilitado,
 }: TirarParaActualizarProps) {
   const sincronizarAhora = useSincronizarAhora(usuarioId);
+  const puerta = usePuerta();
   const { distancia, avance, fase, desenlace } = useTirarParaActualizar(
     sincronizarAhora,
     contenedor,
     deshabilitado,
+    puerta?.hayUnaTransicion,
   );
   const estadoSync = useEstadoSync();
   const hayVersionNueva = useVersionNueva();

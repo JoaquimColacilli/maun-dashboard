@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 
 import { ConfirmacionDelPedido, FormularioDePedido } from '@/features/recuperar-acceso';
+import { Ir } from '@/shared/lib';
 import { ENLACE_DE_ACCESO, PantallaDeAcceso } from '@/shared/ui';
 
 export function RecuperarPage() {
@@ -32,9 +32,9 @@ export function RecuperarPage() {
       pie={
         <p>
           ¿Te acordaste?{' '}
-          <Link to="/acceso" className={ENLACE_DE_ACCESO}>
+          <Ir a="/acceso" className={ENLACE_DE_ACCESO}>
             Entrá
-          </Link>
+          </Ir>
         </p>
       }
     >

@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
-import { useNavigate } from 'react-router';
 
 import { ClienteCombobox, CONDICION, enlaceDeMapa } from '@/entities/cliente';
 import {
@@ -43,6 +42,8 @@ import {
   useAltoVisible,
   useAnchoDePantalla,
   uuidv7,
+  useIr,
+  useVolver,
 } from '@/shared/lib';
 import { Button, Campo, CamposJuntos, Icono, MoneyInput, SeccionesEnFilas } from '@/shared/ui';
 
@@ -71,7 +72,12 @@ export function PantallaDeProyecto({
   agregarUnaOpcion = false,
 }: PantallaDeProyectoProps) {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
+  const cancelar = useVolver(
+    proyectoId === undefined ? '/proyectos' : rutaDelProyecto(proyectoId),
+    'Cancelar',
+    { fija: true },
+  );
   const ancho = useAnchoDePantalla();
   const altoVisible = useAltoVisible();
   const idCampos = useId();
@@ -205,8 +211,10 @@ export function PantallaDeProyecto({
   }
 
   useEffect(() => {
-    if (guardar.isPaused) void navegar(rutaAlTerminar(alAbrir.current.id, volverALiquidar));
-  }, [guardar.isPaused, navegar, volverALiquidar]);
+    if (guardar.isPaused) {
+      ir(rutaAlTerminar(alAbrir.current.id, volverALiquidar), { como: 'terminar' });
+    }
+  }, [guardar.isPaused, ir, volverALiquidar]);
 
   const enviar: SubmitHandler<FormularioDeProyecto> = (valores) => {
     const previos = hijosDelProyecto(replica, alAbrir.current.id);
@@ -227,7 +235,7 @@ export function PantallaDeProyecto({
       { pedido, previos: { proyecto: proyecto ?? null, ...previos } },
       {
         onSuccess: () => {
-          void navegar(rutaAlTerminar(alAbrir.current.id, volverALiquidar));
+          ir(rutaAlTerminar(alAbrir.current.id, volverALiquidar), { como: 'terminar' });
         },
         onError: setRechazo,
       },
@@ -248,13 +256,7 @@ export function PantallaDeProyecto({
     >
       <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
         <div className="mx-auto grid w-full max-w-content grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
-          <Button
-            variant="terciario"
-            className="justify-self-start"
-            onClick={() => {
-              void navegar(proyecto === undefined ? '/proyectos' : rutaDelProyecto(proyecto.id));
-            }}
-          >
+          <Button variant="terciario" className="justify-self-start" onClick={cancelar.volver}>
             <Icono nombre="x" tamano={20} />
             Cancelar
           </Button>

@@ -1,6 +1,6 @@
 import { asientosDelLibro, type Tesoro } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 
 import {
   agruparPorDia,
@@ -33,6 +33,7 @@ import {
   TESORO,
   tesoroDelParametro,
   TESOROS_EN_ORDEN,
+  useIr,
 } from '@/shared/lib';
 import { Button, ComparacionMensual, ConSalida, Icono, Pagina, PrincipalYApoyo } from '@/shared/ui';
 
@@ -73,13 +74,13 @@ function Chip({
 
 export function FinanzasPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const location = useLocation();
   const hoy = hoyLocal();
   const mes = mesDeLaFecha(hoy);
 
   function abrirHoja(ruta: string) {
-    void navegar(ruta, { state: conFondo(location) });
+    ir(ruta, { state: conFondo(location) });
   }
 
   const [parametros, setParametros] = useSearchParams();

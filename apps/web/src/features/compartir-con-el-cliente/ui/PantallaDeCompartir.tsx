@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import { archivosDelProyecto, loQueVeElCliente } from '@/entities/archivo';
 import {
@@ -25,6 +24,9 @@ import {
   tokenNuevo,
   useEstadoSync,
   uuidv7,
+  Ir,
+  useIr,
+  useVolver,
 } from '@/shared/lib';
 import {
   Button,
@@ -55,8 +57,9 @@ const COPIADO_MS = 2_200;
 
 export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { proyecto, cliente } = resumen;
+  const vuelta = useVolver(rutaDelProyecto(proyecto.id), 'Volver al trabajo', { fija: true });
   const hoy = hoyLocal();
   const sync = useEstadoSync();
   const sinSenal = sync.tipo === 'sin-conexion';
@@ -155,7 +158,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
     <Button
       variant="secundario"
       onClick={() => {
-        void navegar(rutaDeLaVistaDelCliente(proyecto.id));
+        ir(rutaDeLaVistaDelCliente(proyecto.id));
       }}
     >
       <Icono nombre="eye" tamano={18} />
@@ -165,13 +168,14 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
 
   return (
     <Pagina>
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
+      <Ir
+        a={rutaDelProyecto(proyecto.id)}
+        alTocar={vuelta.volver}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
       >
         <Icono nombre="chevron-left" tamano={20} />
-        Volver al trabajo
-      </Link>
+        {vuelta.etiqueta}
+      </Ir>
 
       <header className="flex flex-col gap-1.5 border-b border-hairline pb-4">
         <span className="text-label text-text-2">

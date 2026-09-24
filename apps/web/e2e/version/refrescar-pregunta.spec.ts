@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apoyar, dedo, levantar, mover, tirarYSoltar } from '../apoyo/dedo';
 import { indicadorDeSync, listoParaCortar } from '../apoyo/pantalla';
+import { sinTransicionEnCurso } from '../apoyo/transiciones';
 import {
   abrirLaVersionA,
   aviso,
@@ -9,7 +10,6 @@ import {
   conLaBEsperando,
   entrarConLaSesion,
   hastaQueDejeDePreguntar,
-  sinTransicionEnCurso,
   tallerVacio,
 } from './apoyo';
 

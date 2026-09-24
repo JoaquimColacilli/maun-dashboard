@@ -1,7 +1,6 @@
 import type { EventoDeLaAgenda, EventoDerivado, EventoPropio } from '@maun/domain';
-import { Link } from 'react-router';
 
-import { rutaDelCliente, rutaDelProyecto, useAnchoDePantalla } from '@/shared/lib';
+import { rutaDelCliente, rutaDelProyecto, useAnchoDePantalla, Ir } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
 import {
@@ -37,9 +36,9 @@ function DetalleConEnlaces({ evento }: { evento: EventoDeLaAgenda }) {
   if (evento.clase === 'propia') {
     if (evento.proyectoId === null || evento.proyecto === null) return <>{evento.proyecto ?? ''}</>;
     return (
-      <Link to={rutaDelProyecto(evento.proyectoId)} className={ENLACE_EN_EL_DETALLE}>
+      <Ir a={rutaDelProyecto(evento.proyectoId)} className={ENLACE_EN_EL_DETALLE}>
         {evento.proyecto}
-      </Link>
+      </Ir>
     );
   }
   const cliente = evento.cliente.trim();
@@ -47,9 +46,9 @@ function DetalleConEnlaces({ evento }: { evento: EventoDeLaAgenda }) {
   return (
     <>
       {cliente !== '' && (
-        <Link to={rutaDelCliente(evento.clienteId)} className={ENLACE_EN_EL_DETALLE}>
+        <Ir a={rutaDelCliente(evento.clienteId)} className={ENLACE_EN_EL_DETALLE}>
           {cliente}
-        </Link>
+        </Ir>
       )}
       {cliente !== '' && lugar !== '' && ', '}
       {lugar}

@@ -41,6 +41,7 @@ La fase 2C dejó la réplica del household en IndexedDB, la cola de salida y el 
 - El callback hace `flushSync` alrededor de la navegación: la API captura el DOM cuando el callback termina, y sin el flush React todavía no lo actualizó.
 - Si el navegador no tiene la API, el DOM se actualiza igual y no hay animación. El chequeo de existencia es todo lo que hace falta.
 - `prefers-reduced-motion` se respeta dos veces: en JS, salteando la transición, y en CSS, anulando las animaciones de `::view-transition-*`. La animación es la de por defecto, un cross-fade: nada pesado en el hilo principal, que es lo que arruinaría el INP.
+- **Corregido por el ADR 0066.** `conTransicion()` y el cross-fade de cada navegación se fueron. Toda navegación pasa por una puerta y un coordinador decide cada movimiento: en el celular hay empuje, vuelta, subida, tarjeta y pestaña, casi todos sobre el `<main>`; en la tablet y la compu solo lo que sale de la navegación funde, como antes.
 
 **El foco y el anuncio al cambiar de ruta los maneja el marco, no cada pantalla.** El `<main>` lleva `tabIndex={-1}` y recibe el foco en cada navegación, y una región `aria-live` dice a qué sección se entró. Es agnóstico de la pantalla: no depende de que cada una recuerde poner un `ref` en su `<h1>`. Hay además un enlace para saltar al contenido.
 

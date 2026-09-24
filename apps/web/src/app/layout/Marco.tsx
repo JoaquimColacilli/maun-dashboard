@@ -8,9 +8,11 @@ import {
 } from 'react';
 import { useLocation, useRoutes, type Location } from 'react-router';
 
+import { ProveedorDeReplica, useReplicaDelTaller } from '@/entities/replica';
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { OfertaDeHuella } from '@/features/activar-huella';
 import { Novedades } from '@/features/ver-novedades';
+import type { Replica } from '@/shared/api';
 import {
   describirEstadoSync,
   esRutaDeHoja,
@@ -22,6 +24,8 @@ import {
 } from '@/shared/lib';
 import { ConSalida } from '@/shared/ui';
 
+import { useCoordinador } from '../navegacion/contexto';
+import type { Coordinador } from '../navegacion/coordinador';
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
 import { Avisos } from './Avisos';
 import { IndicadorSync } from './IndicadorSync';
@@ -97,6 +101,28 @@ function useHolguraInferior(
   return holgura;
 }
 
+function useReplicaDeLaPantalla(coordinador: Coordinador | null, clave: string): Replica {
+  const viva = useReplicaDelTaller();
+  const [quieta, setQuieta] = useState<{ clave: string; replica: Replica } | null>(null);
+  const mostrada = quieta?.clave === clave ? quieta.replica : viva;
+  const ultimaMostrada = useRef(mostrada);
+
+  useLayoutEffect(() => {
+    ultimaMostrada.current = mostrada;
+  });
+
+  useEffect(() => {
+    if (!coordinador) return;
+    return coordinador.escucharLaSalida((saliendoDe) => {
+      setQuieta(
+        saliendoDe === null ? null : { clave: saliendoDe, replica: ultimaMostrada.current },
+      );
+    });
+  }, [coordinador]);
+
+  return mostrada;
+}
+
 function HojaEnSuUbicacion({ ubicacion }: { ubicacion: Location }) {
   return useRoutes(RUTAS_DE_HOJA, ubicacion);
 }
@@ -124,7 +150,21 @@ export function Marco() {
   const [anuncio, setAnuncio] = useState('');
   const [pie, setPie] = useState<HTMLDivElement | null>(null);
   const holgura = useHolguraInferior(pie, principal);
+  const coordinador = useCoordinador();
+  const replica = useReplicaDeLaPantalla(coordinador, location.key);
+
+  useLayoutEffect(() => {
+    coordinador?.registrarElMain(principal.current);
+    return () => {
+      coordinador?.registrarElMain(null);
+    };
+  }, [coordinador]);
+
   useScrollPorPantalla(principal, visible);
+
+  useLayoutEffect(() => {
+    coordinador?.avisarDelMarco(location.key);
+  }, [coordinador, location.key]);
 
   const seccion = seccionDeLaRuta(visible.pathname);
   const etiqueta = DESTINOS[seccion].etiqueta;
@@ -189,10 +229,12 @@ export function Marco() {
             deshabilitado={!conElGesto}
           />
         )}
-        {pantalla}
+        <ProveedorDeReplica replica={replica}>{pantalla}</ProveedorDeReplica>
       </main>
 
-      <CapaDeHoja />
+      <ProveedorDeReplica replica={replica}>
+        <CapaDeHoja />
+      </ProveedorDeReplica>
 
       <Avisos />
 

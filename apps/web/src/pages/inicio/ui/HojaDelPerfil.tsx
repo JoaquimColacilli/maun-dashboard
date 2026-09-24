@@ -5,7 +5,6 @@ import {
   nombresQueOpinaron,
 } from '@maun/domain';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 
 import { diaEnPalabras, etiquetaDelDia, nombreDelEvento } from '@/entities/agenda';
 import { fraseDelDiezmo } from '@/entities/movimiento';
@@ -21,6 +20,7 @@ import {
   RUTA_DE_OPINIONES,
   useEstadoSync,
   type EstadoSync,
+  Ir,
 } from '@/shared/lib';
 import { Avatar, Hoja, Icono, type NombreDeIcono } from '@/shared/ui';
 
@@ -70,7 +70,7 @@ function Fila({
   insignia?: ReactNode;
 }) {
   return (
-    <Link to={ruta} className={FILA}>
+    <Ir a={ruta} className={FILA}>
       <span className={`flex size-9 flex-none items-center justify-center rounded-panel ${fondo}`}>
         <Icono nombre={icono} tamano={18} />
       </span>
@@ -84,7 +84,7 @@ function Fila({
       <span aria-hidden className="flex flex-none text-text-3">
         <Icono nombre="chevron-right" tamano={18} />
       </span>
-    </Link>
+    </Ir>
   );
 }
 

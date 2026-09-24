@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Link, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 
 import {
   conFondo,
@@ -7,6 +7,7 @@ import {
   rutaDeContactoNuevo,
   rutaDeProyectoNuevo,
   useUbicacionVisible,
+  Ir,
 } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
@@ -35,10 +36,10 @@ export function CaminosALosTrabajos({ fecha, alIr }: CaminosALosTrabajosProps) {
       </p>
       <ul aria-labelledby={idDeLaExplicacion} className="flex flex-col">
         <li>
-          <Link
-            to={rutaDeContactoNuevo(fecha)}
+          <Ir
+            a={rutaDeContactoNuevo(fecha)}
             state={conFondo(fondo)}
-            replace={desdeUnaHojaPorRuta}
+            como={desdeUnaHojaPorRuta ? 'reemplazar' : 'apilar'}
             onClick={alTocar}
             className="-mx-2 flex min-h-tap items-center gap-3 rounded-field px-2 py-1 hover:bg-surface"
           >
@@ -48,12 +49,12 @@ export function CaminosALosTrabajos({ fecha, alIr }: CaminosALosTrabajosProps) {
               <span className="block text-meta text-text-2">con la visita ese día</span>
             </span>
             <Icono nombre="chevron-right" tamano={16} className="text-text-3" />
-          </Link>
+          </Ir>
         </li>
         <li>
-          <Link
-            to={rutaDeProyectoNuevo(fecha)}
-            replace={desdeUnaHojaPorRuta}
+          <Ir
+            a={rutaDeProyectoNuevo(fecha)}
+            como={desdeUnaHojaPorRuta ? 'reemplazar' : 'apilar'}
             onClick={alTocar}
             className="-mx-2 flex min-h-tap items-center gap-3 rounded-field px-2 py-1 hover:bg-surface"
           >
@@ -63,7 +64,7 @@ export function CaminosALosTrabajos({ fecha, alIr }: CaminosALosTrabajosProps) {
               <span className="block text-meta text-text-2">con la entrega estimada ese día</span>
             </span>
             <Icono nombre="chevron-right" tamano={16} className="text-text-3" />
-          </Link>
+          </Ir>
         </li>
       </ul>
     </div>

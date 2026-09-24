@@ -1,7 +1,6 @@
 import { ESTADOS_DE_CONSULTA, puedeCambiarEstado } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
   ESTADO,
@@ -22,7 +21,7 @@ import {
   type CambiosDeProyecto,
   type PagoParaGuardar,
 } from '@/shared/api';
-import { hoyLocal, metaDeAvisos, useAlgoEnCurso, uuidv7 } from '@/shared/lib';
+import { hoyLocal, metaDeAvisos, useAlgoEnCurso, uuidv7, useIr } from '@/shared/lib';
 import { Button, FilaDeAcciones, PanelDePaso } from '@/shared/ui';
 
 import { cambiosAlPasarAPresupuestar, pagoAntesDePresupuestar } from '../model/relevamiento';
@@ -69,7 +68,7 @@ export function AvanceDelContacto({
   conOpciones,
   alAgendar,
 }: AvanceDelContactoProps) {
-  const navegar = useNavigate();
+  const ir = useIr();
   const apertura = aperturaDeLaReplica(useReplicaDelTaller());
   const guardar = useMutation({
     ...MUTACION_DE_PROYECTO,
@@ -108,7 +107,7 @@ export function AvanceDelContacto({
         alAgendar();
         return;
       case 'pasaje':
-        void navegar(rutaDeAprobacion(proyecto.id));
+        ir(rutaDeAprobacion(proyecto.id));
         return;
       case 'guardar':
         mover({ estado: paso.hacia });

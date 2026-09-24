@@ -1,6 +1,6 @@
 import type { ResumenDeOpiniones } from '@maun/domain';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 
 import { resumenDelTaller, trabajosParaPedir } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
@@ -13,6 +13,7 @@ import {
   RUTA_DE_PROYECTOS,
   rutaDelProyecto,
   useEstadoSync,
+  useIr,
 } from '@/shared/lib';
 import { Button, ConSalida, FilaDeAcciones, Icono } from '@/shared/ui';
 
@@ -29,7 +30,7 @@ const PREFIJO_DE_PREGUNTA = '#pregunta-';
 
 function SinEnviar() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { terminados, sinPedir } = useMemo(() => trabajosParaPedir(replica), [replica]);
 
   return (
@@ -52,7 +53,7 @@ function SinEnviar() {
           {terminados > 0 && (
             <Button
               onClick={() => {
-                void navegar(sinPedir === null ? RUTA_DE_PROYECTOS : rutaDelProyecto(sinPedir));
+                ir(sinPedir === null ? RUTA_DE_PROYECTOS : rutaDelProyecto(sinPedir));
               }}
             >
               Pedirle la opinión a un cliente
@@ -61,7 +62,7 @@ function SinEnviar() {
           <Button
             variant="secundario"
             onClick={() => {
-              void navegar(RUTA_DE_PREGUNTAS);
+              ir(RUTA_DE_PREGUNTAS);
             }}
           >
             Ver qué se pregunta
@@ -127,6 +128,7 @@ function SinRespuestas({
 export function ResultadosPage() {
   const replica = useReplicaDelTaller();
   const estadoSync = useEstadoSync();
+  const ir = useIr();
   const location = useLocation();
   const [busqueda, setBusqueda] = useSearchParams();
   const hoy = hoyLocal();
@@ -147,14 +149,10 @@ export function ResultadosPage() {
   }
 
   function cerrar(): void {
-    setBusqueda(
-      (actual) => {
-        const siguiente = new URLSearchParams(actual);
-        siguiente.delete(PARAMETRO_DE_RESPUESTA);
-        return siguiente;
-      },
-      { replace: true },
-    );
+    const siguiente = new URLSearchParams(busqueda);
+    siguiente.delete(PARAMETRO_DE_RESPUESTA);
+    const resto = siguiente.toString();
+    ir(`${location.pathname}${resto === '' ? '' : `?${resto}`}`, { como: 'terminar' });
   }
 
   return (

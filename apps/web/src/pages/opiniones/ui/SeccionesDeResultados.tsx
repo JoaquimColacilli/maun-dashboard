@@ -13,11 +13,10 @@ import {
   type VersionAnterior,
 } from '@maun/domain';
 import { useId, useState } from 'react';
-import { Link } from 'react-router';
 
 import { iniciales } from '@/entities/cliente';
 import { BORDE_DEL_POLO, Carita, cuantasRespuestas } from '@/entities/opinion';
-import { diaYMes, haceCuanto, rutaDelProyecto } from '@/shared/lib';
+import { diaYMes, haceCuanto, rutaDelProyecto, Ir } from '@/shared/lib';
 import { Icono, Tablero } from '@/shared/ui';
 
 import {
@@ -425,9 +424,9 @@ export function TrabajoPorTrabajo({
           return (
             <li key={fila.trabajo.proyectoId}>
               {respuestaId === null ? (
-                <Link to={rutaDelProyecto(fila.trabajo.proyectoId)} className={FILA}>
+                <Ir a={rutaDelProyecto(fila.trabajo.proyectoId)} className={FILA}>
                   <ContenidoDeLaFila fila={fila} hoy={hoy} />
-                </Link>
+                </Ir>
               ) : (
                 <button
                   type="button"

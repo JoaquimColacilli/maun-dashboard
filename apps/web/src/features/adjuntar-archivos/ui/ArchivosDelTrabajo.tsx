@@ -1,6 +1,5 @@
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useId, useRef, useState, type ChangeEvent } from 'react';
-import { Link } from 'react-router';
 
 import {
   archivosDelProyecto,
@@ -25,6 +24,7 @@ import {
   ImagenIlegible,
   rutaDeCompartir,
   uuidv7,
+  Ir,
 } from '@/shared/lib';
 import { Button, ConSalida, Icono } from '@/shared/ui';
 
@@ -166,12 +166,12 @@ export function ArchivosDelTrabajo({ proyectoId }: ArchivosDelTrabajoProps) {
         <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-hairline py-3 text-label leading-relaxed text-text-2">
           <Icono nombre="eye-off" tamano={15} className="flex-none translate-y-0.5 text-text-3" />
           <span>El cliente no ve ninguno: un archivo sube privado y se comparte de a uno.</span>
-          <Link
-            to={rutaDeCompartir(proyectoId)}
+          <Ir
+            a={rutaDeCompartir(proyectoId)}
             className="font-medium text-ink underline decoration-hairline underline-offset-3 hover:decoration-ink"
           >
             Elegir cuáles ve
-          </Link>
+          </Ir>
         </p>
       )}
 

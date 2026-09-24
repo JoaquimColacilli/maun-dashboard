@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 
+import { Ir, origenDeLaTarjeta } from '@/shared/lib';
 import { Tablero } from '@/shared/ui';
 
 import type { ResumenDeProyecto } from '../model/resumen';
@@ -27,6 +27,7 @@ export function TarjetaDeProyecto({
 
   return (
     <li
+      {...origenDeLaTarjeta(proyecto.id)}
       className={`relative flex flex-col gap-2 rounded-panel border px-3.5 pt-3.5 pb-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink ${
         atencion ? 'border-atencion' : 'border-hairline'
       }`}
@@ -38,13 +39,13 @@ export function TarjetaDeProyecto({
 
       <MarcaDeLiquidacion proyectoId={proyecto.id} />
 
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
+      <Ir
+        a={rutaDelProyecto(proyecto.id)}
         data-tarjeta
         className="text-body-lg leading-snug font-medium text-pretty after:absolute after:inset-0 after:rounded-panel after:content-[''] focus-visible:outline-none"
       >
         {proyecto.titulo}
-      </Link>
+      </Ir>
 
       {children}
 

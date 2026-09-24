@@ -16,12 +16,14 @@ type Actualizar = () => Promise<string>;
 function Prueba({
   actualizar,
   deshabilitado = false,
+  enTransicion,
 }: {
   actualizar: Actualizar;
   deshabilitado?: boolean;
+  enTransicion?: () => boolean;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
-  const tiron = useTirarParaActualizar(actualizar, contenedor, deshabilitado);
+  const tiron = useTirarParaActualizar(actualizar, contenedor, deshabilitado, enTransicion);
   return (
     <div
       ref={contenedor}
@@ -84,6 +86,21 @@ afterEach(() => {
 });
 
 describe('tirar para actualizar', () => {
+  it('un toque que empieza durante una transición entre pantallas no arranca un tirón', () => {
+    const actualizar = vi.fn<Actualizar>(() => Promise.resolve('listo'));
+    let moviendose = true;
+    render(<Prueba actualizar={actualizar} enTransicion={() => moviendose} />);
+
+    tirar(100, dedoParaLlegarA(UMBRAL_DEL_TIRON + 10));
+    expect(fase()).toBe('quieto');
+    soltar();
+    expect(actualizar).not.toHaveBeenCalled();
+
+    moviendose = false;
+    tirar(100, dedoParaLlegarA(UMBRAL_DEL_TIRON - 1));
+    expect(fase()).toBe('tirando');
+  });
+
   it('soltar antes del umbral vuelve sin actualizar', () => {
     const actualizar = vi.fn<Actualizar>(() => Promise.resolve('listo'));
     render(<Prueba actualizar={actualizar} />);

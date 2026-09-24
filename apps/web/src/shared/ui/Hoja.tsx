@@ -13,16 +13,32 @@ import {
 
 import { Button, FilaDeAcciones, Icono } from '@maun/ui';
 
-import { useAlgoEnCurso, useAltoVisible, useAnchoDePantalla } from '@/shared/lib';
+import {
+  anotarHojaAbierta,
+  useAlgoEnCurso,
+  useAltoVisible,
+  useAnchoDePantalla,
+} from '@/shared/lib';
 
 interface Salida {
   saliendo: boolean;
   alTerminar: () => void;
+  despuesDeSalir: (accion: () => void) => void;
 }
 
 const ContextoDeSalida = createContext<Salida | null>(null);
 
 const RESPALDO_DE_LA_SALIDA_MS = 400;
+const RESPALDO_DE_LO_QUE_SIGUE_MS = 600;
+
+function unaSolaVez(accion: () => void): () => void {
+  let hecha = false;
+  return () => {
+    if (hecha) return;
+    hecha = true;
+    accion();
+  };
+}
 
 type Ausente = null | undefined | false;
 
@@ -49,10 +65,20 @@ export function ConSalida<T>({ valor, children }: ConSalidaProps<T>) {
   }
 
   const presente = estaPresente(valor);
+  const pendientes = useRef<(() => void)[]>([]);
   const alTerminar = useCallback(() => {
     setUltimo(null);
+    const acciones = pendientes.current;
+    pendientes.current = [];
+    for (const accion of acciones) accion();
   }, []);
-  const salida = useMemo(() => ({ saliendo: !presente, alTerminar }), [presente, alTerminar]);
+  const despuesDeSalir = useCallback((accion: () => void) => {
+    pendientes.current.push(accion);
+  }, []);
+  const salida = useMemo(
+    () => ({ saliendo: !presente, alTerminar, despuesDeSalir }),
+    [presente, alTerminar, despuesDeSalir],
+  );
 
   if (ultimo === null) return null;
   return (
@@ -125,6 +151,27 @@ export function Hoja({
   const abajo = desdeAbajo || enCelular;
   const mostrarPregunta = preguntando && conCambios && !saliendo;
   useAlgoEnCurso(!saliendo);
+  const cerrarDeVerdad = useRef(alCerrar);
+  const yaSeCierra = useRef(false);
+
+  useLayoutEffect(() => {
+    cerrarDeVerdad.current = alCerrar;
+  });
+
+  useLayoutEffect(() => {
+    if (saliendo) return;
+    return anotarHojaAbierta({
+      cerrarYDespues: (despues) => {
+        const loQueSigue = unaSolaVez(despues);
+        setTimeout(loQueSigue, RESPALDO_DE_LO_QUE_SIGUE_MS);
+        if (salida) salida.despuesDeSalir(loQueSigue);
+        if (yaSeCierra.current) return;
+        yaSeCierra.current = true;
+        cerrarDeVerdad.current();
+        if (!salida) loQueSigue();
+      },
+    });
+  }, [saliendo, salida]);
 
   useLayoutEffect(() => {
     const elemento = dialogo.current;

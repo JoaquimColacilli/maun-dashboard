@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import { useSesion } from '@/entities/sesion';
 import { FormularioDeNuevaContrasena } from '@/features/recuperar-acceso';
 import { errorDelEnlace } from '@/shared/api';
-import { useEstadoSync } from '@/shared/lib';
+import { useEstadoSync, Ir, useIr } from '@/shared/lib';
 import { Button, ENLACE_DE_ACCESO, PantallaDeAcceso } from '@/shared/ui';
 
 export function NuevaContrasenaPage() {
   const sesion = useSesion();
   const estadoSync = useEstadoSync();
-  const navegar = useNavigate();
+  const ir = useIr();
   const [listo, setListo] = useState(false);
   const [delEnlace] = useState(() => errorDelEnlace(window.location.href));
 
@@ -24,7 +23,7 @@ export function NuevaContrasenaPage() {
           size="grande"
           className="w-full"
           onClick={() => {
-            void navegar('/', { replace: true });
+            ir('/', { como: 'reemplazar' });
           }}
         >
           Ir al taller
@@ -55,9 +54,9 @@ export function NuevaContrasenaPage() {
               'Los enlaces del correo se abren en el mismo navegador desde el que los pediste, y vencen.')
         }
         pie={
-          <Link to="/acceso/recuperar" className={ENLACE_DE_ACCESO}>
+          <Ir a="/acceso/recuperar" className={ENLACE_DE_ACCESO}>
             Pedir otro enlace
-          </Link>
+          </Ir>
         }
       >
         <p className="text-body leading-relaxed text-text-2">
@@ -75,9 +74,9 @@ export function NuevaContrasenaPage() {
         titulo="Esta pantalla se abre desde el correo"
         bajada="Para cambiar la contraseña hay que pedir el enlace y abrirlo desde el mail."
         pie={
-          <Link to="/" className={ENLACE_DE_ACCESO}>
+          <Ir a="/" className={ENLACE_DE_ACCESO}>
             Volver al taller
-          </Link>
+          </Ir>
         }
       >
         <p className="text-body leading-relaxed text-text-2">

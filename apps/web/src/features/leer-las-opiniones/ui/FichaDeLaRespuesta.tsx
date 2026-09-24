@@ -1,11 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router';
 
 import { enlaceDeWhatsapp } from '@/entities/cliente';
 import { fichaDeLaRespuesta, LineasDeLaRespuesta } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { diaYMes, hoyLocal, rutaDelProyecto } from '@/shared/lib';
+import { diaYMes, hoyLocal, rutaDelProyecto, Ir } from '@/shared/lib';
 import { FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
 
 import { marcarLeida } from '../model/acciones';
@@ -64,10 +63,10 @@ export function FichaDeLaRespuesta({ respuestaId, alCerrar }: FichaDeLaRespuesta
       </div>
       <div className="flex-none border-t border-hairline px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6 md:py-3.5">
         <FilaDeAcciones>
-          <Link to={rutaDelProyecto(trabajo.proyectoId)} className={BOTON}>
+          <Ir a={rutaDelProyecto(trabajo.proyectoId)} className={BOTON}>
             <Icono nombre="folder-kanban" tamano={16} />
             Abrir el trabajo
-          </Link>
+          </Ir>
           {whatsapp !== null && (
             <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={BOTON}>
               <Icono nombre="message-circle" tamano={16} />

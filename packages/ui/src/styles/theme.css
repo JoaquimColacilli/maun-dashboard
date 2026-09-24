@@ -185,6 +185,11 @@
   --sombra-menu: 0 12px 32px rgba(20, 20, 20, 0.14);
   --sombra-toast: 0 8px 24px rgba(20, 20, 20, 0.25);
 
+  /* Lo que se ve de la pantalla que entra por el costado, y cuánto se apaga la de abajo cuando sube
+     la capa del proyecto: son de los movimientos del celular (ADR 0066). */
+  --sombra-del-empuje: -12px 0 24px rgba(20, 20, 20, 0.14);
+  --atenuado-de-la-subida: 0.9;
+
   --tesoro-hogar: #0f6e56;
   --tesoro-hogar-tint: #e3f0eb;
   --tesoro-maun: #8a5612;
@@ -236,6 +241,264 @@
   --dur-corte: 500ms;
   --dur-corte-stagger: 400ms;
 
+  /* Los resortes del esquema estándar de Material 3, como curvas: cada uno es un par de curva
+     (linear()) y duración, que es el tiempo en que asienta a un milésimo. Salen de amortiguación y
+     rigidez en src/resortes.ts y los escribe un script; el test los compara (ADR 0066). */
+  /* resortes: los escribe `pnpm --filter @maun/ui resortes` */
+  --resorte-espacial: linear(
+    0,
+    0.0294,
+    0.1005,
+    0.1939,
+    0.2961,
+    0.3981,
+    0.4946,
+    0.5823,
+    0.6597,
+    0.7266,
+    0.7832,
+    0.8303,
+    0.8689,
+    0.9002,
+    0.9251,
+    0.9447,
+    0.96,
+    0.9717,
+    0.9805,
+    0.9871,
+    0.9919,
+    0.9953,
+    0.9977,
+    0.9994,
+    1.0004,
+    1.001,
+    1.0014,
+    1.0015,
+    1.0015,
+    1.0014,
+    1.0013,
+    1.0012,
+    1
+  );
+  --dur-espacial: 317ms;
+  --resorte-espacial-rapido: linear(
+    0,
+    0.0293,
+    0.1004,
+    0.1937,
+    0.2958,
+    0.3978,
+    0.4942,
+    0.5819,
+    0.6593,
+    0.7262,
+    0.7828,
+    0.83,
+    0.8687,
+    0.8999,
+    0.9249,
+    0.9446,
+    0.9599,
+    0.9716,
+    0.9804,
+    0.987,
+    0.9919,
+    0.9953,
+    0.9977,
+    0.9993,
+    1.0004,
+    1.001,
+    1.0014,
+    1.0015,
+    1.0015,
+    1.0014,
+    1.0013,
+    1.0012,
+    1
+  );
+  --dur-espacial-rapido: 224ms;
+  --resorte-espacial-lento: linear(
+    0,
+    0.0293,
+    0.1005,
+    0.1938,
+    0.2959,
+    0.3979,
+    0.4943,
+    0.582,
+    0.6595,
+    0.7263,
+    0.783,
+    0.8301,
+    0.8688,
+    0.9,
+    0.925,
+    0.9446,
+    0.9599,
+    0.9716,
+    0.9805,
+    0.9871,
+    0.9919,
+    0.9953,
+    0.9977,
+    0.9994,
+    1.0004,
+    1.001,
+    1.0014,
+    1.0015,
+    1.0015,
+    1.0014,
+    1.0013,
+    1.0012,
+    1
+  );
+  --dur-espacial-lento: 484ms;
+  --resorte-efectos: linear(
+    0,
+    0.0345,
+    0.1145,
+    0.2152,
+    0.3211,
+    0.4232,
+    0.5168,
+    0.5997,
+    0.6714,
+    0.7324,
+    0.7834,
+    0.8257,
+    0.8604,
+    0.8886,
+    0.9115,
+    0.9299,
+    0.9446,
+    0.9564,
+    0.9657,
+    0.9731,
+    0.979,
+    0.9836,
+    0.9872,
+    0.99,
+    0.9922,
+    0.994,
+    0.9953,
+    0.9964,
+    0.9972,
+    0.9978,
+    0.9983,
+    0.9987,
+    1
+  );
+  --dur-efectos: 231ms;
+  --resorte-efectos-rapidos: linear(
+    0,
+    0.0345,
+    0.1147,
+    0.2154,
+    0.3214,
+    0.4235,
+    0.5172,
+    0.6001,
+    0.6718,
+    0.7327,
+    0.7837,
+    0.826,
+    0.8606,
+    0.8889,
+    0.9117,
+    0.9301,
+    0.9448,
+    0.9565,
+    0.9658,
+    0.9732,
+    0.979,
+    0.9836,
+    0.9872,
+    0.9901,
+    0.9923,
+    0.994,
+    0.9954,
+    0.9964,
+    0.9972,
+    0.9978,
+    0.9983,
+    0.9987,
+    1
+  );
+  --dur-efectos-rapidos: 150ms;
+  --resorte-efectos-lentos: linear(
+    0,
+    0.0343,
+    0.1142,
+    0.2145,
+    0.3202,
+    0.4221,
+    0.5157,
+    0.5986,
+    0.6703,
+    0.7313,
+    0.7824,
+    0.8248,
+    0.8596,
+    0.8879,
+    0.9109,
+    0.9294,
+    0.9442,
+    0.956,
+    0.9654,
+    0.9729,
+    0.9788,
+    0.9834,
+    0.987,
+    0.9899,
+    0.9921,
+    0.9939,
+    0.9953,
+    0.9963,
+    0.9972,
+    0.9978,
+    0.9983,
+    0.9987,
+    1
+  );
+  --dur-efectos-lentos: 326ms;
+  --resorte-expresivo-rapido: linear(
+    0,
+    0.0442,
+    0.1537,
+    0.2988,
+    0.4562,
+    0.6089,
+    0.7458,
+    0.8604,
+    0.9503,
+    1.0158,
+    1.0593,
+    1.0841,
+    1.0941,
+    1.0931,
+    1.0846,
+    1.0719,
+    1.0572,
+    1.0424,
+    1.0287,
+    1.017,
+    1.0076,
+    1.0006,
+    0.9957,
+    0.9927,
+    0.9913,
+    0.991,
+    0.9916,
+    0.9927,
+    0.994,
+    0.9955,
+    0.9968,
+    0.998,
+    1
+  );
+  --dur-expresivo-rapido: 359ms;
+  /* fin de los resortes */
+
   /* Lo que ocupa, como mucho, cada carácter de un monto formateado en IBM Plex Sans semibold con
      cifras tabulares: medido entre 0,509 y 0,515 em para «$ 1.506.291,84», «$ 12.345.678,90» y
      «-$ 12.345.678,90». Lo usa text-monto-que-entra; si cambia la letra, se vuelve a medir. */
@@ -285,6 +548,8 @@
     --sombra-sheet: 0 -8px 30px rgba(0, 0, 0, 0.5);
     --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.5);
     --sombra-toast: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --sombra-del-empuje: -12px 0 24px rgba(0, 0, 0, 0.55);
+    --atenuado-de-la-subida: 0.7;
 
     --negativo-fondo: #3a1c19;
     --negativo-texto: #ffdad5;
@@ -337,6 +602,15 @@
     --dur-medium: 0ms;
     --dur-corte: 0ms;
     --dur-corte-stagger: 0ms;
+    /* resortes sin movimiento: los escribe `pnpm --filter @maun/ui resortes` */
+    --dur-espacial: 0ms;
+    --dur-espacial-rapido: 0ms;
+    --dur-espacial-lento: 0ms;
+    --dur-efectos: 0ms;
+    --dur-efectos-rapidos: 0ms;
+    --dur-efectos-lentos: 0ms;
+    --dur-expresivo-rapido: 0ms;
+    /* fin de los resortes sin movimiento */
   }
 
   *,

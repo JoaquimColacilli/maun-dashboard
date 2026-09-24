@@ -1,12 +1,11 @@
 import { comoLaVeElCliente, duracion, TOPE_PREGUNTAS, type TonoDelLargo } from '@maun/domain';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link } from 'react-router';
 
 import { cuantasRespuestas, preguntaGuardada, TIPO } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { ajustesDe, householdDe } from '@/shared/api';
-import { diaLocal, haceCuanto, rutaDeLaPregunta, rutaDelProyecto } from '@/shared/lib';
+import { diaLocal, haceCuanto, rutaDeLaPregunta, rutaDelProyecto, Ir } from '@/shared/lib';
 import { ConSalida, FilaDeAcciones, Icono } from '@/shared/ui';
 
 import {
@@ -209,13 +208,13 @@ function Archivada({
       </span>
       <span className="flex flex-none gap-0.5">
         {uso.respuestas > 0 && (
-          <Link
-            to={rutaDeLaPregunta(fila.id)}
+          <Ir
+            a={rutaDeLaPregunta(fila.id)}
             aria-describedby={idDelTexto}
             className="flex h-9.5 items-center rounded-field border border-border bg-paper px-2.75 text-label font-medium no-underline hover:bg-surface"
           >
             Ver respuestas
-          </Link>
+          </Ir>
         )}
         <button
           type="button"
@@ -494,8 +493,8 @@ export function EditorDeLaEncuesta() {
           <ul className="list-none p-0">
             {propias.map(({ fila, trabajo }) => (
               <li key={fila.id}>
-                <Link
-                  to={rutaDelProyecto(trabajo.proyectoId)}
+                <Ir
+                  a={rutaDelProyecto(trabajo.proyectoId)}
                   className="flex min-h-15 w-full items-center gap-3 border-t border-hairline-soft py-3 text-left no-underline hover:bg-surface"
                 >
                   <span className="min-w-0 flex-1">
@@ -507,7 +506,7 @@ export function EditorDeLaEncuesta() {
                     </span>
                   </span>
                   <Icono nombre="chevron-right" tamano={18} />
-                </Link>
+                </Ir>
               </li>
             ))}
           </ul>

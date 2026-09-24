@@ -1,5 +1,11 @@
-import { estaLiquidado, puedeCerrarPerdido, puedeCobrar } from '@maun/domain';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import {
+  estaLiquidado,
+  faseDe,
+  puedeCerrarPerdido,
+  puedeCobrar,
+  type EstadoProyecto,
+} from '@maun/domain';
+import { useParams } from 'react-router';
 
 import { enlaceDeMapa, rutaDelCliente } from '@/entities/cliente';
 import {
@@ -11,6 +17,7 @@ import {
   esEtapaDeConsulta,
   ESTADO,
   EstadoBadge,
+  ETAPAS,
   FORMA_DE_PAGO,
   gastosDelProyecto,
   MarcaDeLiquidacion,
@@ -37,20 +44,21 @@ import {
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { PedirLaOpinion } from '@/features/pedir-la-opinion';
 import {
+  destinoDeLaTarjeta,
   fechaLarga,
   formatearPesos,
   hoyLocal,
   rutaDeCompartir,
   useAvisosDelProyecto,
+  Ir,
+  useIr,
+  useSenalDeUnaVez,
+  useVolver,
 } from '@/shared/lib';
 import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 import { FichaDeSeguimiento } from './FichaDeSeguimiento';
-
-function vieneDe(estado: unknown, marca: 'recienLiquidado' | 'recienAprobado'): boolean {
-  return typeof estado === 'object' && estado !== null && marca in estado;
-}
 
 function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: string }) {
   return (
@@ -66,20 +74,25 @@ function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: s
   );
 }
 
+function etapaDeLaFicha(estado: EstadoProyecto | undefined): string {
+  const fase = estado === undefined ? 'activos' : faseDe(estado);
+  return ETAPAS.find((etapa) => etapa.id === fase)?.ruta ?? RUTA_DE_PROYECTOS;
+}
+
 export function ProyectoFichaPage() {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { id = '' } = useParams();
-
-  const location = useLocation();
 
   const hoy = hoyLocal();
   const resumen = resumenDeProyecto(replica, id, hoy);
   const avisos = useAvisosDelProyecto(id);
   const enVuelo = useLiquidacionEnVuelo(id);
+  const padre = etapaDeLaFicha(resumen?.proyecto.estado);
+  const vuelta = useVolver(padre, 'Proyectos');
 
-  const recienLiquidado = vieneDe(location.state, 'recienLiquidado');
-  const recienAprobado = vieneDe(location.state, 'recienAprobado');
+  const recienLiquidado = useSenalDeUnaVez('recienLiquidado');
+  const recienAprobado = useSenalDeUnaVez('recienAprobado');
 
   if (!resumen) {
     return (
@@ -89,13 +102,7 @@ export function ProyectoFichaPage() {
           Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto de
           otro taller.
         </p>
-        <Button
-          onClick={() => {
-            void navegar(RUTA_DE_PROYECTOS);
-          }}
-        >
-          Volver a Proyectos
-        </Button>
+        <Button onClick={vuelta.volver}>Volver a Proyectos</Button>
       </Pagina>
     );
   }
@@ -157,13 +164,14 @@ export function ProyectoFichaPage() {
   return (
     <Pagina>
       <div className="mb-2.5 flex items-center justify-between">
-        <Link
-          to={RUTA_DE_PROYECTOS}
+        <Ir
+          a={padre}
+          alTocar={vuelta.volver}
           className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
         >
           <Icono nombre="chevron-left" tamano={20} />
-          Proyectos
-        </Link>
+          {vuelta.etiqueta}
+        </Ir>
         <div className="flex flex-none gap-2">
           <AyudaDeLaVista />
           <Button
@@ -171,7 +179,7 @@ export function ProyectoFichaPage() {
             size="chico"
             aria-label="Mostrarle al cliente"
             onClick={() => {
-              void navegar(rutaDeCompartir(proyecto.id));
+              ir(rutaDeCompartir(proyecto.id));
             }}
           >
             <Icono nombre="eye" tamano={16} />
@@ -181,7 +189,7 @@ export function ProyectoFichaPage() {
             proyecto={proyecto}
             sustantivo="proyecto"
             alBorrar={() => {
-              void navegar(RUTA_DE_PROYECTOS);
+              ir(padre, { como: 'terminar' });
             }}
           />
           <Button
@@ -189,7 +197,7 @@ export function ProyectoFichaPage() {
             size="chico"
             aria-label="Editar"
             onClick={() => {
-              void navegar(rutaDeEdicion(proyecto.id));
+              ir(rutaDeEdicion(proyecto.id));
             }}
           >
             <Icono nombre="pencil" tamano={16} />
@@ -199,25 +207,27 @@ export function ProyectoFichaPage() {
       </div>
 
       <header className="flex flex-col gap-2">
-        {cliente === undefined ? (
-          <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
-        ) : (
-          <Link
-            to={rutaDelCliente(cliente.id)}
-            className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
-          >
-            {cliente.nombre}
-            <Icono nombre="chevron-right" tamano={14} />
-          </Link>
-        )}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
-            {proyecto.titulo}
-          </h1>
-          <span className="flex flex-wrap items-center gap-2">
-            <EstadoBadge estado={proyecto.estado} />
-            <MarcaDeLiquidacion proyectoId={proyecto.id} />
-          </span>
+        <div {...destinoDeLaTarjeta(proyecto.id)} className="flex flex-col gap-2">
+          {cliente === undefined ? (
+            <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
+          ) : (
+            <Ir
+              a={rutaDelCliente(cliente.id)}
+              className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
+            >
+              {cliente.nombre}
+              <Icono nombre="chevron-right" tamano={14} />
+            </Ir>
+          )}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
+              {proyecto.titulo}
+            </h1>
+            <span className="flex flex-wrap items-center gap-2">
+              <EstadoBadge estado={proyecto.estado} />
+              <MarcaDeLiquidacion proyectoId={proyecto.id} />
+            </span>
+          </div>
         </div>
         {recienAprobado && (
           <p className="flex items-center gap-1.5 text-label font-medium text-hogar">
@@ -300,7 +310,7 @@ export function ProyectoFichaPage() {
                   <Button
                     className="w-full sm:w-auto"
                     onClick={() => {
-                      void navegar(rutaDeCobro(proyecto.id));
+                      ir(rutaDeCobro(proyecto.id));
                     }}
                   >
                     <Icono nombre="hand-coins" tamano={18} />
@@ -315,7 +325,7 @@ export function ProyectoFichaPage() {
                     variant="secundario"
                     className="w-full sm:w-auto"
                     onClick={() => {
-                      void navegar(rutaDeCierre(proyecto.id));
+                      ir(rutaDeCierre(proyecto.id));
                     }}
                   >
                     <Icono nombre="x" tamano={16} />
@@ -427,7 +437,7 @@ export function ProyectoFichaPage() {
               className="w-full"
               disabled={liquidado}
               onClick={() => {
-                void navegar(rutaDeEdicion(proyecto.id));
+                ir(rutaDeEdicion(proyecto.id));
               }}
             >
               <Icono nombre="plus" tamano={16} />

@@ -1,7 +1,6 @@
 import { centavos, esAnteriorALaApertura, type EstadoLiquidado } from '@maun/domain';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
 
 import { EnlaceACliente } from '@/entities/cliente';
 import { CasillaDeLaApertura } from '@/entities/movimiento';
@@ -33,6 +32,9 @@ import {
   mesDeLaFecha,
   nombreDelMes,
   uuidv7,
+  Ir,
+  useIr,
+  useVolver,
 } from '@/shared/lib';
 import { Button, Campo, Icono, MoneyInput, Pagina } from '@/shared/ui';
 
@@ -112,9 +114,10 @@ export interface PantallaDeLiquidacionProps {
 
 export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacionProps) {
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
   const { proyecto } = resumen;
   const textos = TEXTOS[destino];
+  const vuelta = useVolver(rutaDelProyecto(proyecto.id), textos.volver, { fija: true });
 
   const guardar = useMutation(MUTACION_DE_PROYECTO);
   const liquidar = useMutation(MUTACION_DE_LIQUIDACION);
@@ -200,20 +203,21 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
       titulo: proyecto.titulo,
     });
 
-    void navegar(rutaDelProyecto(proyecto.id), { replace: true, state: { recienLiquidado: true } });
+    ir(rutaDelProyecto(proyecto.id), { como: 'terminar', senal: 'recienLiquidado' });
   }
 
   const aRepartir = despiece.piezas.filter((pieza) => pieza.monto > 0);
 
   return (
     <Pagina>
-      <Link
-        to={rutaDelProyecto(proyecto.id)}
+      <Ir
+        a={rutaDelProyecto(proyecto.id)}
+        alTocar={vuelta.volver}
         className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
       >
         <Icono nombre="chevron-left" tamano={20} />
         {textos.volver}
-      </Link>
+      </Ir>
 
       <header>
         <p className="text-label text-text-2">

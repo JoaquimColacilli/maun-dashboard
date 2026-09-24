@@ -1,6 +1,6 @@
 import { ESTADOS_DE_CONSULTA, type EstadoProyecto } from '@maun/domain';
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
 
 import { AccionesDeContacto, EnlaceACliente } from '@/entities/cliente';
 import {
@@ -14,7 +14,7 @@ import {
   type ResumenDeProyecto,
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
-import { conFondo, fechaLarga, formatearPesos } from '@/shared/lib';
+import { conFondo, fechaLarga, formatearPesos, useIr } from '@/shared/lib';
 import { Button, Icono } from '@/shared/ui';
 
 function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: string }) {
@@ -99,7 +99,7 @@ export interface ListaDeConsultasProps {
 }
 
 export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasProps) {
-  const navegar = useNavigate();
+  const ir = useIr();
   const location = useLocation();
   const [consulta, setConsulta] = useState('');
   const [filtro, setFiltro] = useState<EstadoProyecto | 'todos'>('todos');
@@ -132,7 +132,7 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
         </p>
         <Button
           onClick={() => {
-            void navegar(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
+            ir(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
           }}
         >
           <Icono nombre="user-plus" tamano={18} />

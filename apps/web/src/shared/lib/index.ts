@@ -67,6 +67,24 @@ export {
   type BloqueoDelDispositivo,
   type ResultadoDeLaHuella,
 } from './huella';
+export { anotarHojaAbierta, type HojaAbierta } from './hojas-abiertas';
+export { Ir, type IrProps } from './Ir';
+export {
+  ContextoDeLaPuerta,
+  DESTINO_DE_LA_TARJETA,
+  destinoDeLaTarjeta,
+  ORIGEN_DE_LA_TARJETA,
+  origenDeLaTarjeta,
+  useIr,
+  usePuerta,
+  useSenalDeUnaVez,
+  useVolver,
+  type ComoIr,
+  type OpcionesDeIr,
+  type PuertoDeNavegacion,
+  type SenalDeUnaVez,
+  type Vuelta,
+} from './puerta';
 export { useVueltaPorUnAviso } from './vuelta-por-un-aviso';
 export {
   aplicarLaVersionNueva,

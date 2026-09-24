@@ -1,10 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router';
 
 import { idDelProximoContacto, type AccionesDeLaAgenda } from '@/entities/agenda';
 import { useReplicaDelTaller } from '@/entities/replica';
 import { filaPorId } from '@/shared/api';
-import { rutaDelProyecto } from '@/shared/lib';
+import { rutaDelProyecto, useIr } from '@/shared/lib';
 
 import {
   borrar,
@@ -18,11 +17,11 @@ import {
 export function useAccionesDeLaAgenda(avisar?: Avisador): AccionesDeLaAgenda {
   const cliente = useQueryClient();
   const replica = useReplicaDelTaller();
-  const navegar = useNavigate();
+  const ir = useIr();
 
   return {
     alAbrirTrabajo: (evento) => {
-      void navegar(rutaDelProyecto(evento.proyectoId));
+      ir(rutaDelProyecto(evento.proyectoId));
     },
     alTildar: (evento) => {
       tildar(cliente, evento, avisar);

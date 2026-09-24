@@ -22,8 +22,15 @@ const PROHIBIDO_EN_TODO_EL_REPO = [
 ];
 
 function prohibirImports(...patrones) {
+  return prohibirImportsYNombres(patrones, []);
+}
+
+function prohibirImportsYNombres(patrones, nombres) {
   return {
-    'no-restricted-imports': ['error', { patterns: [...PROHIBIDO_EN_TODO_EL_REPO, ...patrones] }],
+    'no-restricted-imports': [
+      'error',
+      { patterns: [...PROHIBIDO_EN_TODO_EL_REPO, ...patrones], paths: nombres },
+    ],
   };
 }
 
@@ -137,6 +144,54 @@ const ACCESO_A_DATOS = {
   message: 'El acceso a Supabase vive en src/shared/api.',
 };
 
+const NAVEGAR_POR_EL_ROUTER = {
+  name: 'react-router',
+  importNames: ['Link', 'NavLink', 'useNavigate'],
+  message:
+    'Toda navegación pasa por la puerta de @/shared/lib: <Ir>, useIr y useVolver (ADR 0066). Link, NavLink y useNavigate del router solo viven en la puerta, en el coordinador y en los tests.',
+};
+
+const TRANSICIONES_DEL_ROUTER = {
+  name: 'react-router',
+  importNames: ['useViewTransitionState'],
+  message:
+    'Las transiciones las decide el coordinador de app/navegacion (ADR 0066). La del router arranca las suyas y las repite al volver, a sus espaldas.',
+};
+
+const SIN_VIEW_TRANSITION_DEL_ROUTER = [
+  {
+    selector: "JSXAttribute[name.name='viewTransition']",
+    message:
+      'Las transiciones las decide el coordinador de app/navegacion (ADR 0066), no la opción viewTransition del router.',
+  },
+  {
+    selector: "Property[key.name='viewTransition']",
+    message:
+      'Las transiciones las decide el coordinador de app/navegacion (ADR 0066), no la opción viewTransition del router.',
+  },
+];
+
+const SOLO_EL_COORDINADOR_ANIMA = [
+  {
+    selector: "MemberExpression[property.name='startViewTransition']",
+    message:
+      'Solo el coordinador de app/navegacion arranca transiciones (ADR 0066): navegá con <Ir>, useIr o useVolver.',
+  },
+  {
+    selector: "Literal[value='startViewTransition']",
+    message:
+      'Solo el coordinador de app/navegacion arranca transiciones (ADR 0066): navegá con <Ir>, useIr o useVolver.',
+  },
+];
+
+const EL_ESCENARIO_DEL_COORDINADOR = 'src/app/navegacion/escenario.ts';
+
+const LA_PUERTA_Y_EL_COORDINADOR = [
+  'src/shared/lib/puerta.ts',
+  'src/shared/lib/Ir.tsx',
+  'src/app/navegacion/**/*.{ts,tsx}',
+];
+
 export function web(dir) {
   return defineConfig(
     base(dir, [
@@ -217,15 +272,51 @@ export function web(dir) {
     },
     {
       files: ['src/**/*.{ts,tsx}'],
-      rules: prohibirImports(SISTEMA_DE_DISENO, ACCESO_A_DATOS),
+      rules: {
+        ...prohibirImportsYNombres(
+          [SISTEMA_DE_DISENO, ACCESO_A_DATOS],
+          [NAVEGAR_POR_EL_ROUTER, TRANSICIONES_DEL_ROUTER],
+        ),
+        'no-restricted-syntax': [
+          'error',
+          ...SIN_VIEW_TRANSITION_DEL_ROUTER,
+          ...SOLO_EL_COORDINADOR_ANIMA,
+        ],
+      },
+    },
+    {
+      files: [EL_ESCENARIO_DEL_COORDINADOR],
+      rules: { 'no-restricted-syntax': ['error', ...SIN_VIEW_TRANSITION_DEL_ROUTER] },
     },
     {
       files: ['src/shared/ui/**/*.{ts,tsx}'],
-      rules: prohibirImports(ACCESO_A_DATOS),
+      rules: prohibirImportsYNombres(
+        [ACCESO_A_DATOS],
+        [NAVEGAR_POR_EL_ROUTER, TRANSICIONES_DEL_ROUTER],
+      ),
     },
     {
       files: ['src/shared/api/**/*.{ts,tsx}'],
-      rules: prohibirImports(SISTEMA_DE_DISENO),
+      rules: prohibirImportsYNombres(
+        [SISTEMA_DE_DISENO],
+        [NAVEGAR_POR_EL_ROUTER, TRANSICIONES_DEL_ROUTER],
+      ),
+    },
+    {
+      files: [...LA_PUERTA_Y_EL_COORDINADOR, 'src/**/*.test.{ts,tsx}'],
+      ignores: ['src/shared/ui/**', 'src/shared/api/**'],
+      rules: prohibirImportsYNombres(
+        [SISTEMA_DE_DISENO, ACCESO_A_DATOS],
+        [TRANSICIONES_DEL_ROUTER],
+      ),
+    },
+    {
+      files: ['src/shared/ui/**/*.test.{ts,tsx}'],
+      rules: prohibirImportsYNombres([ACCESO_A_DATOS], [TRANSICIONES_DEL_ROUTER]),
+    },
+    {
+      files: ['src/shared/api/**/*.test.{ts,tsx}'],
+      rules: prohibirImportsYNombres([SISTEMA_DE_DISENO], [TRANSICIONES_DEL_ROUTER]),
     },
   );
 }

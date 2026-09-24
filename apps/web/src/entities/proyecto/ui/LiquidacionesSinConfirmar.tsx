@@ -1,6 +1,5 @@
-import { Link } from 'react-router';
-
 import { filaPorId, type Replica } from '@/shared/api';
+import { Ir } from '@/shared/lib';
 import { Icono } from '@/shared/ui';
 
 import { useLiquidacionesEnVuelo } from '../api/liquidacion';
@@ -32,12 +31,12 @@ export function LiquidacionesSinConfirmar({ replica }: LiquidacionesSinConfirmar
       </span>
       {proyectos.map((proyecto, indice) => (
         <span key={proyecto.id}>
-          <Link
-            to={rutaDelProyecto(proyecto.id)}
+          <Ir
+            a={rutaDelProyecto(proyecto.id)}
             className="font-semibold underline underline-offset-2"
           >
             {proyecto.titulo}
-          </Link>
+          </Ir>
           {indice < proyectos.length - 1 ? ',' : ''}
         </span>
       ))}
