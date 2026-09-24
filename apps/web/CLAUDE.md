@@ -180,6 +180,7 @@ src/
 - Para agregar una variable, sumala en tres lugares: el esquema, `.env.example` y el `env` de las tareas `build` y `e2e` en `turbo.json`. Turbo no les pasa a las tareas las variables que no están declaradas.
 - `index.html` usa `%VITE_SUPABASE_URL%` en el `preconnect`: Vite lo reemplaza al construir.
 - `vite.config.ts` corta el build si una variable `VITE_` parece secreta: su nombre tiene `SECRET` o `SERVICE_ROLE`, o su valor es `sb_secret_...` o un JWT de service_role.
+- **Netlify arma la app con `pnpm --filter @maun/web run build`, sin turbo.** En su build, el `pnpm` del PATH puede ser el archivo de relleno de pnpm 12 (sin `#!`: un script de sh que solo arranca bajo una shell), y turbo, que lanza `pnpm` directo para cada paquete, recibe «Exec format error». La app no necesita el build de los paquetes: Vite los toma de su código (`@maun/source`). No vuelvas a poner `turbo` en el `command` de `netlify.toml`.
 
 ## Tests
 

@@ -5,7 +5,12 @@
 # pnpm lo instala Corepack según el campo packageManager del package.json raíz.
 
 [build]
-  command = "pnpm turbo run build --filter=@maun/web"
+  # Sin turbo. En el build de Netlify el `pnpm` que queda en el PATH puede ser el archivo de relleno
+  # de pnpm 12: no tiene `#!` y es un script de sh que solo arranca si lo lanza una shell. Esta línea
+  # corre en una shell y anda; turbo lanza `pnpm` directo para cada paquete y el sistema le contesta
+  # «Exec format error». La app tampoco necesita el build de los paquetes: Vite los toma de su código
+  # con la condición @maun/source.
+  command = "pnpm --filter @maun/web run build"
   publish = "apps/web/dist"
   # Las rutas del netlify.toml son absolutas contra el base directory, y el base directory de este
   # sitio es la raíz del repo (el que está en apps/web es el package directory). Sin esta línea,
