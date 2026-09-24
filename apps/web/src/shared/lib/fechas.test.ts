@@ -8,6 +8,7 @@ import {
   diaYMes,
   diaYMesCorto,
   errorDeLaFechaDeLaPlata,
+  fechaEnUnaFrase,
   fechaLarga,
   haceCuanto,
   hoyEnElTaller,
@@ -108,6 +109,17 @@ describe('fechaLarga', () => {
   it('no se corre de día por la zona horaria', () => {
     expect(diaDelMes('2026-09-01')).toBe(1);
     expect(fechaLarga('2026-09-01', '2026-09-11')).toBe('mar 1 sep');
+  });
+});
+
+describe('fechaEnUnaFrase', () => {
+  it('escribe el día de la semana, el día y el mes entero, para ir adentro de una frase', () => {
+    expect(fechaEnUnaFrase('2026-10-02', '2026-09-24')).toBe('vie 2 de octubre');
+    expect(fechaEnUnaFrase('2026-11-02', '2026-09-24')).toBe('lun 2 de noviembre');
+  });
+
+  it('con el año solo cuando no es el de hoy', () => {
+    expect(fechaEnUnaFrase('2027-01-15', '2026-09-24')).toBe('vie 15 de enero de 2027');
   });
 });
 

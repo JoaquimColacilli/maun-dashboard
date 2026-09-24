@@ -76,6 +76,7 @@ function proyecto(id: string, extra: Partial<Proyecto> = {}): Proyecto {
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
     reparto_ya_en_la_apertura: false,
+    presupuesto_vale_hasta: null,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,
@@ -126,8 +127,57 @@ describe('situacionDelContacto', () => {
       espera: 'Presupuesto enviado hace 9 días, sin respuesta',
       dias: 9,
       fria: true,
+      vencido: false,
       agendada: false,
     });
+  });
+
+  it('con el día hasta el que valía el presupuesto ya pasado, avisa que venció', () => {
+    const situacion = situacionDelContacto(
+      proyecto('p', { estado: 'presupuesto_enviado', presupuesto_vale_hasta: '2026-09-11' }),
+      marca(HOY),
+      HOY,
+      0,
+    );
+    expect(situacion).toMatchObject({
+      sugerencia: 'llamar',
+      proximoPaso: 'Venció el presupuesto: actualizalo o cambiale la fecha',
+      espera: 'Valía hasta el vie 11 sep',
+      fria: false,
+      vencido: true,
+    });
+    expect(pasosDelContacto('presupuesto_enviado', situacion).map((paso) => paso.etiqueta)).toEqual(
+      ['Lo aprobó: pasar a Proyectos'],
+    );
+  });
+
+  it('el mismo día todavía vale, y sin fecha no vence nunca', () => {
+    for (const valeHasta of [HOY, '2026-09-30', null]) {
+      const situacion = situacionDelContacto(
+        proyecto('p', { estado: 'presupuesto_enviado', presupuesto_vale_hasta: valeHasta }),
+        marca(HOY),
+        HOY,
+        0,
+      );
+      expect(situacion.vencido).toBe(false);
+      expect(situacion.proximoPaso).toBe('Falta llamar para saber');
+    }
+  });
+
+  it('una fila guardada antes de que existiera la fecha no vence ni rompe la lista', () => {
+    const vieja: Partial<Proyecto> = { ...proyecto('p', { estado: 'presupuesto_enviado' }) };
+    delete vieja.presupuesto_vale_hasta;
+    expect(situacionDelContacto(vieja as Proyecto, marca(HOY), HOY, 0).vencido).toBe(false);
+  });
+
+  it('solo vence un presupuesto mandado: la fecha que quedó de antes no cuenta en otra etapa', () => {
+    const situacion = situacionDelContacto(
+      proyecto('p', { estado: 'a_presupuestar', presupuesto_vale_hasta: '2026-09-01' }),
+      marca(HOY),
+      HOY,
+      SENA,
+    );
+    expect(situacion.vencido).toBe(false);
   });
 
   it('un presupuesto enviado hoy todavía no espera respuesta', () => {

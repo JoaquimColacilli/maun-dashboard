@@ -20,15 +20,18 @@ select tests.guardar('household_b', private.crear_household('Taller de Beto', te
 
 -- Toda columna de proyectos está clasificada ---------------------------------------------------------------
 
--- Las doce que viajan, aunque sea con otro nombre: titulo es «trabajo», presupuesto_centavos es
+-- Las trece que viajan, aunque sea con otro nombre: titulo es «trabajo», presupuesto_centavos es
 -- «precio», direccion_entrega es «direccion», las cuatro fechas arman el camino, fecha_visita y
--- visita_hecha son «visita», que es el casillero del relevamiento, y cobro_sena y cobro_saldo
--- deciden «pago», que es cómo puede pagar lo que le toca. Ojo con esas dos: no viaja su valor
--- crudo, viaja el de la instancia que toca, pasado por private.formas_de_cobro(). Todas las demás
--- no salen de la base, y eso incluye los costos estimados, el margen que se deriva de ellos, las
--- tareas de presupuestar, las notas de obra, la distribución congelada, las marcas de la agenda, la
--- hora de la visita, el vencimiento del presupuesto, si el reparto ya estaba en la apertura y sena_bp,
--- que es el porcentaje y sigue sin viajar: lo que viaja es el importe que falta.
+-- visita_hecha son «visita», que es el casillero del relevamiento, cobro_sena y cobro_saldo
+-- deciden «pago», que es cómo puede pagar lo que le toca, y presupuesto_vale_hasta es
+-- «fechas.vale_hasta», hasta cuándo vale el presupuesto mientras espera la seña. Ojo con cobro_sena
+-- y cobro_saldo: no viaja su valor crudo, viaja el de la instancia que toca, pasado por
+-- private.formas_de_cobro(). Y varias viajan solo desde la etapa en la que son ciertas (ADR 0067):
+-- 32_la_vista_antes_de_aprobar.sql lo prueba etapa por etapa. Todas las demás no salen de la base,
+-- y eso incluye los costos estimados, el margen que se deriva de ellos, las tareas de presupuestar,
+-- las notas de obra, la distribución congelada, las marcas de la agenda, la hora de la visita, el
+-- vencimiento del presupuesto, si el reparto ya estaba en la apertura y sena_bp, que es el
+-- porcentaje y sigue sin viajar: lo que viaja es el importe.
 select set_eq(
   $$
     select a.attname::text
@@ -41,6 +44,7 @@ select set_eq(
     'fecha_inicio', 'entrega_estimada', 'fecha_entrega', 'fecha_cobro',
     'fecha_visita', 'visita_hecha',
     'cobro_sena', 'cobro_saldo',
+    'presupuesto_vale_hasta',
     -- No viajan
     'id', 'household_id', 'cliente_id', 'descripcion', 'forma_pago', 'comprobante',
     'ultimo_contacto', 'notas', 'vencimiento_presupuesto',
@@ -66,7 +70,8 @@ select set_eq(
 
 -- Los cuatro datos para transferir viajan, y nada más de esta tabla: el sueldo, los costos fijos,
 -- la meta de Cocos, su tasa, la seña y las tres preferencias de liquidación son parte de cómo se
--- reparte la plata adentro del taller, y eso el cliente no lo ve ni de lejos. Ajustes está acá
+-- reparte la plata adentro del taller, y eso el cliente no lo ve ni de lejos. Los días que vale un
+-- presupuesto tampoco: viaja la fecha que sale de ellos, guardada en el trabajo. Ajustes está acá
 -- desde que uno de sus campos viaja: una columna nueva rompe este test igual que en proyectos. El
 -- enlace de reseña no viaja por esta puerta: sale por la de la encuesta, y su clasificación está en
 -- 27_encuesta_publica.sql.
@@ -83,7 +88,7 @@ select set_eq(
     'id', 'household_id', 'created_at', 'updated_at', 'deleted_at', 'version',
     'sueldo_mensual_centavos', 'costos_fijos_centavos', 'meta_cocos_centavos',
     'tasa_cocos_anual_bp', 'sueldo_tope_mensual', 'perdido_con_sueldo', 'perdido_con_diezmo',
-    'sena_bp', 'resena_link'
+    'sena_bp', 'resena_link', 'presupuesto_vale_dias'
   ],
   'toda columna de ajustes está clasificada: una columna nueva rompe este test hasta que alguien decida si el cliente la ve'
 );
@@ -158,7 +163,7 @@ where household_id = tests.id('household_a');
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')) $$,
-  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'pago', 'cobro', 'fechas', 'visita', 'pagos', 'archivos'],
+  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'sena_centavos', 'pago', 'cobro', 'fechas', 'visita', 'pagos', 'archivos'],
   'la vista devuelve exactamente estos campos y ninguno más'
 );
 
@@ -176,8 +181,8 @@ select set_eq(
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'fechas') $$,
-  array['estimativo', 'presupuesto', 'aprobado', 'inicio', 'entrega_pautada', 'entregado', 'cobro'],
-  'las fechas que viajan son exactamente siete'
+  array['estimativo', 'presupuesto', 'aprobado', 'inicio', 'entrega_pautada', 'entregado', 'cobro', 'vale_hasta'],
+  'las fechas que viajan son exactamente ocho'
 );
 
 select set_eq(

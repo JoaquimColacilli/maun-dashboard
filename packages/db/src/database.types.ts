@@ -23,6 +23,7 @@ export type Database = {
           meta_cocos_centavos: number;
           perdido_con_diezmo: boolean;
           perdido_con_sueldo: boolean;
+          presupuesto_vale_dias: number;
           resena_link: string;
           sena_bp: number;
           sueldo_mensual_centavos: number;
@@ -45,6 +46,7 @@ export type Database = {
           meta_cocos_centavos?: number;
           perdido_con_diezmo?: boolean;
           perdido_con_sueldo?: boolean;
+          presupuesto_vale_dias?: number;
           resena_link?: string;
           sena_bp?: number;
           sueldo_mensual_centavos?: number;
@@ -67,6 +69,7 @@ export type Database = {
           meta_cocos_centavos?: number;
           perdido_con_diezmo?: boolean;
           perdido_con_sueldo?: boolean;
+          presupuesto_vale_dias?: number;
           resena_link?: string;
           sena_bp?: number;
           sueldo_mensual_centavos?: number;
@@ -1006,6 +1009,7 @@ export type Database = {
           presupuesto_diseno: boolean;
           presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
+          presupuesto_vale_hasta: string | null;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -1067,6 +1071,7 @@ export type Database = {
           presupuesto_diseno?: boolean;
           presupuesto_importante?: boolean;
           presupuesto_pdf?: boolean;
+          presupuesto_vale_hasta?: string | null;
           reapertura_fecha_cobro?: string | null;
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
@@ -1128,6 +1133,7 @@ export type Database = {
           presupuesto_diseno?: boolean;
           presupuesto_importante?: boolean;
           presupuesto_pdf?: boolean;
+          presupuesto_vale_hasta?: string | null;
           reapertura_fecha_cobro?: string | null;
           reapertura_objetivo_fijos_centavos?: number | null;
           reapertura_objetivo_sueldo_centavos?: number | null;
@@ -1379,6 +1385,7 @@ export type Database = {
           presupuesto_diseno: boolean;
           presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
+          presupuesto_vale_hasta: string | null;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -1464,6 +1471,7 @@ export type Database = {
           presupuesto_diseno: boolean;
           presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
+          presupuesto_vale_hasta: string | null;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -1560,6 +1568,7 @@ export type Database = {
           presupuesto_diseno: boolean;
           presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
+          presupuesto_vale_hasta: string | null;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;
@@ -1634,6 +1643,7 @@ export type Database = {
           presupuesto_diseno: boolean;
           presupuesto_importante: boolean;
           presupuesto_pdf: boolean;
+          presupuesto_vale_hasta: string | null;
           reapertura_fecha_cobro: string | null;
           reapertura_objetivo_fijos_centavos: number | null;
           reapertura_objetivo_sueldo_centavos: number | null;

@@ -3,6 +3,7 @@ import {
   faseDe,
   puedeCambiarEstado,
   vencimientoDelPresupuesto,
+  vencioElPresupuesto,
   type EstadoProyecto,
 } from '@maun/domain';
 
@@ -12,6 +13,7 @@ import { diasHasta, fechaLarga, hoyLocal, relativa } from '@/shared/lib';
 import type { Proyecto } from './catalogos';
 import type { ResumenDeProyecto } from './resumen';
 import { presupuestoArmado, TAREAS_DEL_PRESUPUESTO, tareasHechas } from './tareas';
+import { vigenciaDelPresupuesto } from './vigencia';
 
 export type EtapaDeConsulta = (typeof ESTADOS_DE_CONSULTA)[number];
 
@@ -34,6 +36,7 @@ export interface SituacionDelContacto {
   espera: string;
   dias: number;
   fria: boolean;
+  vencido: boolean;
   agendada: boolean;
 }
 
@@ -136,6 +139,7 @@ export function situacionDelContacto(
     espera,
     dias,
     fria: dias >= DIAS_PARA_ENFRIARSE,
+    vencido: false,
     agendada: false,
   });
 
@@ -151,6 +155,7 @@ export function situacionDelContacto(
         espera: `Visita ${relativa(visita, hoy)}`,
         dias,
         fria: false,
+        vencido: false,
         agendada: true,
       };
     }
@@ -216,12 +221,24 @@ export function situacionDelContacto(
         espera,
       );
     }
-    case 'presupuesto_enviado':
+    case 'presupuesto_enviado': {
+      const valeHasta = vigenciaDelPresupuesto(proyecto);
+      if (valeHasta !== null && vencioElPresupuesto(valeHasta, hoy)) {
+        return {
+          ...conEspera(
+            'llamar',
+            'Venció el presupuesto: actualizalo o cambiale la fecha',
+            `Valía hasta el ${fechaLarga(valeHasta, hoy)}`,
+          ),
+          vencido: true,
+        };
+      }
       return conEspera(
         'llamar',
         'Falta llamar para saber',
         mandadoHace('Presupuesto enviado', dias, dia, hoy),
       );
+    }
     default:
       return conEspera(
         'agendar-la-visita',

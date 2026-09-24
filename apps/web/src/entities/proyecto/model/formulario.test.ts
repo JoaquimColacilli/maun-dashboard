@@ -51,6 +51,31 @@ describe('la visita hecha en el formulario grande', () => {
   });
 });
 
+describe('hasta cuándo vale el presupuesto, en el formulario grande', () => {
+  const HOY = '2026-09-24';
+
+  it('no se muestra, pero guardar la conserva', () => {
+    const valores = valoresDelFormulario(
+      proyecto({ estado: 'presupuesto_enviado', presupuesto_vale_hasta: '2026-10-09' }),
+      [],
+      [],
+      [],
+      { hoy: HOY },
+    );
+    expect(datosDelFormulario(valores, HOY).presupuesto_vale_hasta).toBe('2026-10-09');
+  });
+
+  it('un trabajo nuevo y una fila de antes de la columna arrancan sin fecha', () => {
+    expect(
+      datosDelFormulario(valoresDelFormulario(undefined, [], [], [], { hoy: HOY }), HOY)
+        .presupuesto_vale_hasta,
+    ).toBeNull();
+    const vieja = proyecto();
+    delete (vieja as Partial<FilaDe<'proyectos'>>).presupuesto_vale_hasta;
+    expect(valoresDelFormulario(vieja, [], [], [], { hoy: HOY }).presupuesto_vale_hasta).toBe('');
+  });
+});
+
 function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'> {
   return {
     household_id: 'h',
@@ -104,6 +129,7 @@ function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'>
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
     reparto_ya_en_la_apertura: false,
+    presupuesto_vale_hasta: null,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,

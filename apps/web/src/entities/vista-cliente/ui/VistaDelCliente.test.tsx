@@ -13,6 +13,20 @@ const HOY = '2026-09-18';
 
 const HACE_TANTOS_DIAS = /[Hh]ace \d/;
 
+function fechas(cambios: Partial<TrabajoDelCliente['fechas']>): TrabajoDelCliente['fechas'] {
+  return {
+    estimativo: null,
+    presupuesto: null,
+    aprobado: null,
+    inicio: null,
+    entregaPautada: null,
+    entregado: null,
+    cobro: null,
+    valeHasta: null,
+    ...cambios,
+  };
+}
+
 function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
   return {
     taller: 'Taller MAUN',
@@ -21,15 +35,13 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
     direccion: 'Olazábal 1240, Ituzaingó',
     estado: 'en_curso',
     precio: centavos(124_000_000),
-    fechas: {
-      estimativo: null,
+    sena: centavos(62_000_000),
+    fechas: fechas({
       presupuesto: '2026-08-01',
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
       entregaPautada: '2026-10-02',
-      entregado: null,
-      cobro: null,
-    },
+    }),
     visita: { dia: null, hecha: false },
     pago: {
       instancia: 'saldo',
@@ -75,15 +87,13 @@ describe('la vista del cliente', () => {
     dibujar(
       trabajo({
         estado: 'entregado',
-        fechas: {
-          estimativo: null,
+        fechas: fechas({
           presupuesto: '2026-08-01',
           aprobado: '2026-08-04',
           inicio: '2026-08-24',
           entregaPautada: '2026-09-16',
           entregado: '2026-09-16',
-          cobro: null,
-        },
+        }),
       }),
     );
 
@@ -112,15 +122,14 @@ describe('la vista del cliente', () => {
     dibujar(
       trabajo({
         estado: 'cobrado',
-        fechas: {
-          estimativo: null,
+        fechas: fechas({
           presupuesto: '2026-08-01',
           aprobado: '2026-08-04',
           inicio: '2026-08-24',
           entregaPautada: '2026-09-16',
           entregado: '2026-09-16',
           cobro: '2026-09-17',
-        },
+        }),
         pagos: [
           { id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: centavos(40_000_000) },
           { id: 'p2', fecha: '2026-09-17', concepto: 'Saldo final', monto: centavos(84_000_000) },
@@ -140,15 +149,11 @@ describe('la vista del cliente', () => {
     const dibujada = dibujar(
       trabajo({
         pagos: [],
-        fechas: {
-          estimativo: null,
+        fechas: fechas({
           presupuesto: '2026-08-01',
-          aprobado: null,
           inicio: '2026-09-01',
           entregaPautada: '2026-10-02',
-          entregado: null,
-          cobro: null,
-        },
+        }),
       }),
     );
 
@@ -225,8 +230,8 @@ describe('la vista del cliente', () => {
     expect(screen.getByText('Todavía no hay fotos')).toBeInTheDocument();
   });
 
-  it('un trabajo sin presupuesto no inventa un saldo', () => {
-    dibujar(trabajo({ precio: null, pagos: [] }));
+  it('un trabajo aprobado sin presupuesto no inventa un saldo', () => {
+    dibujar(trabajo({ precio: null, sena: null, pagos: [] }));
 
     const entrada = screen.getByRole('region', { name: 'Tu mueble' });
     expect(entrada).toHaveTextContent('Falta el presupuesto');
@@ -234,18 +239,246 @@ describe('la vista del cliente', () => {
   });
 });
 
-function fechas(cambios: Partial<TrabajoDelCliente['fechas']>): TrabajoDelCliente['fechas'] {
-  return {
-    estimativo: null,
-    presupuesto: null,
-    aprobado: null,
-    inicio: null,
-    entregaPautada: null,
-    entregado: null,
-    cobro: null,
-    ...cambios,
-  };
-}
+describe('la tarjeta de datos, desde la aprobación', () => {
+  it('trae la dirección, el inicio, la entrega pautada y la seña acordada', () => {
+    dibujar(trabajo());
+
+    const tarjeta = screen.getByRole('region', { name: 'Datos del trabajo' });
+    expect(tarjeta).toHaveTextContent('DirecciónOlazábal 1240, Ituzaingó');
+    expect(tarjeta).toHaveTextContent('Empezamoslun 24 ago');
+    expect(tarjeta).toHaveTextContent('Entrega pautadavie 2 oct');
+    expect(tarjeta).toHaveTextContent('Seña$ 620.000 · pagada');
+  });
+
+  it('la seña de la tarjeta es la del porcentaje, no el primer pago', () => {
+    dibujar(
+      trabajo({
+        pagos: [
+          { id: 'r', fecha: '2026-08-01', concepto: 'Relevamiento', monto: centavos(12_000_000) },
+          { id: 's', fecha: '2026-08-04', concepto: 'Seña', monto: centavos(50_000_000) },
+        ],
+      }),
+    );
+
+    const tarjeta = screen.getByRole('region', { name: 'Datos del trabajo' });
+    expect(tarjeta).toHaveTextContent('Seña$ 620.000 · pagada');
+    expect(tarjeta).not.toHaveTextContent('$ 120.000');
+  });
+
+  it('aprobado sin la seña completa, la tarjeta dice cuánto falta de ella', () => {
+    dibujar(
+      trabajo({
+        pagos: [],
+        pago: {
+          instancia: 'sena',
+          formas: ['efectivo'],
+          monto: centavos(62_000_000),
+          siguiente: null,
+        },
+      }),
+    );
+
+    expect(screen.getByRole('region', { name: 'Datos del trabajo' })).toHaveTextContent(
+      'Seña$ 620.000 · te faltan $ 620.000',
+    );
+  });
+
+  it('sin dirección ni fechas cargadas, cada dato dice que falta confirmarlo', () => {
+    dibujar(trabajo({ direccion: '', fechas: fechas({}), sena: null }));
+
+    const tarjeta = screen.getByRole('region', { name: 'Datos del trabajo' });
+    expect(tarjeta).toHaveTextContent('DirecciónA confirmar');
+    expect(tarjeta).toHaveTextContent('EmpezamosTodavía no');
+    expect(tarjeta).toHaveTextContent('Entrega pautadaA confirmar');
+    expect(tarjeta).toHaveTextContent('SeñaA confirmar');
+  });
+
+  it('no hay proyección: desde la aprobación la entrega ya está pautada', () => {
+    dibujar(trabajo());
+
+    expect(screen.queryByRole('region', { name: 'Para cuándo' })).not.toBeInTheDocument();
+  });
+});
+
+describe('un trabajo con el presupuesto mandado y sin aprobar, con todo cargado', () => {
+  function sinAprobar(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
+    return trabajo({
+      trabajo: 'Escritorio',
+      cliente: 'Lucía Ferreyra',
+      estado: 'presupuesto_enviado',
+      precio: centavos(124_800_000),
+      sena: centavos(62_400_000),
+      direccion: 'Belgrano 455, Haedo',
+      fechas: fechas({ inicio: '2026-08-13', entregaPautada: '2026-10-10' }),
+      pago: {
+        instancia: 'sena',
+        formas: ['efectivo'],
+        monto: centavos(50_400_000),
+        siguiente: { instancia: 'saldo', formas: ['efectivo'], monto: centavos(62_400_000) },
+      },
+      pagos: [
+        {
+          id: 'relevamiento',
+          fecha: '2026-08-13',
+          concepto: 'Relevamiento Tecnico',
+          monto: centavos(12_000_000),
+        },
+      ],
+      ...cambios,
+    });
+  }
+
+  it('no promete una entrega, no dice que empezó y no muestra la tarjeta de datos', () => {
+    const dibujada = dibujar(sinAprobar());
+
+    expect(dibujada.container).not.toHaveTextContent('Entrega pautada');
+    expect(dibujada.container).not.toHaveTextContent('Empezamos');
+    expect(dibujada.container).not.toHaveTextContent('Belgrano 455');
+    expect(screen.queryByRole('region', { name: 'Datos del trabajo' })).not.toBeInTheDocument();
+  });
+
+  it('en lo que fue pasando, el pago es un pago: ni la seña, ni la aprobación, ni la fabricación', () => {
+    dibujar(sinAprobar());
+
+    const historia = screen.getByRole('region', { name: 'Lo que fue pasando' });
+    expect(historia).not.toHaveTextContent('Recibimos tu seña y quedó aprobado');
+    expect(historia).not.toHaveTextContent('Empezamos a fabricarlo en el taller');
+    expect(within(historia).getByText('Recibimos tu pago')).toBeInTheDocument();
+    expect(historia).toHaveTextContent('$ 120.000');
+    expect(within(historia).getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('no le cobra una deuda: «Te falta pagar» no aparece', () => {
+    const dibujada = dibujar(sinAprobar());
+
+    expect(dibujada.container).not.toHaveTextContent('Te falta pagar');
+  });
+
+  it('lo que marcó en verde queda igual: lo próximo, y el relevamiento con su nombre en lo que pagaste', () => {
+    dibujar(sinAprobar());
+
+    expect(screen.getByText('Lo próximo es que lo apruebes y dejes la seña.')).toBeInTheDocument();
+    const pagos = screen.getByRole('region', { name: 'Lo que pagaste' });
+    expect(within(pagos).getByText('Relevamiento Tecnico')).toBeInTheDocument();
+    expect(pagos).toHaveTextContent('$ 120.000');
+  });
+
+  it('arriba van el presupuesto, la seña para arrancar, lo que pagó y cuánto le queda', () => {
+    dibujar(sinAprobar());
+
+    const entrada = screen.getByRole('region', { name: 'Tu mueble' });
+    expect(entrada).toHaveTextContent('Te pasamos el presupuesto');
+    expect(entrada).toHaveTextContent('Presupuesto$ 1.248.000');
+    expect(entrada).toHaveTextContent('Seña para arrancar$ 624.000');
+    expect(entrada).toHaveTextContent('Pagaste$ 120.000');
+    expect(entrada).toHaveTextContent(
+      'Lo que pagaste queda a cuenta de la seña: te quedan $ 504.000 para completarla.',
+    );
+  });
+
+  it('lo que le queda de la seña es el mismo número que le pide «Cómo pagar»', () => {
+    dibujar(sinAprobar());
+
+    const entrada = screen.getByRole('region', { name: 'Tu mueble' });
+    const como = screen.getByRole('region', { name: 'Cómo pagar' });
+    expect(entrada).toHaveTextContent('te quedan $ 504.000');
+    expect(como).toHaveTextContent('Ahora, la seña');
+    expect(como).toHaveTextContent('$ 504.000');
+  });
+
+  it('lo que pagó se cierra como a cuenta de la seña, no como una deuda', () => {
+    dibujar(sinAprobar());
+
+    const pagos = screen.getByRole('region', { name: 'Lo que pagaste' });
+    expect(pagos).toHaveTextContent('A cuenta de la seña$ 120.000');
+  });
+
+  it('con la fecha límite cargada, en lugar de la tarjeta va la proyección', () => {
+    dibujar(sinAprobar({ fechas: fechas({ valeHasta: '2026-10-02' }) }));
+
+    const cuando = screen.getByRole('region', { name: 'Para cuándo' });
+    expect(cuando).toHaveTextContent(
+      'Si dejás la seña antes del vie 2 de octubre, podríamos tenerlo listo para el lun 2 de noviembre.',
+    );
+    expect(cuando).toHaveTextContent('Vamos tomando los trabajos a medida que entran las señas.');
+  });
+
+  it('sin fecha límite, no hay promesa: una línea y ninguna fecha', () => {
+    dibujar(sinAprobar());
+
+    const cuando = screen.getByRole('region', { name: 'Para cuándo' });
+    expect(cuando).toHaveTextContent(
+      'Cuando lo apruebes y dejes la seña, coordinamos la fecha de entrega.',
+    );
+    expect(cuando.textContent).not.toMatch(/\d/);
+  });
+
+  it('con la fecha límite ya pasada, dice que venció y no promete nada', () => {
+    dibujar(sinAprobar({ fechas: fechas({ valeHasta: '2026-09-17' }) }));
+
+    const cuando = screen.getByRole('region', { name: 'Para cuándo' });
+    expect(cuando).toHaveTextContent(
+      'Este presupuesto venció el jue 17 de septiembre. Hablá con el taller para actualizarlo.',
+    );
+    expect(cuando).not.toHaveTextContent('podríamos');
+  });
+
+  it('si lo que pagó ya cubre la seña, lo dice y no le pide nada', () => {
+    dibujar(
+      sinAprobar({
+        pagos: [
+          { id: 'grande', fecha: '2026-08-13', concepto: 'Adelanto', monto: centavos(70_000_000) },
+        ],
+        pago: { instancia: null, formas: [], monto: null, siguiente: null },
+      }),
+    );
+
+    expect(screen.getByRole('region', { name: 'Tu mueble' })).toHaveTextContent(
+      'Con lo que pagaste ya está cubierta la seña.',
+    );
+    expect(screen.queryByRole('region', { name: 'Cómo pagar' })).not.toBeInTheDocument();
+  });
+});
+
+describe('antes de mandar el presupuesto', () => {
+  it('con un pago, dice lo que pagó y que queda a cuenta de la seña; sin tarjeta ni proyección', () => {
+    dibujar(
+      trabajo({
+        estado: 'a_presupuestar',
+        precio: null,
+        sena: null,
+        direccion: 'Olazábal 1240',
+        fechas: fechas({ inicio: '2026-08-13', entregaPautada: '2026-10-10' }),
+        pago: { instancia: 'sena', formas: ['efectivo'], monto: null, siguiente: null },
+        pagos: [
+          { id: 'visita', fecha: '2026-08-13', concepto: 'Visita', monto: centavos(12_000_000) },
+        ],
+      }),
+    );
+
+    const entrada = screen.getByRole('region', { name: 'Tu mueble' });
+    expect(entrada).toHaveTextContent('Estamos preparando tu presupuesto');
+    expect(entrada).toHaveTextContent('Pagaste$ 120.000');
+    expect(entrada).toHaveTextContent('Lo que pagaste queda a cuenta de la seña.');
+    expect(entrada).not.toHaveTextContent('Te falta pagar');
+    expect(screen.queryByRole('region', { name: 'Datos del trabajo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Para cuándo' })).not.toBeInTheDocument();
+  });
+
+  it('sin pagos, no muestra ningún importe', () => {
+    const dibujada = dibujar(
+      trabajo({
+        estado: 'contacto',
+        precio: null,
+        sena: null,
+        pagos: [],
+        pago: { instancia: 'sena', formas: ['efectivo'], monto: null, siguiente: null },
+      }),
+    );
+
+    expect(dibujada.container.textContent).not.toMatch(/\$/);
+  });
+});
 
 function pasosDelCamino(): string[] {
   const camino = screen.getByRole('region', { name: 'En qué anda' });
@@ -280,6 +513,7 @@ describe('el estimativo y el relevamiento en el camino', () => {
       trabajo({
         estado: 'presupuesto_estimativo',
         precio: null,
+        sena: null,
         pagos: [],
         fechas: fechas({ estimativo: '2026-09-15' }),
       }),
@@ -287,7 +521,7 @@ describe('el estimativo y el relevamiento en el camino', () => {
 
     const entrada = screen.getByRole('region', { name: 'Tu mueble' });
     expect(within(entrada).getByText('Te pasamos un número estimado')).toBeInTheDocument();
-    expect(entrada).toHaveTextContent('Falta el presupuesto');
+    expect(entrada).not.toHaveTextContent('Te falta pagar');
     const pasos = pasosDelCamino();
     expect(pasos).toHaveLength(6);
     expect(pasos[0]).toContain('Te pasamos un número estimado');
@@ -302,11 +536,12 @@ describe('el estimativo y el relevamiento en el camino', () => {
     expect(screen.queryByText('Te pasamos un número estimado')).not.toBeInTheDocument();
   });
 
-  it('en ningún lado aparece un importe del estimativo: lo único en pesos es lo que pagó, cero', () => {
+  it('en ningún lado aparece un importe del estimativo', () => {
     const dibujada = dibujar(
       trabajo({
         estado: 'presupuesto_estimativo',
         precio: null,
+        sena: null,
         pagos: [],
         pago: { instancia: 'sena', formas: ['efectivo'], monto: null, siguiente: null },
         fechas: fechas({ estimativo: '2026-09-15' }),
@@ -314,15 +549,14 @@ describe('el estimativo y el relevamiento en el camino', () => {
     );
 
     const texto = dibujada.container.textContent.replace(/\s+/g, ' ');
-    const importes = texto.match(/\$ ?[\d.,]+/g) ?? [];
-    expect(importes.length).toBeGreaterThan(0);
-    expect(importes.every((importe) => importe.replace(' ', '') === '$0')).toBe(true);
+    expect(texto.match(/\$ ?[\d.,]+/g) ?? []).toEqual([]);
   });
 
   function sinMedir(): TrabajoDelCliente {
     return trabajo({
       estado: 'presupuesto_estimativo',
       precio: null,
+      sena: null,
       pagos: [],
       fechas: fechas({ estimativo: '2026-09-15' }),
       visita: { dia: '2026-09-22', hecha: false },
@@ -397,6 +631,7 @@ describe('el estimativo y el relevamiento en el camino', () => {
       trabajo({
         estado: 'a_presupuestar',
         precio: null,
+        sena: null,
         pagos: [],
         fechas: fechas({ estimativo: '2026-09-02' }),
         visita: { dia: '2026-09-10', hecha: true },
@@ -422,7 +657,9 @@ describe('el estimativo y el relevamiento en el camino', () => {
   });
 
   it('sin estimativo no hay número que pueda cambiar, y sin medir tampoco hay (i)', () => {
-    dibujar(trabajo({ estado: 'relevamiento', precio: null, pagos: [], fechas: fechas({}) }));
+    dibujar(
+      trabajo({ estado: 'relevamiento', precio: null, sena: null, pagos: [], fechas: fechas({}) }),
+    );
 
     expect(screen.queryByRole('button', { name: LA_NOTA })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Tu mueble' })).not.toHaveTextContent('Número');

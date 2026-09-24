@@ -3,6 +3,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import {
+  conLaVigenciaAlMandar,
+  diasQueValeElPresupuesto,
   ESTADO,
   guardadoDeUnPaso,
   MUTACION_DE_PROYECTO,
@@ -16,6 +18,7 @@ import {
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
 import {
+  ajustesDe,
   aperturaDeLaReplica,
   mensajeDeSincronizacion,
   type CambiosDeProyecto,
@@ -69,7 +72,9 @@ export function AvanceDelContacto({
   alAgendar,
 }: AvanceDelContactoProps) {
   const ir = useIr();
-  const apertura = aperturaDeLaReplica(useReplicaDelTaller());
+  const replica = useReplicaDelTaller();
+  const apertura = aperturaDeLaReplica(replica);
+  const dias = diasQueValeElPresupuesto(ajustesDe(replica));
   const guardar = useMutation({
     ...MUTACION_DE_PROYECTO,
     meta: metaDeAvisos('contactoAvanzado', { errorEnPantalla: true, sujeto: proyecto.titulo }),
@@ -95,10 +100,15 @@ export function AvanceDelContacto({
     setRechazo(null);
     setFormulario(null);
     const hoy = hoyLocal();
-    guardar.mutate(
-      guardadoDeUnPaso(proyecto, conElVencimiento(proyecto, cambios, hoy), hoy, dia, pagos),
-      { onError: setRechazo },
+    const conLasFechas = conLaVigenciaAlMandar(
+      proyecto,
+      conElVencimiento(proyecto, cambios, hoy),
+      hoy,
+      dias,
     );
+    guardar.mutate(guardadoDeUnPaso(proyecto, conLasFechas, hoy, dia, pagos), {
+      onError: setRechazo,
+    });
   }
 
   function alTocar(paso: PasoDelContacto): void {
@@ -132,7 +142,7 @@ export function AvanceDelContacto({
       paso={situacion.proximoPaso}
       detalle={situacion.espera}
       icono={situacion.agendada ? 'calendar' : 'clock'}
-      tono={situacion.fria ? 'atencion' : 'normal'}
+      tono={situacion.fria || situacion.vencido ? 'atencion' : 'normal'}
     >
       {formulario === 'relevar' ? (
         <FormularioDelRelevamiento

@@ -34,6 +34,7 @@ function ajustes(extra: Partial<FilaDe<'ajustes'>> = {}): FilaDe<'ajustes'> {
     cobro_cuit: '',
     cobro_link: '',
     resena_link: '',
+    presupuesto_vale_dias: 15,
     created_at: '2026-09-19T12:00:00Z',
     updated_at: '2026-09-19T12:00:00Z',
     deleted_at: null,

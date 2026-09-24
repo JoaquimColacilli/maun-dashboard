@@ -49,6 +49,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}, pago: Pago = {}): Tra
     direccion: 'Olazábal 1240',
     estado: 'en_curso',
     precio: centavos(124_000_000),
+    sena: centavos(62_000_000),
     fechas: {
       estimativo: null,
       presupuesto: '2026-08-01',
@@ -57,6 +58,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}, pago: Pago = {}): Tra
       entregaPautada: '2026-10-02',
       entregado: null,
       cobro: null,
+      valeHasta: null,
     },
     visita: { dia: null, hecha: false },
     pago: {

@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`), la vista del cliente (`vistaCliente.ts`) y las opiniones de los clientes (`opiniones.ts` y `encuesta.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046, las de los datos para transferir en el 0048 y las de las opiniones en el 0057.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`), la vista del cliente (`vistaCliente.ts`), hasta cuándo vale un presupuesto (`vigencia.ts`) y las opiniones de los clientes (`opiniones.ts` y `encuesta.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046 y el 0067, las de los datos para transferir en el 0048 y las de las opiniones en el 0057.
 
 ## Pureza (la aplican las herramientas)
 
@@ -38,7 +38,9 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 `calcularSena` es la resta que el dueño pidió: cuánto es la seña, cuánto cobró y cuánto falta. La seña es un porcentaje del presupuesto (`ajustes.sena_bp`, la mitad por defecto) y se puede pisar por trabajo (`proyectos.sena_bp`); `porcentajeDeLaSena` dice cuál manda. Devuelve una unión con tres situaciones, no números sueltos: **sin presupuesto no hay seña** y lo dice, y cuando ya la cubrió dice cuánto de más en vez de un negativo. Lo cobrado que recibe incluye la plata de la visita del relevamiento, porque el contacto y el trabajo son la misma fila (ADR 0019).
 
-**No tiene gemela en SQL y no la necesita**, como `resumenDelMes` y `sueldoDelMes`: nada en la base consume la seña. La base sí guarda los dos porcentajes, con su `check` de rango.
+**Su gemela en SQL es `private.sena_esperada`** (ADR 0067): la vista del cliente manda la seña en pesos y el pago que toca, y los dos salen de esa función. El comparador la ata con `calcularSena().esperada`; si cambiás una, cambiás la otra en el mismo PR. La base guarda los dos porcentajes, con su `check` de rango.
+
+**La seña es un importe, no un pago.** Ningún pago es «la seña», ni por su nombre ni por su orden: lo pagado antes de aprobar, el relevamiento incluido, queda a cuenta de ella.
 
 ## El margen y lo que hace falta (ADR 0045)
 
@@ -56,6 +58,16 @@ Recibe el payload que armó la base y no puede filtrar nada, porque lo que no pu
 manda el dato crudo y la pantalla dibuja. El test «qué ve el cliente en cada etapa del trabajo» lo
 fija caso por caso; una etapa o una variante nueva entra ahí.
 
+- **La vista es una unión por etapa** (ADR 0067): `VistaAntesDelPresupuesto`, `VistaEsperandoLaSena`
+  o `VistaAprobada`. Lo que no es cierto en una etapa no está en su tipo: esperando la seña no hay
+  tarjeta ni entrega. La pantalla hace `switch` por `etapa`, y `estaAprobada` estrecha el tipo.
+- **Un hito o un evento existe si hay un registro con fecha de que pasó**, no un campo cargado
+  (ADR 0067): la aprobación sale de `fechas.aprobado` y solo aprobado; «Empezamos», aprobado y con el
+  inicio ya llegado; «Lo llevamos», entregado. Cada pago es «Recibimos tu pago», salvo el que salda.
+  `senaDelTrabajo` dice si la seña falta o está cubierta con `sena` y `pago.instancia`.
+- **La proyección de la entrega es `proyeccionDeLaEntrega` y no se calcula en otro lado** (ADR 0067):
+  `entregaEstimada` contada desde la fecha límite (`fechas.valeHasta`), no desde hoy. El día que haya
+  una cola del taller, cambia esa función.
 - **El camino tiene cinco hitos, o seis con el estimativo adelante** (ADR 0058): solo en los trabajos
   que lo tuvieron (`tuvoEstimativo`: la etapa actual o `fechas.estimativo`). **Compará por paso, nunca
   por posición**: `llegoAl(vista, 'aprobado')`, no `hitoIndex >= 1`, porque con el estimativo el
@@ -79,7 +91,14 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
 - **La vista del cliente no dice nunca cuánto hace que pasó algo** (corrección del ADR 0046). Ni «Hace N días», ni «hace N días que no hay novedades»: el cliente ve la fecha y qué sigue. Los «hace N días» son de la app del dueño, que los usa para su lista de pendientes. `vistaCliente.test.ts` lo exige sobre el JSON entero de `vistaDelCliente`, y exige que «lo próximo» no tenga ni un dígito en ninguna etapa.
 - **Lo que agregue una versión nueva al payload, leelo tolerando que falte** (`trabajo.fechas as Partial<…>`, `trabajo.visita as … | undefined`): el objeto puede venir de la versión anterior.
 - **`cobro` son los datos para transferirle al taller** (alias, CBU o CVU, titular y CUIT, ADR 0048): llegan del payload, y `hayComoTransferir` dice si alcanza para mostrar el bloque. El titular y el CUIT solos no alcanzan: con eso no se transfiere.
-- **No tiene gemela en SQL**, como `calcularSena`: la base arma el payload, no la presentación.
+- **No tiene gemela en SQL**: la base arma el payload, no la presentación.
+
+## Hasta cuándo vale un presupuesto (ADR 0067)
+
+- `DIAS_QUE_VALE_UN_PRESUPUESTO` es 15, el mismo default de `ajustes.presupuesto_vale_dias`: la app lo usa solo si la fila de ajustes es de antes de la columna.
+- `seMandaElPresupuesto(desde, hacia)`: entrar a «presupuesto enviado» desde una etapa anterior, o nacer ahí. Volver de seguimiento, de perdido o de un trabajo aprobado **no** es mandarlo, y no renueva la fecha.
+- `vencioElPresupuesto(valeHasta, hoy)` es el único criterio de vencido: el día mismo todavía vale. Lo usan la proyección del cliente y el aviso de la app del dueño.
+- No tiene gemela en SQL: la base guarda la fecha y no la calcula.
 
 ## Las opiniones (ADR 0057)
 

@@ -8,6 +8,7 @@ import {
   gastosDelProyecto,
   opcionesDelProyecto,
   pagosDelProyecto,
+  presupuestoVencido,
   RUTA_DE_CONSULTAS,
   rutaDeCierre,
   rutaDeEdicion,
@@ -15,6 +16,7 @@ import {
   senaDelTrabajo,
   situacionDelContacto,
   ultimasActividades,
+  vigenciaDelPresupuesto,
   yaSeRelevo,
   type EtapaDeConsulta,
   type ResumenDeProyecto,
@@ -74,7 +76,13 @@ function Dato({
   );
 }
 
-type HojaAbierta = 'contacto' | 'visita' | 'por-ahora-no' | null;
+type HojaAbierta = 'contacto' | 'visita' | 'vigencia' | 'por-ahora-no' | null;
+
+function textoDeLaVigencia(valeHasta: string | null, vencido: boolean, hoy: string): string {
+  if (valeHasta === null) return 'Sin fecha';
+  if (vencido) return `Venció el ${fechaLarga(valeHasta, hoy)}`;
+  return `${fechaLarga(valeHasta, hoy)}, ${relativa(valeHasta, hoy)}`;
+}
 
 export interface FichaDeContactoProps {
   resumen: ResumenDeProyecto;
@@ -101,6 +109,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
   const relevado = yaSeRelevo(proyecto, hoy);
   const esperaAlCliente =
     proyecto.estado === 'presupuesto_enviado' || proyecto.estado === 'presupuesto_estimativo';
+  const vencido = presupuestoVencido(proyecto, hoy);
 
   return (
     <Pagina>
@@ -242,6 +251,25 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
                     : formatearPesos(proyecto.presupuesto_centavos)
                 }
               />
+              {proyecto.estado === 'presupuesto_enviado' && (
+                <Dato
+                  clave="Vale hasta"
+                  valor={textoDeLaVigencia(vigenciaDelPresupuesto(proyecto), vencido, hoy)}
+                  tono={vencido ? 'font-semibold text-atencion' : ''}
+                  accion={
+                    <Button
+                      variant="secundario"
+                      size="chico"
+                      aria-label="Cambiar hasta cuándo vale el presupuesto"
+                      onClick={() => {
+                        setEditando('vigencia');
+                      }}
+                    >
+                      Cambiar
+                    </Button>
+                  }
+                />
+              )}
               {!esperaAlCliente && (
                 <Dato
                   clave="Presupuesto antes del"
@@ -329,6 +357,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
             <HojaDeContacto
               proyecto={proyecto}
               enfocarLaVisita={abierta === 'visita'}
+              enfocarLaVigencia={abierta === 'vigencia'}
               alCerrar={cerrarLaHoja}
             />
           )

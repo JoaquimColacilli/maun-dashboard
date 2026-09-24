@@ -154,6 +154,7 @@ export interface FilaDeProyecto {
   visita_importante: boolean;
   entrega_importante: boolean;
   presupuesto_importante: boolean;
+  presupuesto_vale_hasta: string | null;
 }
 
 const COLUMNAS_DEL_PROYECTO = [
@@ -178,6 +179,7 @@ const COLUMNAS_DEL_PROYECTO = [
   'visita_importante',
   'entrega_importante',
   'presupuesto_importante',
+  'presupuesto_vale_hasta',
 ].join(',');
 
 export async function descongelarProyectos({
@@ -616,6 +618,7 @@ const COLUMNAS_DE_LOS_AJUSTES = [
   'cobro_cuit',
   'cobro_link',
   'resena_link',
+  'presupuesto_vale_dias',
 ] as const;
 
 export type AjustesDePrueba = Record<(typeof COLUMNAS_DE_LOS_AJUSTES)[number], number | string>;

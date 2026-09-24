@@ -28,6 +28,7 @@ const DATOS = {
   notas: '',
   vencimiento_presupuesto: null,
   visita_hecha: false,
+  presupuesto_vale_hasta: null,
 } satisfies ProyectoParaGuardar['datos'];
 
 const GUARDADO = {
@@ -85,6 +86,27 @@ describe('el próximo contacto en el agregado del trabajo', () => {
     ]);
     expect(() => leerProyectoGuardado({ ...GUARDADO, proximos_contactos: undefined })).toThrow(
       RespuestaInvalidaError,
+    );
+  });
+});
+
+describe('hasta cuándo vale el presupuesto', () => {
+  it('viaja con los datos del trabajo, que es de donde guardar_proyecto la lee', async () => {
+    const { cliente, rpc } = clienteFalso(GUARDADO);
+
+    await guardarProyecto(cliente, {
+      id: 'p',
+      version: 3,
+      datos: { ...DATOS, estado: 'presupuesto_enviado', presupuesto_vale_hasta: '2026-10-09' },
+      pagos: [],
+      gastos: [],
+    });
+
+    expect(rpc).toHaveBeenLastCalledWith(
+      'guardar_proyecto',
+      expect.objectContaining({
+        p_proyecto: expect.objectContaining({ presupuesto_vale_hasta: '2026-10-09' }) as unknown,
+      }),
     );
   });
 });

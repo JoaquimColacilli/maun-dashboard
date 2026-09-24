@@ -37,6 +37,7 @@ import {
   type Proyecto,
 } from './catalogos';
 import { senaDelProyecto, type OpcionDePresupuesto } from './opciones';
+import { vigenciaDelPresupuesto } from './vigencia';
 
 const SIN_MONTO = 'Poné cuánto, en pesos.';
 
@@ -104,6 +105,7 @@ export const esquemaDeProyecto = z.object({
   direccion_entrega: texto(500),
   notas: texto(10_000),
   vencimiento_presupuesto: z.string(),
+  presupuesto_vale_hasta: z.string(),
   pagos: z.array(filaDePago),
   gastos: z.array(filaDinamica),
   opciones: z.array(filaDeOpcion),
@@ -184,6 +186,7 @@ export function valoresDelFormulario(
       direccion_entrega: inicial.direccion ?? '',
       notas: '',
       vencimiento_presupuesto: '',
+      presupuesto_vale_hasta: '',
       pagos: [],
       gastos: [],
       opciones: [],
@@ -212,6 +215,7 @@ export function valoresDelFormulario(
     direccion_entrega: proyecto.direccion_entrega,
     notas: proyecto.notas,
     vencimiento_presupuesto: fecha(proyecto.vencimiento_presupuesto),
+    presupuesto_vale_hasta: fecha(vigenciaDelPresupuesto(proyecto)),
     pagos: pagos.map((pago) => ({
       id: pago.id,
       fecha: pago.fecha,
@@ -266,6 +270,7 @@ export function datosDelFormulario(
     direccion_entrega: valores.direccion_entrega.trim(),
     notas: valores.notas.trim(),
     vencimiento_presupuesto: fechaOnNull(valores.vencimiento_presupuesto),
+    presupuesto_vale_hasta: fechaOnNull(valores.presupuesto_vale_hasta),
   };
 }
 

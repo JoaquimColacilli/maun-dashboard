@@ -11,6 +11,7 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
     direccion: 'Olazábal 1240',
     estado: 'en_curso',
     precio_centavos: 124_000_000,
+    sena_centavos: 62_000_000,
     fechas: {
       estimativo: '2026-07-24',
       presupuesto: '2026-08-01',
@@ -19,6 +20,7 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       entrega_pautada: '2026-10-02',
       entregado: null,
       cobro: null,
+      vale_hasta: null,
     },
     visita: { dia: '2026-07-28', hecha: true },
     pago: {
@@ -64,6 +66,7 @@ describe('leer la vista del cliente', () => {
       direccion: 'Olazábal 1240',
       estado: 'en_curso',
       precio: 124_000_000,
+      sena: 62_000_000,
       fechas: {
         estimativo: '2026-07-24',
         presupuesto: '2026-08-01',
@@ -72,6 +75,7 @@ describe('leer la vista del cliente', () => {
         entregaPautada: '2026-10-02',
         entregado: null,
         cobro: null,
+        valeHasta: null,
       },
       visita: { dia: '2026-07-28', hecha: true },
       pago: {
@@ -127,6 +131,47 @@ describe('leer la vista del cliente', () => {
     expect(vacio.visita).toEqual({ dia: null, hecha: false });
   });
 
+  it('esperando la seña, lee hasta cuándo vale el presupuesto y la seña en pesos', () => {
+    const esperando = leerVistaDelCliente(
+      respuesta({
+        estado: 'presupuesto_enviado',
+        direccion: '',
+        sena_centavos: 62_400_000,
+        fechas: {
+          estimativo: null,
+          presupuesto: '2026-09-14',
+          aprobado: null,
+          inicio: null,
+          entrega_pautada: null,
+          entregado: null,
+          cobro: null,
+          vale_hasta: '2026-10-02',
+        },
+      }),
+    );
+    expect(esperando.fechas.valeHasta).toBe('2026-10-02');
+    expect(esperando.sena).toBe(62_400_000);
+    expect(esperando.direccion).toBe('');
+  });
+
+  it('una respuesta de antes, sin la seña en pesos ni hasta cuándo vale, se lee sin seña y sin fecha', () => {
+    const { sena_centavos: _sena, ...sinSena } = respuesta();
+    const vieja = leerVistaDelCliente({
+      ...sinSena,
+      fechas: {
+        estimativo: null,
+        presupuesto: '2026-08-01',
+        aprobado: null,
+        inicio: null,
+        entrega_pautada: null,
+        entregado: null,
+        cobro: null,
+      },
+    });
+    expect(vieja.sena).toBeNull();
+    expect(vieja.fechas.valeHasta).toBeNull();
+  });
+
   it('una respuesta de antes, sin el día del estimativo ni la visita, se lee como que no hubo', () => {
     const vieja = leerVistaDelCliente(
       respuesta({
@@ -175,7 +220,9 @@ describe('leer la vista del cliente', () => {
       respuesta({ direccion: null }),
       respuesta({ estado: null }),
       respuesta({ precio_centavos: '124' }),
+      respuesta({ sena_centavos: '62' }),
       respuesta({ fechas: null }),
+      respuesta({ fechas: { vale_hasta: 20261002 } }),
       respuesta({ fechas: { presupuesto: 1 } }),
       respuesta({ fechas: { estimativo: 20260724 } }),
       respuesta({ visita: 'mañana' }),

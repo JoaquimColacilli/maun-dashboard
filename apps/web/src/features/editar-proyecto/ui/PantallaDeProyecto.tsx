@@ -9,6 +9,8 @@ import {
   COMPROBANTE,
   COMPROBANTES_EN_ORDEN,
   comprobanteDeLaCondicion,
+  conLaVigenciaAlMandar,
+  diasQueValeElPresupuesto,
   esquemaDeProyecto,
   ESTADO,
   ESTADOS_EN_ORDEN,
@@ -34,7 +36,13 @@ import {
   type FormularioDeProyecto,
 } from '@/entities/proyecto';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { aperturaDeLaReplica, filaPorId, filasDe, mensajeDeSincronizacion } from '@/shared/api';
+import {
+  ajustesDe,
+  aperturaDeLaReplica,
+  filaPorId,
+  filasDe,
+  mensajeDeSincronizacion,
+} from '@/shared/api';
 import {
   formatearPesos,
   hoyLocal,
@@ -218,7 +226,7 @@ export function PantallaDeProyecto({
 
   const enviar: SubmitHandler<FormularioDeProyecto> = (valores) => {
     const previos = hijosDelProyecto(replica, alAbrir.current.id);
-    const pedido = pedidoDeGuardado(
+    const armado = pedidoDeGuardado(
       alAbrir.current.id,
       alAbrir.current.version,
       valores,
@@ -229,6 +237,15 @@ export function PantallaDeProyecto({
       },
       aperturaDeLaReplica(replica),
     );
+    const pedido = {
+      ...armado,
+      datos: conLaVigenciaAlMandar(
+        proyecto,
+        armado.datos,
+        hoy,
+        diasQueValeElPresupuesto(ajustesDe(replica)),
+      ),
+    };
 
     setRechazo(null);
     guardar.mutate(

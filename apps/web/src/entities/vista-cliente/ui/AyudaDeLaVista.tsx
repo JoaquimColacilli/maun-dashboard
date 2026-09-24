@@ -101,6 +101,13 @@ const LAMINAS: readonly Lamina[] = [
           'Es el primer paso de todo trabajo que no tuvo estimativo. La fecha aparece el día que ponés el contacto en «Presupuesto enviado».',
       },
       {
+        clave: 'esperando',
+        icono: 'clock',
+        titulo: 'Mientras espera la seña',
+        texto:
+          'No ve la dirección ni las fechas que tengas cargadas: esas aparecen cuando lo aprueba. Ve para cuándo podría estar listo si deja la seña antes del día hasta el que vale el presupuesto.',
+      },
+      {
         clave: 'paso-2',
         paso: 2,
         titulo: 'Aprobado, seña cobrada',
@@ -132,7 +139,7 @@ const LAMINAS: readonly Lamina[] = [
         icono: 'calendar-days',
         titulo: 'La fecha pautada',
         texto:
-          'La entrega estimada que cargaste la lee como «Entrega pautada». Si la movés, la próxima vez que abra ve la nueva.',
+          'Desde que lo aprueba, la entrega estimada que cargaste la lee como «Entrega pautada». Si la movés, la próxima vez que abra ve la nueva.',
       },
     ],
     pie: 'Sin fecha de inicio cargada, el paso 3 no se marca nunca, aunque el trabajo esté en curso.',

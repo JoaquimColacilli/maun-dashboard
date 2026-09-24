@@ -1,6 +1,6 @@
 # 0046. La vista del cliente: una lista blanca en la base, no una pantalla que esconde
 
-Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso. Y el mismo día, el logo de Mercado Pago del recuadro de los datos para transferir pasó a salir por la forma de cobro (el último punto de Consecuencias).
+Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso. Y el mismo día, el logo de Mercado Pago del recuadro de los datos para transferir pasó a salir por la forma de cobro (el último punto de Consecuencias). Corregida el 2026-09-24 por el [ADR 0067](0067-la-vista-antes-de-aprobar.md): cada dato viaja desde la etapa en que es cierto (ver la corrección de la lista blanca).
 
 ## Contexto
 
@@ -33,6 +33,13 @@ De `public.proyectos` viajan ocho columnas: `titulo`, `estado`, `presupuesto_cen
 `direccion_entrega`, `fecha_inicio`, `entrega_estimada`, `fecha_entrega` y `fecha_cobro`. Las otras
 cuarenta y ocho no salen, y eso incluye los cuatro costos estimados, la distribución congelada, las
 notas de obra, las tareas de presupuestar, las marcas de la agenda y el porcentaje de seña.
+
+> **Corregido el 2026-09-24 por el [ADR 0067](0067-la-vista-antes-de-aprobar.md).** Estar en la lista
+> no alcanza: cada columna viaja desde la etapa en que es cierta. `direccion_entrega`, `fecha_inicio`
+> y `entrega_estimada` viajan desde que el trabajo está aprobado, `presupuesto_centavos` desde que el
+> presupuesto se mandó y `fecha_entrega` desde que se entregó. Se suman `presupuesto_vale_hasta`, solo
+> mientras espera la seña, y la seña en pesos, que calcula la base (`private.sena_esperada`): el
+> porcentaje sigue sin viajar.
 
 **Si esto fuera un `select *` con la pantalla filtrando, el día que alguien le agregue una columna a
 `proyectos` esa columna quedaría expuesta sin que nadie lo decida.** Por eso hay un test que se rompe

@@ -10,6 +10,7 @@ import {
   etapaAlGuardarElContacto,
   ultimoContactoAlGuardar,
   vencimientoPropuesto,
+  vigenciaDelPresupuesto,
   yaSeRelevo,
   type Pago,
   type Proyecto,
@@ -36,6 +37,7 @@ export interface ValoresDelContacto {
   senaEnLaApertura: boolean;
   notas: string;
   vencimiento: string;
+  valeHasta: string;
 }
 
 export interface ErroresDelContacto {
@@ -67,6 +69,7 @@ export function valoresDelContacto(
       sena === undefined ? true : (sena as Partial<Pago>).ya_en_la_apertura === true,
     notas: proyecto?.notas ?? '',
     vencimiento: proyecto?.vencimiento_presupuesto ?? '',
+    valeHasta: proyecto === undefined ? '' : (vigenciaDelPresupuesto(proyecto) ?? ''),
   };
 }
 
@@ -92,6 +95,10 @@ export function muestraElVencimiento(proyecto: Proyecto | undefined): boolean {
       proyecto.estado === 'relevamiento' ||
       proyecto.estado === 'a_presupuestar')
   );
+}
+
+export function muestraLaVigencia(proyecto: Proyecto | undefined): boolean {
+  return proyecto !== undefined && proyecto.estado === 'presupuesto_enviado';
 }
 
 export function etiquetaDeLaVisita(proyecto: Proyecto | undefined, hoy: string): string {
@@ -146,6 +153,16 @@ function vencimientoDelContacto(
   if (escrito !== '') return escrito;
   if (proyecto !== undefined && proyecto.vencimiento_presupuesto !== null) return null;
   return vencimientoPropuesto(proyecto, estado, valores.visita.trim(), hoy);
+}
+
+function vigenciaAlGuardar(
+  proyecto: Proyecto | undefined,
+  valores: ValoresDelContacto,
+  guardada: DatosDeProyecto['presupuesto_vale_hasta'],
+): DatosDeProyecto['presupuesto_vale_hasta'] {
+  if (proyecto === undefined || !muestraLaVigencia(proyecto)) return guardada;
+  const escrita = fechaDelEnlace(valores.valeHasta.trim()) ?? null;
+  return escrita === vigenciaDelPresupuesto(proyecto) ? guardada : escrita;
 }
 
 function visitaHechaAlGuardar(
@@ -209,6 +226,7 @@ const DATOS_DE_UN_CONTACTO_NUEVO: DatosDeProyecto = {
   notas: '',
   vencimiento_presupuesto: null,
   visita_hecha: false,
+  presupuesto_vale_hasta: null,
 };
 
 function pagosDeLaSena(
@@ -291,6 +309,7 @@ export function pedidoDelContacto({
       ultimo_contacto: ultimoContactoAlGuardar(proyecto, estado, hoy, visita === '' ? hoy : visita),
       notas: valores.notas.trim(),
       vencimiento_presupuesto: vencimientoDelContacto(proyecto, estado, valores, hoy),
+      presupuesto_vale_hasta: vigenciaAlGuardar(proyecto, valores, base.presupuesto_vale_hasta),
     },
     pagos: pagosDeLaSena(valores, sena, idDeSenaNueva, hoy, apertura),
     gastos: [],

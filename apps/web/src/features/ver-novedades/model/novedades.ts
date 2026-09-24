@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-24',
+    lineas: [
+      'La página de tu cliente ya no le promete nada antes de que te apruebe: no ve la dirección ni las fechas de inicio y de entrega, y lo que te pagó figura como un pago, a cuenta de la seña.',
+      'Mientras espera la seña, ve el presupuesto, la seña para arrancar, cuánto le falta y para cuándo podría estar listo si seña antes de que venza el presupuesto.',
+      'Al marcar «Mandé el presupuesto», vale 15 días. La fecha la cambiás desde la ficha del contacto, y los días, en Ajustes.',
+      'Si pasa la fecha, Consultas y la ficha te avisan que venció, y tu cliente lee que tiene que hablar con vos para actualizarlo.',
+    ],
+  },
+  {
     version: '2026-09-23.2',
     lineas: [
       'En el celular, las pantallas se mueven como en una app: lo que abrís entra desde el costado, lo que cerrás vuelve por donde vino y un trabajo se abre desde su tarjeta.',

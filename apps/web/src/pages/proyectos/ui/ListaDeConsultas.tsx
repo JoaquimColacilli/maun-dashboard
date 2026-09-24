@@ -20,6 +20,7 @@ import { Button, Icono } from '@/shared/ui';
 function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: string }) {
   const { resumen, situacion } = contacto;
   const { proyecto, cliente } = resumen;
+  const atencion = situacion.fria || situacion.vencido;
 
   const datos: { clave: string; valor: string; tono: string }[] = [];
   if (proyecto.fecha_visita !== null) {
@@ -43,7 +44,7 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
   return (
     <TarjetaDeProyecto
       resumen={resumen}
-      atencion={situacion.fria}
+      atencion={atencion}
       cliente={
         cliente === undefined ? (
           <span className="text-meta text-text-3">{resumen.nombreDelCliente}</span>
@@ -66,7 +67,7 @@ function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: 
         <p className="text-label font-semibold">{situacion.proximoPaso}</p>
         <p
           className={`mt-0.5 flex items-center gap-1.5 text-meta ${
-            situacion.fria ? 'font-semibold text-atencion' : 'text-text-2'
+            atencion ? 'font-semibold text-atencion' : 'text-text-2'
           }`}
         >
           <Icono nombre={situacion.agendada ? 'calendar' : 'clock'} tamano={13} />
