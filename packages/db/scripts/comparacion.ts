@@ -2,6 +2,7 @@ import {
   asientosDelLibro,
   calcularDistribucion,
   calcularLiquidacion,
+  calcularSena,
   centavos,
   DIEZMO,
   ESTADOS,
@@ -304,6 +305,58 @@ export async function compararPagosPorDelante(cliente: pg.Client): Promise<strin
       crudos.map((pago) => ({ instancia: pago.instancia, monto: pago.monto })),
     );
     return ts === sql ? [] : [`pagos por delante ${JSON.stringify(caso)}: SQL ${sql}, TS ${ts}`];
+  });
+}
+
+type TuplaDeLaSena = [number | null, number];
+
+const SENAS: TuplaDeLaSena[] = [
+  [null, 5000],
+  [0, 5000],
+  [1, 5000],
+  [1, 4999],
+  [3, 3333],
+  [7, 1],
+  [999, 9999],
+  [124_800_000, 5000],
+  [100_000_000, 0],
+  [100_000_000, 10000],
+  [123_456_789, 4321],
+  [900_719_925_473, 10000],
+];
+
+function senaEnTs([precio, bp]: TuplaDeLaSena): number | null {
+  const sena = calcularSena({
+    presupuesto: precio === null ? null : centavos(precio),
+    cobrado: centavos(0),
+    porcentajeDelTaller: puntosBasicos(bp),
+    porcentajeDelTrabajo: null,
+  });
+  return sena.situacion === 'sin-presupuesto' ? null : sena.esperada;
+}
+
+export async function compararSenaEsperada(cliente: pg.Client): Promise<string[]> {
+  const casos = [...SENAS];
+  const aleatorio = generador(67);
+  for (let i = 0; i < 500; i += 1) {
+    casos.push([aleatorio(2_000_000_000), aleatorio(10_001)]);
+  }
+  const { rows } = await cliente.query<{ sena: string | null }>(
+    `select private.sena_esperada(c.precio, c.bp)::text as sena
+     from unnest($1::bigint[], $2::int[]) with ordinality as c (precio, bp, orden)
+     order by c.orden`,
+    columnas(casos, 2),
+  );
+  if (rows.length !== casos.length) {
+    return [
+      `la seña de SQL devolvió ${String(rows.length)} filas para ${String(casos.length)} casos`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const caso = casos[i] ?? [null, 0];
+    const ts = senaEnTs(caso);
+    const sql = fila.sena === null ? null : Number(fila.sena);
+    return ts === sql ? [] : [`seña ${JSON.stringify(caso)}: SQL ${String(sql)}, TS ${String(ts)}`];
   });
 }
 
@@ -2176,6 +2229,7 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararCascada(cliente)),
     ...(await compararTopes(cliente)),
     ...(await compararPagosPorDelante(cliente)),
+    ...(await compararSenaEsperada(cliente)),
     ...(await compararFormasDeCobro(cliente)),
     ...(await compararLinkDeCobro(cliente)),
     ...(await compararLinkDeResena(cliente)),

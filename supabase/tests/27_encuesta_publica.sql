@@ -128,7 +128,7 @@ select set_eq(
     'visita_hecha', 'visita_importante', 'entrega_importante', 'presupuesto_importante',
     'sena_bp', 'entrega_hora', 'visita_hora',
     'costo_madera_centavos', 'costo_herrajes_centavos', 'costo_flete_centavos',
-    'costo_ayudante_centavos'
+    'costo_ayudante_centavos', 'presupuesto_vale_hasta'
   ],
   'toda columna de proyectos está clasificada para la encuesta: viaja el título y nada más'
 );
@@ -169,7 +169,8 @@ select set_eq(
     'id', 'household_id', 'created_at', 'updated_at', 'deleted_at', 'version',
     'sueldo_mensual_centavos', 'costos_fijos_centavos', 'meta_cocos_centavos',
     'tasa_cocos_anual_bp', 'sueldo_tope_mensual', 'perdido_con_sueldo', 'perdido_con_diezmo',
-    'sena_bp', 'cobro_alias', 'cobro_cbu', 'cobro_titular', 'cobro_cuit', 'cobro_link'
+    'sena_bp', 'cobro_alias', 'cobro_cbu', 'cobro_titular', 'cobro_cuit', 'cobro_link',
+    'presupuesto_vale_dias'
   ],
   'toda columna de ajustes está clasificada para la encuesta'
 );

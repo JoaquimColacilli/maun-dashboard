@@ -76,6 +76,7 @@ function proyecto(id: string, extra: Partial<Proyecto> = {}): Proyecto {
     reapertura_sueldo_mensual: null,
     reapertura_fecha_cobro: null,
     reparto_ya_en_la_apertura: false,
+    presupuesto_vale_hasta: null,
     presupuesto_diseno: false,
     presupuesto_despiece: false,
     presupuesto_cotizacion: false,

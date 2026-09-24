@@ -76,6 +76,7 @@ create table public.ajustes (
   cobro_cuit text not null default ''::text,
   cobro_link text not null default ''::text,
   resena_link text not null default ''::text,
+  presupuesto_vale_dias integer not null default 15,
   constraint ajustes_cobro_alias_formato CHECK (cobro_alias = ''::text OR cobro_alias ~ '^[A-Za-z0-9.-]{6,20}$'::text),
   constraint ajustes_cobro_cbu_formato CHECK (cobro_cbu = ''::text OR cobro_cbu ~ '^[0-9]{22}$'::text),
   constraint ajustes_cobro_cuit_formato CHECK (cobro_cuit = ''::text OR cobro_cuit ~ '^[0-9]{2}-[0-9]{8}-[0-9]$'::text),
@@ -85,6 +86,7 @@ create table public.ajustes (
   constraint ajustes_household_key UNIQUE (household_id),
   constraint ajustes_importes_no_negativos CHECK (sueldo_mensual_centavos >= 0 AND costos_fijos_centavos >= 0 AND meta_cocos_centavos >= 0),
   constraint ajustes_pkey PRIMARY KEY (id),
+  constraint ajustes_presupuesto_vale_dias_valido CHECK (presupuesto_vale_dias >= 1 AND presupuesto_vale_dias <= 365),
   constraint ajustes_resena_link_formato CHECK (resena_link = ''::text OR char_length(resena_link) <= 300 AND resena_link ~ '^https://(g\.page|search\.google\.com|maps\.google\.com|www\.google\.com|google\.com|maps\.app\.goo\.gl|g\.co)/[^[:space:]]*$'::text),
   constraint ajustes_sena_valida CHECK (sena_bp >= 0 AND sena_bp <= 10000),
   constraint ajustes_tasa_valida CHECK (tasa_cocos_anual_bp >= 0 AND tasa_cocos_anual_bp <= 100000)
@@ -104,6 +106,7 @@ comment on column public.ajustes.cobro_titular is 'A nombre de quién está la c
 comment on column public.ajustes.cobro_cuit is 'El CUIT del titular con guiones (NN-NNNNNNNN-N), o vacío. Mismo formato que public.clientes.cuit; el dígito verificador lo revisa la app.';
 comment on column public.ajustes.cobro_link is 'El link de Mercado Pago del taller para que el cliente le pague, o vacío. Lo pega el dueño: lo saca de su app, de Cobrar con QR o de Link de pago. La página del cliente lo muestra como código QR y como botón. No se deriva del alias ni del CVU porque no existe ningún link estándar que abra una billetera en «Transferir a este alias»: el QR interoperable del BCRA lo emite un PSP y es un QR de cobro. El check acota el host a Mercado Pago porque este texto se vuelve un enlace en una página pública. Cobrar por acá le cuesta comisión al taller; transferir al alias no (ADR 0051 y 0054).';
 comment on column public.ajustes.resena_link is 'El enlace del taller para dejarle una reseña en Google, o vacío. Lo pega el dueño, lo saca de su Perfil de Negocio. La encuesta se lo ofrece al final a todos los que contestan, contesten lo que contesten: filtrar a quién se le pide según lo que opinó está prohibido por las políticas de Google (ADR 0057). El check acota el host a Google porque este texto se vuelve un enlace en una página pública.';
+comment on column public.ajustes.presupuesto_vale_dias is 'Cuántos días vale un presupuesto desde que se manda: la app los suma al día en que el dueño marca «Mandé el presupuesto» y guarda la fecha en proyectos.presupuesto_vale_hasta, que él puede pisar en cada trabajo. Arranca en 15. Es política del taller y no viaja al cliente: lo que viaja es la fecha (ADR 0067).';
 CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON ajustes FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 alter table public.ajustes enable row level security;
@@ -116,7 +119,7 @@ create policy ajustes_lectura on public.ajustes as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.ajustes to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.ajustes to service_role;
-grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit, cobro_link, resena_link) on public.ajustes to authenticated;
+grant update (sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, perdido_con_sueldo, perdido_con_diezmo, sena_bp, cobro_alias, cobro_cbu, cobro_titular, cobro_cuit, cobro_link, resena_link, presupuesto_vale_dias) on public.ajustes to authenticated;
 
 create table public.anotaciones (
   id uuid not null default private.uuidv7(),
@@ -883,6 +886,7 @@ create table public.proyectos (
   cobro_sena forma_de_cobro[],
   cobro_saldo forma_de_cobro[],
   reparto_ya_en_la_apertura boolean not null default false,
+  presupuesto_vale_hasta date,
   constraint presupuesto_aprobado TRIGGER DEFERRABLE INITIALLY DEFERRED,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_cobro_saldo_valido CHECK (COALESCE(cobro_saldo IS NULL OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro] OR cobro_saldo = ARRAY['efectivo'::forma_de_cobro] OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro, 'efectivo'::forma_de_cobro], false)),
@@ -955,6 +959,7 @@ comment on column public.proyectos.visita_hora is 'A qué hora es la visita de r
 comment on column public.proyectos.cobro_sena is 'Cómo se puede pagar la seña de este trabajo, o null si el dueño no lo tocó. Null no es vacío: es «vale el valor por defecto», que private.formas_de_cobro() calcula según si el taller tiene datos para transferir cargados. El check acepta exactamente tres valores, así que un pago nunca queda sin ninguna forma (ADR 0053).';
 comment on column public.proyectos.cobro_saldo is 'Lo mismo para el saldo. Son dos columnas y no una porque el dueño pide la seña por transferencia y cobra el saldo en efectivo cuando termina de instalar, que es el caso que motivó esto (ADR 0053).';
 comment on column public.proyectos.reparto_ya_en_la_apertura is 'El reparto de la liquidación (el diezmo y el sueldo) ya estaba en los saldos con los que arrancó la app: queda en el libro mayor con la fecha del cobro pero no mueve los tesoros. Lo escribe private.liquidar y solo con una fecha anterior a la apertura. Reabrir un cobro lo conserva para que volver a cobrarlo proponga lo mismo; reactivar un perdido lo apaga (ADR 0063).';
+comment on column public.proyectos.presupuesto_vale_hasta is 'Hasta qué día vale el presupuesto que se le mandó al cliente, o null si no tiene fecha. La propone la app al marcar «Mandé el presupuesto» con los días de ajustes.presupuesto_vale_dias, y el dueño la corrige en la hoja del contacto. Viaja a la vista del cliente solo mientras el presupuesto está mandado y sin aprobar: es la fecha de «si dejás la seña antes del…», y la entrega que se le proyecta sale de ella con la cuenta de la entrega estimada, no de hoy. Pasada la fecha, la página dice que venció en vez de seguir prometiendo. guardar_proyecto la escribe solo si la clave viene en el pedido, así un bundle viejo no la borra (ADR 0067).';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
@@ -979,8 +984,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora, cobro_sena, cobro_saldo) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora, presupuesto_vale_hasta) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora, cobro_sena, cobro_saldo, presupuesto_vale_hasta) on public.proyectos to authenticated;
 
 create table public.renglones_de_respuesta (
   id uuid not null default private.uuidv7(),
@@ -1692,6 +1697,7 @@ declare
   v_sena_bp integer;
   v_entrega_hora time;
   v_visita_hora time;
+  v_vale_hasta date;
   v_household_id uuid;
   v_cuantas integer;
   v_aprobadas integer;
@@ -1745,7 +1751,8 @@ begin
     visita_hecha boolean,
     sena_bp integer,
     entrega_hora text,
-    visita_hora text
+    visita_hora text,
+    presupuesto_vale_hasta text
   );
 
   if v_p.id is null or v_p.cliente_id is null or v_p.titulo is null or v_p.estado is null then
@@ -1874,6 +1881,12 @@ begin
     else v_actual.visita_hora
   end;
 
+  -- Hasta cuándo vale el presupuesto, con el mismo patrón: un bundle viejo no la manda y no la borra.
+  v_vale_hasta := case
+    when p_proyecto ? 'presupuesto_vale_hasta' then nullif(v_p.presupuesto_vale_hasta, '')::date
+    else v_actual.presupuesto_vale_hasta
+  end;
+
   v_household_id := coalesce(v_actual.household_id, private.household_actual());
 
   -- Entra en seguimiento en este guardado: la etapa a la que vuelve es la que tenía el trabajo, y la
@@ -1938,14 +1951,14 @@ begin
       v_actual.fecha_visita, v_actual.ultimo_contacto, v_actual.fecha_inicio,
       v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas,
       v_actual.vencimiento_presupuesto, v_actual.visita_hecha, v_actual.sena_bp,
-      v_actual.entrega_hora, v_actual.visita_hora
+      v_actual.entrega_hora, v_actual.visita_hora, v_actual.presupuesto_vale_hasta
     ) is not distinct from (
       v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
       v_presupuesto, v_p.forma_pago, v_p.comprobante,
       v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio,
       v_p.entrega_estimada, v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''),
       coalesce(v_p.notas, ''), v_vencimiento, v_visita_hecha, v_sena_bp,
-      v_entrega_hora, v_visita_hora
+      v_entrega_hora, v_visita_hora, v_vale_hasta
     );
 
     -- Un guardado hecho sin señal sobre una versión vieja no pisa en silencio lo que hay. La
@@ -1993,7 +2006,8 @@ begin
       visita_hecha = v_visita_hecha,
       sena_bp = v_sena_bp,
       entrega_hora = v_entrega_hora,
-      visita_hora = v_visita_hora
+      visita_hora = v_visita_hora,
+      presupuesto_vale_hasta = v_vale_hasta
     where id = v_p.id
     returning * into v_fila;
   else
@@ -2002,13 +2016,13 @@ begin
         id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
         fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega,
         direccion_entrega, notas, vencimiento_presupuesto, visita_hecha, sena_bp,
-        entrega_hora, visita_hora
+        entrega_hora, visita_hora, presupuesto_vale_hasta
       ) values (
         v_p.id, v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
         v_presupuesto, v_p.forma_pago, v_p.comprobante,
         v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio, v_p.entrega_estimada,
         v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
-        v_vencimiento, v_visita_hecha, v_sena_bp, v_entrega_hora, v_visita_hora
+        v_vencimiento, v_visita_hecha, v_sena_bp, v_entrega_hora, v_visita_hora, v_vale_hasta
       )
       returning * into v_fila;
     exception
@@ -2263,7 +2277,7 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto, lo que hace falta para el trabajo y su próximo contacto en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. Entrar en seguimiento, cambiar la fecha y registrar el contacto viajan en p_proximos junto con el estado, y la guarda diferida exige que el trabajo en seguimiento tenga su contacto pendiente (MN019, ADR 0064); al entrar, la etapa a la que vuelve la pone la base. p_opciones, p_necesidades y p_proximos en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
+comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto, lo que hace falta para el trabajo y su próximo contacto en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. Entrar en seguimiento, cambiar la fecha y registrar el contacto viajan en p_proximos junto con el estado, y la guarda diferida exige que el trabajo en seguimiento tenga su contacto pendiente (MN019, ADR 0064); al entrar, la etapa a la que vuelve la pone la base. Hasta cuándo vale el presupuesto (presupuesto_vale_hasta) se escribe solo si la clave viene en el pedido, como el vencimiento (ADR 0067). p_opciones, p_necesidades y p_proximos en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
 
 CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
  RETURNS boolean
@@ -3658,9 +3672,7 @@ begin
     return;
   end if;
 
-  -- La misma cuenta que aplicarPorcentaje() de @maun/domain y que el diezmo de private.cascada():
-  -- medio punto para redondear y división entera, que con importes no negativos es piso.
-  v_sena := (p_precio_centavos * p_sena_bp + 5000) / 10000;
+  v_sena := private.sena_esperada(p_precio_centavos, p_sena_bp);
 
   if p_pagado_centavos >= v_sena then
     return query values (1, 'saldo', v_falta);
@@ -3680,7 +3692,7 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE
-comment on function private.pagos_por_delante(bigint,bigint,integer) is 'Los pagos que le faltan al cliente, en el orden en que los va a hacer: la seña mientras no esté cubierta y después el saldo, o nada cuando ya pagó todo. El importe de la seña es lo que falta de ella, con todo lo cobrado hasta hoy ya descontado —la visita incluida, que entra como un pago más—; el del saldo es el presupuesto menos la seña entera, que es lo que va a quedar cuando la termine de pagar. Sin presupuesto devuelve los dos sin importe: el porcentaje de seña es política comercial del taller y no viaja. Es la gemela en SQL de pagosPorDelante() de @maun/domain y scripts/comparacion.ts las compara caso por caso (ADR 0053).';
+comment on function private.pagos_por_delante(bigint,bigint,integer) is 'Los pagos que le faltan al cliente, en el orden en que los va a hacer: la seña mientras no esté cubierta y después el saldo, o nada cuando ya pagó todo. El importe de la seña es lo que falta de ella, con todo lo cobrado hasta hoy ya descontado —la visita incluida, que entra como un pago más—; el del saldo es el presupuesto menos la seña entera, que es lo que va a quedar cuando la termine de pagar. La seña sale de private.sena_esperada(). Sin presupuesto devuelve los dos sin importe: el porcentaje de seña es política comercial del taller y no viaja. Es la gemela en SQL de pagosPorDelante() de @maun/domain y scripts/comparacion.ts las compara caso por caso (ADR 0053 y 0067).';
 
 CREATE OR REPLACE FUNCTION private.pedir_los_avisos()
  RETURNS bigint
@@ -4022,6 +4034,17 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.sembrar_la_encuesta(uuid) is 'Le escribe al taller la encuesta base de fábrica, si no tiene ninguna: cinco preguntas, la primera la del titular. La llama private.crear_household() con cada taller nuevo. Solo la ejecuta el dueño de la base.';
+
+CREATE OR REPLACE FUNCTION private.sena_esperada(p_precio_centavos bigint, p_sena_bp integer)
+ RETURNS bigint
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO ''
+AS $function$
+  select (p_precio_centavos * p_sena_bp + 5000) / 10000
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.sena_esperada(bigint,integer) is 'El importe de la seña: el porcentaje del trabajo, o el del taller, sobre el presupuesto, redondeado al centavo mitad hacia arriba. Null sin presupuesto. Es la gemela de calcularSena().esperada de @maun/domain, y scripts/comparacion.ts las compara caso por caso. La usan private.pagos_por_delante() y public.vista_del_cliente(): la seña se calcula acá y en ningún otro lugar de la base (ADR 0067).';
 
 CREATE OR REPLACE FUNCTION private.suscripciones_para_probar(p_usuario uuid, p_endpoint text)
  RETURNS jsonb
@@ -4772,6 +4795,8 @@ AS $function$
 declare
   v_p public.proyectos;
   v_etapa public.estado_proyecto;
+  v_aprobado boolean;
+  v_presupuesto_mandado boolean;
   v_taller text;
   v_cliente text;
   v_ajustes public.ajustes;
@@ -4781,8 +4806,11 @@ declare
   v_hay_como_transferir boolean;
   v_precio bigint;
   v_pagado bigint;
-  v_ahora record;
-  v_despues record;
+  v_sena_bp integer;
+  v_instancia text;
+  v_monto bigint;
+  v_instancia_despues text;
+  v_monto_despues bigint;
   v_formas public.forma_de_cobro[];
   v_por_transferencia boolean;
   v_siguiente jsonb;
@@ -4815,6 +4843,12 @@ begin
     v_etapa := coalesce(v_etapa, 'presupuesto_enviado');
   end if;
 
+  -- Cada dato tiene una etapa a partir de la cual es cierto. Un campo cargado antes de esa etapa (el
+  -- sistema viejo le copió el inicio y la entrega a todo trabajo, aprobado o no) no es un hecho ni un
+  -- acuerdo, y no sale de la base.
+  v_aprobado := v_etapa in ('en_curso', 'entregado', 'cobrado');
+  v_presupuesto_mandado := v_aprobado or v_etapa = 'presupuesto_enviado';
+
   select h.nombre into v_taller from public.households h where h.id = v_p.household_id;
   select c.nombre into v_cliente from public.clientes c where c.id = v_p.cliente_id;
   select * into v_ajustes from public.ajustes a where a.household_id = v_p.household_id;
@@ -4824,12 +4858,10 @@ begin
   v_link := nullif(v_ajustes.cobro_link, '');
   v_hay_como_transferir := v_alias is not null or v_cbu is not null or v_link is not null;
 
-  -- Con el estimativo como etapa actual, el número que se le pasó es aproximado y no está guardado:
-  -- lo que haya en presupuesto_centavos es otro número, y no viaja.
-  v_precio := case
-    when v_etapa = 'presupuesto_estimativo' then null
-    else v_p.presupuesto_centavos
-  end;
+  -- El presupuesto existe para el cliente desde que se le manda. Antes, lo que haya en
+  -- presupuesto_centavos es un borrador, o el número de un estimativo, y no viaja.
+  v_precio := case when v_presupuesto_mandado then v_p.presupuesto_centavos end;
+  v_sena_bp := coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000);
 
   select coalesce(sum(g.monto_centavos), 0) into v_pagado
   from public.pagos g
@@ -4837,22 +4869,27 @@ begin
     and g.proyecto_id = v_p.id
     and g.deleted_at is null;
 
-  select * into v_ahora from private.pagos_por_delante(
-    v_precio,
-    v_pagado,
-    coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
-  ) where orden = 1;
+  select r.instancia, r.monto_centavos into v_instancia, v_monto
+  from private.pagos_por_delante(v_precio, v_pagado, v_sena_bp) as r
+  where r.orden = 1;
 
-  select * into v_despues from private.pagos_por_delante(
-    v_precio,
-    v_pagado,
-    coalesce(v_p.sena_bp, v_ajustes.sena_bp, 5000)
-  ) where orden = 2;
+  select r.instancia, r.monto_centavos into v_instancia_despues, v_monto_despues
+  from private.pagos_por_delante(v_precio, v_pagado, v_sena_bp) as r
+  where r.orden = 2;
+
+  -- Antes de aprobar lo único que se le puede pedir es la seña: el saldo existe desde que aprueba. Si
+  -- lo que ya pagó la cubre, para aprobar no le falta pagar nada.
+  if not v_aprobado and v_instancia = 'saldo' then
+    v_instancia := null;
+    v_monto := null;
+    v_instancia_despues := null;
+    v_monto_despues := null;
+  end if;
 
   -- Con todo pagado no hay ninguna instancia, así que tampoco hay formas ni datos de la cuenta.
-  if v_ahora.instancia is null then
+  if v_instancia is null then
     v_formas := array[]::public.forma_de_cobro[];
-  elsif v_ahora.instancia = 'sena' then
+  elsif v_instancia = 'sena' then
     v_formas := private.formas_de_cobro(v_p.cobro_sena, v_hay_como_transferir);
   else
     v_formas := private.formas_de_cobro(v_p.cobro_saldo, v_hay_como_transferir);
@@ -4860,19 +4897,19 @@ begin
 
   v_por_transferencia := 'transferencia' = any (v_formas);
 
-  if v_despues.instancia is null then
+  if v_instancia_despues is null then
     v_siguiente := null;
   else
     v_siguiente := jsonb_build_object(
-      'instancia', v_despues.instancia,
+      'instancia', v_instancia_despues,
       'formas', to_jsonb(
         case
-          when v_despues.instancia = 'sena'
+          when v_instancia_despues = 'sena'
             then private.formas_de_cobro(v_p.cobro_sena, v_hay_como_transferir)
           else private.formas_de_cobro(v_p.cobro_saldo, v_hay_como_transferir)
         end
       ),
-      'monto_centavos', v_despues.monto_centavos
+      'monto_centavos', v_monto_despues
     );
   end if;
 
@@ -4885,16 +4922,22 @@ begin
     'taller', jsonb_build_object('nombre', v_taller),
     'cliente', jsonb_build_object('nombre', v_cliente),
     'trabajo', v_p.titulo,
-    'direccion', v_p.direccion_entrega,
+    -- La dirección de la casa del cliente, desde que aprueba. Antes viaja vacía y no en null: el
+    -- lector de una versión vieja de la app la exige como texto.
+    'direccion', case when v_aprobado then v_p.direccion_entrega else '' end,
     'estado', v_etapa,
     'precio_centavos', v_precio,
+    -- La seña en pesos: la que se le pide para arrancar mientras espera, y la acordada desde que
+    -- aprueba. Sale de la misma función que el importe de «pago», así que las dos no pueden dar
+    -- distinto. El porcentaje sigue sin viajar.
+    'sena_centavos', private.sena_esperada(v_precio, v_sena_bp),
     -- El pago que toca ahora y, si hay otro después, cuánto es y cómo se paga. Los importes salen
     -- de lo que ya está guardado; el porcentaje de seña sigue sin viajar, que es lo que dejó
     -- abierto el ADR 0048.
     'pago', jsonb_build_object(
-      'instancia', v_ahora.instancia,
+      'instancia', v_instancia,
       'formas', to_jsonb(v_formas),
-      'monto_centavos', v_ahora.monto_centavos,
+      'monto_centavos', v_monto,
       'siguiente', v_siguiente
     ),
     -- Cómo pagarle al taller, y solo si el pago que toca se puede pagar así: los cuatro datos de
@@ -4922,17 +4965,21 @@ begin
           and c.proyecto_id = v_p.id
           and c.hacia = 'presupuesto_enviado'
       ),
-      'aprobado', (
+      -- La aprobación sale de su registro, no de un pago, y solo mientras el trabajo está aprobado:
+      -- uno que volvió a presupuesto no se muestra aprobado.
+      'aprobado', case when v_aprobado then (
         select min(c.ocurrio_el)
         from public.cambios_de_estado c
         where c.household_id = v_p.household_id
           and c.proyecto_id = v_p.id
           and c.hacia = 'en_curso'
-      ),
-      'inicio', v_p.fecha_inicio,
-      'entrega_pautada', v_p.entrega_estimada,
-      'entregado', v_p.fecha_entrega,
-      'cobro', case when v_p.estado = 'cobrado' then v_p.fecha_cobro end
+      ) end,
+      'inicio', case when v_aprobado then v_p.fecha_inicio end,
+      'entrega_pautada', case when v_aprobado then v_p.entrega_estimada end,
+      'entregado', case when v_etapa in ('entregado', 'cobrado') then v_p.fecha_entrega end,
+      'cobro', case when v_p.estado = 'cobrado' then v_p.fecha_cobro end,
+      -- Hasta cuándo vale el presupuesto, solo mientras está mandado y sin aprobar.
+      'vale_hasta', case when v_etapa = 'presupuesto_enviado' then v_p.presupuesto_vale_hasta end
     ),
     -- La visita para medir: el día acordado o en que se fue, y si ya se fue. La hora no viaja.
     'visita', jsonb_build_object(
@@ -4986,4 +5033,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo: cuánto vale, cuánto pagó, en qué anda, la dirección de entrega, los archivos que el dueño marcó, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Un trabajo en seguimiento se muestra en la etapa en la que estaba: el «por ahora no» y su próximo contacto son del taller y no viajan (ADR 0064). Del estimativo viaja el día, nunca un importe, y mientras el trabajo está en esa etapa tampoco viaja el precio. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña no viaja nunca; lo que viaja son los importes que salen de él. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054 y 0058).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo, y cada dato recién desde la etapa en la que es cierto (ADR 0067): el presupuesto desde que se le manda; la dirección de entrega, el día de inicio, la entrega pautada y el día de la aprobación desde que aprueba; el día de la entrega desde que se entrega. Antes de esas etapas no viajan, aunque estén cargados: un campo cargado no es un hecho. Devuelve cuánto vale, cuánto pagó, en qué anda, la seña en pesos, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después (antes de aprobar solo se le pide la seña), hasta cuándo vale el presupuesto mientras espera la seña, los archivos que el dueño marcó, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Un trabajo en seguimiento se muestra en la etapa en la que estaba: el «por ahora no» y su próximo contacto son del taller y no viajan (ADR 0064). Del estimativo viaja el día, nunca un importe. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña y los días que vale un presupuesto no viajan nunca; lo que viaja son el importe y la fecha que salen de ellos. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054, 0058 y 0067).';

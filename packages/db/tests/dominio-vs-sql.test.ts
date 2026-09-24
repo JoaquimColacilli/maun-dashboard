@@ -13,6 +13,7 @@ import {
   compararPagosPorDelante,
   compararRangos,
   compararSeed,
+  compararSenaEsperada,
   compararTopes,
   compararTransiciones,
   compararValidacionDeRespuestas,
@@ -30,6 +31,10 @@ describe('@maun/domain y la base calculan exactamente lo mismo', () => {
 
   it('qué pagos le faltan al cliente y cuánto es cada uno lo contestan igual las dos', async () => {
     expect(await enTransaccionConRollback(compararPagosPorDelante)).toEqual([]);
+  });
+
+  it('la seña que calcula la base es la de calcularSena, en los casos de la seña y en quinientos al azar', async () => {
+    expect(await enTransaccionConRollback(compararSenaEsperada)).toEqual([]);
   });
 
   it('el valor por defecto de las formas de cobro es el mismo en las dos', async () => {
