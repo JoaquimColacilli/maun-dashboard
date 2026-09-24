@@ -3,8 +3,9 @@
 ## Para Claude
 
 - Antes de tocar un paquete, leé su `CLAUDE.md`: `apps/web`, `packages/domain`, `packages/db`, `packages/ui`.
-- No hay CI. `pnpm verify` (lint, typecheck, test y build de todo el workspace, más el arnés del aviso de versión nueva y el test del reparto en la compu) es el paso obligatorio antes de pushear: un cambio está terminado solo cuando pasa en verde. Si tocaste la app, además `pnpm e2e`.
+- No hay CI. `pnpm verify` (lint, typecheck, test y build de todo el workspace, más el arnés del aviso de versión nueva, el test del reparto en la compu y el arnés de las transiciones del celular) es el paso obligatorio antes de pushear: un cambio está terminado solo cuando pasa en verde. Si tocaste la app, además `pnpm e2e`.
 - El test del reparto (`e2e:reparto` de `apps/web`, ADR 0062) usa la misma cuenta de prueba que el arnés y corre después de él.
+- El arnés de las transiciones (`e2e:transiciones` de `apps/web`, ADR 0066) usa la misma cuenta y corre después del reparto.
 - El arnés del aviso (`e2e:version` de `apps/web`, ADR 0061) corre Playwright contra dos builds de la app: necesita la cuenta de prueba de `apps/web/.env` (`E2E_EMAIL`, `E2E_PASSWORD`) y Chromium instalado (`pnpm --filter @maun/web exec playwright install chromium`).
 - `design-reference/` es material de consulta local (ignorado por git): se lee, nunca se modifica ni se importa.
 - No hay Docker: `supabase start`, `db diff`, `db pull`, `db reset`, `db dump` y `test db` no andan. El flujo de base sin Docker está en `packages/db/CLAUDE.md` (ADR 0008).

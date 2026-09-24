@@ -46,7 +46,7 @@ Las palabras de la app son las del dueño. En el código del front se usan las m
 ```sh
 pnpm install
 pnpm dev                          # levanta apps/web
-pnpm verify                       # turbo: lint, typecheck, test, build, el arnés del aviso de versión y el test del reparto (obligatorio antes de pushear)
+pnpm verify                       # turbo: lint, typecheck, test, build, el arnés del aviso de versión, el test del reparto y el arnés de las transiciones (obligatorio antes de pushear)
 pnpm e2e                          # Playwright (una vez: pnpm --filter @maun/web exec playwright install chromium)
 pnpm format                       # prettier --write
 pnpm --filter @maun/<paquete> <script>

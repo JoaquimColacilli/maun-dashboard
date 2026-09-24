@@ -5,6 +5,14 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-23.2',
+    lineas: [
+      'En el celular, las pantallas se mueven como en una app: lo que abrís entra desde el costado, lo que cerrás vuelve por donde vino y un trabajo se abre desde su tarjeta.',
+      'La flecha de volver y el botón de atrás del teléfono hacen lo mismo, y te dejan donde estabas, con la lista a la misma altura.',
+      'Tocar una sección en la barra de abajo te lleva a su pantalla principal, y desde ahí atrás vuelve a Inicio.',
+    ],
+  },
+  {
     version: '2026-09-23',
     lineas: [
       'Lo que antes era Seguimiento ahora se llama Consultas: son los trabajos que todavía no te aprobaron.',
