@@ -145,7 +145,8 @@
 
 /* Tarjeta: la tarjeta del proyecto se vuelve el encabezado de su ficha, y al volver el encabezado
    vuelve a su tarjeta. La pieza viaja con el resorte espacial y recorta lo que le sobra; adentro,
-   lo de antes se apaga rápido y lo de después aparece. Atrás, la pantalla que se va se apaga
+   lo de antes y lo de después cruzan durante todo el viaje, así la pieza se ve hasta llegar y el
+   ojo la sigue. Atrás, la pantalla que se va se apaga
    primero y la que llega aparece después, como en el fundido pero sin crecer. Va sobre el
    documento y no sobre el <main> (ADR 0066), así que lo que flota abajo es una pieza propia que
    queda quieta: sin eso la barra parpadearía con el resto. */
@@ -174,11 +175,11 @@
 }
 
 :active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-old(tarjeta) {
-  animation: var(--t-efectos-rapidos) var(--resorte-efectos-rapidos) both maun-se-apaga;
+  animation: var(--t-espacial) var(--resorte-efectos) both maun-se-apaga;
 }
 
 :active-view-transition-type(tarjeta, tarjeta-vuelta)::view-transition-new(tarjeta) {
-  animation: var(--t-efectos) var(--resorte-efectos) var(--t-fundido-sale) both maun-aparece;
+  animation: var(--t-espacial) var(--resorte-efectos) both maun-aparece;
 }
 
 /* Empuje: entrar a algo. La nueva entra por la derecha a todo el ancho con su sombra; la de abajo
