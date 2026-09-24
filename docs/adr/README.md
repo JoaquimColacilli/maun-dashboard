@@ -56,7 +56,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0050](0050-la-vista-publica-no-depende-del-armazon-de-la-app.md)           | La vista pública no depende del armazón de la app                   | Aceptada             |
 | [0051](0051-cobrar-con-mercado-pago.md)                                     | Cobrar con Mercado Pago: por ahora, el alias                        | Superada en parte    |
 | [0052](0052-el-enlace-se-guarda-entero.md)                                  | El enlace se guarda entero, no solo su huella                       | Aceptada             |
-| [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página            | Aceptada             |
+| [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página            | Aceptada, corregida  |
 | [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes          | Aceptada, corregida  |
 | [0055](0055-lo-que-se-guarda-en-el-aparato-y-lo-que-no.md)                  | Lo que se guarda en el aparato, y lo que no                         | Aceptada             |
 | [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                          | Aceptada             |
@@ -70,3 +70,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0064](0064-el-seguimiento-de-verdad-y-las-consultas.md)                    | El seguimiento de verdad, y el embudo se llama Consultas            | Aceptada             |
 | [0065](0065-la-app-abierta-se-entera-sola.md)                               | La app abierta se entera sola: un aviso vacío y el delta            | Aceptada             |
 | [0066](0066-las-transiciones-del-celular.md)                                | Las transiciones del celular: una puerta, una pila y un coordinador | Aceptada             |
+| [0067](0067-la-vista-antes-de-aprobar.md)                                   | La vista del cliente antes de aprobar: lo que se ve es lo que pasó  | Aceptada             |

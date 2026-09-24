@@ -5,7 +5,9 @@ costo del QR de cobro, y mezclaba «transferencia» con «cobro»), cierra la ob
 [0048](0048-los-datos-para-transferir.md) dejó abierta sobre el importe de la seña, y corrige al
 [0043](0043-las-opciones-de-presupuesto-y-la-sena.md) en «la seña no tiene gemela en SQL»: ahora la
 tiene, porque la vista pública la necesita. Amplía la lista blanca del
-[0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md).
+[0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md). Corregida el 2026-09-24 por el
+[0067](0067-la-vista-antes-de-aprobar.md): antes de aprobar no hay «Te falta pagar» ni se pide el
+saldo (ver la corrección en «Lo que el cliente ve»).
 
 ## Contexto
 
@@ -107,6 +109,11 @@ pregunta: cuánto. Ahora, arriba de la forma de pago, va el importe:
 - **lo que le falta pagar en total sigue arriba**, con su etiqueta de siempre, «Te falta pagar».
   Son dos números distintos y por eso llevan dos nombres distintos: «Ahora, la seña» y «Te falta
   pagar».
+
+> **Corregido el 2026-09-24 por el [ADR 0067](0067-la-vista-antes-de-aprobar.md).** Antes de aprobar
+> no se debe nada, así que no hay «Te falta pagar»: arriba van el presupuesto, la seña para arrancar y
+> lo pagado, que queda a cuenta de la seña, y lo que le falta de ella es el mismo importe de «Ahora, la
+> seña». Tampoco se pide el saldo antes de aprobar: con la seña ya cubierta, `pago` viaja vacío.
 
 **El saldo que se anticipa no es «lo que falta menos la seña que falta»: es el presupuesto menos la
 seña entera.** Con parte de la seña ya cobrada las dos cuentas no dan lo mismo, y la que el cliente
