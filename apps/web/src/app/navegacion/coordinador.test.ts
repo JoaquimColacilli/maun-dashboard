@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Compuerta, QueHacerConElAtras } from './compuerta';
 import { crearCoordinador, destinoDelPlan, type Coordinador } from './coordinador';
-import type { Escenario } from './escenario';
+import type { Escenario, Pieza, TarjetaTocada } from './escenario';
 import type { EntradaDelHistorial, HistorialQueEscucha, Traslado } from './historial';
 import { memoriaEn } from './memoria';
 import type { AnchoDeLaPolitica } from './politica';
@@ -27,7 +27,18 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
   const empezadas: { donde: Element | Document; tipos: readonly string[] | null }[] = [];
   const salteadas = vi.fn();
   const nombres: { momento: number; piezas: string[] }[] = [];
-  const entregadas = vi.fn();
+  const nombradas: (readonly Pieza[])[] = [];
+  const cambiosDeTipo = vi.fn();
+  let alTocarUnaTarjeta: (tarjeta: TarjetaTocada) => void = () => undefined;
+  let tarjetaALaVista: Element | null = null;
+  let retenido = false;
+  const entregar = () => {
+    if (!retenido) return;
+    retenido = false;
+    router.state = { location: ubicacion() };
+    coordinador?.avisarDelMarco(router.state.location.key);
+  };
+  const entregadas = vi.fn(entregar);
   let terminarLaTransicion: () => void = () => undefined;
   const valores = new Map<string, string>();
   const memoria = memoriaEn({
@@ -83,11 +94,17 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
 
   const escenario: Escenario = {
     nombrar: (_donde, piezas) => {
+      nombradas.push(piezas);
       nombres.push({ momento: empezadas.length, piezas: piezas.map((pieza) => pieza.nombre) });
     },
     olvidarLosNombres: () => {
       nombres.push({ momento: empezadas.length, piezas: [] });
     },
+    escucharLasTarjetas: (alTocar) => {
+      alTocarUnaTarjeta = alTocar;
+      return () => undefined;
+    },
+    primeraALaVista: () => tarjetaALaVista,
     conAlcanceEnElementos: () => true,
     conTransicionesDelDocumento: () => true,
     aLaVista: () => true,
@@ -99,7 +116,12 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
         terminarLaTransicion = listo;
       });
       void actualizar();
-      return { saltear: salteadas, lista: Promise.resolve(true), terminada, cambiarTipos: vi.fn() };
+      return {
+        saltear: salteadas,
+        lista: Promise.resolve(true),
+        terminada,
+        cambiarTipos: cambiosDeTipo,
+      };
     },
   };
 
@@ -114,6 +136,7 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
   };
 
   coordinador = crearCoordinador({ router, historial, escenario, memoria, compuerta });
+  coordinador.escuchar();
   const main = document.createElement('main');
   coordinador.registrarElMain(main);
   coordinador.avisarDelMarco(router.state.location.key);
@@ -128,6 +151,14 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
     decisionesPropias,
     empezadas,
     nombres,
+    nombradas,
+    cambiosDeTipo,
+    tocarLaTarjeta: (proyectoId: string, elemento: Element) => {
+      alTocarUnaTarjeta({ proyectoId, elemento });
+    },
+    ponerLaTarjetaALaVista: (elemento: Element | null) => {
+      tarjetaALaVista = elemento;
+    },
     salteadas,
     entregadas,
     memoria,
@@ -137,10 +168,15 @@ function armar(urls: string[], ancho: AnchoDeLaPolitica = 'movil') {
     volverConElTelefono: (saltos: number, navegadorYaAnimo = false) => {
       traslado = { desde: pila[indice]?.key ?? '', saltos: -saltos, navegadorYaAnimo };
       indice -= saltos;
-      return decidirElAtras(new PopStateEvent('popstate'));
+      retenido = true;
+      const queHacer = decidirElAtras(new PopStateEvent('popstate'));
+      if (queHacer === 'ahora') entregar();
+      return queHacer;
     },
   };
 }
+
+const LO_QUE_FLOTA = { selector: '[data-lo-que-flota-abajo]', nombre: 'lo-que-flota' };
 
 function soltar(): Promise<void> {
   return new Promise((listo) => setTimeout(listo, 0));
@@ -268,6 +304,61 @@ describe('el coordinador', () => {
     prueba.terminarLaTransicion();
     await soltar();
     expect(prueba.nombres.at(-1)).toEqual({ momento: 1, piezas: [] });
+  });
+
+  it('lo que sale de una tarjeta es tarjeta: nombra la tarjeta tocada antes y el encabezado de su ficha después', async () => {
+    const prueba = armar(['/', '/proyectos']);
+    const tarjeta = document.createElement('li');
+    prueba.tocarLaTarjeta('p1', tarjeta);
+    prueba.coordinador.ir('/proyectos/p1', {});
+    await soltar();
+    expect(prueba.empezadas).toEqual([{ donde: document, tipos: ['tarjeta'] }]);
+    expect(prueba.nombradas).toEqual([
+      [LO_QUE_FLOTA, { nombre: 'tarjeta', elemento: tarjeta }],
+      [LO_QUE_FLOTA, { nombre: 'tarjeta', selector: '[data-destino-de="p1"]' }],
+    ]);
+    expect(prueba.memoria.leer(prueba.actual()?.key ?? '')).toBe('tarjeta');
+  });
+
+  it('la tarjeta tocada no vale para ir a otra ficha', async () => {
+    const prueba = armar(['/', '/proyectos']);
+    prueba.tocarLaTarjeta('p1', document.createElement('li'));
+    prueba.coordinador.ir('/proyectos/p2', {});
+    await soltar();
+    expect(prueba.empezadas).toEqual([{ donde: prueba.main, tipos: ['empuje'] }]);
+  });
+
+  it('al volver, el encabezado vuelve a su tarjeta si quedó a la vista; si no, se apaga en su lugar y la lista funde', async () => {
+    const prueba = armar(['/', '/proyectos']);
+    prueba.tocarLaTarjeta('p1', document.createElement('li'));
+    prueba.coordinador.ir('/proyectos/p1', {});
+    await soltar();
+    prueba.terminarLaTransicion();
+    await soltar();
+
+    const deVuelta = document.createElement('li');
+    prueba.ponerLaTarjetaALaVista(deVuelta);
+    expect(prueba.volverConElTelefono(1)).toBe('retener');
+    await soltar();
+    expect(prueba.empezadas.at(-1)).toEqual({ donde: document, tipos: ['tarjeta-vuelta'] });
+    expect(prueba.nombradas.slice(-2)).toEqual([
+      [LO_QUE_FLOTA, { nombre: 'tarjeta', selector: '[data-destino-de="p1"]' }],
+      [LO_QUE_FLOTA, { nombre: 'tarjeta', elemento: deVuelta }],
+    ]);
+    expect(prueba.cambiosDeTipo).not.toHaveBeenCalled();
+    prueba.terminarLaTransicion();
+    await soltar();
+
+    prueba.tocarLaTarjeta('p1', document.createElement('li'));
+    prueba.coordinador.ir('/proyectos/p1', {});
+    await soltar();
+    prueba.terminarLaTransicion();
+    await soltar();
+    prueba.ponerLaTarjetaALaVista(null);
+    prueba.coordinador.volver('/proyectos');
+    await soltar();
+    expect(prueba.cambiosDeTipo).toHaveBeenCalledWith(['tarjeta-vuelta'], ['fundido']);
+    expect(prueba.nombradas.at(-1)).toEqual([LO_QUE_FLOTA]);
   });
 
   it('la etiqueta de volver sale de la entrada anterior', () => {

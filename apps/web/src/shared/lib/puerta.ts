@@ -27,6 +27,17 @@ export interface PuertoDeNavegacion {
 
 export const ContextoDeLaPuerta = createContext<PuertoDeNavegacion | null>(null);
 
+export const ORIGEN_DE_LA_TARJETA = 'data-origen-de';
+export const DESTINO_DE_LA_TARJETA = 'data-destino-de';
+
+export function origenDeLaTarjeta(proyectoId: string): Record<string, string> {
+  return { [ORIGEN_DE_LA_TARJETA]: proyectoId };
+}
+
+export function destinoDeLaTarjeta(proyectoId: string): Record<string, string> {
+  return { [DESTINO_DE_LA_TARJETA]: proyectoId };
+}
+
 function despuesDeLaHoja(
   puerto: PuertoDeNavegacion,
   pathname: string,

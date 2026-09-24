@@ -30,6 +30,12 @@
       "env": ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY", "E2E_EMAIL", "E2E_PASSWORD"],
       "passThroughEnv": ["CI"]
     },
+    "e2e:transiciones": {
+      "dependsOn": ["build", "e2e:reparto"],
+      "outputs": [],
+      "env": ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY", "E2E_EMAIL", "E2E_PASSWORD"],
+      "passThroughEnv": ["CI", "CAPTURAS_DE_TRANSICIONES"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

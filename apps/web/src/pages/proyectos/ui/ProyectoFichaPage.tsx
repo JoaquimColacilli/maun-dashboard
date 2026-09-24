@@ -44,6 +44,7 @@ import {
 import { BotonDeReversion } from '@/features/liquidar-proyecto';
 import { PedirLaOpinion } from '@/features/pedir-la-opinion';
 import {
+  destinoDeLaTarjeta,
   fechaLarga,
   formatearPesos,
   hoyLocal,
@@ -206,25 +207,27 @@ export function ProyectoFichaPage() {
       </div>
 
       <header className="flex flex-col gap-2">
-        {cliente === undefined ? (
-          <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
-        ) : (
-          <Ir
-            a={rutaDelCliente(cliente.id)}
-            className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
-          >
-            {cliente.nombre}
-            <Icono nombre="chevron-right" tamano={14} />
-          </Ir>
-        )}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
-            {proyecto.titulo}
-          </h1>
-          <span className="flex flex-wrap items-center gap-2">
-            <EstadoBadge estado={proyecto.estado} />
-            <MarcaDeLiquidacion proyectoId={proyecto.id} />
-          </span>
+        <div {...destinoDeLaTarjeta(proyecto.id)} className="flex flex-col gap-2">
+          {cliente === undefined ? (
+            <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
+          ) : (
+            <Ir
+              a={rutaDelCliente(cliente.id)}
+              className="inline-flex items-center gap-1.5 self-start text-label font-medium text-text-2"
+            >
+              {cliente.nombre}
+              <Icono nombre="chevron-right" tamano={14} />
+            </Ir>
+          )}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="max-w-[720px] font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
+              {proyecto.titulo}
+            </h1>
+            <span className="flex flex-wrap items-center gap-2">
+              <EstadoBadge estado={proyecto.estado} />
+              <MarcaDeLiquidacion proyectoId={proyecto.id} />
+            </span>
+          </div>
         </div>
         {recienAprobado && (
           <p className="flex items-center gap-1.5 text-label font-medium text-hogar">

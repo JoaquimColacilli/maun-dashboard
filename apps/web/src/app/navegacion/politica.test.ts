@@ -144,7 +144,7 @@ describe('4. atrás desanda y adelante repite', () => {
           memoria: { deLaQueSeVa: 'tarjeta' },
         }),
       ),
-    ).toEqual(movimiento('tarjeta-vuelta'));
+    ).toEqual(movimiento('tarjeta-vuelta', 'documento'));
     expect(
       decidir(
         entrada({
@@ -179,7 +179,7 @@ describe('4. atrás desanda y adelante repite', () => {
           memoria: { deLaQueLlega: 'tarjeta' },
         }),
       ),
-    ).toEqual(movimiento('tarjeta'));
+    ).toEqual(movimiento('tarjeta', 'documento'));
     expect(
       decidir(
         entrada({
@@ -272,10 +272,10 @@ describe('7. apilar, reemplazar o terminar', () => {
   it('de una tarjeta de trabajo a su ficha, la tarjeta; sin tarjeta, un empuje', () => {
     expect(
       decidir(entrada({ desde: '/proyectos', hacia: '/proyectos/1', desdeUnaTarjeta: true })),
-    ).toEqual(movimiento('tarjeta'));
+    ).toEqual(movimiento('tarjeta', 'documento'));
     expect(
       decidir(entrada({ desde: '/clientes/2', hacia: '/proyectos/1', desdeUnaTarjeta: true })),
-    ).toEqual(movimiento('tarjeta'));
+    ).toEqual(movimiento('tarjeta', 'documento'));
     expect(decidir(entrada({ desde: '/proyectos', hacia: '/proyectos/1' }))).toEqual(
       movimiento('empuje'),
     );

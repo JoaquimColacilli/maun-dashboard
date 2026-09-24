@@ -31,6 +31,7 @@ import {
 import { AvanceDelContacto, HojaDeContacto } from '@/features/avanzar-la-consulta';
 import { HojaDePonerEnSeguimiento } from '@/features/hacer-el-seguimiento';
 import {
+  destinoDeLaTarjeta,
   fechaLarga,
   formatearPesos,
   hoyLocal,
@@ -146,7 +147,7 @@ export function FichaDeContacto({ resumen, etapa }: FichaDeContactoProps) {
         </div>
       </div>
 
-      <header className="flex flex-col gap-2">
+      <header {...destinoDeLaTarjeta(proyecto.id)} className="flex flex-col gap-2">
         {cliente === undefined ? (
           <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
         ) : (

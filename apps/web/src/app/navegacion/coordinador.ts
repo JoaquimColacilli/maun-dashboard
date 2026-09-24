@@ -1,7 +1,13 @@
-import type { OpcionesDeIr, PuertoDeNavegacion } from '@/shared/lib';
+import {
+  DESTINO_DE_LA_TARJETA,
+  ORIGEN_DE_LA_TARJETA,
+  type OpcionesDeIr,
+  type PuertoDeNavegacion,
+} from '@/shared/lib';
 
+import { proyectoDeLaFicha } from './catalogo';
 import type { Compuerta } from './compuerta';
-import type { Escenario, Pieza, TransicionEnCurso } from './escenario';
+import type { Escenario, Pieza, TarjetaTocada, TransicionEnCurso } from './escenario';
 import type { HistorialQueEscucha } from './historial';
 import type { Memoria } from './memoria';
 import {
@@ -17,7 +23,6 @@ import {
   movimientoAlApilar,
   type Decision,
   type EntradaDeLaPolitica,
-  type Movimiento,
   type NavegacionDeLaPolitica,
 } from './politica';
 
@@ -35,10 +40,29 @@ const PIEZAS_DE_LA_PESTANA: readonly Pieza[] = [
   { selector: '[data-bajo-las-pestanas]', nombre: 'contenido-de-la-pestana' },
 ];
 
-export const PIEZAS: Partial<Record<Movimiento, readonly Pieza[]>> = {
-  'pestana-adelante': PIEZAS_DE_LA_PESTANA,
-  'pestana-atras': PIEZAS_DE_LA_PESTANA,
-};
+const TARJETA = 'tarjeta';
+
+const LO_QUE_FLOTA: Pieza = { selector: '[data-lo-que-flota-abajo]', nombre: 'lo-que-flota' };
+
+type CambiarTipos = TransicionEnCurso['cambiarTipos'];
+
+interface PiezasDelMovimiento {
+  antes: readonly Pieza[];
+  despues: (cambiarTipos: CambiarTipos) => readonly Pieza[];
+}
+
+const SIN_PIEZAS: PiezasDelMovimiento = { antes: [], despues: () => [] };
+
+interface RutaDelMovimiento {
+  desde: string;
+  hacia: string;
+  tarjeta: TarjetaTocada | null;
+}
+
+function selectorDeLaTarjeta(atributo: string, proyectoId: string | null): string | null {
+  if (proyectoId === null || !/^[\w-]+$/.test(proyectoId)) return null;
+  return `[${atributo}="${proyectoId}"]`;
+}
 
 export interface UbicacionDelRouter {
   pathname: string;
@@ -133,6 +157,7 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
   let enCurso: TransicionEnCurso | null = null;
   let cola: Promise<void> = Promise.resolve();
   let enLaCola = 0;
+  let tarjetaTocada: TarjetaTocada | null = null;
   let popsPropios = 0;
   const oyentesDeLaSalida = new Set<OyenteDeLaSalida>();
 
@@ -196,35 +221,93 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
     }
   };
 
-  const animar = async (decision: Decision, actualizar: () => Promise<void>) => {
-    if (decision.tipo === 'ninguno') {
+  const piezasDelMovimiento = (
+    decision: Decision,
+    donde: Element | Document,
+    ruta: RutaDelMovimiento,
+  ): PiezasDelMovimiento => {
+    if (decision.tipo !== 'movimiento') return SIN_PIEZAS;
+    switch (decision.movimiento) {
+      case 'pestana-adelante':
+      case 'pestana-atras':
+        return { antes: PIEZAS_DE_LA_PESTANA, despues: () => PIEZAS_DE_LA_PESTANA };
+      case 'tarjeta': {
+        const proyectoId = proyectoDeLaFicha(ruta.hacia);
+        const origen = selectorDeLaTarjeta(ORIGEN_DE_LA_TARJETA, proyectoId);
+        const destino = selectorDeLaTarjeta(DESTINO_DE_LA_TARJETA, proyectoId);
+        const tocada =
+          ruta.tarjeta?.elemento ??
+          (origen === null ? null : d.escenario.primeraALaVista(donde, origen));
+        return {
+          antes:
+            tocada === null
+              ? [LO_QUE_FLOTA]
+              : [LO_QUE_FLOTA, { nombre: TARJETA, elemento: tocada }],
+          despues: () =>
+            destino === null
+              ? [LO_QUE_FLOTA]
+              : [LO_QUE_FLOTA, { nombre: TARJETA, selector: destino }],
+        };
+      }
+      case 'tarjeta-vuelta': {
+        const proyectoId = proyectoDeLaFicha(ruta.desde);
+        const origen = selectorDeLaTarjeta(ORIGEN_DE_LA_TARJETA, proyectoId);
+        const destino = selectorDeLaTarjeta(DESTINO_DE_LA_TARJETA, proyectoId);
+        return {
+          antes:
+            destino === null
+              ? [LO_QUE_FLOTA]
+              : [LO_QUE_FLOTA, { nombre: TARJETA, selector: destino }],
+          despues: (cambiarTipos) => {
+            const tarjeta = origen === null ? null : d.escenario.primeraALaVista(donde, origen);
+            if (tarjeta !== null) return [LO_QUE_FLOTA, { nombre: TARJETA, elemento: tarjeta }];
+            cambiarTipos(['tarjeta-vuelta'], ['fundido']);
+            return [LO_QUE_FLOTA];
+          },
+        };
+      }
+      default:
+        return SIN_PIEZAS;
+    }
+  };
+
+  const animar = async (
+    decision: Decision,
+    ruta: RutaDelMovimiento,
+    actualizar: () => Promise<void>,
+  ) => {
+    const donde = decision.tipo === 'movimiento' && decision.alcance === 'main' ? main : document;
+    if (decision.tipo === 'ninguno' || donde === null) {
       await actualizar();
       return;
     }
-    const donde = decision.tipo === 'movimiento' && decision.alcance === 'main' ? main : document;
     const tipos = decision.tipo === 'movimiento' ? [decision.movimiento] : null;
-    const piezas = decision.tipo === 'movimiento' ? (PIEZAS[decision.movimiento] ?? []) : [];
+    const piezas = piezasDelMovimiento(decision, donde, ruta);
+    let esta: TransicionEnCurso | null = null;
     let terminarLaActualizacion: () => void = () => undefined;
     const actualizada = new Promise<void>((listo) => {
       terminarLaActualizacion = listo;
     });
-    if (donde !== null) d.escenario.nombrar(donde, piezas);
-    const transicion =
-      donde === null
-        ? null
-        : d.escenario.empezar(donde, tipos, async () => {
-            try {
-              await actualizar();
-              d.escenario.nombrar(donde, piezas);
-            } finally {
-              terminarLaActualizacion();
-            }
-          });
+    d.escenario.nombrar(donde, piezas.antes);
+    const transicion = d.escenario.empezar(donde, tipos, async () => {
+      try {
+        await actualizar();
+        d.escenario.nombrar(
+          donde,
+          piezas.despues((sacar, poner) => {
+            esta?.cambiarTipos(sacar, poner);
+          }),
+        );
+      } finally {
+        terminarLaActualizacion();
+      }
+    });
     if (transicion === null) {
       d.escenario.olvidarLosNombres();
       await actualizar();
       return;
     }
+    esta = transicion;
     enCurso = transicion;
     void transicion.terminada.then(() => {
       if (enCurso !== transicion) return;
@@ -250,8 +333,9 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
   const correr = (
     armar: (situacion: Situacion) => Plan,
     opciones: OpcionesDeIr,
-    desdeUnaTarjeta: boolean,
+    tarjeta: TarjetaTocada | null,
   ) => {
+    const desdeUnaTarjeta = tarjeta !== null;
     d.compuerta.entregarLoRetenido();
     enCurso?.saltear();
     const anterior = cola;
@@ -284,7 +368,7 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
       if (decision.tipo === 'ninguno') {
         await ejecutar(plan.pasos, false);
       } else {
-        await animar(decision, async () => {
+        await animar(decision, { desde: ahora.actual, hacia, tarjeta }, async () => {
           await ejecutar(plan.pasos, true);
           await esperarAlMarco(claveAntes);
         });
@@ -324,7 +408,8 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
     });
     if (decision.tipo !== 'movimiento') return 'ahora';
     const claveAntes = claveDelMarco;
-    void animar(decision, async () => {
+    const ruta = { desde: urlDelRouter(), hacia: destino.url, tarjeta: null };
+    void animar(decision, ruta, async () => {
       d.compuerta.entregarLoRetenido();
       d.historial.olvidarElTraslado();
       await esperarAlMarco(claveAntes);
@@ -334,10 +419,14 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
 
   return {
     ir: (destino, opciones) => {
-      correr((ahora) => planDeIr(destino, opciones, ahora), opciones, false);
+      const tocada = tarjetaTocada;
+      tarjetaTocada = null;
+      const deEstaFicha = tocada !== null && proyectoDeLaFicha(destino) === tocada.proyectoId;
+      correr((ahora) => planDeIr(destino, opciones, ahora), opciones, deEstaFicha ? tocada : null);
     },
     volver: (padre) => {
-      correr((ahora) => planDeVolver(padre, ahora), {}, false);
+      tarjetaTocada = null;
+      correr((ahora) => planDeVolver(padre, ahora), {}, null);
     },
     etiquetaDeVolver: (padre, etiqueta) =>
       etiquetaDeVolver(padre, etiqueta, d.historial.anteriores()),
@@ -352,7 +441,19 @@ export function crearCoordinador(d: DependenciasDelCoordinador): Coordinador {
         oyentesDeLaSalida.delete(oyente);
       };
     },
-    escuchar: () => d.historial.escucharLosTraslados(),
+    escuchar: () => {
+      const dejarLosTraslados = d.historial.escucharLosTraslados();
+      const dejarLasTarjetas = d.escenario.escucharLasTarjetas((tocada) => {
+        tarjetaTocada = tocada;
+        setTimeout(() => {
+          if (tarjetaTocada === tocada) tarjetaTocada = null;
+        }, 0);
+      });
+      return () => {
+        dejarLosTraslados();
+        dejarLasTarjetas();
+      };
+    },
     registrarElMain: (elemento) => {
       main = elemento;
     },

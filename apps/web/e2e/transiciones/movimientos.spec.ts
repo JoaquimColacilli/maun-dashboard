@@ -4,7 +4,12 @@ import { entrarConLaSesion } from '../apoyo/sesion';
 import { iniciarSesionDePrueba, type SesionDePrueba } from '../apoyo/taller';
 import { abrirComparador } from './capturas';
 import { sembrarElTaller, type TallerDeLasTransiciones } from './datos';
-import { espiarLasTransiciones } from './espia';
+import {
+  espiarLasTransiciones,
+  olvidarLasTransiciones,
+  sinTransicionEnCurso,
+  transicionesVistas,
+} from './espia';
 import { medir } from './medida';
 
 const CARGA = { timeout: 30_000 };
@@ -91,7 +96,7 @@ test('cada movimiento del celular sale con su tipo y su alcance, y al 0 y al 100
 
   await medir(page, comparador, testInfo, {
     nombre: '05-tarjeta',
-    alcance: 'main',
+    alcance: 'documento',
     tipos: ['tarjeta'],
     hacer: () => tarjeta.click(),
     listo: () => expect(titulo(page, tituloDeLaObra)).toBeVisible(),
@@ -115,7 +120,7 @@ test('cada movimiento del celular sale con su tipo y su alcance, y al 0 y al 100
 
   await medir(page, comparador, testInfo, {
     nombre: '08-tarjeta-vuelta',
-    alcance: 'main',
+    alcance: 'documento',
     tipos: ['tarjeta-vuelta'],
     hacer: async () => {
       await page.goBack();
@@ -140,4 +145,40 @@ test('cada movimiento del celular sale con su tipo y su alcance, y al 0 y al 100
     listo: () =>
       expect(page.getByRole('tab', { name: /Consultas/ })).toHaveAttribute('aria-selected', 'true'),
   });
+});
+
+test('si al volver su tarjeta ya no está a la vista, el encabezado se apaga en su lugar y la lista funde', async ({
+  page,
+  context,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const comparador = await abrirComparador(context);
+  const { entregado } = taller;
+  await page.goto('/proyectos');
+  await expect(titulo(page, 'Proyectos')).toBeVisible(CARGA);
+  const tarjeta = page.locator(`li[data-origen-de="${entregado.id}"] a[data-tarjeta]`);
+  await tarjeta.scrollIntoViewIfNeeded();
+  await olvidarLasTransiciones(page);
+  await tarjeta.click();
+  await expect(titulo(page, entregado.titulo)).toBeVisible();
+  await sinTransicionEnCurso(page);
+  expect((await transicionesVistas(page)).map((vista) => vista.tipos)).toEqual([['tarjeta']]);
+
+  await page.getByRole('button', { name: /^Cobrar/ }).click();
+  await page.getByRole('button', { name: /^Cobrar y repartir/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/proyectos/${entregado.id}$`));
+  await expect(titulo(page, entregado.titulo)).toBeVisible();
+  await sinTransicionEnCurso(page);
+  await page.mouse.move(1, 1);
+
+  await medir(page, comparador, testInfo, {
+    nombre: '11-tarjeta-fuera-de-vista',
+    alcance: 'documento',
+    tipos: ['fundido'],
+    hacer: async () => {
+      await page.goBack();
+    },
+    listo: () => expect(titulo(page, 'Proyectos')).toBeVisible(),
+  });
+  await expect(page.locator(`li[data-origen-de="${entregado.id}"]`)).toHaveCount(0);
 });

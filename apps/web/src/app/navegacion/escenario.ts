@@ -1,3 +1,5 @@
+import { ORIGEN_DE_LA_TARJETA } from '@/shared/lib';
+
 import type { AnchoDeLaPolitica } from './politica';
 
 export interface TransicionEnCurso {
@@ -9,15 +11,20 @@ export interface TransicionEnCurso {
 
 export type ActualizacionDeLaTransicion = () => Promise<void>;
 
-export interface Pieza {
-  selector: string;
-  nombre: string;
-  todas?: { clase: string };
+export type Pieza =
+  | { nombre: string; selector: string; todas?: { clase: string } }
+  | { nombre: string; elemento: Element };
+
+export interface TarjetaTocada {
+  proyectoId: string;
+  elemento: Element;
 }
 
 export interface Escenario {
   nombrar: (donde: Element | Document, piezas: readonly Pieza[]) => void;
   olvidarLosNombres: () => void;
+  escucharLasTarjetas: (alTocar: (tarjeta: TarjetaTocada) => void) => () => void;
+  primeraALaVista: (donde: Element | Document, selector: string) => Element | null;
   conAlcanceEnElementos: () => boolean;
   conTransicionesDelDocumento: () => boolean;
   aLaVista: () => boolean;
@@ -74,17 +81,45 @@ export function escenarioDelNavegador(): Escenario {
   return {
     nombrar: (donde, piezas) => {
       olvidar();
-      for (const { selector, nombre, todas } of piezas) {
-        if (todas === undefined) {
-          ponerNombre(donde.querySelector(selector), nombre);
-          continue;
-        }
-        for (const [indice, elemento] of [...donde.querySelectorAll(selector)].entries()) {
-          ponerNombre(elemento, `${nombre}-${String(indice + 1)}`, todas.clase);
+      for (const pieza of piezas) {
+        if ('elemento' in pieza) {
+          ponerNombre(pieza.elemento, pieza.nombre);
+        } else if (pieza.todas === undefined) {
+          ponerNombre(donde.querySelector(pieza.selector), pieza.nombre);
+        } else {
+          for (const [indice, elemento] of [...donde.querySelectorAll(pieza.selector)].entries()) {
+            ponerNombre(elemento, `${pieza.nombre}-${String(indice + 1)}`, pieza.todas.clase);
+          }
         }
       }
     },
     olvidarLosNombres: olvidar,
+    escucharLasTarjetas: (alTocar) => {
+      const alHacerClic = (evento: Event) => {
+        const elemento =
+          evento.target instanceof Element
+            ? evento.target.closest(`[${ORIGEN_DE_LA_TARJETA}]`)
+            : null;
+        const proyectoId = elemento?.getAttribute(ORIGEN_DE_LA_TARJETA);
+        if (elemento && proyectoId) alTocar({ proyectoId, elemento });
+      };
+      document.addEventListener('click', alHacerClic, true);
+      return () => {
+        document.removeEventListener('click', alHacerClic, true);
+      };
+    },
+    primeraALaVista: (donde, selector) => {
+      const marco =
+        donde instanceof Element
+          ? donde.getBoundingClientRect()
+          : new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+      for (const elemento of donde.querySelectorAll(selector)) {
+        const caja = elemento.getBoundingClientRect();
+        const alto = Math.min(caja.bottom, marco.bottom) - Math.max(caja.top, marco.top);
+        if (caja.height > 0 && alto >= caja.height / 2) return elemento;
+      }
+      return null;
+    },
     conAlcanceEnElementos: () =>
       typeof Reflect.get(Element.prototype, 'startViewTransition') === 'function',
     conTransicionesDelDocumento: () => empezarDe(document) !== null,

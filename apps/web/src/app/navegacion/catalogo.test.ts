@@ -5,7 +5,7 @@ import { HOJAS_POR_RUTA } from '@/shared/lib';
 
 import { RutaVieja } from '../router/RutaVieja';
 import { RUTAS_DE_HOJA, RUTAS_DE_PANTALLA } from '../router/rutas';
-import { CATALOGO, pantallaDe, sonPestanasDelMismoGrupo } from './catalogo';
+import { CATALOGO, pantallaDe, proyectoDeLaFicha, sonPestanasDelMismoGrupo } from './catalogo';
 
 function patronDe(ruta: { index?: boolean; path?: string }): string {
   return ruta.index === true ? '/' : (ruta.path ?? '');
@@ -68,6 +68,13 @@ describe('el catálogo de las pantallas del marco', () => {
       'clientes',
       'finanzas',
     ]);
+  });
+
+  it('de una ficha saca su proyecto, y de lo demás nada', () => {
+    expect(proyectoDeLaFicha('/proyectos/abc-123?respuesta=r')).toBe('abc-123');
+    expect(proyectoDeLaFicha('/proyectos/abc-123/editar')).toBeNull();
+    expect(proyectoDeLaFicha('/proyectos/nuevo')).toBeNull();
+    expect(proyectoDeLaFicha('/clientes/abc-123')).toBeNull();
   });
 
   it('las pestañas son las de una misma pantalla', () => {

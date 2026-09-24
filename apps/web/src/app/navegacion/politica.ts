@@ -83,9 +83,11 @@ export function movimientoAlApilar(
   return 'empuje';
 }
 
+const DEL_DOCUMENTO: readonly Movimiento[] = ['subida', 'bajada', 'tarjeta', 'tarjeta-vuelta'];
+
 function alcanceDe(movimiento: Movimiento, desde: string, hacia: string): Alcance {
   const conCapa = [desde, hacia].some((url) => pantallaDe(url)?.forma === 'capa');
-  return conCapa || movimiento === 'subida' || movimiento === 'bajada' ? 'documento' : 'main';
+  return conCapa || DEL_DOCUMENTO.includes(movimiento) ? 'documento' : 'main';
 }
 
 function soloCambiaLaBusqueda(desde: string, hacia: string): boolean {

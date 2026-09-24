@@ -71,6 +71,10 @@ export { anotarHojaAbierta, type HojaAbierta } from './hojas-abiertas';
 export { Ir, type IrProps } from './Ir';
 export {
   ContextoDeLaPuerta,
+  DESTINO_DE_LA_TARJETA,
+  destinoDeLaTarjeta,
+  ORIGEN_DE_LA_TARJETA,
+  origenDeLaTarjeta,
   useIr,
   usePuerta,
   useSenalDeUnaVez,

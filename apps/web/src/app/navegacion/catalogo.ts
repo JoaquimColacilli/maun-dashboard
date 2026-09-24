@@ -316,6 +316,12 @@ export function pantallaDe(url: string): Pantalla | undefined {
   });
 }
 
+export function proyectoDeLaFicha(url: string): string | null {
+  const pantalla = pantallaDe(url);
+  if (pantalla?.id !== 'ficha') return null;
+  return matchPath(pantalla.patron, direccionDe(url).pathname)?.params.id ?? null;
+}
+
 export function nombreDe(url: string): string | undefined {
   return pantallaDe(url)?.nombre;
 }
