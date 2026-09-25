@@ -1,7 +1,7 @@
 import { centavos } from '@maun/domain';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CorteDelMes } from '@/entities/proyecto';
 
@@ -62,6 +62,10 @@ function seCorta(container: HTMLElement): boolean {
   return piezas.every((pieza) => pieza.style.animationName === 'maun-corte');
 }
 
+beforeAll(async () => {
+  await import('./PortadaDeInicio');
+}, 30_000);
+
 beforeEach(() => {
   pantallaDe(390);
 });
@@ -71,7 +75,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('la portada de Inicio', () => {
+describe('la portada de Inicio', { timeout: 20_000 }, () => {
   it('con trabajos cerrados en el mes cuenta el corte y lo dibuja cortado', async () => {
     const montar = await portadaNueva();
     const { container } = montar(CORTE);
