@@ -293,7 +293,7 @@ test('la tabla de escritorio ordena por cada columna, en los dos sentidos', asyn
     ['Presupuesto', 'descending'],
     ['Cobrado', 'descending'],
     ['Saldo', 'descending'],
-    ['Entrega estimada', 'ascending'],
+    ['Entrega', 'ascending'],
     ['Estado', 'ascending'],
   ];
   for (const [columna, inicial] of columnas) {

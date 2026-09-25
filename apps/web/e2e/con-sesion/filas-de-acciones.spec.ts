@@ -174,7 +174,7 @@ async function revisar(
   return forma;
 }
 
-test('la ficha de una obra: las dos acciones van juntas, y una sola ocupa todo el ancho', async ({
+test('la ficha de una obra: las tres acciones van apiladas, y una sola ocupa todo el ancho', async ({
   page,
 }, testInfo) => {
   const anchos = anchosDelProyecto(page, testInfo);
@@ -191,7 +191,7 @@ test('la ficha de una obra: las dos acciones van juntas, y una sola ocupa todo e
     await expect(panel).toContainText('Falta entregarlo', CARGA);
     const fila = panel.locator('[data-fila-de-acciones]');
 
-    const forma = await revisar(fila, 2, 'obra-en-curso', page, testInfo);
+    const forma = await revisar(fila, 3, 'obra-en-curso', page, testInfo);
     expect(forma).toBe('apiladas');
     await page.screenshot({
       path: testInfo.outputPath(`${testInfo.project.name}-${String(ancho.width)}-ficha.png`),

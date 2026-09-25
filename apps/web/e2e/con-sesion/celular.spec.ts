@@ -100,7 +100,7 @@ test('la hoja de ordenar del celular cambia el orden de las cards', async ({ pag
   await page.goto('/proyectos');
   await expect(page.getByRole('table')).toHaveCount(0);
 
-  await page.getByRole('button', { name: /Entrega estimada|Ordenar/ }).click();
+  await page.getByRole('button', { name: /^(Entrega|Ordenar)$/ }).click();
   const hoja = page.getByRole('dialog', { name: 'Ordenar por' });
   await expect(hoja).toBeVisible();
   await hoja.getByRole('button', { name: 'Presupuesto' }).click();

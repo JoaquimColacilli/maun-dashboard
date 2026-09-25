@@ -1143,3 +1143,222 @@ export async function borrarProyectoPorRest(
     body: JSON.stringify({ deleted_at: new Date().toISOString() }),
   });
 }
+
+export function diaDesdeHoy(dias: number): string {
+  const fecha = new Date(`${hoyEnElTaller()}T12:00:00Z`);
+  fecha.setUTCDate(fecha.getUTCDate() + dias);
+  return fecha.toISOString().slice(0, 10);
+}
+
+export function diaHabilDesdeHoy(dias: number): string {
+  for (let extra = dias; ; extra += 1) {
+    const fecha = diaDesdeHoy(extra);
+    if (new Date(`${fecha}T12:00:00Z`).getUTCDay() !== 0) return fecha;
+  }
+}
+
+export interface EntregaLeida {
+  id: string;
+  estado: string;
+  version: number;
+  listo_el: string | null;
+  entrega_estimada: string | null;
+  entrega_comprometida: string | null;
+  entrega_comprometida_franja: string | null;
+  fecha_entrega: string | null;
+}
+
+export async function entregaDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<EntregaLeida | undefined> {
+  const filas = (await pedir(
+    entorno,
+    `/rest/v1/proyectos?select=id,estado,version,listo_el,entrega_estimada,entrega_comprometida,entrega_comprometida_franja,fecha_entrega&id=eq.${proyectoId}`,
+    { accessToken },
+  )) as EntregaLeida[];
+  return filas[0];
+}
+
+export async function entregaPorRest(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+  cambios: Partial<
+    Pick<EntregaLeida, 'listo_el' | 'entrega_comprometida' | 'entrega_comprometida_franja'>
+  >,
+): Promise<void> {
+  await pedir(entorno, `/rest/v1/proyectos?id=eq.${proyectoId}`, {
+    method: 'PATCH',
+    accessToken,
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(cambios),
+  });
+}
+
+export interface PropuestaParaPedir {
+  id: string;
+  forma: 'un_dia' | 'sus_dias';
+  fecha: string | null;
+  franja: 'manana' | 'tarde' | null;
+}
+
+export async function proponerPorRpc(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+  propuesta: PropuestaParaPedir | null,
+): Promise<unknown> {
+  return pedir(entorno, '/rest/v1/rpc/proponer_la_entrega', {
+    method: 'POST',
+    accessToken,
+    body: JSON.stringify({ p_proyecto_id: proyectoId, p_propuesta: propuesta }),
+  });
+}
+
+export interface PropuestaLeida extends PropuestaParaPedir {
+  cerrada_at: string | null;
+}
+
+export async function propuestasDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<PropuestaLeida[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/propuestas_de_entrega?select=id,forma,fecha,franja,cerrada_at&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as PropuestaLeida[];
+}
+
+export interface RespuestaDeEntregaLeida {
+  id: string;
+  propuesta_id: string;
+  respuesta: string;
+  dias: { fecha: string; franjas: string[] }[];
+  nota: string;
+  leida_at: string | null;
+}
+
+export async function respuestasDeEntregaDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<RespuestaDeEntregaLeida[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/respuestas_de_entrega?select=id,propuesta_id,respuesta,dias,nota,leida_at&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as RespuestaDeEntregaLeida[];
+}
+
+export interface CambioDeFechaLeido {
+  tipo: string;
+  fecha: string | null;
+  franja: string | null;
+  origen: string;
+}
+
+export async function cambiosDeFechaDe(
+  { entorno, accessToken }: SesionDePrueba,
+  proyectoId: string,
+): Promise<CambioDeFechaLeido[]> {
+  return (await pedir(
+    entorno,
+    `/rest/v1/cambios_de_fecha?select=tipo,fecha,franja,origen&proyecto_id=eq.${proyectoId}&order=created_at`,
+    { accessToken },
+  )) as CambioDeFechaLeido[];
+}
+
+export async function responderComoCliente(
+  { entorno }: SesionDePrueba,
+  token: string,
+  respuesta: unknown,
+): Promise<unknown> {
+  return pedir(entorno, '/rest/v1/rpc/responder_la_entrega', {
+    method: 'POST',
+    body: JSON.stringify({ p_token: token, p_respuesta: respuesta }),
+  });
+}
+
+export interface TrabajoListo {
+  id: string;
+  token: string;
+  titulo: string;
+  cliente: string;
+}
+
+export async function trabajoListoConEnlace(
+  sesion: SesionDePrueba,
+  { titulo, cliente, listo = true }: { titulo: string; cliente: string; listo?: boolean },
+): Promise<TrabajoListo> {
+  const clienteId = await crearCliente(sesion, cliente, { direccion: 'Olazábal 1240, Ituzaingó' });
+  const id = crypto.randomUUID();
+  await guardarProyectoPorRpc(sesion, {
+    proyecto: {
+      id,
+      version: null,
+      cliente_id: clienteId,
+      titulo,
+      estado: 'en_curso',
+      presupuesto_centavos: 150_000_000,
+      comprobante: 'sin_comprobante',
+      direccion_entrega: 'Olazábal 1240, Ituzaingó',
+      fecha_inicio: diaDesdeHoy(-20),
+      entrega_estimada: diaDesdeHoy(10),
+      tipo_de_proyecto: 'Placard',
+    },
+    pagos: [
+      {
+        id: crypto.randomUUID(),
+        fecha: diaDesdeHoy(-20),
+        concepto: 'Seña',
+        monto_centavos: 75_000_000,
+      },
+    ],
+    gastos: [],
+  });
+  if (listo) await entregaPorRest(sesion, id, { listo_el: diaDesdeHoy(-1) });
+  const token = `e2e-${crypto.randomUUID().replaceAll('-', '')}`;
+  await enlacePorRest(sesion, id, token);
+  return { id, token, titulo, cliente };
+}
+
+const DESVIOS_SEMBRADOS = [0, 2, 5, -1, 8, 3, 1, -4, 10, 0, 2, 6] as const;
+
+const TIPOS_SEMBRADOS = ['Placard', 'Cocina', 'Placard', 'Vestidor', 'Placard', null] as const;
+
+export async function sembrarEntregas(
+  sesion: SesionDePrueba,
+  desde: number,
+  hasta: number,
+): Promise<void> {
+  const cliente = await crearCliente(sesion, `Cliente del analítico ${String(desde)}`);
+  for (let indice = desde; indice < hasta; indice += 1) {
+    const id = crypto.randomUUID();
+    const estimada = diaDesdeHoy(-40 + indice);
+    const desvio = DESVIOS_SEMBRADOS[indice % DESVIOS_SEMBRADOS.length] ?? 0;
+    const base = {
+      id,
+      cliente_id: cliente,
+      titulo: `Entrega ${String(indice + 1)}`,
+      presupuesto_centavos: 50_000_000,
+      comprobante: 'sin_comprobante',
+      fecha_inicio: diaDesdeHoy(-70 + indice),
+      entrega_estimada: estimada,
+      tipo_de_proyecto: TIPOS_SEMBRADOS[indice % TIPOS_SEMBRADOS.length] ?? null,
+    };
+    const creado = (await guardarProyectoPorRpc(sesion, {
+      proyecto: { ...base, version: null, estado: 'en_curso' },
+      pagos: [],
+      gastos: [],
+    })) as { proyecto: { version: number } };
+    await guardarProyectoPorRpc(sesion, {
+      proyecto: {
+        ...base,
+        version: creado.proyecto.version,
+        estado: 'entregado',
+        fecha_entrega: diaDesdeHoy(-40 + indice + desvio),
+      },
+      pagos: [],
+      gastos: [],
+    });
+  }
+}
