@@ -36,6 +36,7 @@ import {
   type Pago,
   type Proyecto,
 } from './catalogos';
+import { tipoDelTrabajo } from './entrega';
 import { senaDelProyecto, type OpcionDePresupuesto } from './opciones';
 import { vigenciaDelPresupuesto } from './vigencia';
 
@@ -106,6 +107,7 @@ export const esquemaDeProyecto = z.object({
   notas: texto(10_000),
   vencimiento_presupuesto: z.string(),
   presupuesto_vale_hasta: z.string(),
+  tipo_de_proyecto: texto(60),
   pagos: z.array(filaDePago),
   gastos: z.array(filaDinamica),
   opciones: z.array(filaDeOpcion),
@@ -126,6 +128,11 @@ function hora(valor: string | null | undefined): string {
 
 function fechaOnNull(valor: string): string | null {
   return valor.trim() === '' ? null : valor;
+}
+
+function textoONull(valor: string): string | null {
+  const limpio = valor.trim();
+  return limpio === '' ? null : limpio;
 }
 
 export function filaVacia(id: string, hoy: string = hoyEnElTaller()): FilaDinamica {
@@ -187,6 +194,7 @@ export function valoresDelFormulario(
       notas: '',
       vencimiento_presupuesto: '',
       presupuesto_vale_hasta: '',
+      tipo_de_proyecto: '',
       pagos: [],
       gastos: [],
       opciones: [],
@@ -216,6 +224,7 @@ export function valoresDelFormulario(
     notas: proyecto.notas,
     vencimiento_presupuesto: fecha(proyecto.vencimiento_presupuesto),
     presupuesto_vale_hasta: fecha(vigenciaDelPresupuesto(proyecto)),
+    tipo_de_proyecto: tipoDelTrabajo(proyecto) ?? '',
     pagos: pagos.map((pago) => ({
       id: pago.id,
       fecha: pago.fecha,
@@ -271,6 +280,7 @@ export function datosDelFormulario(
     notas: valores.notas.trim(),
     vencimiento_presupuesto: fechaOnNull(valores.vencimiento_presupuesto),
     presupuesto_vale_hasta: fechaOnNull(valores.presupuesto_vale_hasta),
+    tipo_de_proyecto: textoONull(valores.tipo_de_proyecto),
   };
 }
 

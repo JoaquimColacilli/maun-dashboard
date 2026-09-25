@@ -25,6 +25,12 @@ import {
   MUTACION_DE_TOKEN_DE_ENLACE,
 } from '@/entities/enlace';
 import {
+  CLAVE_DE_LECTURA_DE_ENTREGA,
+  CLAVE_DE_PROPUESTA_DE_ENTREGA,
+  MUTACION_DE_LECTURA_DE_ENTREGA,
+  MUTACION_DE_PROPUESTA_DE_ENTREGA,
+} from '@/entities/entrega';
+import {
   CLAVE_DE_BAJA_DE_CLIENTE,
   CLAVE_DE_CLIENTE,
   CLAVE_DE_CLIENTE_NUEVO,
@@ -44,6 +50,7 @@ import {
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_COSTOS,
   CLAVE_DE_FORMAS_DE_COBRO,
+  CLAVE_DE_LA_ENTREGA,
   CLAVE_DE_LIQUIDACION,
   CLAVE_DE_MARCA_DEL_SEGUIMIENTO,
   CLAVE_DE_MARCAS,
@@ -54,6 +61,7 @@ import {
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_COSTOS,
   MUTACION_DE_FORMAS_DE_COBRO,
+  MUTACION_DE_LA_ENTREGA,
   MUTACION_DE_LIQUIDACION,
   MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
   MUTACION_DE_MARCAS,
@@ -139,6 +147,9 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
     queryClient.setMutationDefaults(CLAVE_DE_FORMAS_DE_COBRO, MUTACION_DE_FORMAS_DE_COBRO);
   },
   (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_LA_ENTREGA, MUTACION_DE_LA_ENTREGA);
+  },
+  (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_PROYECTO, MUTACION_DE_BAJA_DE_PROYECTO);
   },
   (queryClient) => {
@@ -188,6 +199,15 @@ const mutacionesPersistibles: readonly RegistroDeMutacion[] = [
   },
   (queryClient) => {
     queryClient.setMutationDefaults(CLAVE_DE_BAJA_DE_ENCUESTA, MUTACION_DE_BAJA_DE_ENCUESTA);
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(
+      CLAVE_DE_PROPUESTA_DE_ENTREGA,
+      MUTACION_DE_PROPUESTA_DE_ENTREGA,
+    );
+  },
+  (queryClient) => {
+    queryClient.setMutationDefaults(CLAVE_DE_LECTURA_DE_ENTREGA, MUTACION_DE_LECTURA_DE_ENTREGA);
   },
 ];
 

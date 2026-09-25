@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  armarRespuestaDeEntrega,
   DIAS_MAXIMOS_DE_LA_RESPUESTA,
   esDiaDeLaEntrega,
   esFranja,
@@ -43,6 +44,45 @@ describe('los valores de la entrega', () => {
     expect(esFranja('manana')).toBe(true);
     expect(esFranja('noche')).toBe(false);
     expect(esFranja(1)).toBe(false);
+  });
+});
+
+describe('armarRespuestaDeEntrega', () => {
+  it('«me queda bien» no lleva días ni nota, aunque en pantalla hubiera algo marcado', () => {
+    const respuesta = armarRespuestaDeEntrega(
+      ID,
+      PROPUESTA,
+      'me_queda_bien',
+      [{ fecha: '2026-09-28', franjas: ['manana'] }],
+      'algo',
+    );
+    expect(respuesta).toEqual(ME_QUEDA_BIEN);
+    expect(validarRespuestaDeEntrega(respuesta, 'un_dia', HOY)).toBeNull();
+  });
+
+  it('sus días van en orden, cada uno con la mañana antes que la tarde, y la nota sin blancos en las puntas', () => {
+    const respuesta = armarRespuestaDeEntrega(
+      ID,
+      PROPUESTA,
+      'mis_dias',
+      [
+        { fecha: '2026-10-02', franjas: ['tarde', 'manana'] },
+        { fecha: '2026-09-29', franjas: ['tarde'] },
+        { fecha: '2026-10-05', franjas: ['manana'] },
+      ],
+      '  Tercer piso \n',
+    );
+    expect(respuesta).toEqual(
+      misDias(
+        [
+          { fecha: '2026-09-29', franjas: ['tarde'] },
+          { fecha: '2026-10-02', franjas: ['manana', 'tarde'] },
+          { fecha: '2026-10-05', franjas: ['manana'] },
+        ],
+        'Tercer piso',
+      ),
+    );
+    expect(validarRespuestaDeEntrega(respuesta, 'sus_dias', HOY)).toBeNull();
   });
 });
 

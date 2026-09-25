@@ -1,7 +1,48 @@
-import { estaLiquidado, type EstadoProyecto } from '@maun/domain';
+import { estaLiquidado, type EstadoProyecto, type FranjaDeEntrega } from '@maun/domain';
 
+import {
+  COLUMNAS_DE_LA_ENTREGA,
+  entregaComprometida,
+  franjaDeLaEntrega,
+  type CambiosDeLaEntrega,
+} from '@/shared/api';
 import { diasHasta, hoyLocal, relativa } from '@/shared/lib';
 import type { NombreDeIcono } from '@/shared/ui';
+
+import type { Proyecto } from './catalogos';
+
+export function listoDelTrabajo(proyecto: Proyecto): string | null {
+  return (proyecto as Partial<Proyecto>).listo_el ?? null;
+}
+
+export function tipoDelTrabajo(proyecto: Proyecto): string | null {
+  return (proyecto as Partial<Proyecto>).tipo_de_proyecto ?? null;
+}
+
+export function entregaGuardada(proyecto: Proyecto): Required<CambiosDeLaEntrega> {
+  return {
+    listo_el: listoDelTrabajo(proyecto),
+    entrega_comprometida: entregaComprometida(proyecto),
+    entrega_comprometida_franja: franjaDeLaEntrega(proyecto),
+  };
+}
+
+export function cambiaAlgoDeLaEntrega(proyecto: Proyecto, cambios: CambiosDeLaEntrega): boolean {
+  const guardada = entregaGuardada(proyecto);
+  return COLUMNAS_DE_LA_ENTREGA.some(
+    (columna) => columna in cambios && guardada[columna] !== cambios[columna],
+  );
+}
+
+export function cambiosDeLaComprometida(
+  fecha: string | null,
+  franja: FranjaDeEntrega | null,
+): CambiosDeLaEntrega {
+  return {
+    entrega_comprometida: fecha,
+    entrega_comprometida_franja: fecha === null ? null : franja,
+  };
+}
 
 export type TonoDeEntrega = 'ok' | 'atencion' | 'vencida';
 

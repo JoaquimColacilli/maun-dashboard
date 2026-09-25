@@ -155,6 +155,10 @@ export interface FilaDeProyecto {
   entrega_importante: boolean;
   presupuesto_importante: boolean;
   presupuesto_vale_hasta: string | null;
+  listo_el: string | null;
+  entrega_comprometida: string | null;
+  entrega_comprometida_franja: string | null;
+  tipo_de_proyecto: string | null;
 }
 
 const COLUMNAS_DEL_PROYECTO = [
@@ -180,6 +184,10 @@ const COLUMNAS_DEL_PROYECTO = [
   'entrega_importante',
   'presupuesto_importante',
   'presupuesto_vale_hasta',
+  'listo_el',
+  'entrega_comprometida',
+  'entrega_comprometida_franja',
+  'tipo_de_proyecto',
 ].join(',');
 
 export async function descongelarProyectos({

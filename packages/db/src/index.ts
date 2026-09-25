@@ -88,13 +88,16 @@ export {
 } from './cambios.ts';
 
 export {
+  analisisDeLaReplica,
   aperturaDeLaReplica,
+  datosDelAnalisis,
   datosDelLibro,
   liquidacionesDeLaReplica,
   objetivosDeLaReplica,
   saldosDeLaReplica,
   totalesDelProyecto,
   totalesPorProyecto,
+  type DatosDelAnalisis,
   type TotalesDelProyecto,
 } from './vistas.ts';
 
@@ -114,12 +117,14 @@ export {
   borrarMovimiento,
   borrarProyecto,
   COLUMNAS_DE_COSTOS,
+  COLUMNAS_DE_LA_ENTREGA,
   COLUMNAS_DE_PROYECTO,
   COLUMNAS_DE_TAREAS,
   guardarAjustes,
   COLUMNAS_DE_FORMAS_DE_COBRO,
   guardarCostosEstimados,
   guardarFormasDeCobro,
+  guardarLaEntrega,
   guardarMarcaDelProximoContacto,
   guardarMarcasDeLaAgenda,
   guardarAnotacionNueva,
@@ -137,7 +142,10 @@ export {
   COLUMNAS_DE_PREGUNTA,
   guardarPregunta,
   mandarEncuesta,
+  marcarRespuestaDeEntregaLeida,
   marcarRespuestaLeida,
+  proponerLaEntrega,
+  leerPropuestasDeEntrega,
   recordarEncuesta,
   revocarEncuesta,
   type ColumnaDePregunta,
@@ -159,6 +167,7 @@ export {
   type BajaDeFilaHija,
   type CambiosDeCostos,
   type CambiosDeFormasDeCobro,
+  type CambiosDeLaEntrega,
   type CambiosDeMarcas,
   type CambiosDeProyecto,
   type CambiosDeTareas,
@@ -169,6 +178,7 @@ export {
   type ColumnaDeCliente,
   type ColumnaDeCosto,
   type ColumnaDeFormaDeCobro,
+  type ColumnaDeLaEntrega,
   type ColumnaDeMovimiento,
   type ColumnaDeProyecto,
   type ColumnaDeTarea,
@@ -184,6 +194,7 @@ export {
   type PagoParaGuardar,
   type PedidoDeLiquidacion,
   type PedidoDeReversion,
+  type PropuestaNueva,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
 } from './sincronizacion.ts';
@@ -201,3 +212,12 @@ export {
   type RenglonContestado,
   type ResultadoDeContestar,
 } from './encuestaPublica.ts';
+
+export {
+  CODIGO_DEL_RECHAZO_DE_LA_ENTREGA,
+  leerResultadoDeResponder,
+  motivoDelRechazoDeLaEntrega,
+  responderLaEntrega,
+  RESULTADOS_DE_RESPONDER,
+  type ResultadoDeResponder,
+} from './entregaPublica.ts';

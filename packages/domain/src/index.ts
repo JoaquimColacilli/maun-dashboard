@@ -288,6 +288,7 @@ export {
 } from './analitico.ts';
 
 export {
+  armarRespuestaDeEntrega,
   DESDE_CUANTOS_DIAS,
   DIAS_MAXIMOS_DE_LA_RESPUESTA,
   esDiaDeLaEntrega,
@@ -300,11 +301,13 @@ export {
   RESPUESTAS_DE_ENTREGA,
   sePuedeElegir,
   validarRespuestaDeEntrega,
+  type DiaElegido,
   type FormaDeCoordinar,
   type FranjaDeEntrega,
   type MotivoDeLaEntrega,
   type MotivoDeLaValidacion,
   type RespuestaDeEntrega,
+  type RespuestaDeEntregaParaMandar,
 } from './entrega.ts';
 
 export {

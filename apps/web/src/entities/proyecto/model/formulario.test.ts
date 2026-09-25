@@ -76,6 +76,49 @@ describe('hasta cuándo vale el presupuesto, en el formulario grande', () => {
   });
 });
 
+describe('el tipo de proyecto en el formulario grande', () => {
+  const HOY = '2026-09-25';
+
+  it('va y vuelve sin blancos en las puntas, y vacío se guarda como sin tipo', () => {
+    const valores = valoresDelFormulario(proyecto({ tipo_de_proyecto: 'Placard' }), [], [], [], {
+      hoy: HOY,
+    });
+    expect(valores.tipo_de_proyecto).toBe('Placard');
+    expect(datosDelFormulario({ ...valores, tipo_de_proyecto: '  Cocina ' }, HOY)).toMatchObject({
+      tipo_de_proyecto: 'Cocina',
+    });
+    expect(datosDelFormulario({ ...valores, tipo_de_proyecto: '   ' }, HOY).tipo_de_proyecto).toBe(
+      null,
+    );
+  });
+
+  it('un trabajo nuevo y una fila de antes de la columna arrancan sin tipo', () => {
+    expect(valoresDelFormulario(undefined, [], [], [], { hoy: HOY }).tipo_de_proyecto).toBe('');
+    const vieja = proyecto();
+    delete (vieja as Partial<FilaDe<'proyectos'>>).tipo_de_proyecto;
+    expect(valoresDelFormulario(vieja, [], [], [], { hoy: HOY }).tipo_de_proyecto).toBe('');
+  });
+
+  it('listo y la comprometida no pasan por el formulario', () => {
+    const datos = datosDelFormulario(
+      valoresDelFormulario(
+        proyecto({
+          estado: 'en_curso',
+          listo_el: '2026-09-24',
+          entrega_comprometida: '2026-10-08',
+        }),
+        [],
+        [],
+        [],
+        { hoy: HOY },
+      ),
+      HOY,
+    );
+    expect(Object.keys(datos)).not.toContain('listo_el');
+    expect(Object.keys(datos)).not.toContain('entrega_comprometida');
+  });
+});
+
 function proyecto(extra: Partial<FilaDe<'proyectos'>> = {}): FilaDe<'proyectos'> {
   return {
     household_id: 'h',

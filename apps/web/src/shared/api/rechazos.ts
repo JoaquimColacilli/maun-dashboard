@@ -221,6 +221,14 @@ export function traducirRechazo(
     return { ...noSePuedeDesdeAca(contexto), codigo: rechazo.codigo };
   }
 
+  if (rechazo.codigo === 'MN021') {
+    return {
+      titulo: `${rechazo.mensaje}.`,
+      queHacer: `${rechazo.hint} No se guardó nada.`,
+      codigo: rechazo.codigo,
+    };
+  }
+
   const conocido = PARA_TODOS[rechazo.codigo];
   if (conocido) return { ...conocido(contexto), codigo: rechazo.codigo };
 

@@ -13,6 +13,7 @@ import * as agenda from '@/entities/agenda';
 import * as archivo from '@/entities/archivo';
 import * as cliente from '@/entities/cliente';
 import * as enlace from '@/entities/enlace';
+import * as entrega from '@/entities/entrega';
 import * as movimiento from '@/entities/movimiento';
 import * as opinion from '@/entities/opinion';
 import * as proyecto from '@/entities/proyecto';
@@ -216,6 +217,7 @@ const MODULOS_CON_MUTACIONES = {
   archivo,
   cliente,
   enlace,
+  entrega,
   movimiento,
   opinion,
   proyecto,

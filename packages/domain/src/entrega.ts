@@ -46,6 +46,43 @@ const CLAVES_DE_LA_RESPUESTA = ['dias', 'id', 'nota', 'propuesta_id', 'respuesta
 
 const CLAVES_DEL_DIA = ['fecha', 'franjas'] as const;
 
+export interface DiaElegido {
+  fecha: string;
+  franjas: readonly FranjaDeEntrega[];
+}
+
+export interface RespuestaDeEntregaParaMandar {
+  id: string;
+  propuesta_id: string;
+  respuesta: RespuestaDeEntrega;
+  dias: readonly DiaElegido[];
+  nota: string;
+}
+
+export function armarRespuestaDeEntrega(
+  id: string,
+  propuestaId: string,
+  respuesta: RespuestaDeEntrega,
+  dias: readonly DiaElegido[],
+  nota: string,
+): RespuestaDeEntregaParaMandar {
+  if (respuesta === 'me_queda_bien') {
+    return { id, propuesta_id: propuestaId, respuesta, dias: [], nota: '' };
+  }
+  return {
+    id,
+    propuesta_id: propuestaId,
+    respuesta,
+    dias: [...dias]
+      .sort((uno, otro) => (uno.fecha < otro.fecha ? -1 : 1))
+      .map((dia) => ({
+        fecha: dia.fecha,
+        franjas: FRANJAS_DE_ENTREGA.filter((franja) => dia.franjas.includes(franja)),
+      })),
+    nota: sinBlancosEnLasPuntas(nota),
+  };
+}
+
 export function esFranja(valor: unknown): valor is FranjaDeEntrega {
   return FRANJAS_DE_ENTREGA.some((franja) => franja === valor);
 }

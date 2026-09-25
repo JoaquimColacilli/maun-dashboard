@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ClienteMaun } from './cliente.ts';
 import { RespuestaInvalidaError } from './replica.ts';
 import {
+  COLUMNAS_DE_LA_ENTREGA,
+  COLUMNAS_DE_PROYECTO,
   guardarProyecto,
   leerProyectoGuardado,
+  proponerLaEntrega,
   type ProyectoParaGuardar,
 } from './sincronizacion.ts';
 
@@ -29,6 +32,7 @@ const DATOS = {
   vencimiento_presupuesto: null,
   visita_hecha: false,
   presupuesto_vale_hasta: null,
+  tipo_de_proyecto: null,
 } satisfies ProyectoParaGuardar['datos'];
 
 const GUARDADO = {
@@ -108,5 +112,61 @@ describe('hasta cuándo vale el presupuesto', () => {
         p_proyecto: expect.objectContaining({ presupuesto_vale_hasta: '2026-10-09' }) as unknown,
       }),
     );
+  });
+});
+
+describe('la entrega del trabajo', () => {
+  it('el tipo de proyecto viaja con los datos, y listo y la comprometida no', async () => {
+    const { cliente, rpc } = clienteFalso(GUARDADO);
+
+    await guardarProyecto(cliente, {
+      id: 'p',
+      version: 3,
+      datos: { ...DATOS, tipo_de_proyecto: 'Placard' },
+      pagos: [],
+      gastos: [],
+    });
+
+    const [, argumentos] = rpc.mock.lastCall as unknown as [string, { p_proyecto: object }];
+    expect(argumentos.p_proyecto).toMatchObject({ tipo_de_proyecto: 'Placard' });
+    expect(Object.keys(argumentos.p_proyecto)).not.toContain('listo_el');
+    expect(Object.keys(argumentos.p_proyecto)).not.toContain('entrega_comprometida');
+  });
+
+  it('proponer manda el trabajo y la propuesta, o null para solo cerrar la abierta', async () => {
+    const { cliente, rpc } = clienteFalso({ propuestas: [{ id: 'nueva' }] });
+    const propuesta = { id: 'nueva', forma: 'un_dia', fecha: '2026-10-08', franja: null } as const;
+
+    expect(await proponerLaEntrega(cliente, 'p', propuesta)).toEqual([{ id: 'nueva' }]);
+    expect(rpc).toHaveBeenLastCalledWith('proponer_la_entrega', {
+      p_proyecto_id: 'p',
+      p_propuesta: propuesta,
+    });
+
+    await proponerLaEntrega(cliente, 'p', null);
+    expect(rpc).toHaveBeenLastCalledWith('proponer_la_entrega', {
+      p_proyecto_id: 'p',
+      p_propuesta: null,
+    });
+  });
+
+  it('un rechazo de la base sale como error', async () => {
+    const rechazo = { code: 'MN021', details: 'sin_listo', message: 'x' };
+    const cliente = {
+      rpc: vi.fn(() => Promise.resolve({ data: null, error: rechazo })),
+    } as unknown as ClienteMaun;
+
+    await expect(proponerLaEntrega(cliente, 'p', null)).rejects.toBe(rechazo);
+  });
+
+  it('solo las tres columnas de la entrega van por su lado', () => {
+    expect(COLUMNAS_DE_LA_ENTREGA).toEqual([
+      'listo_el',
+      'entrega_comprometida',
+      'entrega_comprometida_franja',
+    ]);
+    for (const columna of COLUMNAS_DE_LA_ENTREGA) {
+      expect(COLUMNAS_DE_PROYECTO).not.toContain(columna);
+    }
   });
 });
