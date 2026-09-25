@@ -225,6 +225,7 @@ export interface RelevamientoDeLaVista {
 }
 
 export interface NotaDelRelevamiento {
+  hito: HitoDelTrabajo;
   estado: EstadoDelRelevamiento;
   etiqueta: string;
   titulo: string;
@@ -263,7 +264,7 @@ interface LoComunDeLaVista {
   cliente: string;
   titulo: string;
   hitoActual: HitoDelTrabajo;
-  hitoIndex: number;
+  titular: string;
   hitos: readonly HitoDeLaVista[];
   relevamiento: RelevamientoDeLaVista | null;
   eventos: readonly EventoDelCliente[];
@@ -326,6 +327,12 @@ export const HITOS: readonly HitoDelCamino[] = [
 
 export const APROBADO_SIN_LA_SENA = 'Aprobado';
 
+export const CUANDO_LO_APRUEBES = 'Cuando lo apruebes';
+
+export const CUANDO_DEJES_LA_SENA = 'Cuando dejes la seña';
+
+export const YA_ESTA_PAGADO = 'Ya está pagado';
+
 const ORDEN_DE_LOS_HITOS: readonly HitoDelTrabajo[] = [
   'estimativo',
   ...HITOS.map((hito) => hito.id),
@@ -358,6 +365,8 @@ export const SIGUE: Readonly<Record<HitoDelTrabajo, string>> = {
 };
 
 export const SIGUE_CON_EL_PRESUPUESTO_MANDADO = 'Lo próximo es que lo apruebes y dejes la seña.';
+
+export const SIGUE_CON_LA_SENA_CUBIERTA = 'Lo próximo es que lo apruebes.';
 
 export const SIGUE_FALTA_LA_SENA = 'Lo próximo es que dejes la seña.';
 
@@ -408,6 +417,9 @@ export const LO_LLEVAMOS_Y_LO_INSTALAMOS = 'Lo llevamos y lo instalamos';
 
 export const COORDINAMOS_LA_ENTREGA =
   'Cuando lo apruebes y dejes la seña, coordinamos la fecha de entrega.';
+
+export const COORDINAMOS_LA_ENTREGA_AL_APROBAR =
+  'Cuando lo apruebes, coordinamos la fecha de entrega.';
 
 export const VAMOS_TOMANDO_LOS_TRABAJOS =
   'Vamos tomando los trabajos a medida que entran las señas.';
@@ -478,19 +490,26 @@ export function proyeccionDeLaEntrega(
 export function textoDeLaProyeccion(
   proyeccion: ProyeccionDeLaEntrega,
   formatos: Pick<FormatosDeFecha, 'enUnaFrase'>,
+  sena: SenaDeLaVista['situacion'],
 ): readonly string[] {
+  const cubierta = sena === 'cubierta';
   switch (proyeccion.situacion) {
     case 'sin-fecha':
-      return [COORDINAMOS_LA_ENTREGA];
+      return [cubierta ? COORDINAMOS_LA_ENTREGA_AL_APROBAR : COORDINAMOS_LA_ENTREGA];
     case 'vencida':
       return [
         `Este presupuesto venció el ${formatos.enUnaFrase(proyeccion.vencio)}. Hablá con el taller para actualizarlo.`,
       ];
-    case 'vigente':
+    case 'vigente': {
+      const antesDe = formatos.enUnaFrase(proyeccion.senarAntesDe);
+      const listoPara = formatos.enUnaFrase(proyeccion.listoPara);
       return [
-        `Si dejás la seña antes del ${formatos.enUnaFrase(proyeccion.senarAntesDe)}, podríamos tenerlo listo para el ${formatos.enUnaFrase(proyeccion.listoPara)}.`,
+        cubierta
+          ? `Si lo aprobás antes del ${antesDe}, podríamos tenerlo listo para el ${listoPara}.`
+          : `Si dejás la seña antes del ${antesDe}, podríamos tenerlo listo para el ${listoPara}.`,
         VAMOS_TOMANDO_LOS_TRABAJOS,
       ];
+    }
   }
 }
 
@@ -507,6 +526,12 @@ function senaDelTrabajo(trabajo: TrabajoDelCliente, pagado: Money): SenaDeLaVist
 function empezoAFabricarse(trabajo: TrabajoDelCliente, hoy: string): boolean {
   const inicio = fechasDe(trabajo).inicio ?? null;
   return inicio !== null && diasEntre(inicio, hoy) >= 0;
+}
+
+function inicioDeLaFabricacion(trabajo: TrabajoDelCliente, hoy: string): string | null {
+  const { inicio = null, entregado = null } = fechasDe(trabajo);
+  if (inicio === null || !empezoAFabricarse(trabajo, hoy)) return null;
+  return entregado !== null && diasEntre(inicio, entregado) < 0 ? null : inicio;
 }
 
 function etapaDeLaVista(trabajo: TrabajoDelCliente, saldado: boolean, hoy: string): EtapaDeLaVista {
@@ -550,7 +575,7 @@ function textoEnCurso(hito: HitoDelTrabajo, { trabajo, sena }: Contexto): string
 
 function loQueSigue(hito: HitoDelTrabajo, { trabajo, sena, relevamiento }: Contexto): string {
   if (hito === 'presupuesto' && trabajo.estado === 'presupuesto_enviado') {
-    return SIGUE_CON_EL_PRESUPUESTO_MANDADO;
+    return sena === 'cubierta' ? SIGUE_CON_LA_SENA_CUBIERTA : SIGUE_CON_EL_PRESUPUESTO_MANDADO;
   }
   if ((hito === 'estimativo' || hito === 'presupuesto') && relevamiento?.estado === 'pendiente') {
     return SIGUE_FALTA_MEDIR[hito];
@@ -565,9 +590,42 @@ function etiquetaDelHito(hito: HitoDelCamino, { aprobado, sena }: Contexto): str
     : hito.etiqueta;
 }
 
+function pasoEnCurso(
+  etapa: EtapaDeLaVista,
+  sena: SenaDeLaVista['situacion'],
+): HitoDelTrabajo | null {
+  switch (etapa) {
+    case 'antes-del-presupuesto':
+      return 'presupuesto';
+    case 'esperando-la-sena':
+      return 'aprobado';
+    case 'aprobado':
+      return sena === 'falta' ? 'aprobado' : 'fabricacion';
+    case 'fabricacion':
+      return 'fabricacion';
+    case 'entregado':
+      return 'pagado';
+    case 'pagado':
+      return null;
+  }
+}
+
+function textoDelPasoEnCurso(
+  hito: HitoDelCamino,
+  hitoActual: HitoDelTrabajo,
+  sena: SenaDeLaVista['situacion'],
+): string {
+  if (hito.id !== hitoActual) {
+    return hito.id === 'aprobado' && sena === 'cubierta' ? CUANDO_LO_APRUEBES : hito.futuro;
+  }
+  if (hito.id === 'aprobado') return CUANDO_DEJES_LA_SENA;
+  return EN_CURSO[hito.id];
+}
+
 function fechasDeLosHitos(
   trabajo: TrabajoDelCliente,
   saldado: boolean,
+  hoy: string,
 ): Readonly<Record<HitoDelTrabajo, string | null>> {
   const fechas = fechasDe(trabajo);
   const ultimoPago = trabajo.pagos[trabajo.pagos.length - 1];
@@ -575,7 +633,7 @@ function fechasDeLosHitos(
     estimativo: fechaDelEstimativo(trabajo),
     presupuesto: fechas.presupuesto ?? null,
     aprobado: fechas.aprobado ?? null,
-    fabricacion: fechas.inicio ?? null,
+    fabricacion: inicioDeLaFabricacion(trabajo, hoy),
     entregado: fechas.entregado ?? null,
     pagado: fechas.cobro ?? (saldado ? (ultimoPago?.fecha ?? null) : null),
   };
@@ -626,7 +684,7 @@ function eventosDelTrabajo(
   }
 
   const presupuesto = fechas.presupuesto ?? null;
-  if (presupuesto !== null) {
+  if (presupuesto !== null && etapa !== 'antes-del-presupuesto') {
     eventos.push({
       id: 'presupuesto',
       fecha: presupuesto,
@@ -661,8 +719,8 @@ function eventosDelTrabajo(
     });
   }
 
-  const inicio = fechas.inicio ?? null;
-  if (aprobado && inicio !== null && empezoAFabricarse(trabajo, hoy)) {
+  const inicio = inicioDeLaFabricacion(trabajo, hoy);
+  if (aprobado && inicio !== null) {
     eventos.push({
       id: 'inicio',
       fecha: inicio,
@@ -732,24 +790,37 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
   const etapa = etapaDeLaVista(trabajo, saldado, hoy);
   const hitoActual = hitoDeLaEtapa(etapa, trabajo);
   const camino = tuvoEstimativo(trabajo) ? [HITO_DEL_ESTIMATIVO, ...HITOS] : HITOS;
-  const hitoIndex = camino.findIndex((hito) => hito.id === hitoActual);
-  const llegoAlFinal = hitoIndex === camino.length - 1;
-  const fechaDe = fechasDeLosHitos(trabajo, saldado);
+  const enCurso = pasoEnCurso(etapa, sena.situacion);
+  const indiceEnCurso =
+    enCurso === null ? camino.length : camino.findIndex((hito) => hito.id === enCurso);
+  const fechaDe = fechasDeLosHitos(trabajo, saldado, hoy);
 
   const hitos: HitoDeLaVista[] = camino.map((hito, indice) => {
     const etiqueta = etiquetaDelHito(hito, contexto);
+    if (indice < indiceEnCurso) {
+      return {
+        id: hito.id,
+        etiqueta,
+        estado: 'pasado',
+        fecha: fechaDe[hito.id],
+        texto: hito.id === 'pagado' ? EN_CURSO.pagado : etiqueta,
+      };
+    }
+    if (indice === indiceEnCurso) {
+      return {
+        id: hito.id,
+        etiqueta,
+        estado: 'actual',
+        fecha: hito.id === 'fabricacion' ? fechaDe.fabricacion : null,
+        texto: textoDelPasoEnCurso(hito, hitoActual, sena.situacion),
+      };
+    }
     return {
       id: hito.id,
       etiqueta,
-      estado:
-        indice < hitoIndex || llegoAlFinal ? 'pasado' : indice === hitoIndex ? 'actual' : 'futuro',
-      fecha: indice <= hitoIndex ? fechaDe[hito.id] : null,
-      texto:
-        indice === hitoIndex
-          ? textoEnCurso(hito.id, contexto)
-          : indice < hitoIndex
-            ? etiqueta
-            : hito.futuro,
+      estado: 'futuro',
+      fecha: null,
+      texto: hito.id === 'pagado' && saldado ? YA_ESTA_PAGADO : hito.futuro,
     };
   });
 
@@ -758,7 +829,7 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
     cliente: trabajo.cliente,
     titulo: trabajo.trabajo,
     hitoActual,
-    hitoIndex,
+    titular: textoEnCurso(hitoActual, contexto),
     hitos,
     relevamiento,
     eventos: eventosDelTrabajo(contexto, etapa, saldado, hoy),
@@ -803,6 +874,7 @@ export function notaDelRelevamiento(
 
   if (relevamiento.estado === 'hecho') {
     return {
+      hito: vista.hitoActual,
       estado: 'hecho',
       ...NOTA_DEL_RELEVAMIENTO.hecho,
       lineas: [
@@ -816,6 +888,7 @@ export function notaDelRelevamiento(
   const conEstimativo = vista.hitos.some((hito) => hito.id === 'estimativo');
   if (mandado || !conEstimativo) return null;
   return {
+    hito: vista.hitoActual,
     estado: 'pendiente',
     ...NOTA_DEL_RELEVAMIENTO.pendiente,
     lineas: [

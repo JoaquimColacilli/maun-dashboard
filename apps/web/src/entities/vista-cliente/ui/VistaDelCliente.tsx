@@ -223,7 +223,7 @@ function EntradaAprobada({
 }
 
 function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string; hoy: string }) {
-  const titular = vista.hitos[vista.hitoIndex]?.texto ?? '';
+  const { titular } = vista;
   switch (vista.etapa) {
     case 'antes-del-presupuesto':
       return <EntradaAntesDelPresupuesto vista={vista} titular={titular} bajada={bajada} />;
@@ -260,10 +260,20 @@ function TarjetaDelTrabajo({ vista, hoy }: { vista: VistaAprobada; hoy: string }
   );
 }
 
-function ParaCuando({ proyeccion, hoy }: { proyeccion: ProyeccionDeLaEntrega; hoy: string }) {
-  const [principal, ...resto] = textoDeLaProyeccion(proyeccion, {
-    enUnaFrase: (fecha) => fechaEnUnaFrase(fecha, hoy),
-  });
+function ParaCuando({
+  proyeccion,
+  sena,
+  hoy,
+}: {
+  proyeccion: ProyeccionDeLaEntrega;
+  sena: SenaDeLaVista;
+  hoy: string;
+}) {
+  const [principal, ...resto] = textoDeLaProyeccion(
+    proyeccion,
+    { enUnaFrase: (fecha) => fechaEnUnaFrase(fecha, hoy) },
+    sena.situacion,
+  );
   return (
     <section aria-label="Para cuándo">
       <div className={TARJETA}>
@@ -285,7 +295,7 @@ function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
     case 'esperando-la-sena':
       return (
         <>
-          <ParaCuando proyeccion={vista.proyeccion} hoy={hoy} />
+          <ParaCuando proyeccion={vista.proyeccion} sena={vista.sena} hoy={hoy} />
           <ComoPagar como={vista.comoPagar} />
         </>
       );
