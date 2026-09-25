@@ -6,7 +6,7 @@ select plan(18);
 
 select tables_are(
   'public',
-  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado', 'preguntas', 'encuestas_enviadas', 'respuestas', 'renglones_de_respuesta', 'proximos_contactos'],
+  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado', 'preguntas', 'encuestas_enviadas', 'respuestas', 'renglones_de_respuesta', 'proximos_contactos', 'propuestas_de_entrega', 'respuestas_de_entrega', 'cambios_de_fecha'],
   'public tiene exactamente las tablas esperadas: una tabla nueva obliga a revisar esta suite'
 );
 

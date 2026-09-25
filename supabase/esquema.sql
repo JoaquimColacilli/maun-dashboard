@@ -31,17 +31,32 @@ comment on type public.estado_proyecto is 'Lead y proyecto son el mismo registro
 create type public.forma_de_cobro as enum ('transferencia', 'efectivo');
 comment on type public.forma_de_cobro is 'Cómo le paga el cliente al taller una instancia de pago concreta. Transferencia es el cliente entrando a su banco o a su billetera y mandando plata al alias del taller: la arranca él y no tiene costo. Efectivo es en mano. No hay una tercera: cobrar con un link de pago o con un QR de cobro de Mercado Pago le cuesta comisión al taller y este PR no los usa (ADR 0051 y 0053).';
 
+create type public.forma_de_coordinar as enum ('un_dia', 'sus_dias');
+comment on type public.forma_de_coordinar is 'Cómo le pide el taller el día de la entrega al cliente: proponiéndole un día (un_dia), que el cliente acepta con un botón, o pidiéndole que marque los días y las franjas que le quedan bien (sus_dias).';
+
 create type public.forma_pago as enum ('efectivo', 'transferencia', 'cuotas', 'mixto');
 comment on type public.forma_pago is 'Forma de pago acordada con el cliente para el proyecto.';
 
+create type public.franja_de_entrega as enum ('manana', 'tarde');
+comment on type public.franja_de_entrega is 'La franja de una entrega: a la mañana o a la tarde. Así coordinan las entregas las mueblerías de acá; lo que haga falta afinar va en la nota del cliente (ADR 0071).';
+
 create type public.origen_contacto as enum ('referido', 'redes', 'volvio', 'cartel', 'otro');
 comment on type public.origen_contacto is 'Cómo llegó el cliente al taller. El detalle libre va en clientes.origen_detalle.';
+
+create type public.origen_de_la_fecha as enum ('taller', 'cliente', 'importada');
+comment on type public.origen_de_la_fecha is 'Quién fijó una fecha de la historia: el taller, el cliente desde su página (aceptando el día propuesto), o importada, que es la que ya estaba cargada el día que empezó a guardarse la historia.';
+
+create type public.respuesta_de_entrega as enum ('me_queda_bien', 'mis_dias');
+comment on type public.respuesta_de_entrega is 'Lo que contestó el cliente a una propuesta de entrega: que el día propuesto le queda bien, o los días y franjas que le quedan bien a él.';
 
 create type public.rol_household as enum ('titular', 'miembro');
 comment on type public.rol_household is 'Rol de un usuario dentro de su household.';
 
 create type public.tesoro as enum ('hogar', 'maun', 'diezmo', 'cocos');
 comment on type public.tesoro is 'Las cuatro cajas: hogar (la familia), maun (el taller), diezmo (lo apartado para el diezmo) y cocos (el ahorro invertido).';
+
+create type public.tipo_de_fecha as enum ('estimada', 'comprometida');
+comment on type public.tipo_de_fecha is 'Qué fecha cambió en la historia de un trabajo: la estimada, que calcula el taller, o la comprometida, que se acordó con el cliente. La real no está: es fecha_entrega y se anota una vez.';
 
 create type public.tipo_de_necesidad as enum ('herraje', 'herramienta', 'material');
 comment on type public.tipo_de_necesidad is 'Qué es lo que hace falta: un material (placas de melamina, un tablón para la mesada, pintura, laca, un caño estructural), un herraje (bisagras, pistones, tiradores, tarugos) o una herramienta (sierra circular, lijadora de banda, multitool). El dueño las nombró como listas distintas, pero todas son «lo que necesito para este trabajo» y se repiten entre trabajos: una sola tabla con el tipo adentro (ADR 0045 y 0060). El orden en que se muestran vive en @maun/domain, no en el orden del enum.';
@@ -248,6 +263,50 @@ create policy cambios_de_estado_lectura on public.cambios_de_estado as permissiv
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.cambios_de_estado to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.cambios_de_estado to service_role;
+
+create table public.cambios_de_fecha (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null,
+  proyecto_id uuid not null,
+  tipo tipo_de_fecha not null,
+  fecha date,
+  fecha_anterior date,
+  franja franja_de_entrega,
+  origen origen_de_la_fecha not null,
+  decidido_el date not null,
+  trabajos_en_curso integer,
+  trabajos_sin_terminar integer,
+  created_at timestamp with time zone not null default clock_timestamp(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint cambios_de_fecha_conteos CHECK ((trabajos_en_curso IS NULL) = (trabajos_sin_terminar IS NULL) AND (trabajos_en_curso IS NULL OR trabajos_en_curso >= 0 AND trabajos_sin_terminar >= 0 AND trabajos_sin_terminar <= trabajos_en_curso)),
+  constraint cambios_de_fecha_franja_de_la_comprometida CHECK (franja IS NULL OR tipo = 'comprometida'::tipo_de_fecha AND fecha IS NOT NULL),
+  constraint cambios_de_fecha_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint cambios_de_fecha_importada_sin_conteos CHECK (origen <> 'importada'::origen_de_la_fecha OR trabajos_en_curso IS NULL),
+  constraint cambios_de_fecha_pkey PRIMARY KEY (id),
+  constraint cambios_de_fecha_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id)
+);
+comment on table public.cambios_de_fecha is 'La historia de las fechas prometidas de cada trabajo: cada entrega estimada que se fija con el trabajo en curso y cada entrega comprometida, con quién la fijó, el día en el taller y cuántos otros trabajos había en curso ese día. La escribe un trigger sobre proyectos y nadie más: el dueño solo tiene select. La primera de cada trabajo y tipo es la línea de base contra la que el analítico mide la entrega real. Está en la réplica, al revés que cambios_de_estado: son pocas filas y el analítico la lee en el aparato (ADR 0071).';
+comment on column public.cambios_de_fecha.fecha is 'La fecha que quedó, o null si se sacó.';
+comment on column public.cambios_de_fecha.fecha_anterior is 'La fecha de la fila anterior del mismo trabajo y tipo, o null si es la primera.';
+comment on column public.cambios_de_fecha.franja is 'La franja de la comprometida, si la tiene.';
+comment on column public.cambios_de_fecha.origen is 'taller, cliente (aceptó el día que le propusieron) o importada (la que ya estaba cargada cuando empezó la historia).';
+comment on column public.cambios_de_fecha.decidido_el is 'El día en el taller en que llegó a la base. Una edición que esperó en la cola sin señal queda con el día en que se sincronizó, como en cambios_de_estado.';
+comment on column public.cambios_de_fecha.trabajos_en_curso is 'Cuántos otros trabajos del taller estaban en curso cuando se fijó, contados en la misma transacción. Null en las importadas. Es lo que necesita la estimación por carga del taller que el dueño imagina para más adelante: reconstruirlo después no alcanza.';
+comment on column public.cambios_de_fecha.trabajos_sin_terminar is 'De esos, cuántos todavía no estaban listos. Null en las importadas.';
+comment on column public.cambios_de_fecha.created_at is 'El instante en que la base anotó el cambio, con clock_timestamp(): la primera fila de cada trabajo y tipo por created_at, y después por id, es la línea de base del analítico.';
+comment on column public.cambios_de_fecha.deleted_at is 'Borrado lógico. Solo lo pone el borrado del trabajo.';
+CREATE INDEX cambios_de_fecha_household_actualizado ON public.cambios_de_fecha USING btree (household_id, updated_at);
+CREATE INDEX cambios_de_fecha_household_proyecto ON public.cambios_de_fecha USING btree (household_id, proyecto_id, tipo, created_at);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON cambios_de_fecha FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON cambios_de_fecha FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.cambios_de_fecha enable row level security;
+create policy cambios_de_fecha_lectura on public.cambios_de_fecha as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.cambios_de_fecha to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.cambios_de_fecha to service_role;
 
 create table public.clientes (
   id uuid not null default private.uuidv7(),
@@ -767,6 +826,54 @@ grant delete, insert, maintain, references, select, trigger, truncate, update on
 grant insert (id, serie, numero, proyecto_id, orden, texto, tipo, escala, obligatoria, opciones, archivada_at, deleted_at) on public.preguntas to authenticated;
 grant update (id, serie, numero, proyecto_id, orden, texto, tipo, escala, obligatoria, opciones, archivada_at, deleted_at) on public.preguntas to authenticated;
 
+create table public.propuestas_de_entrega (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null default private.household_actual(),
+  proyecto_id uuid not null,
+  forma forma_de_coordinar not null,
+  fecha date,
+  franja franja_de_entrega,
+  cerrada_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint propuestas_de_entrega_del_trabajo UNIQUE (household_id, proyecto_id, id),
+  constraint propuestas_de_entrega_dia_segun_la_forma CHECK ((forma = 'un_dia'::forma_de_coordinar) = (fecha IS NOT NULL)),
+  constraint propuestas_de_entrega_franja_con_su_dia CHECK (franja IS NULL OR forma = 'un_dia'::forma_de_coordinar),
+  constraint propuestas_de_entrega_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint propuestas_de_entrega_pkey PRIMARY KEY (id),
+  constraint propuestas_de_entrega_proyecto_fk FOREIGN KEY (household_id, proyecto_id) REFERENCES proyectos(household_id, id)
+);
+comment on table public.propuestas_de_entrega is 'Lo que el taller le pide al cliente para acordar la entrega de un mueble listo: un día, que el cliente acepta con un botón, o que marque los días y las franjas que le quedan bien. A lo sumo una abierta por trabajo; abrir otra cierra la anterior en su propia sentencia. La base la cierra sola cuando se fija una entrega comprometida y cuando el trabajo deja de estar en curso y listo. El dueño la escribe por public.proponer_la_entrega(), que necesita señal (ADR 0071).';
+comment on column public.propuestas_de_entrega.household_id is 'Default: el household del usuario de la sesión. El cliente de la app no lo manda.';
+comment on column public.propuestas_de_entrega.forma is 'un_dia: el taller propone un día; sus_dias: le pide al cliente los suyos.';
+comment on column public.propuestas_de_entrega.fecha is 'El día propuesto, con la forma un_dia; null con sus_dias. Desde mañana, contado en la hora del taller.';
+comment on column public.propuestas_de_entrega.franja is 'La franja del día propuesto, si la tiene. Solo con un_dia.';
+comment on column public.propuestas_de_entrega.cerrada_at is 'Cuándo se cerró: porque el taller propuso otra cosa, porque se comprometió la entrega o porque el trabajo dejó de estar en curso y listo. Null es abierta, y el cliente solo le contesta a la abierta.';
+comment on column public.propuestas_de_entrega.deleted_at is 'Borrado lógico, como en todo el household. Se borra con el trabajo.';
+CREATE INDEX propuestas_de_entrega_household_actualizado ON public.propuestas_de_entrega USING btree (household_id, updated_at);
+CREATE INDEX propuestas_de_entrega_household_proyecto ON public.propuestas_de_entrega USING btree (household_id, proyecto_id, created_at);
+CREATE UNIQUE INDEX propuestas_de_entrega_una_abierta ON public.propuestas_de_entrega USING btree (household_id, proyecto_id) WHERE ((cerrada_at IS NULL) AND (deleted_at IS NULL));
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON propuestas_de_entrega FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
+CREATE TRIGGER cuidar_la_propuesta_de_entrega BEFORE INSERT ON propuestas_de_entrega FOR EACH ROW EXECUTE FUNCTION private.cuidar_la_propuesta_de_entrega();
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON propuestas_de_entrega FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.propuestas_de_entrega enable row level security;
+create policy propuestas_de_entrega_alta on public.propuestas_de_entrega as permissive
+  for insert to authenticated
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy propuestas_de_entrega_edicion on public.propuestas_de_entrega as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy propuestas_de_entrega_lectura on public.propuestas_de_entrega as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.propuestas_de_entrega to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.propuestas_de_entrega to service_role;
+grant insert (id, proyecto_id, forma, fecha, franja) on public.propuestas_de_entrega to authenticated;
+grant update (cerrada_at, deleted_at) on public.propuestas_de_entrega to authenticated;
+
 create table public.proximos_contactos (
   id uuid not null default private.uuidv7(),
   household_id uuid not null default private.household_actual(),
@@ -887,6 +994,10 @@ create table public.proyectos (
   cobro_saldo forma_de_cobro[],
   reparto_ya_en_la_apertura boolean not null default false,
   presupuesto_vale_hasta date,
+  listo_el date,
+  entrega_comprometida date,
+  entrega_comprometida_franja franja_de_entrega,
+  tipo_de_proyecto text,
   constraint presupuesto_aprobado TRIGGER DEFERRABLE INITIALLY DEFERRED,
   constraint proyectos_cliente_fk FOREIGN KEY (household_id, cliente_id) REFERENCES clientes(household_id, id),
   constraint proyectos_cobro_saldo_valido CHECK (COALESCE(cobro_saldo IS NULL OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro] OR cobro_saldo = ARRAY['efectivo'::forma_de_cobro] OR cobro_saldo = ARRAY['transferencia'::forma_de_cobro, 'efectivo'::forma_de_cobro], false)),
@@ -896,14 +1007,18 @@ create table public.proyectos (
   constraint proyectos_costo_herrajes_no_negativo CHECK (costo_herrajes_centavos IS NULL OR costo_herrajes_centavos >= 0),
   constraint proyectos_costo_madera_no_negativo CHECK (costo_madera_centavos IS NULL OR costo_madera_centavos >= 0),
   constraint proyectos_distribucion_cuadra CHECK (dist_cobrado_centavos IS NULL OR dist_cobrado_centavos >= 0 AND dist_gastos_centavos >= 0 AND dist_diezmo_bp >= 0 AND dist_diezmo_bp <= 10000 AND dist_tope_sueldo_centavos >= 0 AND dist_tope_fijos_centavos >= 0 AND dist_diezmo_centavos >= 0 AND dist_sueldo_centavos >= 0 AND dist_sueldo_centavos <= dist_tope_sueldo_centavos AND dist_fijos_centavos >= 0 AND dist_fijos_centavos <= dist_tope_fijos_centavos AND (dist_remanente_centavos >= 0 OR (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos) = 0) AND (dist_diezmo_centavos + dist_sueldo_centavos + dist_fijos_centavos + dist_remanente_centavos) = (dist_cobrado_centavos - dist_gastos_centavos)),
+  constraint proyectos_franja_con_su_dia CHECK (entrega_comprometida_franja IS NULL OR entrega_comprometida IS NOT NULL),
   constraint proyectos_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
   constraint proyectos_household_id_key UNIQUE (household_id, id),
+  constraint proyectos_la_entrega_desde_aprobado CHECK (listo_el IS NULL AND entrega_comprometida IS NULL OR (estado = ANY (ARRAY['en_curso'::estado_proyecto, 'entregado'::estado_proyecto, 'cobrado'::estado_proyecto, 'perdido'::estado_proyecto]))),
   constraint proyectos_largos CHECK (char_length(titulo) <= 200 AND char_length(descripcion) <= 10000 AND char_length(direccion_entrega) <= 500 AND char_length(notas) <= 10000),
   constraint proyectos_liquidado_con_distribucion CHECK ((estado = ANY (ARRAY['cobrado'::estado_proyecto, 'perdido'::estado_proyecto])) = (fecha_cobro IS NOT NULL) AND (num_nulls(fecha_cobro, dist_cobrado_centavos, dist_gastos_centavos, dist_diezmo_bp, dist_tope_sueldo_centavos, dist_tope_fijos_centavos, dist_diezmo_centavos, dist_sueldo_centavos, dist_fijos_centavos, dist_remanente_centavos, dist_objetivo_sueldo_centavos, dist_objetivo_fijos_centavos, dist_sueldo_mensual, dist_sueldo_previo_centavos, dist_fijos_previo_centavos, dist_liquidado_at) = ANY (ARRAY[0, 16]))),
+  constraint proyectos_listo_antes_de_entregar CHECK (listo_el IS NULL OR fecha_entrega IS NULL OR listo_el <= fecha_entrega),
   constraint proyectos_pkey PRIMARY KEY (id),
   constraint proyectos_presupuesto_no_negativo CHECK (presupuesto_centavos IS NULL OR presupuesto_centavos >= 0),
   constraint proyectos_reapertura_completa CHECK ((num_nulls(reapertura_objetivo_sueldo_centavos, reapertura_objetivo_fijos_centavos, reapertura_sueldo_mensual, reapertura_fecha_cobro) = ANY (ARRAY[0, 4])) AND ((estado <> ALL (ARRAY['cobrado'::estado_proyecto, 'perdido'::estado_proyecto])) OR reapertura_fecha_cobro IS NULL)),
   constraint proyectos_sena_valida CHECK (sena_bp IS NULL OR sena_bp >= 0 AND sena_bp <= 10000),
+  constraint proyectos_tipo_de_proyecto_valido CHECK (tipo_de_proyecto IS NULL OR char_length(tipo_de_proyecto) >= 1 AND char_length(tipo_de_proyecto) <= 60 AND tipo_de_proyecto = btrim(tipo_de_proyecto)),
   constraint proyectos_titulo_valido CHECK (btrim(titulo) <> ''::text),
   constraint proyectos_topes_del_mes CHECK (dist_cobrado_centavos IS NULL OR COALESCE(dist_objetivo_sueldo_centavos >= 0 AND dist_objetivo_fijos_centavos >= 0 AND dist_sueldo_previo_centavos >= 0 AND dist_fijos_previo_centavos >= 0 AND dist_tope_fijos_centavos = GREATEST(0::bigint, dist_objetivo_fijos_centavos - dist_fijos_previo_centavos) AND dist_tope_sueldo_centavos =
 CASE
@@ -917,8 +1032,8 @@ comment on column public.proyectos.titulo is 'El trabajo, en pocas palabras: "Pl
 comment on column public.proyectos.presupuesto_centavos is 'Presupuesto acordado. Null mientras el lead no tiene presupuesto. La distribución NO se calcula sobre esto sino sobre lo cobrado.';
 comment on column public.proyectos.fecha_visita is 'Visita de relevamiento, en la etapa de seguimiento. Viaja a la vista del cliente: es el día que dice el casillero del relevamiento. La hora, visita_hora, no viaja (ADR 0058).';
 comment on column public.proyectos.ultimo_contacto is 'Último contacto con el cliente, en la etapa de seguimiento.';
-comment on column public.proyectos.entrega_estimada is 'Entrega prometida. La app la propone a 21 días hábiles del inicio.';
-comment on column public.proyectos.fecha_entrega is 'Entrega real.';
+comment on column public.proyectos.entrega_estimada is 'La entrega estimada: la fecha probable que calcula el taller, a 21 días hábiles del inicio por defecto, y que puede moverse. No es un acuerdo con el cliente: eso es entrega_comprometida. Mientras el trabajo está en curso, cada cambio queda en public.cambios_de_fecha con cuántos trabajos había en curso ese día, y el analítico mide contra la primera (ADR 0071).';
+comment on column public.proyectos.fecha_entrega is 'La entrega real: el día en que se entregó. La escribe «Ya lo entregué» con el día de hoy y «Volvió al taller» la borra. Con el trabajo en curso vale null siempre: la guarda private.cuidar_las_fechas_de_la_entrega() limpia la que quede de antes (ADR 0071).';
 comment on column public.proyectos.fecha_cobro is 'Fecha de la liquidación: el cobro final o el cierre como perdido. No null si y solo si el proyecto está cobrado o perdido. Es la fecha de los asientos derivados en el libro mayor y define el mes de los topes.';
 comment on column public.proyectos.dist_cobrado_centavos is 'Congelado al liquidar: total cobrado (suma de pagos vivos). En un perdido, la seña retenida.';
 comment on column public.proyectos.dist_gastos_centavos is 'Congelado al liquidar: total de gastos del proyecto.';
@@ -960,13 +1075,20 @@ comment on column public.proyectos.cobro_sena is 'Cómo se puede pagar la seña 
 comment on column public.proyectos.cobro_saldo is 'Lo mismo para el saldo. Son dos columnas y no una porque el dueño pide la seña por transferencia y cobra el saldo en efectivo cuando termina de instalar, que es el caso que motivó esto (ADR 0053).';
 comment on column public.proyectos.reparto_ya_en_la_apertura is 'El reparto de la liquidación (el diezmo y el sueldo) ya estaba en los saldos con los que arrancó la app: queda en el libro mayor con la fecha del cobro pero no mueve los tesoros. Lo escribe private.liquidar y solo con una fecha anterior a la apertura. Reabrir un cobro lo conserva para que volver a cobrarlo proponga lo mismo; reactivar un perdido lo apaga (ADR 0063).';
 comment on column public.proyectos.presupuesto_vale_hasta is 'Hasta qué día vale el presupuesto que se le mandó al cliente, o null si no tiene fecha. La propone la app al marcar «Mandé el presupuesto» con los días de ajustes.presupuesto_vale_dias, y el dueño la corrige en la hoja del contacto. Viaja a la vista del cliente solo mientras el presupuesto está mandado y sin aprobar: es la fecha de «si dejás la seña antes del…», y la entrega que se le proyecta sale de ella con la cuenta de la entrega estimada, no de hoy. Pasada la fecha, la página dice que venció en vez de seguir prometiendo. guardar_proyecto la escribe solo si la clave viene en el pedido, así un bundle viejo no la borra (ADR 0067).';
+comment on column public.proyectos.listo_el is 'El día en que se terminó de fabricar, o null si todavía no está listo. Es un hecho con su día, no un estado: lo anota «Ya está listo» y lo borra «Todavía no está listo». Solo existe con el trabajo aprobado, y nunca después de la entrega. Viaja a la vista del cliente como fechas.listo (ADR 0071).';
+comment on column public.proyectos.entrega_comprometida is 'La entrega comprometida: el día que se acordó con el cliente, porque el dueño lo confirmó o porque el cliente aceptó el día que le propusieron. Existe con el trabajo aprobado; volver a una consulta la limpia. Mientras el trabajo está en curso viaja a la vista del cliente, que la lee como «Entrega confirmada». Cada cambio queda en public.cambios_de_fecha (ADR 0071).';
+comment on column public.proyectos.entrega_comprometida_franja is 'A la mañana o a la tarde, si la entrega comprometida tiene franja. Solo con su día (ADR 0071).';
+comment on column public.proyectos.tipo_de_proyecto is 'Qué clase de trabajo es («Cocina», «Placard»), en palabras del dueño: un texto libre de 1 a 60 caracteres, sin espacios en los bordes, o null. Agrupa el analítico de entregas sin mayúsculas ni acentos. No viaja al cliente (ADR 0071).';
 CREATE INDEX proyectos_household_actualizado ON public.proyectos USING btree (household_id, updated_at);
 CREATE INDEX proyectos_household_cliente ON public.proyectos USING btree (household_id, cliente_id);
 CREATE INDEX proyectos_liquidados_por_mes ON public.proyectos USING btree (household_id, fecha_cobro) WHERE (fecha_cobro IS NOT NULL);
 CREATE TRIGGER anotar_el_cambio_de_estado AFTER INSERT OR UPDATE OF estado ON proyectos FOR EACH ROW EXECUTE FUNCTION private.anotar_el_cambio_de_estado();
+CREATE TRIGGER anotar_los_cambios_de_fecha AFTER INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.anotar_los_cambios_de_fecha();
 CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
 CREATE TRIGGER borrar_hijos AFTER UPDATE OF deleted_at ON proyectos FOR EACH ROW WHEN (new.deleted_at IS NOT NULL AND old.deleted_at IS NULL) EXECUTE FUNCTION private.borrar_hijos_de_proyecto();
 CREATE TRIGGER cerrar_el_contacto_pendiente AFTER UPDATE OF estado ON proyectos FOR EACH ROW WHEN (old.estado = 'en_seguimiento'::estado_proyecto AND new.estado IS DISTINCT FROM old.estado) EXECUTE FUNCTION private.cerrar_el_contacto_pendiente();
+CREATE TRIGGER cerrar_la_propuesta_de_entrega AFTER UPDATE ON proyectos FOR EACH ROW WHEN (new.entrega_comprometida IS NOT NULL OR new.estado <> 'en_curso'::estado_proyecto OR new.listo_el IS NULL) EXECUTE FUNCTION private.cerrar_la_propuesta_de_entrega();
+CREATE TRIGGER cuidar_las_fechas_de_la_entrega BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.cuidar_las_fechas_de_la_entrega();
 CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON proyectos FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
 CREATE CONSTRAINT TRIGGER presupuesto_aprobado AFTER INSERT OR UPDATE ON proyectos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.validar_presupuesto_aprobado();
 CREATE CONSTRAINT TRIGGER seguimiento_con_su_contacto AFTER INSERT OR UPDATE OF estado, deleted_at ON proyectos DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.revisar_el_seguimiento_del_proyecto();
@@ -984,8 +1106,8 @@ create policy proyectos_lectura on public.proyectos as permissive
   using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
 grant select on public.proyectos to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.proyectos to service_role;
-grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora, presupuesto_vale_hasta) on public.proyectos to authenticated;
-grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora, cobro_sena, cobro_saldo, presupuesto_vale_hasta) on public.proyectos to authenticated;
+grant insert (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, entrega_hora, visita_hora, presupuesto_vale_hasta, listo_el, entrega_comprometida, entrega_comprometida_franja, tipo_de_proyecto) on public.proyectos to authenticated;
+grant update (id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante, fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega, direccion_entrega, notas, deleted_at, vencimiento_presupuesto, presupuesto_diseno, presupuesto_despiece, presupuesto_cotizacion, presupuesto_pdf, visita_hecha, visita_importante, entrega_importante, presupuesto_importante, sena_bp, costo_madera_centavos, costo_herrajes_centavos, costo_flete_centavos, costo_ayudante_centavos, entrega_hora, visita_hora, cobro_sena, cobro_saldo, presupuesto_vale_hasta, listo_el, entrega_comprometida, entrega_comprometida_franja, tipo_de_proyecto) on public.proyectos to authenticated;
 
 create table public.renglones_de_respuesta (
   id uuid not null default private.uuidv7(),
@@ -1072,6 +1194,48 @@ create policy respuestas_lectura on public.respuestas as permissive
 grant select on public.respuestas to authenticated;
 grant delete, insert, maintain, references, select, trigger, truncate, update on public.respuestas to service_role;
 grant update (leida_at) on public.respuestas to authenticated;
+
+create table public.respuestas_de_entrega (
+  id uuid not null default private.uuidv7(),
+  household_id uuid not null,
+  proyecto_id uuid not null,
+  propuesta_id uuid not null,
+  respuesta respuesta_de_entrega not null,
+  dias jsonb not null default '[]'::jsonb,
+  nota text not null default ''::text,
+  leida_at timestamp with time zone,
+  created_at timestamp with time zone not null default clock_timestamp(),
+  updated_at timestamp with time zone not null default now(),
+  deleted_at timestamp with time zone,
+  version integer not null default 1,
+  constraint respuestas_de_entrega_dias_es_una_lista CHECK (jsonb_typeof(dias) = 'array'::text AND jsonb_array_length(dias) <= 10),
+  constraint respuestas_de_entrega_household_id_fkey FOREIGN KEY (household_id) REFERENCES households(id) ON DELETE CASCADE,
+  constraint respuestas_de_entrega_me_queda_bien_sola CHECK (respuesta <> 'me_queda_bien'::respuesta_de_entrega OR dias = '[]'::jsonb AND nota = ''::text),
+  constraint respuestas_de_entrega_nota_valida CHECK (char_length(nota) <= 500),
+  constraint respuestas_de_entrega_pkey PRIMARY KEY (id),
+  constraint respuestas_de_entrega_propuesta_fk FOREIGN KEY (household_id, proyecto_id, propuesta_id) REFERENCES propuestas_de_entrega(household_id, proyecto_id, id)
+);
+comment on table public.respuestas_de_entrega is 'Lo que contestó el cliente a una propuesta de entrega desde su página: que el día propuesto le queda bien, o los días y las franjas que le quedan bien, con una nota. La escribe public.responder_la_entrega(), que corre elevada; el dueño no tiene grant de insert y lo único que escribe es leida_at. Hasta 20 por propuesta: el cliente puede cambiar sus días (ADR 0071).';
+comment on column public.respuestas_de_entrega.household_id is 'Sin default: la fila la escribe la función pública, que no tiene sesión, y pone el household del enlace.';
+comment on column public.respuestas_de_entrega.dias is 'Los días que le quedan bien, en orden: una lista de {fecha, franjas}, con franjas manana y tarde. Vacía con me_queda_bien, y con mis_dias si lo dijo todo en la nota.';
+comment on column public.respuestas_de_entrega.nota is 'Lo que hay que saber para la entrega, en palabras del cliente: el piso, la escalera, quién lo recibe. Hasta 500 caracteres, sin blancos en las puntas.';
+comment on column public.respuestas_de_entrega.leida_at is 'Cuándo la leyó el dueño, o null si todavía no. Es del dueño y se escribe por la cola como cualquier otra cosa suya.';
+comment on column public.respuestas_de_entrega.deleted_at is 'Borrado lógico. Solo lo pone el borrado del trabajo.';
+CREATE INDEX respuestas_de_entrega_household_actualizado ON public.respuestas_de_entrega USING btree (household_id, updated_at);
+CREATE INDEX respuestas_de_entrega_household_propuesta ON public.respuestas_de_entrega USING btree (household_id, proyecto_id, propuesta_id, created_at);
+CREATE TRIGGER avisar_los_cambios AFTER INSERT OR DELETE OR UPDATE ON respuestas_de_entrega FOR EACH ROW EXECUTE FUNCTION private.avisar_los_cambios('household_id');
+CREATE TRIGGER metadatos BEFORE INSERT OR UPDATE ON respuestas_de_entrega FOR EACH ROW EXECUTE FUNCTION private.mantener_metadatos();
+alter table public.respuestas_de_entrega enable row level security;
+create policy respuestas_de_entrega_edicion on public.respuestas_de_entrega as permissive
+  for update to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))))
+  with check ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+create policy respuestas_de_entrega_lectura on public.respuestas_de_entrega as permissive
+  for select to authenticated
+  using ((household_id = ANY (ARRAY( SELECT private.user_household_ids() AS user_household_ids))));
+grant select on public.respuestas_de_entrega to authenticated;
+grant delete, insert, maintain, references, select, trigger, truncate, update on public.respuestas_de_entrega to service_role;
+grant update (leida_at) on public.respuestas_de_entrega to authenticated;
 
 
 -- Vistas -----------------------------------------------------------------------------------------
@@ -1293,6 +1457,15 @@ AS $function$
     ),
     'renglones_de_respuesta', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.renglones_de_respuesta t where t.deleted_at is null
+    ),
+    'propuestas_de_entrega', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.propuestas_de_entrega t where t.deleted_at is null
+    ),
+    'respuestas_de_entrega', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.respuestas_de_entrega t where t.deleted_at is null
+    ),
+    'cambios_de_fecha', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.cambios_de_fecha t where t.deleted_at is null
     )
   )
 $function$;
@@ -1543,6 +1716,15 @@ begin
     ),
     'renglones_de_respuesta', (
       select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.renglones_de_respuesta t where t.updated_at >= v_desde
+    ),
+    'propuestas_de_entrega', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.propuestas_de_entrega t where t.updated_at >= v_desde
+    ),
+    'respuestas_de_entrega', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.respuestas_de_entrega t where t.updated_at >= v_desde
+    ),
+    'cambios_de_fecha', (
+      select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.cambios_de_fecha t where t.updated_at >= v_desde
     )
   );
 end;
@@ -1698,6 +1880,11 @@ declare
   v_entrega_hora time;
   v_visita_hora time;
   v_vale_hasta date;
+  v_fecha_entrega date;
+  v_listo date;
+  v_comprometida date;
+  v_franja public.franja_de_entrega;
+  v_tipo text;
   v_household_id uuid;
   v_cuantas integer;
   v_aprobadas integer;
@@ -1752,7 +1939,11 @@ begin
     sena_bp integer,
     entrega_hora text,
     visita_hora text,
-    presupuesto_vale_hasta text
+    presupuesto_vale_hasta text,
+    listo_el text,
+    entrega_comprometida text,
+    entrega_comprometida_franja text,
+    tipo_de_proyecto text
   );
 
   if v_p.id is null or v_p.cliente_id is null or v_p.titulo is null or v_p.estado is null then
@@ -1887,6 +2078,43 @@ begin
     else v_actual.presupuesto_vale_hasta
   end;
 
+  -- El listo, la comprometida con su franja y el tipo, con el mismo patrón: un bundle viejo no los
+  -- conoce y no los borra. Las fechas y la franja se leen como texto por lo mismo que las horas.
+  v_listo := case
+    when p_proyecto ? 'listo_el' then nullif(v_p.listo_el, '')::date
+    else v_actual.listo_el
+  end;
+
+  v_comprometida := case
+    when p_proyecto ? 'entrega_comprometida' then nullif(v_p.entrega_comprometida, '')::date
+    else v_actual.entrega_comprometida
+  end;
+
+  v_franja := case
+    when p_proyecto ? 'entrega_comprometida_franja'
+      then nullif(v_p.entrega_comprometida_franja, '')::public.franja_de_entrega
+    else v_actual.entrega_comprometida_franja
+  end;
+
+  v_tipo := case
+    when p_proyecto ? 'tipo_de_proyecto' then nullif(btrim(v_p.tipo_de_proyecto), '')
+    else v_actual.tipo_de_proyecto
+  end;
+
+  -- Lo mismo que hace private.cuidar_las_fechas_de_la_entrega() con cualquier escritura: en curso no
+  -- hay entrega real, antes de aprobar no hay listo ni comprometida, y la franja no va sin su día.
+  v_fecha_entrega := case when v_p.estado = 'en_curso' then null else v_p.fecha_entrega end;
+  if v_p.estado in (
+    'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado',
+    'en_seguimiento'
+  ) then
+    v_listo := null;
+    v_comprometida := null;
+  end if;
+  if v_comprometida is null then
+    v_franja := null;
+  end if;
+
   v_household_id := coalesce(v_actual.household_id, private.household_actual());
 
   -- Entra en seguimiento en este guardado: la etapa a la que vuelve es la que tenía el trabajo, y la
@@ -1951,14 +2179,17 @@ begin
       v_actual.fecha_visita, v_actual.ultimo_contacto, v_actual.fecha_inicio,
       v_actual.entrega_estimada, v_actual.fecha_entrega, v_actual.direccion_entrega, v_actual.notas,
       v_actual.vencimiento_presupuesto, v_actual.visita_hecha, v_actual.sena_bp,
-      v_actual.entrega_hora, v_actual.visita_hora, v_actual.presupuesto_vale_hasta
+      v_actual.entrega_hora, v_actual.visita_hora, v_actual.presupuesto_vale_hasta,
+      v_actual.listo_el, v_actual.entrega_comprometida, v_actual.entrega_comprometida_franja,
+      v_actual.tipo_de_proyecto
     ) is not distinct from (
       v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
       v_presupuesto, v_p.forma_pago, v_p.comprobante,
       v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio,
-      v_p.entrega_estimada, v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''),
+      v_p.entrega_estimada, v_fecha_entrega, coalesce(v_p.direccion_entrega, ''),
       coalesce(v_p.notas, ''), v_vencimiento, v_visita_hecha, v_sena_bp,
-      v_entrega_hora, v_visita_hora, v_vale_hasta
+      v_entrega_hora, v_visita_hora, v_vale_hasta,
+      v_listo, v_comprometida, v_franja, v_tipo
     );
 
     -- Un guardado hecho sin señal sobre una versión vieja no pisa en silencio lo que hay. La
@@ -1999,7 +2230,7 @@ begin
       ultimo_contacto = v_p.ultimo_contacto,
       fecha_inicio = v_p.fecha_inicio,
       entrega_estimada = v_p.entrega_estimada,
-      fecha_entrega = v_p.fecha_entrega,
+      fecha_entrega = v_fecha_entrega,
       direccion_entrega = coalesce(v_p.direccion_entrega, ''),
       notas = coalesce(v_p.notas, ''),
       vencimiento_presupuesto = v_vencimiento,
@@ -2007,7 +2238,11 @@ begin
       sena_bp = v_sena_bp,
       entrega_hora = v_entrega_hora,
       visita_hora = v_visita_hora,
-      presupuesto_vale_hasta = v_vale_hasta
+      presupuesto_vale_hasta = v_vale_hasta,
+      listo_el = v_listo,
+      entrega_comprometida = v_comprometida,
+      entrega_comprometida_franja = v_franja,
+      tipo_de_proyecto = v_tipo
     where id = v_p.id
     returning * into v_fila;
   else
@@ -2016,13 +2251,15 @@ begin
         id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
         fecha_visita, ultimo_contacto, fecha_inicio, entrega_estimada, fecha_entrega,
         direccion_entrega, notas, vencimiento_presupuesto, visita_hecha, sena_bp,
-        entrega_hora, visita_hora, presupuesto_vale_hasta
+        entrega_hora, visita_hora, presupuesto_vale_hasta, listo_el, entrega_comprometida,
+        entrega_comprometida_franja, tipo_de_proyecto
       ) values (
         v_p.id, v_p.cliente_id, v_p.titulo, coalesce(v_p.descripcion, ''), v_p.estado,
         v_presupuesto, v_p.forma_pago, v_p.comprobante,
         v_p.fecha_visita, v_p.ultimo_contacto, v_p.fecha_inicio, v_p.entrega_estimada,
-        v_p.fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
-        v_vencimiento, v_visita_hecha, v_sena_bp, v_entrega_hora, v_visita_hora, v_vale_hasta
+        v_fecha_entrega, coalesce(v_p.direccion_entrega, ''), coalesce(v_p.notas, ''),
+        v_vencimiento, v_visita_hecha, v_sena_bp, v_entrega_hora, v_visita_hora, v_vale_hasta,
+        v_listo, v_comprometida, v_franja, v_tipo
       )
       returning * into v_fila;
     exception
@@ -2277,7 +2514,7 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto, lo que hace falta para el trabajo y su próximo contacto en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. Entrar en seguimiento, cambiar la fecha y registrar el contacto viajan en p_proximos junto con el estado, y la guarda diferida exige que el trabajo en seguimiento tenga su contacto pendiente (MN019, ADR 0064); al entrar, la etapa a la que vuelve la pone la base. Hasta cuándo vale el presupuesto (presupuesto_vale_hasta) se escribe solo si la clave viene en el pedido, como el vencimiento (ADR 0067). p_opciones, p_necesidades y p_proximos en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
+comment on function guardar_proyecto(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) is 'Guarda un proyecto con sus pagos, sus gastos, sus opciones de presupuesto, lo que hace falta para el trabajo y su próximo contacto en una sola transacción, idempotente por el id del proyecto. El alta es un upsert; la edición manda la version que vio el cliente y se rechaza con MN006 si la fila cambió. Las bajas de las filas hijas vienen marcadas con borrado en su propio array. Un pago sin fecha se rechaza con MN016: la fecha la manda la app (ADR 0063); la guarda de la tabla rechaza además una fecha que todavía no llegó y una marca de la apertura que no corresponde. Con opciones vivas, el presupuesto del proyecto sale de la opción aprobada y no de lo que manda el cliente. Entrar en seguimiento, cambiar la fecha y registrar el contacto viajan en p_proximos junto con el estado, y la guarda diferida exige que el trabajo en seguimiento tenga su contacto pendiente (MN019, ADR 0064); al entrar, la etapa a la que vuelve la pone la base. Hasta cuándo vale el presupuesto (presupuesto_vale_hasta), el día en que quedó listo (listo_el), la entrega comprometida con su franja y el tipo de proyecto se escriben solo si la clave viene en el pedido, como el vencimiento (ADR 0067 y 0071); con el trabajo en curso la entrega real va en null, y antes de aprobar el listo y la comprometida también. p_opciones, p_necesidades y p_proximos en null quieren decir "no toques eso", para que un bundle viejo no lo borre; lo mismo la clave ya_en_la_apertura de cada pago. Los cuatro costos estimados no los escribe esta función: van por un update de sus columnas solas.';
 
 CREATE OR REPLACE FUNCTION private.anotar_aviso(p_suscripcion uuid, p_dia date, p_mandado boolean)
  RETURNS boolean
@@ -2321,6 +2558,102 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.anotar_el_cambio_de_estado() is 'Anota en public.cambios_de_estado cada vez que un trabajo cambia de etapa, venga de donde venga (el agregado, el cobro, la reapertura). Es security definer porque la app no tiene grant de insert sobre esa tabla: la historia no la escribe el cliente.';
+
+CREATE OR REPLACE FUNCTION private.anotar_los_cambios_de_fecha()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_entra_en_curso boolean;
+  v_estimada boolean;
+  v_comprometida boolean;
+  v_origen public.origen_de_la_fecha;
+  v_en_curso integer;
+  v_sin_terminar integer;
+begin
+  if new.deleted_at is not null then
+    return null;
+  end if;
+
+  v_entra_en_curso := new.estado = 'en_curso'
+    and (tg_op = 'INSERT' or old.estado is distinct from 'en_curso');
+
+  -- La estimada se anota cuando el trabajo entra en curso con una, y cada vez que cambia mientras está
+  -- en curso. Antes de aprobar es un número del taller que el cliente no ve como fecha.
+  v_estimada := (v_entra_en_curso and new.entrega_estimada is not null)
+    or (
+      tg_op = 'UPDATE'
+      and new.estado = 'en_curso'
+      and not v_entra_en_curso
+      and new.entrega_estimada is distinct from old.entrega_estimada
+    );
+
+  -- La comprometida, cada vez que cambia ella o su franja, también cuando se saca.
+  v_comprometida := case
+    when tg_op = 'INSERT' then new.entrega_comprometida is not null
+    else (new.entrega_comprometida, new.entrega_comprometida_franja)
+      is distinct from (old.entrega_comprometida, old.entrega_comprometida_franja)
+  end;
+
+  if not v_estimada and not v_comprometida then
+    return null;
+  end if;
+
+  -- El origen lo marca la puerta del cliente en la transacción, y lo vuelve a vacío después del
+  -- update. Cualquier otro camino es el taller.
+  v_origen := coalesce(
+    nullif(current_setting('maun.origen_de_la_fecha', true), '')::public.origen_de_la_fecha,
+    'taller'
+  );
+
+  -- La carga del taller en ese momento: los otros trabajos en curso, y de esos los que no están listos.
+  select count(*)::integer, (count(*) filter (where p.listo_el is null))::integer
+  into v_en_curso, v_sin_terminar
+  from public.proyectos p
+  where p.household_id = new.household_id
+    and p.id <> new.id
+    and p.estado = 'en_curso'
+    and p.deleted_at is null;
+
+  if v_estimada then
+    insert into public.cambios_de_fecha (
+      household_id, proyecto_id, tipo, fecha, fecha_anterior, franja, origen, decidido_el,
+      trabajos_en_curso, trabajos_sin_terminar
+    ) values (
+      new.household_id, new.id, 'estimada', new.entrega_estimada,
+      (
+        select c.fecha from public.cambios_de_fecha c
+        where c.household_id = new.household_id and c.proyecto_id = new.id and c.tipo = 'estimada'
+        order by c.created_at desc, c.id desc
+        limit 1
+      ),
+      null, v_origen, private.hoy_en_el_taller(), v_en_curso, v_sin_terminar
+    );
+  end if;
+
+  if v_comprometida then
+    insert into public.cambios_de_fecha (
+      household_id, proyecto_id, tipo, fecha, fecha_anterior, franja, origen, decidido_el,
+      trabajos_en_curso, trabajos_sin_terminar
+    ) values (
+      new.household_id, new.id, 'comprometida', new.entrega_comprometida,
+      (
+        select c.fecha from public.cambios_de_fecha c
+        where c.household_id = new.household_id and c.proyecto_id = new.id and c.tipo = 'comprometida'
+        order by c.created_at desc, c.id desc
+        limit 1
+      ),
+      new.entrega_comprometida_franja, v_origen, private.hoy_en_el_taller(), v_en_curso, v_sin_terminar
+    );
+  end if;
+
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.anotar_los_cambios_de_fecha() is 'Anota en public.cambios_de_fecha la estimada cuando el trabajo entra en curso con una y cada vez que cambia con el trabajo en curso, y la comprometida cada vez que cambia ella o su franja, venga de donde venga el cambio. Una sola fila por tipo en cada update. Guarda el día en el taller, quién la fijó (maun.origen_de_la_fecha, que marca la puerta del cliente; si no, el taller) y cuántos otros trabajos había en curso y sin terminar. Es security definer porque la app no tiene grant de insert sobre esa tabla: la historia no la escribe el cliente (ADR 0071).';
 
 CREATE OR REPLACE FUNCTION private.armar_la_encuesta()
  RETURNS trigger
@@ -2616,6 +2949,16 @@ begin
     and proyecto_id = new.id
     and deleted_at is null;
 
+  -- Las propuestas de entrega después del enlace, en el orden en que las bloquea el cliente que
+  -- contesta: el trabajo, el enlace, la propuesta.
+  update public.propuestas_de_entrega
+  set deleted_at = new.deleted_at
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and deleted_at is null;
+
+  perform private.borrar_la_entrega_del_trabajo(new.household_id, new.id, new.deleted_at);
+
   -- La encuesta que se le mandó, lo que contestó y sus preguntas propias. El enlace deja de
   -- funcionar con el trabajo.
   perform private.borrar_las_opiniones_del_trabajo(new.household_id, new.id, new.deleted_at);
@@ -2624,6 +2967,34 @@ begin
 end;
 $function$;
 -- execute: solo el dueño
+
+CREATE OR REPLACE FUNCTION private.borrar_la_entrega_del_trabajo(p_household_id uuid, p_proyecto_id uuid, p_momento timestamp with time zone)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  -- Solo con el trabajo ya borrado. El dueño no tiene grant para borrar una respuesta ni una fila de
+  -- la historia, y esta puerta no le abre ese camino para un trabajo vivo.
+  if not exists (
+    select 1 from public.proyectos p
+    where p.household_id = p_household_id and p.id = p_proyecto_id and p.deleted_at is not null
+  ) then
+    return;
+  end if;
+
+  update public.respuestas_de_entrega r
+  set deleted_at = p_momento
+  where r.household_id = p_household_id and r.proyecto_id = p_proyecto_id and r.deleted_at is null;
+
+  update public.cambios_de_fecha c
+  set deleted_at = p_momento
+  where c.household_id = p_household_id and c.proyecto_id = p_proyecto_id and c.deleted_at is null;
+end;
+$function$;
+-- execute: authenticated:EXECUTE
+comment on function private.borrar_la_entrega_del_trabajo(uuid,uuid,timestamp with time zone) is 'Borra, con la marca del trabajo, lo que contestó el cliente sobre la entrega y la historia de las fechas de un trabajo que ya se borró. Es security definer porque el dueño no tiene grant para borrar ninguna de las dos: la llama private.borrar_hijos_de_proyecto(), y no hace nada si el trabajo está vivo (ADR 0071).';
 
 CREATE OR REPLACE FUNCTION private.borrar_las_opiniones_del_trabajo(p_household_id uuid, p_proyecto_id uuid, p_momento timestamp with time zone)
  RETURNS void
@@ -2770,6 +3141,25 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.cerrar_el_contacto_pendiente() is 'Cuando un trabajo sale del seguimiento sin que la app registre el contacto (dar por perdido, cambiar la etapa desde el formulario), cierra el pendiente con ese resultado: perdido con el día del cierre, reactivado con el día de hoy en el taller.';
+
+CREATE OR REPLACE FUNCTION private.cerrar_la_propuesta_de_entrega()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  update public.propuestas_de_entrega
+  set cerrada_at = now()
+  where household_id = new.household_id
+    and proyecto_id = new.id
+    and cerrada_at is null
+    and deleted_at is null;
+
+  return null;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.cerrar_la_propuesta_de_entrega() is 'Cierra la propuesta de entrega abierta de un trabajo cuando se fija la entrega comprometida (la confirmó el dueño o la aceptó el cliente) o cuando el trabajo deja de estar en curso y listo: ya no hay nada que el cliente pueda contestar. Corre con los permisos de quien escribe el trabajo, que tiene grant de update sobre cerrada_at (ADR 0071).';
 
 CREATE OR REPLACE FUNCTION private.crear_household(p_nombre text, p_user_id uuid)
  RETURNS uuid
@@ -2983,6 +3373,94 @@ end;
 $function$;
 -- execute: solo el dueño
 comment on function private.cuidar_la_pregunta() is 'Trigger de preguntas: calcula cuántas opciones tiene, deja cambiar solo la versión vigente de una serie, no deja cambiar cómo se contesta una pregunta que ya salió en una encuesta, arma las versiones nuevas desde la vigente y congela las propias de un trabajo cuyo cliente ya contestó (ADR 0057).';
+
+CREATE OR REPLACE FUNCTION private.cuidar_la_propuesta_de_entrega()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_estado public.estado_proyecto;
+  v_listo date;
+  v_comprometida date;
+  v_borrado timestamptz;
+begin
+  -- Bloquea el trabajo antes de mirarlo: marcar que todavía no está listo, o comprometer la entrega,
+  -- en el mismo instante, espera a esta alta o la ve ya hecha y la cierra.
+  select p.estado, p.listo_el, p.entrega_comprometida, p.deleted_at
+  into v_estado, v_listo, v_comprometida, v_borrado
+  from public.proyectos p
+  where p.household_id = new.household_id and p.id = new.proyecto_id
+  for share;
+
+  -- Un trabajo que no es de este household lo rechaza la foreign key compuesta, que corre después.
+  if not found then
+    return new;
+  end if;
+
+  if v_borrado is not null then
+    raise exception 'El proyecto está borrado' using errcode = 'MN002';
+  end if;
+
+  if v_estado <> 'en_curso' or v_listo is null then
+    raise exception 'La entrega se coordina con el mueble listo'
+      using errcode = 'MN021',
+            detail = 'sin_listo',
+            hint = 'Marcá en la ficha que ya está listo y proponele el día.';
+  end if;
+
+  if v_comprometida is not null then
+    raise exception 'La entrega ya está comprometida'
+      using errcode = 'MN021',
+            detail = 'comprometida',
+            hint = 'Para cambiarla, cambiá la fecha comprometida en la ficha.';
+  end if;
+
+  if new.fecha is not null and new.fecha < private.hoy_en_el_taller() + 1 then
+    raise exception 'El día que le proponés tiene que ser desde mañana'
+      using errcode = 'MN021',
+            detail = 'fecha',
+            hint = 'Elegí un día desde mañana.';
+  end if;
+
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.cuidar_la_propuesta_de_entrega() is 'Guarda del alta de una propuesta de entrega: el trabajo tiene que estar en curso y listo, sin entrega comprometida, y el día propuesto tiene que ser desde mañana en la hora del taller. Rechaza con MN021 y el motivo en el detail (sin_listo, comprometida o fecha), o con MN002 si el trabajo está borrado (ADR 0071).';
+
+CREATE OR REPLACE FUNCTION private.cuidar_las_fechas_de_la_entrega()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  -- Antes de aprobar no hay nada terminado ni acordado: volver a presupuesto, o reactivar un perdido,
+  -- se lleva el listo y la comprometida. La historia de la comprometida queda en cambios_de_fecha.
+  if new.estado in (
+    'contacto', 'presupuesto_estimativo', 'relevamiento', 'a_presupuestar', 'presupuesto_enviado',
+    'en_seguimiento'
+  ) then
+    new.listo_el := null;
+    new.entrega_comprometida := null;
+  end if;
+
+  -- En curso todavía no se entregó. La entrega vieja que el formulario reenvía sin mostrarla, o la que
+  -- quedó de antes de volver al taller, no puede quedar como si hubiera pasado.
+  if new.estado = 'en_curso' then
+    new.fecha_entrega := null;
+  end if;
+
+  -- La franja va con su día: sacar la comprometida se la lleva.
+  if new.entrega_comprometida is null then
+    new.entrega_comprometida_franja := null;
+  end if;
+
+  return new;
+end;
+$function$;
+-- execute: solo el dueño
+comment on function private.cuidar_las_fechas_de_la_entrega() is 'Guarda de proyectos, antes de escribir y venga de donde venga el cambio (la ficha, el formulario, reactivar un perdido): un trabajo en una etapa de antes de aprobar no tiene listo ni entrega comprometida, uno en curso no tiene fecha de entrega, y la franja no queda sin su día. Corre antes que private.mantener_metadatos(), así un reenvío que solo difiere en lo que esto limpia sigue siendo un no-op (ADR 0071).';
 
 CREATE OR REPLACE FUNCTION private.dar_de_baja_suscripcion(p_endpoint text)
  RETURNS boolean
@@ -4796,6 +5274,8 @@ declare
   v_p public.proyectos;
   v_etapa public.estado_proyecto;
   v_aprobado boolean;
+  v_propuesta public.propuestas_de_entrega;
+  v_respuesta public.respuestas_de_entrega;
   v_presupuesto_mandado boolean;
   v_taller text;
   v_cliente text;
@@ -4913,6 +5393,30 @@ begin
     );
   end if;
 
+  -- Lo que hay para coordinar la entrega: solo con el trabajo en curso, el mueble listo y sin entrega
+  -- comprometida, la propuesta abierta si sigue vigente (un día propuesto que ya pasó no se le
+  -- muestra), y lo último que el cliente le contestó.
+  if v_etapa = 'en_curso' and v_p.listo_el is not null and v_p.entrega_comprometida is null then
+    select * into v_propuesta
+    from public.propuestas_de_entrega d
+    where d.household_id = v_p.household_id
+      and d.proyecto_id = v_p.id
+      and d.cerrada_at is null
+      and d.deleted_at is null
+      and (d.fecha is null or d.fecha >= private.hoy_en_el_taller());
+
+    if v_propuesta.id is not null then
+      select * into v_respuesta
+      from public.respuestas_de_entrega r
+      where r.household_id = v_p.household_id
+        and r.proyecto_id = v_p.id
+        and r.propuesta_id = v_propuesta.id
+        and r.deleted_at is null
+      order by r.created_at desc, r.id desc
+      limit 1;
+    end if;
+  end if;
+
   -- Los campos van enumerados uno por uno, a propósito. Si esto fuera to_jsonb(v_p) con la pantalla
   -- filtrando, el día que alguien le agregue una columna a proyectos esa columna quedaría expuesta
   -- sin que nadie lo decida: lo que el cliente ve se decide acá, no en el navegador. La suite lo
@@ -4975,7 +5479,11 @@ begin
           and c.hacia = 'en_curso'
       ) end,
       'inicio', case when v_aprobado then v_p.fecha_inicio end,
+      -- La entrega estimada, desde que aprueba. La clave no se renombró: la app la lee como
+      -- estimada, y no la muestra si ya pasó (ADR 0071).
       'entrega_pautada', case when v_aprobado then v_p.entrega_estimada end,
+      -- El día en que se terminó de fabricar, desde que está listo.
+      'listo', case when v_aprobado then v_p.listo_el end,
       'entregado', case when v_etapa in ('entregado', 'cobrado') then v_p.fecha_entrega end,
       'cobro', case when v_p.estado = 'cobrado' then v_p.fecha_cobro end,
       -- Hasta cuándo vale el presupuesto, solo mientras está mandado y sin aprobar.
@@ -4985,6 +5493,33 @@ begin
     'visita', jsonb_build_object(
       'dia', v_p.fecha_visita,
       'hecha', v_p.visita_hecha
+    ),
+    -- La entrega que se coordina con el cliente (ADR 0071). La comprometida viaja mientras el trabajo
+    -- está en curso; entregado, lo que cuenta es el día en que se entregó. La propuesta y la respuesta,
+    -- solo mientras hay algo que contestar. De la propuesta viaja su id, que es con lo que el cliente
+    -- contesta; de la respuesta, lo que él mismo mandó.
+    'entrega', jsonb_build_object(
+      'comprometida', case
+        when v_etapa = 'en_curso' and v_p.entrega_comprometida is not null then jsonb_build_object(
+          'fecha', v_p.entrega_comprometida,
+          'franja', v_p.entrega_comprometida_franja
+        )
+      end,
+      'propuesta', case
+        when v_propuesta.id is not null then jsonb_build_object(
+          'id', v_propuesta.id,
+          'forma', v_propuesta.forma,
+          'fecha', v_propuesta.fecha,
+          'franja', v_propuesta.franja
+        )
+      end,
+      'respuesta', case
+        when v_respuesta.id is not null then jsonb_build_object(
+          'respuesta', v_respuesta.respuesta,
+          'dias', v_respuesta.dias,
+          'nota', v_respuesta.nota
+        )
+      end
     ),
     'pagos', (
       select coalesce(
@@ -5033,4 +5568,4 @@ begin
 end;
 $function$;
 -- execute: authenticated:EXECUTE, service_role:EXECUTE
-comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo, y cada dato recién desde la etapa en la que es cierto (ADR 0067): el presupuesto desde que se le manda; la dirección de entrega, el día de inicio, la entrega pautada y el día de la aprobación desde que aprueba; el día de la entrega desde que se entrega. Antes de esas etapas no viajan, aunque estén cargados: un campo cargado no es un hecho. Devuelve cuánto vale, cuánto pagó, en qué anda, la seña en pesos, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después (antes de aprobar solo se le pide la seña), hasta cuándo vale el presupuesto mientras espera la seña, los archivos que el dueño marcó, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados y margen incluidos. Un trabajo en seguimiento se muestra en la etapa en la que estaba: el «por ahora no» y su próximo contacto son del taller y no viajan (ADR 0064). Del estimativo viaja el día, nunca un importe. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña y los días que vale un presupuesto no viajan nunca; lo que viaja son el importe y la fecha que salen de ellos. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054, 0058 y 0067).';
+comment on function vista_del_cliente(uuid) is 'Lo único que un cliente puede ver de su trabajo, y cada dato recién desde la etapa en la que es cierto (ADR 0067): el presupuesto desde que se le manda; la dirección de entrega, el día de inicio, la entrega estimada (la clave entrega_pautada, que no se renombró) y el día de la aprobación desde que aprueba; el día en que el mueble quedó listo desde que lo está; el día de la entrega desde que se entrega. Antes de esas etapas no viajan, aunque estén cargados: un campo cargado no es un hecho. Devuelve cuánto vale, cuánto pagó, en qué anda, la seña en pesos, qué pago le toca ahora, cuánto es, cómo puede pagarlo y cuál viene después (antes de aprobar solo se le pide la seña), hasta cuándo vale el presupuesto mientras espera la seña, los archivos que el dueño marcó, el día que se le mandó el estimativo y el día de la visita para medir con si ya se fue. La clave entrega trae la entrega comprometida mientras el trabajo está en curso, y la propuesta de entrega vigente con lo último que contestó el cliente solo con el trabajo en curso, listo y sin comprometida (ADR 0071). Enumera los campos uno por uno y nunca devuelve la fila entera: convertirla en un select * expondría cada columna nueva de proyectos sin que nadie lo decida, costos estimados, margen y tipo de proyecto incluidos. Un trabajo en seguimiento se muestra en la etapa en la que estaba: el «por ahora no» y su próximo contacto son del taller y no viajan (ADR 0064). Del estimativo viaja el día, nunca un importe. De la visita viajan el día y la marca, no la hora. De ajustes viajan exactamente los cinco campos de cobro —los cuatro de la cuenta y el link de Mercado Pago—, y solo cuando el pago que toca AHORA se ofrece por transferencia: lo que no se muestra, no se manda. El porcentaje de seña y los días que vale un presupuesto no viajan nunca; lo que viaja son el importe y la fecha que salen de ellos. Es security invoker: desde la app la llama el dueño y la RLS decide; desde el link la llama public.vista_compartida(), que ya resolvió el token (ADR 0046, 0048, 0053, 0054, 0058, 0067 y 0071).';

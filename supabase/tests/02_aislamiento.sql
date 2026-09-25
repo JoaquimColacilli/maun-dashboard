@@ -95,7 +95,7 @@ select isnt_empty('select 1 from public.libro_mayor', 'el libro mayor de A tiene
 
 select is(
   (select jsonb_object_agg(t.clave, jsonb_array_length(t.valor)) from jsonb_each(public.bootstrap() - 'cursor') as t (clave, valor)),
-  '{"households": 1, "household_members": 1, "ajustes": 1, "clientes": 1, "proyectos": 1, "pagos": 1, "gastos": 1, "opciones_de_presupuesto": 1, "necesidades": 1, "movimientos": 1, "anotaciones": 1, "archivos": 1, "enlaces_publicos": 1, "proximos_contactos": 1, "preguntas": 5, "encuestas_enviadas": 0, "respuestas": 0, "renglones_de_respuesta": 0}'::jsonb,
+  '{"households": 1, "household_members": 1, "ajustes": 1, "clientes": 1, "proyectos": 1, "pagos": 1, "gastos": 1, "opciones_de_presupuesto": 1, "necesidades": 1, "movimientos": 1, "anotaciones": 1, "archivos": 1, "enlaces_publicos": 1, "proximos_contactos": 1, "preguntas": 5, "encuestas_enviadas": 0, "respuestas": 0, "renglones_de_respuesta": 0, "propuestas_de_entrega": 0, "respuestas_de_entrega": 0, "cambios_de_fecha": 0}'::jsonb,
   'bootstrap() de A trae su household completo, con las cinco preguntas de la encuesta que nace escrita'
 );
 
@@ -267,7 +267,7 @@ select tests.entrar_como(tests.id('sin_taller'));
 
 select is(
   (select jsonb_object_agg(t.clave, jsonb_array_length(t.valor)) from jsonb_each(public.bootstrap() - 'cursor') as t (clave, valor)),
-  '{"households": 0, "household_members": 0, "ajustes": 0, "clientes": 0, "proyectos": 0, "pagos": 0, "gastos": 0, "opciones_de_presupuesto": 0, "necesidades": 0, "movimientos": 0, "anotaciones": 0, "archivos": 0, "enlaces_publicos": 0, "proximos_contactos": 0, "preguntas": 0, "encuestas_enviadas": 0, "respuestas": 0, "renglones_de_respuesta": 0}'::jsonb,
+  '{"households": 0, "household_members": 0, "ajustes": 0, "clientes": 0, "proyectos": 0, "pagos": 0, "gastos": 0, "opciones_de_presupuesto": 0, "necesidades": 0, "movimientos": 0, "anotaciones": 0, "archivos": 0, "enlaces_publicos": 0, "proximos_contactos": 0, "preguntas": 0, "encuestas_enviadas": 0, "respuestas": 0, "renglones_de_respuesta": 0, "propuestas_de_entrega": 0, "respuestas_de_entrega": 0, "cambios_de_fecha": 0}'::jsonb,
   'un usuario sin household no ve nada'
 );
 

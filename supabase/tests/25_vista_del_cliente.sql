@@ -1,7 +1,8 @@
 -- La vista del cliente (ADR 0046): la lista blanca de campos, el link con su huella y su dirección
 -- (ADR 0052), el registro de los cambios de etapa, los datos para transferir (ADR 0048), el título
 -- que alimenta la vista previa del enlace (ADR 0049), cómo te paga, la forma de cobro por trabajo y
--- por instancia de pago (ADR 0053), y el estimativo y la visita para medir (ADR 0058).
+-- por instancia de pago (ADR 0053), el estimativo y la visita para medir (ADR 0058), y el listo y la
+-- entrega que se coordina con el cliente (ADR 0071).
 --
 -- Los dos tests que importan son los primeros: toda columna de proyectos y toda columna de ajustes
 -- están clasificadas, y agregar una columna a cualquiera de las dos rompe este archivo hasta que
@@ -10,7 +11,7 @@
 -- mirado. Ajustes entró a la lista con los datos para transferir: desde que uno de sus campos viaja
 -- a la superficie pública, la tabla entera necesita la misma vigilancia que proyectos.
 
-select plan(111);
+select plan(114);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -31,7 +32,9 @@ select tests.guardar('household_b', private.crear_household('Taller de Beto', te
 -- y eso incluye los costos estimados, el margen que se deriva de ellos, las tareas de presupuestar,
 -- las notas de obra, la distribución congelada, las marcas de la agenda, la hora de la visita, el
 -- vencimiento del presupuesto, si el reparto ya estaba en la apertura y sena_bp, que es el
--- porcentaje y sigue sin viajar: lo que viaja es el importe.
+-- porcentaje y sigue sin viajar: lo que viaja es el importe. Desde el ADR 0071 viajan también el día
+-- en que el mueble quedó listo («fechas.listo») y la entrega comprometida con su franja
+-- («entrega.comprometida»); el tipo de proyecto es una palabra del dueño para su analítico y no viaja.
 select set_eq(
   $$
     select a.attname::text
@@ -45,7 +48,9 @@ select set_eq(
     'fecha_visita', 'visita_hecha',
     'cobro_sena', 'cobro_saldo',
     'presupuesto_vale_hasta',
+    'listo_el', 'entrega_comprometida', 'entrega_comprometida_franja',
     -- No viajan
+    'tipo_de_proyecto',
     'id', 'household_id', 'cliente_id', 'descripcion', 'forma_pago', 'comprobante',
     'ultimo_contacto', 'notas', 'vencimiento_presupuesto',
     'created_at', 'updated_at', 'deleted_at', 'version',
@@ -94,6 +99,43 @@ select set_eq(
 );
 
 
+-- Toda columna de las dos tablas de la entrega que lee la vista está clasificada (ADR 0071) --------------
+
+-- De la propuesta viaja lo que el cliente tiene que leer y el id con el que le contesta. De su
+-- respuesta, lo que él mismo mandó. Cuándo se cerró, cuándo la leyó el dueño y a qué trabajo
+-- pertenecen son cosas del taller.
+select set_eq(
+  $$
+    select a.attname::text
+    from pg_attribute a
+    where a.attrelid = 'public.propuestas_de_entrega'::regclass and a.attnum > 0 and not a.attisdropped
+  $$,
+  array[
+    -- Viajan
+    'id', 'forma', 'fecha', 'franja',
+    -- No viajan
+    'household_id', 'proyecto_id', 'cerrada_at', 'created_at', 'updated_at', 'deleted_at', 'version'
+  ],
+  'toda columna de las propuestas de entrega está clasificada'
+);
+
+select set_eq(
+  $$
+    select a.attname::text
+    from pg_attribute a
+    where a.attrelid = 'public.respuestas_de_entrega'::regclass and a.attnum > 0 and not a.attisdropped
+  $$,
+  array[
+    -- Viajan
+    'respuesta', 'dias', 'nota',
+    -- No viajan
+    'id', 'household_id', 'proyecto_id', 'propuesta_id', 'leida_at',
+    'created_at', 'updated_at', 'deleted_at', 'version'
+  ],
+  'toda columna de las respuestas de entrega está clasificada'
+);
+
+
 -- Un trabajo con todo lo que el cliente no tiene que ver -----------------------------------------------------
 
 select tests.entrar_como(tests.id('ana'));
@@ -104,13 +146,13 @@ insert into public.clientes (id, nombre, telefono, notas)
 insert into public.proyectos (
   id, cliente_id, titulo, descripcion, estado, presupuesto_centavos, forma_pago, comprobante,
   fecha_visita, ultimo_contacto, vencimiento_presupuesto, fecha_inicio, entrega_estimada,
-  direccion_entrega, notas, sena_bp
+  direccion_entrega, notas, sena_bp, tipo_de_proyecto
 ) values (
   'aaaaaaaa-0000-7000-8000-000000000010', 'aaaaaaaa-0000-7000-8000-000000000001',
   'Placard 3 puertas', 'Melamina blanca con herrajes Blum', 'en_curso', 124000000,
   'cuotas', 'factura_b',
   '2026-07-20', '2026-07-13', '2026-07-27', '2026-08-24', '2026-10-02',
-  'Olazábal 1240, Ituzaingó', 'OJO: el cliente regatea, no bajar de 900', 4321
+  'Olazábal 1240, Ituzaingó', 'OJO: el cliente regatea, no bajar de 900', 4321, 'Placard de pasillo'
 );
 
 update public.proyectos set
@@ -163,8 +205,14 @@ where household_id = tests.id('household_a');
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')) $$,
-  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'sena_centavos', 'pago', 'cobro', 'fechas', 'visita', 'pagos', 'archivos'],
+  array['taller', 'cliente', 'trabajo', 'direccion', 'estado', 'precio_centavos', 'sena_centavos', 'pago', 'cobro', 'fechas', 'visita', 'entrega', 'pagos', 'archivos'],
   'la vista devuelve exactamente estos campos y ninguno más'
+);
+
+select set_eq(
+  $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'entrega') $$,
+  array['comprometida', 'propuesta', 'respuesta'],
+  'de la entrega viajan exactamente tres cosas: la comprometida, lo que se le propuso y lo que contestó'
 );
 
 select set_eq(
@@ -181,8 +229,8 @@ select set_eq(
 
 select set_eq(
   $$ select jsonb_object_keys(public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010') -> 'fechas') $$,
-  array['estimativo', 'presupuesto', 'aprobado', 'inicio', 'entrega_pautada', 'entregado', 'cobro', 'vale_hasta'],
-  'las fechas que viajan son exactamente ocho'
+  array['estimativo', 'presupuesto', 'aprobado', 'inicio', 'entrega_pautada', 'listo', 'entregado', 'cobro', 'vale_hasta'],
+  'las fechas que viajan son exactamente nueve'
 );
 
 select set_eq(
@@ -230,13 +278,14 @@ select is_empty(
         '11-5555-0001', 'Paga tarde',
         'factura_b', 'cuotas',
         '2026-07-13', '2026-07-27', '4321',
-        '777777', '888888', '999999', '6543', '1717'
+        '777777', '888888', '999999', '6543', '1717',
+        'Placard de pasillo'
       ]) as v (aguja)
       where %L like '%%' || v.aguja || '%%'
     $$,
     public.vista_del_cliente('aaaaaaaa-0000-7000-8000-000000000010')::text
   ),
-  'en el JSON entero no aparece ni un costo, ni un gasto, ni un herraje, ni las notas, ni la opción que no aprobó, ni un dato del cliente que no sea su nombre, ni el último contacto, ni el vencimiento del presupuesto, ni nada de los ajustes que no sea el cobro'
+  'en el JSON entero no aparece ni un costo, ni un gasto, ni un herraje, ni las notas, ni la opción que no aprobó, ni un dato del cliente que no sea su nombre, ni el último contacto, ni el vencimiento del presupuesto, ni el tipo de proyecto, ni nada de los ajustes que no sea el cobro'
 );
 
 
