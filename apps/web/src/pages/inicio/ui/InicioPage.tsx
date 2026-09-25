@@ -20,7 +20,7 @@ import {
 } from '@/entities/movimiento';
 import { novedadesDeOpiniones } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { LiquidacionesSinConfirmar } from '@/entities/proyecto';
+import { corteDelMes, LiquidacionesSinConfirmar } from '@/entities/proyecto';
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from '@/entities/tesoro';
 import {
@@ -53,10 +53,8 @@ import {
 } from '@/shared/lib';
 import {
   Avatar,
-  Button,
   caracteresDe,
   ConSalida,
-  FilaDeAcciones,
   Icono,
   MontoQueEntra,
   Pagina,
@@ -67,6 +65,7 @@ import {
 
 import { HojaDelPerfil } from './HojaDelPerfil';
 import { HoyEnLaAgenda } from './HoyEnLaAgenda';
+import { PortadaDeInicio } from './PortadaDeInicio';
 import { UltimaOpinion } from './UltimaOpinion';
 
 const DIAS_DE_PROYECCION = 365;
@@ -345,6 +344,8 @@ export function InicioPage() {
   const novedades = useMemo(() => novedadesDeOpiniones(replica, hoy), [replica, hoy]);
   const mes = mesDeLaFecha(hoy);
   const ajustes = ajustesDe(replica);
+  const arranque = faltaConfigurar(ajustes);
+  const corte = useMemo(() => corteDelMes(replica, mes), [replica, mes]);
   const saldos = saldosDeLaReplica(replica);
 
   const asientos = asientosDelLibro(datosDelLibro(replica));
@@ -409,6 +410,8 @@ export function InicioPage() {
         )}
       </header>
 
+      <PortadaDeInicio hoy={hoy} corte={corte} arranque={arranque} />
+
       <Tablero
         enUnaFila
         como="section"
@@ -434,26 +437,7 @@ export function InicioPage() {
 
       <LiquidacionesSinConfirmar replica={replica} />
 
-      {faltaConfigurar(ajustes) ? (
-        <section
-          aria-labelledby="titulo-arranque"
-          className="flex max-w-[520px] flex-col gap-3 pt-4"
-        >
-          <h2 id="titulo-arranque" className="text-h1 leading-tight font-semibold">
-            El taller arranca acá
-          </h2>
-          <p className="text-body leading-relaxed text-text-2">
-            Cargá el sueldo que te asignás y tus costos fijos para que Inicio te cuente cuánto te
-            falta cada mes. Después, el primer proyecto.
-          </p>
-          <FilaDeAcciones className="mt-1.5">
-            <Button onClick={irA('/ajustes')}>Configurar sueldo y metas</Button>
-            <Button variant="secundario" onClick={irA('/proyectos')}>
-              Cargar el primer proyecto
-            </Button>
-          </FilaDeAcciones>
-        </section>
-      ) : (
+      {!arranque && (
         <PrincipalYApoyo
           amplio
           separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
