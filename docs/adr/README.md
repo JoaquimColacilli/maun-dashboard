@@ -62,7 +62,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                          | Aceptada             |
 | [0057](0057-las-opiniones-de-los-clientes.md)                               | Las opiniones: la primera vez que alguien de afuera escribe         | Aceptada             |
 | [0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md)    | El estimativo y el relevamiento en el camino del cliente            | Aceptada, corregida  |
-| [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)             | La nota del relevamiento reemplaza al casillero                     | Aceptada             |
+| [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)             | La nota del relevamiento reemplaza al casillero                     | Aceptada, corregida  |
 | [0060](0060-materiales-la-edicion-en-la-fila-y-el-monto-que-entra.md)       | Materiales, editar en la fila y el monto que entra                  | Aceptada             |
 | [0061](0061-el-aviso-de-version-sale-del-registro.md)                       | El aviso de versión nueva sale del registro, y refrescar pregunta   | Aceptada             |
 | [0062](0062-el-reparto-en-la-compu.md)                                      | En la compu, tres repartos: filas, principal y apoyo, y tablero     | Aceptada, corregida  |
@@ -73,3 +73,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0067](0067-la-vista-antes-de-aprobar.md)                                   | La vista del cliente antes de aprobar: lo que se ve es lo que pasó  | Aceptada             |
 | [0068](0068-la-mesa-y-el-plano.md)                                          | La mesa y el plano: tarjetas sobre una mesa y dibujos en su lámina  | Aceptada, corregida  |
 | [0069](0069-el-dibujo-del-trabajo-del-cliente.md)                           | El dibujo del trabajo del cliente: el proceso, no el mueble         | Aceptada             |
+| [0070](0070-el-camino-tilda-lo-que-paso.md)                                 | El camino tilda lo que pasó y deja en curso lo que falta            | Aceptada             |

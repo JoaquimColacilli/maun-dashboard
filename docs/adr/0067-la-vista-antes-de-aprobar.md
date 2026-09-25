@@ -6,6 +6,9 @@
   cuándo, y al [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md) en lo que se lee arriba
   antes de aprobar. Termina lo que el [0043](0043-las-opciones-de-presupuesto-y-la-sena.md) decía
   de la seña: ahora tiene su gemela en SQL con nombre propio.
+- Completada el 2026-09-25 por el [ADR 0070](0070-el-camino-tilda-lo-que-paso.md): con la seña ya
+  cubierta antes de aprobar, ni el camino, ni «lo próximo», ni «Para cuándo» la vuelven a pedir; y el
+  paso de la aprobación con la seña en falta queda en curso («Cuando dejes la seña»), sin fecha.
 
 ## Contexto
 

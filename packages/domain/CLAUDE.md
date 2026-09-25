@@ -70,16 +70,27 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
   una cola del taller, cambia esa función.
 - **El camino tiene cinco hitos, o seis con el estimativo adelante** (ADR 0058): solo en los trabajos
   que lo tuvieron (`tuvoEstimativo`: la etapa actual o `fechas.estimativo`). **Compará por paso, nunca
-  por posición**: `llegoAl(vista, 'aprobado')`, no `hitoIndex >= 1`, porque con el estimativo el
-  índice se corre uno.
+  por posición**: `llegoAl(vista, 'aprobado')`, no un índice, porque con el estimativo el índice se
+  corre uno.
+- **El camino tilda lo que pasó y deja en curso lo que falta** (ADR 0070): `pasado` es un hecho, con
+  la fecha del hecho; `actual` es el paso que se está haciendo o esperando (`pasoEnCurso`, por etapa y
+  seña), sin fecha salvo la fabricación ya arrancada; `futuro`, lo que viene. **El paso en curso no es
+  `hitoActual`**: con el presupuesto mandado, `hitoActual` sigue siendo el presupuesto (el titular, lo
+  próximo, la nota y el dibujo salen de ahí) y el amarillo es la aprobación. El titular es
+  `vista.titular`, no el texto de un paso.
 - **Al llegar al último paso, el camino queda completo** (corrección del ADR 0046): todos los hitos
-  van `pasado` y ninguno `actual`, y el titular sigue siendo el texto de `hitos[hitoIndex]` («Listo,
-  está saldado»). No dejes el último en `actual`: la pantalla pinta el actual en ámbar, como algo en
-  curso, y un trabajo terminado parecía a medio camino.
+  van `pasado` y ninguno `actual`, y el titular es «Listo, está saldado». No dejes el último en
+  `actual`: la pantalla pinta el actual en ámbar, como algo en curso, y un trabajo terminado parecía a
+  medio camino.
+- **La seña cubierta antes de aprobar no se vuelve a pedir**: el paso en curso dice «Cuando lo
+  apruebes», lo próximo «Lo próximo es que lo apruebes.» y `textoDeLaProyeccion` recibe la situación
+  de la seña. Con la seña en falta o sin presupuesto, los textos del dueño quedan palabra por palabra.
 - **Si la visita está pendiente o hecha lo decide `relevamientoDelTrabajo`** con la etapa, el día y
   la marca de la visita, y no existe donde no hace falta medir. La tabla de cada caso está en el ADR 0058. Nunca promete un día que ya pasó, y la visita de hoy no se da por hecha sin la marca.
 - **La nota de la (i) la arma `notaDelRelevamiento(vista, formatos)`** (ADR 0059): solo en los pasos
-  del presupuesto, y con el texto, las líneas y el resumen del titular ya escritos. Las fechas llegan
+  del presupuesto, y con el texto, las líneas y el resumen del titular ya escritos. Dice de qué paso
+  cuelga (`hito`, que es `hitoActual`: el mismo paso de siempre, que ahora puede estar ya tildado,
+  ADR 0070). Las fechas llegan
   formateadas por `formatos`, porque el formateo no vive acá. Sin estimativo y sin medir no hay nota:
   no hay número que pueda cambiar.
 - **El foco se invierte solo y no es configurable**: hasta la entrega manda la etapa y el saldo va

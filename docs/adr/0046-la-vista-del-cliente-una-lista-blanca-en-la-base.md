@@ -1,6 +1,6 @@
 # 0046. La vista del cliente: una lista blanca en la base, no una pantalla que esconde
 
-Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso. Y el mismo día, el logo de Mercado Pago del recuadro de los datos para transferir pasó a salir por la forma de cobro (el último punto de Consecuencias). Corregida el 2026-09-24 por el [ADR 0067](0067-la-vista-antes-de-aprobar.md): cada dato viaja desde la etapa en que es cierto (ver la corrección de la lista blanca).
+Estado: aceptada, 2026-09-18. Corregida el 2026-09-19: el cliente ya no ve cuánto hace que no pasa nada (ver el cierre de Consecuencias), la lista blanca suma los datos para transferirle al taller (ADR 0048), y la sección «El token se muestra una sola vez» quedó revertida por el [ADR 0052](0052-el-enlace-se-guarda-entero.md). Corregida el 2026-09-22: el camino de un trabajo terminado queda completo, sin ningún paso en curso. Y el mismo día, el logo de Mercado Pago del recuadro de los datos para transferir pasó a salir por la forma de cobro (el último punto de Consecuencias). Corregida el 2026-09-24 por el [ADR 0067](0067-la-vista-antes-de-aprobar.md): cada dato viaja desde la etapa en que es cierto (ver la corrección de la lista blanca). Corregida el 2026-09-25 por el [ADR 0070](0070-el-camino-tilda-lo-que-paso.md): el ámbar del camino es lo que se hace o se espera, no el paso al que llegó el trabajo, y el titular es un campo propio de la vista.
 
 ## Contexto
 
@@ -86,6 +86,12 @@ hueco, como si faltara algo. Un trabajo terminado no tiene nada en curso. Al lle
 que decía el diseño del escenario terminado («el camino queda completo»). El titular sigue saliendo
 de ese paso: «Listo, está saldado». `CaminoDeHitos` pinta la línea hasta el último paso alcanzado, no
 hasta el actual, porque en ese caso no hay ninguno.
+
+**Corregido el 2026-09-25 por el [ADR 0070](0070-el-camino-tilda-lo-que-paso.md).** Lo mismo valía
+antes del final: el ámbar caía sobre el paso al que había llegado el trabajo, que casi siempre es un
+hecho ya pasado («Te pasamos el presupuesto»). Ahora lo que pasó va tildado con su día y el ámbar es lo
+que se hace o se espera: con el presupuesto mandado, la aprobación. El titular ya no sale de un paso:
+es `vista.titular`, con los mismos textos.
 
 **Corregido el 2026-09-19.** Una cosa no puede ser la misma en las dos pantallas: cuánto hace que
 pasó algo. La app del dueño lo dice en todos lados —«Presupuesto enviado hace 9 días, sin

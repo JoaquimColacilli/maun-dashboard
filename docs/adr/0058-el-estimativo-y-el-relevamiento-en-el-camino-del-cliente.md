@@ -5,7 +5,9 @@ Estado: aceptada, 2026-09-21. Completa al [0046](0046-la-vista-del-cliente-una-l
 entrada desde la app. Usa el embudo del [0038](0038-el-embudo-del-seguimiento.md) tal como está, sin
 tocarlo. Corregida el 2026-09-22: el casillero del relevamiento pasó a ser una (i) con una nota en
 el paso en curso ([ADR 0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)); cuándo se
-da por hecha la visita sigue siendo lo de acá.
+da por hecha la visita sigue siendo lo de acá. Corregida el 2026-09-25 por el
+[ADR 0070](0070-el-camino-tilda-lo-que-paso.md): el estimativo nunca es el paso en curso; aparece
+tildado con su día, y en esa etapa queda en curso el presupuesto.
 
 ## Contexto
 
