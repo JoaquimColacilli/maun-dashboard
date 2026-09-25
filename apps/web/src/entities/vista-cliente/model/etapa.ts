@@ -9,7 +9,9 @@ export function etapaDelDibujo(vista: VistaDelCliente): EtapaDelTrabajo {
     case 'esperando-la-sena':
       return 'presupuesto';
     case 'aprobado':
-      return vista.datos.sena.situacion === 'cubierta' ? 'sena' : 'presupuesto';
+      return vista.datos.sena.situacion === 'cubierta' && vista.datos.sena.sena > 0
+        ? 'sena'
+        : 'presupuesto';
     default:
       return vista.etapa;
   }

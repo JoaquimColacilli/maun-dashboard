@@ -55,6 +55,7 @@ describe('etapaDelDibujo', () => {
         pago: { instancia: 'sena', formas: [], monto: centavos(62_000_000), siguiente: null },
       }),
     ).toBe('presupuesto');
+    expect(dibujo({ sena: centavos(0) })).toBe('presupuesto');
   });
 
   it('después sigue al trabajo: el taller, la casa y la casa con la tilde', () => {
