@@ -79,19 +79,50 @@ function useEditando(): boolean {
   const [editando, setEditando] = useState(false);
 
   useEffect(() => {
+    let apretado = false;
+    let volverAlSoltar = false;
+    let reloj: ReturnType<typeof setTimeout> | undefined;
+
     const esCampo = (destino: EventTarget | null) =>
       destino instanceof HTMLElement &&
       (destino.tagName === 'INPUT' || destino.tagName === 'TEXTAREA' || destino.isContentEditable);
+    const volverDespuesDelToque = () => {
+      clearTimeout(reloj);
+      reloj = setTimeout(() => {
+        setEditando(false);
+      }, 0);
+    };
+    const apretar = () => {
+      apretado = true;
+    };
+    const soltar = () => {
+      apretado = false;
+      if (!volverAlSoltar) return;
+      volverAlSoltar = false;
+      volverDespuesDelToque();
+    };
     const entrar = (evento: FocusEvent) => {
-      if (esCampo(evento.target)) setEditando(true);
+      if (!esCampo(evento.target)) return;
+      volverAlSoltar = false;
+      clearTimeout(reloj);
+      setEditando(true);
     };
     const salir = (evento: FocusEvent) => {
-      if (esCampo(evento.target)) setEditando(false);
+      if (!esCampo(evento.target)) return;
+      if (apretado) volverAlSoltar = true;
+      else volverDespuesDelToque();
     };
 
+    document.addEventListener('pointerdown', apretar, true);
+    document.addEventListener('pointerup', soltar, true);
+    document.addEventListener('pointercancel', soltar, true);
     document.addEventListener('focusin', entrar);
     document.addEventListener('focusout', salir);
     return () => {
+      clearTimeout(reloj);
+      document.removeEventListener('pointerdown', apretar, true);
+      document.removeEventListener('pointerup', soltar, true);
+      document.removeEventListener('pointercancel', soltar, true);
       document.removeEventListener('focusin', entrar);
       document.removeEventListener('focusout', salir);
     };
