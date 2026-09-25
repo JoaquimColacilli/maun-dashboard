@@ -71,3 +71,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0065](0065-la-app-abierta-se-entera-sola.md)                               | La app abierta se entera sola: un aviso vacío y el delta            | Aceptada             |
 | [0066](0066-las-transiciones-del-celular.md)                                | Las transiciones del celular: una puerta, una pila y un coordinador | Aceptada             |
 | [0067](0067-la-vista-antes-de-aprobar.md)                                   | La vista del cliente antes de aprobar: lo que se ve es lo que pasó  | Aceptada             |
+| [0068](0068-la-mesa-y-el-plano.md)                                          | La mesa y el plano: tarjetas sobre una mesa y dibujos en su lámina  | Aceptada             |
