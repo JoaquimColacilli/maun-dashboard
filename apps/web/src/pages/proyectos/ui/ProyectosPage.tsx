@@ -10,6 +10,7 @@ import {
   ESTADO,
   EstadoBadge,
   MarcaDeLiquidacion,
+  MarcaDeListo,
   ETAPAS,
   FILTROS_POR_ETAPA,
   filtrarPorEstado,
@@ -123,11 +124,7 @@ function Tarjeta({ resumen, hoy }: { resumen: ResumenDeProyecto; hoy: string }) 
       </div>
 
       <div className="text-label">
-        <EntregaRelativa
-          entregaEstimada={proyecto.entrega_estimada}
-          urgencia={resumen.urgencia}
-          hoy={hoy}
-        />
+        <EntregaRelativa entrega={resumen.entrega} urgencia={resumen.urgencia} hoy={hoy} />
       </div>
     </TarjetaDeProyecto>
   );
@@ -233,7 +230,7 @@ function Tabla({
               </td>
               <td className="px-2.5 whitespace-nowrap">
                 <EntregaRelativa
-                  entregaEstimada={resumen.proyecto.entrega_estimada}
+                  entrega={resumen.entrega}
                   urgencia={resumen.urgencia}
                   hoy={hoy}
                   conFecha
@@ -241,7 +238,10 @@ function Tabla({
               </td>
               <td className="px-2.5 whitespace-nowrap">
                 <span className="flex flex-col items-start gap-1">
-                  <EstadoBadge estado={resumen.proyecto.estado} />
+                  <span className="flex items-center gap-1.5">
+                    <EstadoBadge estado={resumen.proyecto.estado} />
+                    <MarcaDeListo proyecto={resumen.proyecto} />
+                  </span>
                   <MarcaDeLiquidacion proyectoId={resumen.proyecto.id} />
                 </span>
               </td>

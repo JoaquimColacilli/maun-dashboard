@@ -1,4 +1,9 @@
-import type { CategoriaDeAgenda, CategoriaDerivada, CategoriaPropia } from '@maun/domain';
+import type {
+  CategoriaDeAgenda,
+  CategoriaDerivada,
+  CategoriaPropia,
+  FranjaDeEntrega,
+} from '@maun/domain';
 
 import type { NombreDeIcono } from '@/shared/ui';
 
@@ -111,6 +116,14 @@ export const DERIVADA: Readonly<Record<CategoriaDerivada, DatosDeLaDerivada>> = 
     abrir: 'Abrir el seguimiento',
     hecha: 'ya le escribiste',
   },
+};
+
+export const ESTA_COMPROMETIDA =
+  'Está comprometida con el cliente. Para cambiarla, abrí el proyecto.';
+
+export const FRANJA_DEL_EVENTO: Readonly<Record<FranjaDeEntrega, string>> = {
+  manana: 'a la mañana',
+  tarde: 'a la tarde',
 };
 
 export const AYUDA_DE_LA_PROPIA: Readonly<Record<CategoriaPropia, string>> = {

@@ -18,9 +18,12 @@ import {
   ESTADO,
   EstadoBadge,
   ETAPAS,
+  fechaConSuFranja,
   FORMA_DE_PAGO,
   gastosDelProyecto,
+  listoDelTrabajo,
   MarcaDeLiquidacion,
+  MarcaDeListo,
   pagosDelProyecto,
   RUTA_DE_PROYECTOS,
   resumenDeProyecto,
@@ -34,6 +37,10 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { AyudaDeLaVista } from '@/entities/vista-cliente';
 import { ArchivosDelTrabajo } from '@/features/adjuntar-archivos';
+import {
+  LaEntregaDelTrabajo,
+  useLeerLasRespuestasDeEntrega,
+} from '@/features/coordinar-la-entrega';
 import {
   AvanceDeLaObra,
   BorradoDelProyecto,
@@ -103,6 +110,7 @@ export function ProyectoFichaPage() {
 
   const recienLiquidado = useSenalDeUnaVez('recienLiquidado');
   const recienAprobado = useSenalDeUnaVez('recienAprobado');
+  useLeerLasRespuestasDeEntrega(id);
 
   if (!resumen) {
     return (
@@ -151,21 +159,34 @@ export function ProyectoFichaPage() {
   if (proyecto.fecha_inicio !== null) {
     fechas.push({ clave: 'Inicio', valor: fechaLarga(proyecto.fecha_inicio, hoy) });
   }
+  const listo = listoDelTrabajo(proyecto);
+  if (listo !== null) {
+    fechas.push({ clave: 'Listo', valor: fechaLarga(listo, hoy), tono: 'text-hogar' });
+  }
+  const { entrega, urgencia } = resumen;
+  const tonoDeLaUrgencia =
+    urgencia === undefined
+      ? undefined
+      : urgencia.tono === 'vencida'
+        ? 'font-semibold text-alerta'
+        : urgencia.tono === 'atencion'
+          ? 'font-semibold text-atencion'
+          : undefined;
   if (proyecto.entrega_estimada !== null) {
+    const estimada = fechaLarga(proyecto.entrega_estimada, hoy);
+    const conUrgencia = !entrega.comprometida && urgencia !== undefined;
     fechas.push({
       clave: 'Entrega estimada',
-      valor:
-        resumen.urgencia === undefined
-          ? fechaLarga(proyecto.entrega_estimada, hoy)
-          : `${fechaLarga(proyecto.entrega_estimada, hoy)}, ${resumen.urgencia.texto}`,
-      tono:
-        resumen.urgencia === undefined
-          ? undefined
-          : resumen.urgencia.tono === 'vencida'
-            ? 'font-semibold text-alerta'
-            : resumen.urgencia.tono === 'atencion'
-              ? 'font-semibold text-atencion'
-              : undefined,
+      valor: conUrgencia ? `${estimada}, ${urgencia.texto}` : estimada,
+      tono: conUrgencia ? tonoDeLaUrgencia : undefined,
+    });
+  }
+  if (entrega.comprometida && entrega.fecha !== null) {
+    const dia = fechaConSuFranja(entrega.fecha, entrega.franja, hoy);
+    fechas.push({
+      clave: 'Entrega comprometida',
+      valor: urgencia === undefined ? dia : `${dia}, ${urgencia.texto}`,
+      tono: tonoDeLaUrgencia,
     });
   }
   if (proyecto.fecha_entrega !== null) {
@@ -248,6 +269,7 @@ export function ProyectoFichaPage() {
             </h1>
             <span className="flex flex-wrap items-center gap-2">
               <EstadoBadge estado={proyecto.estado} />
+              <MarcaDeListo proyecto={proyecto} />
               <MarcaDeLiquidacion proyectoId={proyecto.id} />
             </span>
           </div>
@@ -322,6 +344,8 @@ export function ProyectoFichaPage() {
             />
 
             <AvanceDeLaObra resumen={resumen} hoy={hoy} />
+
+            <LaEntregaDelTrabajo proyecto={proyecto} cliente={cliente?.nombre ?? ''} hoy={hoy} />
 
             {hayAcciones && (
               <div className="flex flex-col gap-2.5">

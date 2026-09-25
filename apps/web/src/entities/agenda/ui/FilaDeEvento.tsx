@@ -9,7 +9,7 @@ import {
   textoDelEvento,
   urgenciaDelEvento,
 } from '../model/calendario';
-import { CATEGORIA, DERIVADA } from '../model/categorias';
+import { CATEGORIA, DERIVADA, ESTA_COMPROMETIDA, FRANJA_DEL_EVENTO } from '../model/categorias';
 import { CasillaDeAnotacion, MarcaConAnillo, MarcaDeCategoria } from './MarcaDeCategoria';
 
 export interface AccionesDeLaAgenda {
@@ -75,6 +75,11 @@ function Contenido({
       <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         {evento.hora !== null && (
           <span className="text-label font-semibold text-text-2 tabular-nums">{evento.hora}</span>
+        )}
+        {evento.clase === 'derivada' && evento.franja !== null && (
+          <span className="text-label font-semibold text-text-2">
+            {FRANJA_DEL_EVENTO[evento.franja]}
+          </span>
         )}
         {evento.clase === 'derivada' && (
           <span
@@ -197,12 +202,15 @@ function FilaDerivada({
             <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-field bg-surface px-2.5 py-2 text-meta leading-snug text-text-2">
               <Icono nombre="link-2" tamano={14} />
               <span className="min-w-[10rem] flex-1">
-                {derivada.origen}.{' '}
-                {evento.categoria === 'seguimiento'
-                  ? 'Cuando le escribas, registralo: ahí elegís si vuelve, si sigue con otra fecha o si no va.'
-                  : conGrilla
-                    ? 'Arrastrala en el mes para moverla, o cambiá la fecha ahí.'
-                    : 'Para moverla, cambiá la fecha ahí.'}
+                {evento.comprometida
+                  ? ESTA_COMPROMETIDA
+                  : `${derivada.origen}. ${
+                      evento.categoria === 'seguimiento'
+                        ? 'Cuando le escribas, registralo: ahí elegís si vuelve, si sigue con otra fecha o si no va.'
+                        : conGrilla
+                          ? 'Arrastrala en el mes para moverla, o cambiá la fecha ahí.'
+                          : 'Para moverla, cambiá la fecha ahí.'
+                    }`}
               </span>
               {registrar !== undefined && (
                 <Button

@@ -18,7 +18,7 @@ export interface DatosDelAviso {
 export const QUE_AVISA: Readonly<Record<AvisoDeLaAgenda, DatosDelAviso>> = {
   entregas: {
     etiqueta: 'Entregas',
-    detalle: 'La entrega estimada de cada proyecto en curso',
+    detalle: 'La entrega de cada proyecto en curso: la comprometida, o si no hay, la estimada',
     categoria: 'entrega',
     anticipaciones: [0, 1, 2, 3],
   },

@@ -11,7 +11,7 @@ import type { FilaDe } from '@/shared/api';
 
 import { guardadoDeUnPaso } from '../api/mutacion';
 import { cambiosAlPasar, cambiosDeEstado } from './cambios-de-estado';
-import { urgenciaDeEntrega } from './entrega';
+import { entregaDelResumen, urgenciaDeEntrega } from './entrega';
 import { situacionDeLaObra } from './obra';
 import type { ResumenDeProyecto } from './resumen';
 
@@ -100,7 +100,8 @@ function resumen(fila: Proyecto, cobrado = 0): ResumenDeProyecto {
     cobrado: centavos(cobrado),
     gastos: centavos(0),
     saldo: presupuesto === null ? null : centavos(Math.max(0, presupuesto - cobrado)),
-    urgencia: urgenciaDeEntrega(fila.entrega_estimada, fila.estado, HOY),
+    entrega: entregaDelResumen(fila),
+    urgencia: urgenciaDeEntrega(entregaDelResumen(fila).fecha, fila.estado, HOY),
   };
 }
 
@@ -164,14 +165,14 @@ describe('los cambios de estado que ofrece una ficha', () => {
 });
 
 describe('lo que cambia al pasar de estado', () => {
-  it('entregarlo anota hoy como día de entrega, salvo que ya tuviera uno', () => {
+  it('entregarlo anota hoy como día de entrega, aunque tuviera uno viejo', () => {
     expect(cambiosAlPasar(proyecto(), 'entregado', HOY)).toEqual({
       estado: 'entregado',
       fecha_entrega: HOY,
     });
     expect(cambiosAlPasar(proyecto({ fecha_entrega: '2026-09-10' }), 'entregado', HOY)).toEqual({
       estado: 'entregado',
-      fecha_entrega: '2026-09-10',
+      fecha_entrega: HOY,
     });
   });
 
@@ -221,6 +222,40 @@ describe('lo que falta en una obra', () => {
     expect(situacionDeLaObra(resumen(proyecto()), HOY)).toMatchObject({
       detalle: 'Sin fecha de entrega estimada',
     });
+  });
+
+  it('listo y sin entrega comprometida, falta acordar la entrega', () => {
+    expect(
+      situacionDeLaObra(
+        resumen(proyecto({ entrega_estimada: '2026-10-13', listo_el: '2026-09-11' })),
+        HOY,
+      ),
+    ).toEqual({
+      proximoPaso: 'Falta acordar la entrega',
+      detalle: 'Está listo desde el vie 11 sep',
+      icono: 'calendar-days',
+      tono: 'normal',
+    });
+  });
+
+  it('con la entrega comprometida, manda ella y no la estimada', () => {
+    const comprometida = proyecto({
+      entrega_estimada: '2026-09-10',
+      entrega_comprometida: '2026-09-15',
+      entrega_comprometida_franja: 'manana',
+    });
+    expect(situacionDeLaObra(resumen(comprometida), HOY)).toEqual({
+      proximoPaso: 'Falta entregarlo',
+      detalle: 'Entrega comprometida: mar 15 sep, a la mañana (vence mañana)',
+      icono: 'clock',
+      tono: 'atencion',
+    });
+    expect(
+      situacionDeLaObra(
+        resumen(proyecto({ entrega_comprometida: '2026-10-13', listo_el: '2026-09-11' })),
+        HOY,
+      ),
+    ).toMatchObject({ icono: 'truck', tono: 'normal' });
   });
 
   it('entregada falta cobrarla, y dice cuánto', () => {

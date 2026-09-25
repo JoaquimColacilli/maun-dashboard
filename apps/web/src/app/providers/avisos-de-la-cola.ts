@@ -46,6 +46,13 @@ const OPERACION: Readonly<Record<QueSeGuarda, OperacionRechazada>> = {
   encuesta: 'guardado',
   bajaDeLaEncuesta: 'guardado',
   recordatorio: 'guardado',
+  yaEstaListo: 'proyecto',
+  todaviaNoEstaListo: 'proyecto',
+  entregaEstimada: 'proyecto',
+  entregaComprometida: 'proyecto',
+  sinEntregaComprometida: 'proyecto',
+  pedidoDeEntrega: 'proyecto',
+  respuestaDeEntregaLeida: 'guardado',
 };
 
 const CLAVE_DE_LO_ANOTADO = 'anotado-sin-senal';

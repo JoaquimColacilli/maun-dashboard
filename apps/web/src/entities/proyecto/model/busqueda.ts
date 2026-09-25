@@ -81,9 +81,9 @@ export const CRITERIOS: readonly Criterio<ResumenDeProyecto>[] = [
   },
   {
     id: 'entrega',
-    etiqueta: 'Entrega estimada',
+    etiqueta: 'Entrega',
     tipo: 'fecha',
-    leer: (resumen) => resumen.proyecto.entrega_estimada ?? undefined,
+    leer: (resumen) => resumen.entrega.fecha ?? undefined,
     inicial: 'asc',
   },
   {

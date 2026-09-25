@@ -115,6 +115,7 @@ function resumen(proyecto: Partial<Proyecto> = {}, cobrado = 0): ResumenDeProyec
     cobrado: centavos(cobrado),
     gastos: centavos(0),
     saldo: centavos((fila.presupuesto_centavos ?? 0) - cobrado),
+    entrega: { fecha: null, comprometida: false, franja: null, listo: null },
     urgencia: undefined,
   };
 }

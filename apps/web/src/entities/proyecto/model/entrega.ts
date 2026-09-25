@@ -6,7 +6,7 @@ import {
   franjaDeLaEntrega,
   type CambiosDeLaEntrega,
 } from '@/shared/api';
-import { diasHasta, hoyLocal, relativa } from '@/shared/lib';
+import { diasHasta, fechaLarga, hoyLocal, relativa } from '@/shared/lib';
 import type { NombreDeIcono } from '@/shared/ui';
 
 import type { Proyecto } from './catalogos';
@@ -32,6 +32,40 @@ export function cambiaAlgoDeLaEntrega(proyecto: Proyecto, cambios: CambiosDeLaEn
   return COLUMNAS_DE_LA_ENTREGA.some(
     (columna) => columna in cambios && guardada[columna] !== cambios[columna],
   );
+}
+
+export const FRANJA_DE_LA_ENTREGA: Readonly<Record<FranjaDeEntrega, string>> = {
+  manana: 'a la mañana',
+  tarde: 'a la tarde',
+};
+
+export function fechaConSuFranja(
+  fecha: string,
+  franja: FranjaDeEntrega | null,
+  hoy: string,
+): string {
+  const dia = fechaLarga(fecha, hoy);
+  return franja === null ? dia : `${dia}, ${FRANJA_DE_LA_ENTREGA[franja]}`;
+}
+
+export interface EntregaDelResumen {
+  fecha: string | null;
+  comprometida: boolean;
+  franja: FranjaDeEntrega | null;
+  listo: string | null;
+}
+
+export function entregaDelResumen(proyecto: Proyecto): EntregaDelResumen {
+  const listo = listoDelTrabajo(proyecto);
+  const comprometida = entregaComprometida(proyecto);
+  if (comprometida !== null) {
+    return { fecha: comprometida, comprometida: true, franja: franjaDeLaEntrega(proyecto), listo };
+  }
+  return { fecha: proyecto.entrega_estimada, comprometida: false, franja: null, listo };
+}
+
+export function estaListo(proyecto: Proyecto): boolean {
+  return proyecto.estado === 'en_curso' && listoDelTrabajo(proyecto) !== null;
 }
 
 export function cambiosDeLaComprometida(

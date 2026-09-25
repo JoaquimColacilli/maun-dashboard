@@ -18,9 +18,10 @@ import {
   type FraseDelDiezmo,
   type ResumenMensual,
 } from '@/entities/movimiento';
+import { avisosDeEntregas } from '@/entities/entrega';
 import { novedadesDeOpiniones } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { corteDelMes, LiquidacionesSinConfirmar } from '@/entities/proyecto';
+import { corteDelMes, entregaDelResumen, LiquidacionesSinConfirmar } from '@/entities/proyecto';
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from '@/entities/tesoro';
 import {
@@ -66,6 +67,7 @@ import {
 import { HojaDelPerfil } from './HojaDelPerfil';
 import { HoyEnLaAgenda } from './HoyEnLaAgenda';
 import { PortadaDeInicio } from './PortadaDeInicio';
+import { RespuestasDeEntrega } from './RespuestasDeEntrega';
 import { UltimaOpinion } from './UltimaOpinion';
 
 const DIAS_DE_PROYECCION = 365;
@@ -366,8 +368,13 @@ export function InicioPage() {
     (proyecto) => proyecto.estado === 'en_curso' || proyecto.estado === 'entregado',
   );
   const proximaEntrega = proyectos
-    .filter((proyecto) => proyecto.estado === 'en_curso' && proyecto.entrega_estimada !== null)
-    .sort((a, b) => (a.entrega_estimada ?? '').localeCompare(b.entrega_estimada ?? ''))[0];
+    .filter((proyecto) => proyecto.estado === 'en_curso')
+    .flatMap((proyecto) => {
+      const { fecha, comprometida } = entregaDelResumen(proyecto);
+      return fecha === null ? [] : [{ proyecto, fecha, comprometida }];
+    })
+    .sort((una, otra) => una.fecha.localeCompare(otra.fecha))[0];
+  const respuestasDeEntrega = useMemo(() => avisosDeEntregas(replica), [replica]);
 
   const caracteresDeLasTarjetas = caracteresDe(
     ...TESOROS_EN_ORDEN.flatMap((id) =>
@@ -431,6 +438,8 @@ export function InicioPage() {
         ))}
       </Tablero>
 
+      <RespuestasDeEntrega avisos={respuestasDeEntrega} hoy={hoy} />
+
       {novedades.ultima !== null && <UltimaOpinion ultima={novedades.ultima} />}
 
       {ancho === 'movil' && <HoyEnLaAgenda replica={replica} hoy={hoy} />}
@@ -450,16 +459,16 @@ export function InicioPage() {
                 <Acceso
                   icono="truck"
                   etiqueta="Entrega más próxima"
-                  titulo={proximaEntrega?.titulo ?? 'Sin entregas programadas'}
+                  titulo={proximaEntrega?.proyecto.titulo ?? 'Sin entregas programadas'}
                   valor={
-                    proximaEntrega?.entrega_estimada
-                      ? relativa(proximaEntrega.entrega_estimada, hoy)
-                      : ''
+                    proximaEntrega === undefined
+                      ? ''
+                      : `${relativa(proximaEntrega.fecha, hoy)}${proximaEntrega.comprometida ? ', comprometida' : ''}`
                   }
                   alElegir={irA(
                     proximaEntrega === undefined
                       ? '/proyectos'
-                      : rutaDelProyecto(proximaEntrega.id),
+                      : rutaDelProyecto(proximaEntrega.proyecto.id),
                   )}
                 />
                 <Acceso

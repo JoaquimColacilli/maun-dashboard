@@ -140,10 +140,15 @@ export {
   cambiaAlgoDeLaEntrega,
   cambiosDeLaComprometida,
   CLASE_DE_ENTREGA,
+  entregaDelResumen,
   entregaGuardada,
+  estaListo,
+  fechaConSuFranja,
+  FRANJA_DE_LA_ENTREGA,
   listoDelTrabajo,
   tipoDelTrabajo,
   urgenciaDeEntrega,
+  type EntregaDelResumen,
   type TonoDeEntrega,
   type Urgencia,
 } from './model/entrega';
@@ -180,6 +185,7 @@ export {
   type SentidoDelCambio,
 } from './model/cambios-de-estado';
 export { situacionDeLaObra, type SituacionDeLaObra } from './model/obra';
+export { TIPOS_DE_ARRANQUE, tiposParaSugerir } from './model/tipos';
 export {
   contactosEnOrden,
   diaDeLaMarca,
@@ -251,6 +257,7 @@ export { CostosDeCotizar, type CostosDeCotizarProps } from './ui/CostosDeCotizar
 export { DistribucionDespiece, type DistribucionDespieceProps } from './ui/DistribucionDespiece';
 export { EntregaRelativa, type EntregaRelativaProps } from './ui/EntregaRelativa';
 export { EstadoBadge } from './ui/EstadoBadge';
+export { MarcaDeListo, type MarcaDeListoProps } from './ui/MarcaDeListo';
 export {
   LiquidacionesSinConfirmar,
   type LiquidacionesSinConfirmarProps,
