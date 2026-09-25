@@ -2,7 +2,9 @@
 
 Estado: aceptada, 2026-09-21. Completa al [0024](0024-ajustes-en-el-celular-desde-el-avatar-de-inicio.md)
 (la foto de Inicio pasa a abrir una hoja) y suma `MN011` a `MN015` a la tabla del
-[0010](0010-sincronizacion-replica-completa.md).
+[0010](0010-sincronizacion-replica-completa.md). Completada el 2026-09-25 por el
+[ADR 0071](0071-la-entrega-y-sus-fechas.md): la segunda escritura sin sesión, `responder_la_entrega`,
+sigue el mismo molde (token, gemela en el dominio, reenvío idempotente) y suma `MN020` y `MN021`.
 
 ## Contexto
 

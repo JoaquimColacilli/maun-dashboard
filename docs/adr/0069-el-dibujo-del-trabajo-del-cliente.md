@@ -4,6 +4,8 @@
 - Fecha: 2026-09-25
 - Enmienda al [0068](0068-la-mesa-y-el-plano.md): «Tu mueble» y Gracias dejan de dibujar un mueble, el
   lienzo centra el dibujo también de costado, y `MuebleEnEtapa` y `Carcasa` se van.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): la escena `listo`,
+  la hoja con la vuelta marcada en el calendario, para el mueble terminado que espera su día.
 
 ## Contexto
 

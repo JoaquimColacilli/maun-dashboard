@@ -9,6 +9,9 @@
 - Completada el 2026-09-25 por el [ADR 0070](0070-el-camino-tilda-lo-que-paso.md): con la seña ya
   cubierta antes de aprobar, ni el camino, ni «lo próximo», ni «Para cuándo» la vuelven a pedir; y el
   paso de la aprobación con la seña en falta queda en curso («Cuando dejes la seña»), sin fecha.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): la tarjeta dice
+  «Entrega estimada» (antes «Entrega pautada»), listo y la comprometida viajan desde que se aprueba,
+  ninguna fecha que ya pasó llega al cliente, y la vista cuenta los días con el día del taller.
 
 ## Contexto
 

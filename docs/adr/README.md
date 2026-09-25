@@ -74,3 +74,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0068](0068-la-mesa-y-el-plano.md)                                          | La mesa y el plano: tarjetas sobre una mesa y dibujos en su lámina  | Aceptada, corregida  |
 | [0069](0069-el-dibujo-del-trabajo-del-cliente.md)                           | El dibujo del trabajo del cliente: el proceso, no el mueble         | Aceptada             |
 | [0070](0070-el-camino-tilda-lo-que-paso.md)                                 | El camino tilda lo que pasó y deja en curso lo que falta            | Aceptada             |
+| [0071](0071-la-entrega-y-sus-fechas.md)                                     | La entrega y sus fechas: listo, estimada, comprometida y respuesta  | Aceptada             |

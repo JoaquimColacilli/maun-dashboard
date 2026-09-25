@@ -8,6 +8,9 @@
   paso en curso) y al [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md) (la (i) sigue
   en el mismo paso, que ya no siempre es el que está en curso). Completa al
   [0067](0067-la-vista-antes-de-aprobar.md): la seña cubierta antes de aprobar no se vuelve a pedir.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): la etapa listo deja
+  en curso la entrega con «Listo para entregar», y con una comprometida el paso lleva su día, el
+  titular es la buena noticia y «lo próximo» dice que lo que sigue es la entrega.
 
 ## Contexto
 

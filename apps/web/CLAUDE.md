@@ -24,9 +24,9 @@ src/
                cerrar-sesion, configurar-taller, registrar-movimiento, ajustar-cocos,
                editar-cliente, editar-proyecto, liquidar-proyecto, avanzar-la-consulta,
                hacer-el-seguimiento, llevar-la-agenda, recibir-avisos, adjuntar-archivos,
-               ver-novedades)
+               coordinar-la-entrega, ver-novedades)
   entities/    sesion, replica (la copia del household y su contexto), tesoro, cliente,
-               proyecto, movimiento y agenda
+               proyecto, movimiento, agenda y entrega
   shared/      api (Supabase), config, lib (cache, claves, plata, fechas, orden, tesoros,
                uuid, sync, huella, teclado, push, versión nueva) y ui
   sw/          el service worker propio (ADR 0035), fuera de src y con su tsconfig
@@ -52,7 +52,7 @@ src/
 - **El registro es auto-servicio:** quien confirma su mail sale con su propio taller, creado por un trigger de `auth.users` en la misma transacción que la cuenta. No hay pantalla de "sin acceso" y no la agregues: una sesión sin taller es un alta que quedó a medias, y cae en el error genérico con reintentar.
 - Tres guardas, tres preguntas distintas: `RutaPublica` (¿ya hay sesión?), `RutaConSesion` (¿hay sesión?) y `RutaConAcceso` (¿la réplica trae household?). Un error al sincronizar **no** es falta de acceso, y al revés tampoco: son mensajes distintos sobre el mismo `ErrorDeCarga`.
 - `RutaConAcceso` trata `isPaused` igual que `isError`. Sin nada guardado y sin red, la query de la réplica queda **en pausa, no en error**: sin ese caso la pantalla se quedaba en el skeleton para siempre, sin mensaje y sin forma de salir.
-- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/agenda` (con la hoja `/agenda/anotar`), `/consultas` (las viejas `/seguimiento` y `/seguimiento/nuevo` redirigen, ADR 0064), `/proyectos` (el seguimiento es `?etapa=seguimiento`), `/clientes`, `/finanzas`, `/diezmo`, `/ajustes` y `/ajustes/avisos`.
+- Rutas: `/acceso`, `/acceso/crear-cuenta`, `/acceso/recuperar`, `/acceso/nueva-contrasena` (ahí cae el enlace de recuperación), y adentro del marco `/` (Inicio), `/agenda` (con la hoja `/agenda/anotar`), `/consultas` (las viejas `/seguimiento` y `/seguimiento/nuevo` redirigen, ADR 0064), `/proyectos` (el seguimiento es `?etapa=seguimiento`), `/proyectos/analitico`, `/clientes`, `/finanzas`, `/diezmo`, `/ajustes` y `/ajustes/avisos`.
 - **La primera configuración es el estado vacío de Inicio, no un asistente** (ADR 0012). Los ajustes nacen en cero y `faltaConfigurar()` es lo que decide el texto. El formulario de `features/configurar-taller` es el mismo que va a usar Ajustes en la 2D: no lo dupliques ahí.
 - Al terminar la sesión se borra la cola, el cache y el almacén de IndexedDB (`limpiarDatosLocales`). **No cuelga del botón**: también corre con el evento `SIGNED_OUT` y cuando al arrancar hay datos de otro usuario. Si no, el próximo login hereda los datos y la cola del anterior, y esa cola escribe en su household.
 
@@ -392,6 +392,17 @@ src/
 - **El importe que el cliente copia va pelado** (`montoParaPegar`): sin signo pesos y sin puntos de miles, con coma solo si hay centavos. Mismo criterio que el CBU (ADR 0048).
 - **Ojo con los nombres de las regiones**: «Tu mueble» es subcadena de «El camino de tu mueble», que por eso se llama «En qué anda», como en el diseño. Es la misma trampa de `getByLabel` que ya documentaba «Contraseña».
 - **«Mostrarle al cliente» va en el cuerpo de la ficha, no en el encabezado.** Con tres botones, el encabezado no entra en 390 px y todo lo que empuja para abajo termina debajo de lo que flota abajo (ADR 0025): un toque en el botón de un formulario que quedó ahí lo recibe la barra, no el botón, y el click nunca llega. Lo mismo pasó con el formulario del pasaje, que con la seña quedó más largo: el e2e lo manda con Enter, que no depende de dónde quedó parada la pantalla.
+
+## La entrega y sus fechas (ADR 0071)
+
+- **«Coordinemos la entrega» es `CoordinarLaEntrega` de `entities/vista-cliente`**, adentro de `VistaDelCliente`: aparece con el mueble listo, sin comprometida y con algo pedido. Se remonta con `claveDeLaCoordinacion` cuando cambia el pedido o la respuesta, así que su estado nunca queda viejo. **Lo que marca el cliente vive solo en el estado de React**: nada en `localStorage`, `sessionStorage` ni IndexedDB (el e2e lo revisa). Se manda por POST con `useMandarLaEntrega(token)`, que usa `clienteAnonimo` y relee la vista; el reintento sin señal usa el mismo id.
+- **La vista previa del taller no manda nada**: sin `alMandar`, los botones dicen «Acá no se guarda nada: así lo ve tu cliente.»
+- **La vista cuenta los días con `hoyEnElTaller()`**, no con el reloj del teléfono del cliente: lo que se puede elegir y lo que ya pasó lo decide la base con ese mismo día.
+- **El calendario son botones con `aria-pressed`**, uno por día elegible, de 44 px y con el nombre del día completo. La grilla del mes vive en `shared/lib/mes.ts` (la agenda la re-exporta): un slice de `entities` no importa a otro.
+- **En la ficha, «Qué falta» suma «Ya está listo» y «Todavía no está listo»**, que escriben `listo_el` por `MUTACION_DE_LA_ENTREGA` (un update de las columnas de la entrega solas, en la cola), y **el panel «La entrega» es `LaEntregaDelTrabajo` de `features/coordinar-la-entrega`**. Pedirle el día al cliente es `MUTACION_DE_PROPUESTA_DE_ENTREGA` (`entities/entrega`): **necesita señal**, como el enlace, y sin señal el botón se apaga y lo dice.
+- **Abrir la ficha da por leídas las respuestas del cliente** (`useLeerLasRespuestasDeEntrega`, en la cola). Mientras tanto Inicio las muestra con `avisosDeEntregas`, una por trabajo.
+- **La entrega de un trabajo en las listas, en Inicio y en la agenda es la comprometida si la hay** (`resumen.entrega`, `entregaDelResumen`): no leas `entrega_estimada` para eso. La insignia «Listo» es `MarcaDeListo`.
+- **El analítico es `/proyectos/analitico`** (`pages/analitico`), con su entrada en el catálogo de pantallas, en `PANTALLAS` y en las vacías de `rediseno.spec.ts`. Se llega desde la tarjeta de Historial, que aparece si hay algo entregado aunque Historial esté vacío. La pantalla no decide umbrales: lee `resumen.modo` y las cuentas en `null` del dominio.
 
 ## Las opiniones de los clientes (ADR 0057)
 
