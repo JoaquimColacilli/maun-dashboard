@@ -37,6 +37,12 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 
 let sesion: SesionDePrueba;
 
+async function sinMovimiento(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animacion) => animacion.finished)),
+  );
+}
+
 test.beforeEach(async () => {
   sesion = await iniciarSesionDePrueba();
   await vaciarTaller(sesion);
@@ -115,6 +121,7 @@ test('el día propuesto: lo acepta con un botón y la entrega queda comprometida
       'Tu mueble está listo',
     );
     await expect(seccion(page)).toContainText('Te proponemos este día:');
+    await sinMovimiento(page);
     await page.screenshot({
       path: testInfo.outputPath(`listo-un-dia-${tema}-${testInfo.project.name}.png`),
       fullPage: true,
@@ -145,6 +152,7 @@ test('el día propuesto: lo acepta con un botón y la entrega queda comprometida
 
   for (const tema of TEMAS) {
     await abrir(page, trabajo, tema);
+    await sinMovimiento(page);
     await page.screenshot({
       path: testInfo.outputPath(`comprometida-${tema}-${testInfo.project.name}.png`),
       fullPage: true,
@@ -169,6 +177,7 @@ test('sus días: marca días y horarios en el calendario, deja una nota y el tal
   await expect(seccion(page)).toContainText('marcá los días que te quedan bien');
   for (const tema of TEMAS) {
     await page.emulateMedia({ colorScheme: tema });
+    await sinMovimiento(page);
     await page.screenshot({
       path: testInfo.outputPath(`listo-sus-dias-abierto-${tema}-${testInfo.project.name}.png`),
       fullPage: true,
@@ -211,6 +220,7 @@ test('sus días: marca días y horarios en el calendario, deja una nota y el tal
 
   for (const tema of TEMAS) {
     await page.emulateMedia({ colorScheme: tema });
+    await sinMovimiento(page);
     await page.screenshot({
       path: testInfo.outputPath(`listo-sus-dias-mandados-${tema}-${testInfo.project.name}.png`),
       fullPage: true,

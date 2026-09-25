@@ -21,6 +21,12 @@ const SOLA = { timeout: 10_000 };
 
 let sesion: SesionDePrueba;
 
+async function sinMovimiento(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((animacion) => animacion.finished)),
+  );
+}
+
 test.beforeEach(async () => {
   sesion = await iniciarSesionDePrueba();
   await vaciarTaller(sesion);
@@ -257,6 +263,7 @@ test('el analítico de entregas con 4, 6 y 12 trabajos no muestra lo que los dat
   const capturar = async (cuantos: number) => {
     for (const tema of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: tema });
+      await sinMovimiento(page);
       await page.screenshot({
         path: testInfo.outputPath(
           `analitico-${String(cuantos)}-${tema}-${testInfo.project.name}.png`,
