@@ -40,6 +40,8 @@ function derivado(cambios: Partial<EventoDerivado> = {}): EventoDerivado {
     lugar: 'Sarmiento 2310',
     hecha: false,
     importante: false,
+    comprometida: false,
+    franja: null,
     ...cambios,
   };
 }

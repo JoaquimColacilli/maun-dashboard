@@ -7,7 +7,9 @@ tocarlo. Corregida el 2026-09-22: el casillero del relevamiento pasó a ser una 
 el paso en curso ([ADR 0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)); cuándo se
 da por hecha la visita sigue siendo lo de acá. Corregida el 2026-09-25 por el
 [ADR 0070](0070-el-camino-tilda-lo-que-paso.md): el estimativo nunca es el paso en curso; aparece
-tildado con su día, y en esa etapa queda en curso el presupuesto.
+tildado con su día, y en esa etapa queda en curso el presupuesto. Completada el 2026-09-25 por el
+[ADR 0071](0071-la-entrega-y-sus-fechas.md): listo no suma un paso al camino; cambia el texto del paso
+de la entrega a «Listo para entregar».
 
 ## Contexto
 

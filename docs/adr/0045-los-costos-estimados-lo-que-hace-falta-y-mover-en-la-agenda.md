@@ -11,6 +11,9 @@
   y al [0043](0043-las-opciones-de-presupuesto-y-la-sena.md) en cómo se escribe una hija nueva, y al
   [0034](0034-la-agenda-calcula-lo-que-sale-de-los-trabajos.md) en qué sale de un trabajo y cómo se
   abre el día. Corrige al 0034 en el ancho de la capa del día: ver Objeciones.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): una entrega
+  comprometida con el cliente no se arrastra en la agenda; se cambia desde la ficha. Listo y la
+  comprometida se escriben, como los costos, con un update de sus columnas solas.
 
 ## Contexto
 

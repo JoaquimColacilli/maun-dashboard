@@ -1,6 +1,6 @@
 # @maun/domain
 
-Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`), la vista del cliente (`vistaCliente.ts`), hasta cuándo vale un presupuesto (`vigencia.ts`) y las opiniones de los clientes (`opiniones.ts` y `encuesta.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046 y el 0067, las de los datos para transferir en el 0048 y las de las opiniones en el 0057.
+Lógica de negocio pura: la plata (`money.ts`), la cascada de distribución (`cascada.ts`), los topes y la liquidación (`liquidacion.ts`), la seña esperada (`sena.ts`), el margen contra los costos estimados (`costos.ts`), el catálogo de lo que hace falta (`necesidades.ts`), la máquina de estados del proyecto (`estados.ts`), las fechas (`fechas.ts`), el libro mayor (`libroMayor.ts`), el CUIT (`cuit.ts`), los datos para cobrar (`cobro.ts`), la agenda con lo que se avisa (`agenda.ts`), la vista del cliente (`vistaCliente.ts`), hasta cuándo vale un presupuesto (`vigencia.ts`), las opiniones de los clientes (`opiniones.ts` y `encuesta.ts`), la respuesta del cliente sobre la entrega (`entrega.ts`) y el analítico de entregas (`analitico.ts`). Las decisiones están en el ADR 0011, las de la agenda en el 0034, las de la seña en el 0043, las de los costos, lo que hace falta y el día por horas en el 0045, las de la vista del cliente en el 0046 y el 0067, las de los datos para transferir en el 0048 y las de las opiniones en el 0057.
 
 ## Pureza (la aplican las herramientas)
 
@@ -27,12 +27,12 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 - `planDeLiquidacion` elige la fecha, el diezmo y los objetivos: los ajustes, la foto de una reapertura, o los parámetros del perdido (sin sueldo y con diezmo, por defecto).
 - `liquidadoDelMes` suma lo que ya liquidaron los otros proyectos en el mes calendario de la fecha.
-- `topesDeLaLiquidacion` saca los topes: los fijos, por lo que falta del mes; el sueldo, por proyecto o por mes.
+- `topesDeLaLiquidacion` saca los topes: los fijos, por lo que falta del mes; el sueldo, por mes o por proyecto según `sueldoTopeMensual`. Desde el ADR 0072 los talleres reparten por mes; por proyecto quedan el seed y lo ya congelado.
 - La app le pasa las liquidaciones que tiene replicadas, **incluidas las que todavía están en la cola**, sin el proyecto que se liquida.
 
 `resumenDelMes` es lo que se muestra por mes: objetivo, liquidado y lo que falta, de sueldo y de fijos.
 
-`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra **un** sueldo, el del mes según `resumenDelMes` (el de los ajustes para el mes en curso; el objetivo del último cobro para un mes cerrado). **No suma un sueldo por cobro**, aunque el reparto sea por proyecto: el sueldo que se asigna el dueño es lo que el hogar necesita por mes, y la regla por proyecto es cómo se junta, no cuánto hace falta. Si los cobros pagan más, lo pagado pasa lo esperado y la pantalla lo nombra (ADR 0056, que corrige al 0011). Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
+`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra **un** sueldo, el del mes según `resumenDelMes` (el de los ajustes para el mes en curso; el objetivo del último cobro para un mes cerrado). **No suma un sueldo por cobro**: el sueldo que se asigna el dueño es lo que el hogar necesita por mes, y desde el ADR 0072 el reparto también lo topea por mes. Un mes con cobros por proyecto (el seed, o lo congelado antes del cambio) puede pagar de más. Si los cobros pagan más, lo pagado pasa lo esperado y la pantalla lo nombra (ADR 0056, que corrige al 0011). `cobros` cuenta los cobros del mes que pagaron sueldo, no los que tenían objetivo. Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
 
 ## La seña
 
@@ -104,6 +104,20 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
 - **`cobro` son los datos para transferirle al taller** (alias, CBU o CVU, titular y CUIT, ADR 0048): llegan del payload, y `hayComoTransferir` dice si alcanza para mostrar el bloque. El titular y el CUIT solos no alcanzan: con eso no se transfiere.
 - **No tiene gemela en SQL**: la base arma el payload, no la presentación.
 
+## La entrega (ADR 0071)
+
+- **Listo no es un estado**: es `fechas.listo`, y la vista tiene una etapa más, `listo` (en curso y listo). El titular es «Tu mueble está listo», el paso 4 dice «Listo para entregar» y el camino **no suma un paso**.
+- **`vista.titular` es un texto o `{ comprometida }`**: con una comprometida que no pasó, la pantalla arma la buena noticia con su fecha y su franja. El formateo no vive acá.
+- **Ninguna fecha que ya pasó llega al cliente**: una comprometida vencida no es titular ni tarjeta («Entrega» «A confirmar») y un día propuesto que pasó no es un pedido. `vista.coordinacion` existe solo con el mueble listo y sin comprometida: `sin-pedido`, `un-dia` o `sus-dias`, con la última respuesta.
+- **`validarRespuestaDeEntrega` (`entrega.ts`) es gemela de `private.validar_respuesta_de_entrega`**, con el mismo orden de revisiones. Los días van de pasado mañana a 30 días (`DESDE_CUANTOS_DIAS`, `HASTA_CUANTOS_DIAS`), sin domingos (`sePuedeElegir`), hasta diez, con la mañana, la tarde o las dos; la nota hasta 500 caracteres contados como en la encuesta. `armarRespuestaDeEntrega` deja la respuesta como la guarda la base: los días en orden y las franjas en el orden del enum.
+- **La agenda pone la entrega en la comprometida si la hay**, con su franja y sin hora, y esa **no se arrastra** (`puedeArrastrarse`): se cambia desde la ficha.
+
+## El analítico de entregas (ADR 0071)
+
+- **Los umbrales viven en `analitico.ts` y en ningún otro lado**: `UMBRAL_MEDIANA` (5: por debajo, los casos uno por uno), `UMBRAL_CUENTAS` (10: «k de n»), `UMBRAL_PORCENTAJE` (20: recién ahí el %), y `DIAS_DE_ACIERTO` (3). Una pantalla lee `resumen.modo` y si la cuenta es `null`, no compara contra 5.
+- `analisisDeEntregas(trabajos, cambios)` toma **la primera estimada** de la historia de cada trabajo entregado y la compara con el día en que se entregó; `importada` dice si esa primera es la que tenía cargada al empezar la historia. Agrupa por tipo sin acentos ni mayúsculas (`claveDelNombre`) y los sin tipo aparte (`SIN_TIPO`).
+- No tiene gemela en SQL: la base guarda la historia y no la resume.
+
 ## Hasta cuándo vale un presupuesto (ADR 0067)
 
 - `DIAS_QUE_VALE_UN_PRESUPUESTO` es 15, el mismo default de `ajustes.presupuesto_vale_dias`: la app lo usa solo si la fila de ajustes es de antes de la columna.
@@ -131,6 +145,7 @@ fija caso por caso; una etapa o una variante nueva entra ahí.
 - **`asientosDelLibro` y `saldosPorTesoro` contra la vista `public.libro_mayor`**, que es el estado vivo del esquema (`supabase/esquema.sql`), no el archivo de la migración: los dos difieren y el archivo está desactualizado (ADR 0013 y 0014).
 - **`validarRespuesta` contra `private.validar_respuesta` y `esLinkDeResena` contra el `check` de `ajustes.resena_link`**, en `20260921180000_opiniones_de_los_clientes.sql` (ADR 0057).
 - **`esNombreDeNecesidad` contra el `check` `necesidades_nombre_valido`** (`compararNombreDeNecesidad`, ADR 0060).
+- **`validarRespuestaDeEntrega` contra `private.validar_respuesta_de_entrega`** (`compararValidacionDeRespuestasDeEntrega`, ADR 0071), en `20260925120100_la_puerta_de_la_entrega.sql`.
 
 `lineasDelLibro` **no tiene gemela en SQL y no la necesita**: es la forma sin partir de lo mismo, y
 `asientosDelLibro` es literalmente `lineasDelLibro(...).flatMap(asientosDeLaLinea)`. Nada en la base
@@ -155,7 +170,7 @@ destino); un asiento es un lado (ADR 0018).
 - **Todo evento lleva `hora`, propio o derivado** (ADR 0045). La entrega y la visita salen de `proyectos.entrega_hora` y `proyectos.visita_hora`; el vencimiento del presupuesto es un plazo y nunca lleva. El orden ya ponía lo que tiene hora antes de lo que no.
 - **`diaPorHoras(eventos, rango)` parte un día en la franja de todo el día y los renglones por hora.** El rango por defecto es `HORARIO_DEL_TALLER` (07 a 20) y **se estira solo para que nada quede escondido**: si hay algo a las cinco, la grilla empieza a las cinco. `TODO_EL_RELOJ` es el reloj entero.
 - **Volver a escribirle es el cuarto derivado** (`seguimiento`, ADR 0064): sale de cada próximo contacto de un trabajo `en_seguimiento`. Pendiente en su fecha; hecho con `hechoEl`, **en el día en que se le escribió**, no en el previsto. El título es el nombre del cliente y el lugar, el trabajo con la nota. Mientras el trabajo está en seguimiento no sale el vencimiento del presupuesto. Se avisa a la mañana con su propia preferencia, `seguimientos`.
-- **`puedeArrastrarse(evento)` es `!evento.hecha`, salvo el seguimiento, que nunca se arrastra.** Lo hecho figura en el día en que estaba prometido y moverlo sería reescribir lo que pasó; cambiar el día de un contacto es registrarlo, y eso deja historia.
+- **`puedeArrastrarse(evento)` es `!evento.hecha`, salvo el seguimiento y la entrega comprometida, que nunca se arrastran.** Lo hecho figura en el día en que estaba prometido y moverlo sería reescribir lo que pasó; cambiar el día de un contacto es registrarlo, y eso deja historia.
 - **`eventosParaAvisar(datos, hoy, preferencias)` usa la misma función.** La anticipación es una ventana, de hoy a N días, no un día exacto. Salen lo inactivo y lo hecho.
 - `vencimientoDelPresupuesto` son `DIAS_HABILES_PARA_PRESUPUESTAR` (5, una semana de trabajo) días hábiles (ADR 0038). `sumarDias` y `diasEntre` cuentan en UTC sobre fechas `AAAA-MM-DD`: sin librería de fechas y sin `Temporal`.
 - **No tiene gemela en SQL: la base no calcula eventos.** La función de borde de los avisos importa este código fuente con Deno, que es otra razón para los imports relativos con `.ts`.

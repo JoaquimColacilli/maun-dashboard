@@ -23,6 +23,7 @@ import {
   TESOROS,
   topesDeLaLiquidacion,
   validarRespuesta,
+  validarRespuestaDeEntrega,
   type AjustesDeLiquidacion,
   type Asiento,
   type Distribucion,
@@ -30,6 +31,7 @@ import {
   type EstadoLiquidado,
   type EstadoProyecto,
   type FormaDeCobro,
+  type FormaDeCoordinar,
   type Liquidacion,
   type LiquidacionRegistrada,
   type PreguntaDeLaEncuesta,
@@ -741,6 +743,186 @@ export async function compararValidacionDeRespuestas(cliente: pg.Client): Promis
       ? []
       : [
           `respuesta ${JSON.stringify(respuesta).slice(0, 160)}: SQL ${String(fila.motivo)}, TS ${String(ts)}`,
+        ];
+  });
+}
+
+// La respuesta a una propuesta de entrega (ADR 0071). El viernes 25 de septiembre de 2026 pasado
+// mañana es domingo, así que el borde de abajo cae justo en un día que no se puede.
+const HOY_DE_LA_ENTREGA = '2026-09-25';
+
+const ID_DE_LA_ENTREGA = '0192a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b';
+
+const PROPUESTA_DE_LA_ENTREGA = '0192a3b4-c5d6-7e8f-9a0b-000000000071';
+
+const FECHAS_A_PROBAR: readonly unknown[] = [
+  '2026-09-24',
+  '2026-09-25',
+  '2026-09-26',
+  '2026-09-27',
+  '2026-09-28',
+  '2026-09-30',
+  '2026-10-03',
+  '2026-10-04',
+  '2026-10-08',
+  '2026-10-24',
+  '2026-10-25',
+  '2026-10-26',
+  '2026-02-30',
+  '2026-9-30',
+  '1999-10-01',
+  '2126-10-01',
+  ' 2026-10-01',
+  20261001,
+  null,
+];
+
+const FRANJAS_A_PROBAR: readonly unknown[] = [
+  [],
+  ['manana'],
+  ['tarde'],
+  ['manana', 'tarde'],
+  ['tarde', 'manana'],
+  ['manana', 'manana'],
+  ['noche'],
+  ['Manana'],
+  [1],
+  'manana',
+  null,
+  ['manana', 'tarde', 'manana'],
+];
+
+const NOTAS_A_PROBAR: readonly unknown[] = [
+  '',
+  '   ',
+  ' \t\n\r\f\v',
+  String.fromCharCode(0xa0),
+  'Tercer piso, sin ascensor',
+  'a'.repeat(500),
+  `  ${'a'.repeat(500)}\n`,
+  'a'.repeat(501),
+  '👍'.repeat(500),
+  '👍'.repeat(501),
+  5,
+  null,
+];
+
+function respuestaDeEntrega(cambios: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: ID_DE_LA_ENTREGA,
+    propuesta_id: PROPUESTA_DE_LA_ENTREGA,
+    respuesta: 'mis_dias',
+    dias: [],
+    nota: '',
+    ...cambios,
+  };
+}
+
+function respuestasDeEntregaAValidar(): unknown[] {
+  const dia = (fecha: unknown, franjas: unknown = ['manana']): unknown => ({ fecha, franjas });
+  const fijas: unknown[] = [
+    null,
+    [],
+    'mis_dias',
+    7,
+    {},
+    respuestaDeEntrega({ respuesta: 'me_queda_bien' }),
+    respuestaDeEntrega({ respuesta: 'me_queda_bien', nota: '  ' }),
+    respuestaDeEntrega({ respuesta: 'me_queda_bien', nota: 'A la tarde' }),
+    respuestaDeEntrega({ respuesta: 'me_queda_bien', dias: [dia('2026-09-28')] }),
+    respuestaDeEntrega({ respuesta: 'otra' }),
+    respuestaDeEntrega({ respuesta: null }),
+    respuestaDeEntrega({ id: 7 }),
+    respuestaDeEntrega({ id: 'no-es-un-id' }),
+    respuestaDeEntrega({ id: ID_DE_LA_ENTREGA.toUpperCase(), dias: [dia('2026-09-28')] }),
+    respuestaDeEntrega({ propuesta_id: ` ${PROPUESTA_DE_LA_ENTREGA}` }),
+    respuestaDeEntrega({ extra: true }),
+    {
+      id: ID_DE_LA_ENTREGA,
+      propuesta_id: PROPUESTA_DE_LA_ENTREGA,
+      respuesta: 'mis_dias',
+      dias: [],
+    },
+    respuestaDeEntrega({ dias: {} }),
+    respuestaDeEntrega({ dias: 'lunes' }),
+    respuestaDeEntrega({ dias: [null] }),
+    respuestaDeEntrega({ dias: [[]] }),
+    respuestaDeEntrega({ dias: [{ fecha: '2026-09-28' }] }),
+    respuestaDeEntrega({ dias: [{ franjas: ['manana'] }] }),
+    respuestaDeEntrega({ dias: [{ fecha: '2026-09-28', franjas: ['manana'], hora: '10' }] }),
+    respuestaDeEntrega({ dias: [dia('2026-09-28'), dia('2026-09-28', ['tarde'])] }),
+    respuestaDeEntrega({ dias: [dia('2026-09-28'), dia('2026-09-27')] }),
+    respuestaDeEntrega({ dias: [dia('2026-09-27'), dia('2026-02-30')] }),
+    respuestaDeEntrega({
+      dias: Array.from({ length: 10 }, (_, i) => dia(`2026-10-${String(i + 1).padStart(2, '0')}`)),
+    }),
+    respuestaDeEntrega({
+      dias: Array.from({ length: 11 }, (_, i) => dia(`2026-10-${String(i + 1).padStart(2, '0')}`)),
+    }),
+  ];
+
+  const unDiaCadaUno = FECHAS_A_PROBAR.flatMap((fecha) =>
+    FRANJAS_A_PROBAR.map((franjas) => respuestaDeEntrega({ dias: [dia(fecha, franjas)] })),
+  );
+  const conNota = NOTAS_A_PROBAR.flatMap((nota) => [
+    respuestaDeEntrega({ nota }),
+    respuestaDeEntrega({ nota, dias: [dia('2026-09-29')] }),
+    respuestaDeEntrega({ nota, respuesta: 'me_queda_bien' }),
+  ]);
+
+  const siguiente = generador(20_260_925);
+  const azar: unknown[] = [];
+  for (let i = 0; i < 2_000; i++) {
+    const cuantos = siguiente(13);
+    const dias: unknown[] = [];
+    for (let j = 0; j < cuantos; j++) {
+      dias.push(
+        dia(
+          FECHAS_A_PROBAR[siguiente(FECHAS_A_PROBAR.length)],
+          FRANJAS_A_PROBAR[siguiente(FRANJAS_A_PROBAR.length)],
+        ),
+      );
+    }
+    azar.push(
+      respuestaDeEntrega({
+        respuesta: siguiente(5) === 0 ? 'me_queda_bien' : 'mis_dias',
+        dias,
+        nota: NOTAS_A_PROBAR[siguiente(NOTAS_A_PROBAR.length)],
+      }),
+    );
+  }
+  return [...fijas, ...unDiaCadaUno, ...conNota, ...azar];
+}
+
+export async function compararValidacionDeRespuestasDeEntrega(
+  cliente: pg.Client,
+): Promise<string[]> {
+  const respuestas = respuestasDeEntregaAValidar();
+  const formas: readonly FormaDeCoordinar[] = ['un_dia', 'sus_dias'];
+  const casos = formas.flatMap((forma) => respuestas.map((respuesta) => ({ forma, respuesta })));
+  const { rows } = await cliente.query<{ motivo: string | null }>(
+    `select private.validar_respuesta_de_entrega(c.respuesta, c.forma::public.forma_de_coordinar, $3::date) as motivo
+     from unnest($1::jsonb[], $2::text[]) with ordinality as c (respuesta, forma, orden)
+     order by c.orden`,
+    [
+      casos.map((caso) => JSON.stringify(caso.respuesta)),
+      casos.map((caso) => caso.forma),
+      HOY_DE_LA_ENTREGA,
+    ],
+  );
+  if (rows.length !== casos.length) {
+    return [
+      `la validación de SQL devolvió ${String(rows.length)} filas para ${String(casos.length)} respuestas a la entrega`,
+    ];
+  }
+  return rows.flatMap((fila, i) => {
+    const caso = casos[i];
+    if (caso === undefined) return [`falta el caso ${String(i)}`];
+    const ts = validarRespuestaDeEntrega(caso.respuesta, caso.forma, HOY_DE_LA_ENTREGA);
+    return ts === fila.motivo
+      ? []
+      : [
+          `respuesta a ${caso.forma} ${JSON.stringify(caso.respuesta).slice(0, 160)}: SQL ${String(fila.motivo)}, TS ${String(ts)}`,
         ];
   });
 }
@@ -2235,6 +2417,7 @@ export async function compararDominioYSql(cliente: pg.Client): Promise<string[]>
     ...(await compararLinkDeResena(cliente)),
     ...(await compararNombreDeNecesidad(cliente)),
     ...(await compararValidacionDeRespuestas(cliente)),
+    ...(await compararValidacionDeRespuestasDeEntrega(cliente)),
     ...(await compararRangos(cliente)),
     ...(await compararEstados(cliente)),
     ...(await compararTransiciones(cliente)),

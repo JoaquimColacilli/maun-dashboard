@@ -1,7 +1,7 @@
 import { fechaLarga, formatearPesos } from '@/shared/lib';
 import type { NombreDeIcono, TonoDelPaso } from '@/shared/ui';
 
-import type { TonoDeEntrega } from './entrega';
+import { fechaConSuFranja, type TonoDeEntrega } from './entrega';
 import type { ResumenDeProyecto } from './resumen';
 
 export interface SituacionDeLaObra {
@@ -21,9 +21,25 @@ export function situacionDeLaObra(
   resumen: ResumenDeProyecto,
   hoy: string,
 ): SituacionDeLaObra | undefined {
-  const { proyecto, urgencia, saldo } = resumen;
+  const { proyecto, urgencia, saldo, entrega } = resumen;
 
   if (proyecto.estado === 'en_curso') {
+    if (entrega.comprometida && entrega.fecha !== null && urgencia !== undefined) {
+      return {
+        proximoPaso: 'Falta entregarlo',
+        detalle: `Entrega comprometida: ${fechaConSuFranja(entrega.fecha, entrega.franja, hoy)} (${urgencia.texto})`,
+        icono: urgencia.tono === 'ok' ? 'truck' : urgencia.icono,
+        tono: TONO_DE_LA_ENTREGA[urgencia.tono],
+      };
+    }
+    if (entrega.listo !== null) {
+      return {
+        proximoPaso: 'Falta acordar la entrega',
+        detalle: `Está listo desde el ${fechaLarga(entrega.listo, hoy)}`,
+        icono: 'calendar-days',
+        tono: 'normal',
+      };
+    }
     if (proyecto.entrega_estimada === null || urgencia === undefined) {
       return {
         proximoPaso: 'Falta entregarlo',

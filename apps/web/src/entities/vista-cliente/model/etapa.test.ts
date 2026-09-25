@@ -20,11 +20,13 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       aprobado: '2026-08-04',
       inicio: null,
       entregaPautada: null,
+      listo: null,
       entregado: null,
       cobro: null,
       valeHasta: null,
     },
     visita: { dia: null, hecha: false },
+    entrega: { comprometida: null, propuesta: null, respuesta: null },
     pago: { instancia: 'saldo', formas: [], monto: centavos(62_000_000), siguiente: null },
     cobro: { alias: null, cbu: null, titular: null, cuit: null, link: null },
     pagos: [],
@@ -56,6 +58,21 @@ describe('etapaDelDibujo', () => {
       }),
     ).toBe('presupuesto');
     expect(dibujo({ sena: centavos(0) })).toBe('presupuesto');
+  });
+
+  it('listo, la hoja del mes con el día rodeado, también con la entrega ya comprometida', () => {
+    const lista = { ...trabajo().fechas, inicio: '2026-09-01', listo: '2026-09-17' };
+    expect(dibujo({ fechas: lista })).toBe('listo');
+    expect(
+      dibujo({
+        fechas: lista,
+        entrega: {
+          comprometida: { fecha: '2026-09-25', franja: 'manana' },
+          propuesta: null,
+          respuesta: null,
+        },
+      }),
+    ).toBe('listo');
   });
 
   it('después sigue al trabajo: el taller, la casa y la casa con la tilde', () => {

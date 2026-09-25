@@ -1,4 +1,5 @@
 import {
+  estaAprobada,
   notaDelRelevamiento,
   textoDeLaProyeccion,
   type ArchivoDelCliente,
@@ -9,6 +10,7 @@ import {
   type VistaDelCliente as Vista,
   type VistaEsperandoLaSena,
 } from '@maun/domain';
+import { useState } from 'react';
 
 import { urlDelArchivo } from '@/shared/api';
 import { diaYMesCorto, fechaEnUnaFrase, fechaLarga, formatearPesos } from '@/shared/lib';
@@ -22,6 +24,7 @@ import {
 } from '@/shared/ui';
 
 import { etapaDelDibujo } from '../model/etapa';
+import type { CoordinacionConPedido, MandarLaEntrega } from '../model/mandar';
 import {
   A_CONFIRMAR,
   A_CUENTA_DE_LA_SENA,
@@ -33,15 +36,18 @@ import {
   saldoDeLaVista,
   sinPagosTodavia,
   textoDeLaSenaAcordada,
+  textoDelTitular,
   textoDelTotalPagado,
   valorDeLaEntrega,
 } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
 import { ComoPagar } from './ComoPagar';
+import { CoordinarLaEntrega } from './CoordinarLaEntrega';
 
 export interface VistaDelClienteProps {
   vista: Vista;
   hoy: string;
+  alMandar?: MandarLaEntrega;
 }
 
 const TIPO: Readonly<Record<string, string>> = {
@@ -51,6 +57,11 @@ const TIPO: Readonly<Record<string, string>> = {
 };
 
 const TARJETA = 'rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5';
+
+function coordinacionConPedido(vista: Vista): CoordinacionConPedido | null {
+  if (!estaAprobada(vista) || vista.coordinacion === null) return null;
+  return vista.coordinacion.situacion === 'sin-pedido' ? null : vista.coordinacion;
+}
 
 function esImagen(archivo: ArchivoDelCliente): boolean {
   return archivo.tipo === 'image/webp' || archivo.tipo === 'image/jpeg';
@@ -223,7 +234,7 @@ function EntradaAprobada({
 }
 
 function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string; hoy: string }) {
-  const { titular } = vista;
+  const titular = textoDelTitular(vista.titular, hoy);
   switch (vista.etapa) {
     case 'antes-del-presupuesto':
       return <EntradaAntesDelPresupuesto vista={vista} titular={titular} bajada={bajada} />;
@@ -231,6 +242,7 @@ function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string
       return <EntradaEsperandoLaSena vista={vista} titular={titular} bajada={bajada} />;
     case 'aprobado':
     case 'fabricacion':
+    case 'listo':
     case 'entregado':
     case 'pagado':
       return <EntradaAprobada vista={vista} titular={titular} hoy={hoy} />;
@@ -301,6 +313,7 @@ function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
       );
     case 'aprobado':
     case 'fabricacion':
+    case 'listo':
     case 'entregado':
     case 'pagado':
       return (
@@ -324,6 +337,7 @@ function CierreDeLosPagos({ vista }: { vista: Vista }) {
       );
     case 'aprobado':
     case 'fabricacion':
+    case 'listo':
     case 'entregado':
     case 'pagado': {
       const saldo = saldoDeLaVista(vista);
@@ -337,7 +351,9 @@ function CierreDeLosPagos({ vista }: { vista: Vista }) {
   }
 }
 
-export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
+export function VistaDelCliente({ vista, hoy, alMandar }: VistaDelClienteProps) {
+  const [anuncio, setAnuncio] = useState('');
+  const coordinacion = coordinacionConPedido(vista);
   const nota = notaDelRelevamiento(vista, {
     larga: (fecha) => fechaLarga(fecha, hoy),
     corta: diaYMesCorto,
@@ -385,6 +401,32 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
 
             <EntradaDeLaVista vista={vista} bajada={nota?.resumen ?? ''} hoy={hoy} />
           </TarjetaConLamina>
+
+          <p
+            role="status"
+            className={
+              anuncio === ''
+                ? 'sr-only'
+                : 'flex items-start gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-3 text-body leading-relaxed font-medium'
+            }
+          >
+            {anuncio !== '' && (
+              <span aria-hidden className="mt-0.5 flex-none text-hogar">
+                <Icono nombre="circle-check" tamano={18} />
+              </span>
+            )}
+            {anuncio}
+          </p>
+
+          {coordinacion !== null && (
+            <CoordinarLaEntrega
+              key={coordinacion.propuesta.id}
+              coordinacion={coordinacion}
+              hoy={hoy}
+              alMandar={alMandar}
+              alAnunciar={setAnuncio}
+            />
+          )}
 
           <section aria-label="En qué anda" className={`@container ${TARJETA}`}>
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>

@@ -6,6 +6,9 @@
   contacto, y respeta al [0011](0011-dominio-cascada-estados-y-cobro.md) y al
   [0016](0016-el-cobro-y-el-rechazo-que-encuentra-al-usuario.md) en qué es una transición y qué es
   una operación.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): «Qué falta» suma
+  «Ya está listo» y «Todavía no está listo», pasos que no cambian el estado, y «Ya lo entregué» anota
+  hoy aunque hubiera una fecha vieja.
 
 ## Contexto
 

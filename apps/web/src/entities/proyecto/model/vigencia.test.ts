@@ -16,6 +16,10 @@ function trabajo(cambios: Partial<Proyecto> = {}): Proyecto {
   return {
     estado: 'a_presupuestar',
     presupuesto_vale_hasta: null,
+    listo_el: null,
+    entrega_comprometida: null,
+    entrega_comprometida_franja: null,
+    tipo_de_proyecto: null,
     ...cambios,
   } as unknown as Proyecto;
 }

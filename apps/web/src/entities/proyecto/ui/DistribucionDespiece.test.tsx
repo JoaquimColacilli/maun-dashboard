@@ -36,6 +36,7 @@ function despiece(modo: Despiece['modo'], cobrado: number, gastos: number): Desp
         tesoro: 'diezmo',
         monto: centavos(diezmo),
         falta: centavos(0),
+        cubierto: false,
         parte: parte(diezmo),
       },
       {
@@ -44,6 +45,7 @@ function despiece(modo: Despiece['modo'], cobrado: number, gastos: number): Desp
         tesoro: 'hogar',
         monto: centavos(sueldo),
         falta: centavos(0),
+        cubierto: false,
         parte: parte(sueldo),
       },
       {
@@ -52,6 +54,7 @@ function despiece(modo: Despiece['modo'], cobrado: number, gastos: number): Desp
         tesoro: 'maun',
         monto: centavos(fijos),
         falta: centavos(0),
+        cubierto: false,
         parte: parte(fijos),
       },
       {
@@ -60,6 +63,7 @@ function despiece(modo: Despiece['modo'], cobrado: number, gastos: number): Desp
         tesoro: 'maun',
         monto: centavos(remanente),
         falta: centavos(0),
+        cubierto: false,
         parte: parte(remanente),
       },
     ],
@@ -134,6 +138,21 @@ describe('la distribución de la ganancia', () => {
     render(<DistribucionDespiece despiece={cobrado} />);
     expect(rotulos()).toContain('Sueldo 48%');
     expect(region().querySelector('.cota')).toBeNull();
+  });
+
+  it('un escalón en cero porque el mes ya estaba cubierto lo dice, sin pedir lo que falta', () => {
+    const base = despiece('proyeccion', 72_500_000, 14_500_000);
+    const cubierto: Despiece = {
+      ...base,
+      piezas: base.piezas.map((pieza) =>
+        pieza.id === 'sueldo' ? { ...pieza, monto: centavos(0), parte: 0, cubierto: true } : pieza,
+      ),
+    };
+    render(<DistribucionDespiece despiece={cubierto} />);
+    const sueldo = screen.getByText('Sueldo').closest('li');
+    expect(sueldo).toHaveTextContent('ya lo cubrieron otros cobros del mes');
+    expect(sueldo).not.toHaveTextContent('faltan');
+    expect(region().querySelectorAll('[data-pieza]')).toHaveLength(3);
   });
 
   it('con la neta en cero o menos, la caja punteada y ningún dibujo', () => {

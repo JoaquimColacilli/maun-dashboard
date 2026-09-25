@@ -78,6 +78,10 @@ const PROYECTO: Proyecto = {
   reapertura_fecha_cobro: null,
   reparto_ya_en_la_apertura: false,
   presupuesto_vale_hasta: null,
+  listo_el: null,
+  entrega_comprometida: null,
+  entrega_comprometida_franja: null,
+  tipo_de_proyecto: null,
   vencimiento_presupuesto: null,
   presupuesto_diseno: false,
   presupuesto_despiece: false,
@@ -111,6 +115,7 @@ function resumen(proyecto: Partial<Proyecto> = {}, cobrado = 0): ResumenDeProyec
     cobrado: centavos(cobrado),
     gastos: centavos(0),
     saldo: centavos((fila.presupuesto_centavos ?? 0) - cobrado),
+    entrega: { fecha: null, comprometida: false, franja: null, listo: null },
     urgencia: undefined,
   };
 }

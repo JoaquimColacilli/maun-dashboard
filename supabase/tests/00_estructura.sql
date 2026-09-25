@@ -6,7 +6,7 @@ select plan(18);
 
 select tables_are(
   'public',
-  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado', 'preguntas', 'encuestas_enviadas', 'respuestas', 'renglones_de_respuesta', 'proximos_contactos'],
+  array['households', 'household_members', 'clientes', 'proyectos', 'pagos', 'gastos', 'opciones_de_presupuesto', 'necesidades', 'movimientos', 'ajustes', 'anotaciones', 'archivos', 'enlaces_publicos', 'cambios_de_estado', 'preguntas', 'encuestas_enviadas', 'respuestas', 'renglones_de_respuesta', 'proximos_contactos', 'propuestas_de_entrega', 'respuestas_de_entrega', 'cambios_de_fecha'],
   'public tiene exactamente las tablas esperadas: una tabla nueva obliga a revisar esta suite'
 );
 
@@ -24,7 +24,8 @@ select set_eq(
     'bootstrap', 'delta', 'cobrar_proyecto', 'reabrir_proyecto', 'cerrar_perdido', 'reactivar_perdido', 'guardar_proyecto',
     'registrar_suscripcion', 'dar_de_baja_suscripcion', 'estado_de_mis_avisos', 'guardar_preferencias_de_avisos',
     'suscripciones_para_probar', 'anotar_aviso', 'borrar_suscripcion_vencida', 'avisos_por_mandar',
-    'vista_del_cliente', 'vista_compartida', 'titulo_compartido', 'encuesta_compartida', 'contestar_encuesta'
+    'vista_del_cliente', 'vista_compartida', 'titulo_compartido', 'encuesta_compartida', 'contestar_encuesta',
+    'proponer_la_entrega', 'responder_la_entrega'
   ],
   'public expone exactamente las funciones esperadas'
 );
@@ -87,8 +88,8 @@ select is_empty(
 );
 
 -- Las puertas del rol anónimo, enumeradas. Son la vista del cliente entrando por el link, el
--- título que alimenta su vista previa, y las dos de la encuesta: la que la muestra y la que guarda
--- lo que contestó (ADR 0057). No puede haber ninguna otra: en esta plataforma Postgres le da
+-- título que alimenta su vista previa, las dos de la encuesta: la que la muestra y la que guarda
+-- lo que contestó (ADR 0057), y la que guarda lo que contesta sobre la entrega (ADR 0071). No puede haber ninguna otra: en esta plataforma Postgres le da
 -- execute a public y Supabase se lo da además a anon por default privileges, así que una función
 -- nueva que se olvide el revoke le queda alcanzable a cualquiera sin sesión (ADR 0046).
 select set_eq(
@@ -98,8 +99,8 @@ select set_eq(
     where p.pronamespace in ('public'::regnamespace, 'private'::regnamespace)
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   $$,
-  array['vista_compartida(text)', 'titulo_compartido(text)', 'encuesta_compartida(text)', 'contestar_encuesta(text,jsonb)'],
-  'anon ejecuta exactamente cuatro funciones de la base: la del link del cliente, la del título de su vista previa, y las dos de la encuesta'
+  array['vista_compartida(text)', 'titulo_compartido(text)', 'encuesta_compartida(text)', 'contestar_encuesta(text,jsonb)', 'responder_la_entrega(text,jsonb)'],
+  'anon ejecuta exactamente cinco funciones de la base: la del link del cliente, la del título de su vista previa, las dos de la encuesta y la de la entrega'
 );
 
 -- Y son las únicas que corren elevadas. Sin security definer no llegarían a ninguna tabla, porque
@@ -112,8 +113,8 @@ select set_eq(
       and p.prorettype <> 'event_trigger'::regtype
       and p.prosecdef
   $$,
-  array['vista_compartida(text)', 'titulo_compartido(text)', 'encuesta_compartida(text)', 'contestar_encuesta(text,jsonb)'],
-  'las únicas funciones security definer de public son las cuatro de los enlaces: sin elevar no llegan a ninguna tabla'
+  array['vista_compartida(text)', 'titulo_compartido(text)', 'encuesta_compartida(text)', 'contestar_encuesta(text,jsonb)', 'responder_la_entrega(text,jsonb)'],
+  'las únicas funciones security definer de public son las cinco de los enlaces: sin elevar no llegan a ninguna tabla'
 );
 
 select is_empty(

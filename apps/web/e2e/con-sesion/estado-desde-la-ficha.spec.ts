@@ -84,7 +84,11 @@ test('en la ficha de una obra las acciones son las transiciones válidas, y ning
   await page.goto(`/proyectos/${id}`);
   await expect(queFalta(page)).toContainText('Falta entregarlo', CARGA);
 
-  expect(await accionesOfrecidas(page)).toEqual(['Ya lo entregué', 'Volvió a presupuesto']);
+  expect(await accionesOfrecidas(page)).toEqual([
+    'Ya está listo',
+    'Ya lo entregué',
+    'Volvió a presupuesto',
+  ]);
   console.log(
     `[${testInfo.project.name}] en_curso ofrece: ${(await accionesOfrecidas(page)).join(' · ')}`,
   );

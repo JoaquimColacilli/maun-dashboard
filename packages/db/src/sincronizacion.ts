@@ -209,6 +209,7 @@ export const COLUMNAS_DE_PROYECTO = [
   'entrega_hora',
   'visita_hora',
   'presupuesto_vale_hasta',
+  'tipo_de_proyecto',
 ] as const;
 
 export type ColumnaDeProyecto = (typeof COLUMNAS_DE_PROYECTO)[number];
@@ -432,6 +433,86 @@ export async function guardarFormasDeCobro(
   const { data, error } = await cliente
     .from('proyectos')
     .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export const COLUMNAS_DE_LA_ENTREGA = [
+  'listo_el',
+  'entrega_comprometida',
+  'entrega_comprometida_franja',
+] as const;
+
+export type ColumnaDeLaEntrega = (typeof COLUMNAS_DE_LA_ENTREGA)[number];
+
+export type CambiosDeLaEntrega = Partial<Pick<FilaDe<'proyectos'>, ColumnaDeLaEntrega>>;
+
+export async function guardarLaEntrega(
+  cliente: ClienteMaun,
+  id: string,
+  cambios: CambiosDeLaEntrega,
+): Promise<FilaDe<'proyectos'>> {
+  const { data, error } = await cliente
+    .from('proyectos')
+    .update(cambios)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export interface PropuestaNueva {
+  id: string;
+  forma: FilaDe<'propuestas_de_entrega'>['forma'];
+  fecha: string | null;
+  franja: FilaDe<'propuestas_de_entrega'>['franja'];
+}
+
+export function leerPropuestasDeEntrega(valor: unknown): FilaDe<'propuestas_de_entrega'>[] {
+  if (typeof valor !== 'object' || valor === null) {
+    throw new RespuestaInvalidaError('proponer_la_entrega no devolvió un objeto.');
+  }
+  const propuestas = (valor as Record<string, unknown>).propuestas;
+  if (!Array.isArray(propuestas)) {
+    throw new RespuestaInvalidaError('proponer_la_entrega no devolvió las propuestas.');
+  }
+  for (const fila of propuestas) {
+    if (
+      typeof fila !== 'object' ||
+      fila === null ||
+      typeof (fila as { id?: unknown }).id !== 'string'
+    ) {
+      throw new RespuestaInvalidaError('Una propuesta de entrega no trae id.');
+    }
+  }
+  return propuestas as FilaDe<'propuestas_de_entrega'>[];
+}
+
+export async function proponerLaEntrega(
+  cliente: ClienteMaun,
+  proyectoId: string,
+  propuesta: PropuestaNueva | null,
+): Promise<FilaDe<'propuestas_de_entrega'>[]> {
+  const { data, error } = await cliente.rpc('proponer_la_entrega', {
+    p_proyecto_id: proyectoId,
+    p_propuesta: propuesta as unknown as Json,
+  });
+  if (error) throw error;
+  return leerPropuestasDeEntrega(data);
+}
+
+export async function marcarRespuestaDeEntregaLeida(
+  cliente: ClienteMaun,
+  id: string,
+  leidaEn: string,
+): Promise<FilaDe<'respuestas_de_entrega'>> {
+  const { data, error } = await cliente
+    .from('respuestas_de_entrega')
+    .update({ leida_at: leidaEn })
     .eq('id', id)
     .select()
     .single();

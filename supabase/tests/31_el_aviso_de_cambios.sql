@@ -6,7 +6,7 @@
 -- todo el archivo es una sola transacción, cada caso empieza borrando la marca maun.cambios_avisados,
 -- que en la app vive lo que vive una transacción.
 
-select plan(24);
+select plan(25);
 
 select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller A', tests.id('a')));
@@ -160,6 +160,30 @@ select is(
   tests.avisos_y_de_nuevo(),
   array[tests.id('household_a')],
   'guardar un trabajo con sus pagos, que escribe en varias tablas, avisa una vez'
+);
+
+-- Lo que contesta el cliente sobre la entrega, sin sesión, le llega a la app abierta del taller por el
+-- mismo aviso (ADR 0071).
+select set_config('maun.hoy_en_el_taller', '2026-09-25', true);
+update public.proyectos set listo_el = '2026-09-24' where id = 'aaaaaaaa-0000-7000-8000-000000000010';
+insert into public.enlaces_publicos (proyecto_id, token_hash, token)
+  values ('aaaaaaaa-0000-7000-8000-000000000010',
+          encode(sha256(convert_to('el-token-del-placard-de-a', 'UTF8')), 'hex'), 'el-token-del-placard-de-a');
+insert into public.propuestas_de_entrega (id, proyecto_id, forma)
+  values ('aaaaaaaa-0000-7000-8000-000000000020', 'aaaaaaaa-0000-7000-8000-000000000010', 'sus_dias');
+select tests.avisos_y_de_nuevo();
+
+select tests.entrar_como_anon();
+select public.responder_la_entrega(
+  'el-token-del-placard-de-a',
+  '{"id": "aaaaaaaa-0000-7000-8000-000000000021", "propuesta_id": "aaaaaaaa-0000-7000-8000-000000000020",
+    "respuesta": "mis_dias", "dias": [{"fecha": "2026-09-29", "franjas": ["tarde"]}], "nota": ""}'::jsonb
+);
+
+select is(
+  tests.avisos_y_de_nuevo(),
+  array[tests.id('household_a')],
+  'lo que contesta el cliente sobre la entrega avisa una vez al canal de su taller'
 );
 
 select tests.salir();

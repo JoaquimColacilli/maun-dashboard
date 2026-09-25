@@ -56,11 +56,13 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}, pago: Pago = {}): Tra
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
       entregaPautada: '2026-10-02',
+      listo: null,
       entregado: null,
       cobro: null,
       valeHasta: null,
     },
     visita: { dia: null, hecha: false },
+    entrega: { comprometida: null, propuesta: null, respuesta: null },
     pago: {
       instancia: pago.instancia === undefined ? 'sena' : pago.instancia,
       formas: pago.formas ?? ['transferencia', 'efectivo'],

@@ -5,6 +5,8 @@
 - Completa al [0010](0010-sincronizacion-replica-completa.md) (una tabla nueva en la réplica) y al
   [0019](0019-seguimiento-el-contacto-es-la-misma-fila.md) (una fecha más del contacto). Se aparta del
   diseño en dónde vive la agenda y en cómo se abre el día: ver Objeciones.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): la entrega de un
+  trabajo cae en la comprometida si la hay, con su franja, y si no en la estimada.
 
 ## Contexto
 

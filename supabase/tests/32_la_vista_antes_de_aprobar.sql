@@ -4,7 +4,7 @@
 -- el presupuesto viaja solo mientras espera la seña, y guardar_proyecto la escribe solo si viene la
 -- clave.
 
-select plan(48);
+select plan(57);
 
 select tests.guardar('ana', tests.crear_usuario('ana@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller de Ana', tests.id('ana')));
@@ -249,7 +249,8 @@ select is(
   'con la seña cubierta, desde la aprobación lo que toca es el saldo'
 );
 
--- Una entrega cargada con la obra todavía en el taller no es una entrega.
+-- Una entrega cargada con la obra todavía en el taller no es una entrega: desde el ADR 0071 la base ni
+-- la guarda.
 update public.proyectos set fecha_entrega = '2026-09-30'
   where id = 'bbbbbbbb-0000-7000-8000-000000000010';
 
@@ -259,7 +260,7 @@ select is(
   'en curso, el día de entrega cargado no viaja'
 );
 
-update public.proyectos set estado = 'entregado'
+update public.proyectos set estado = 'entregado', fecha_entrega = '2026-09-30'
   where id = 'bbbbbbbb-0000-7000-8000-000000000010';
 
 select is(tests.la_vista() #>> '{fechas,entregado}', '2026-09-30', 'entregado, viaja');
@@ -415,5 +416,105 @@ select lives_ok(
 );
 
 select is(tests.vale_hasta_del_contacto(), null::date, 'y la borra: el presupuesto queda sin fecha');
+
+
+-- El listo y la entrega: desde cuándo viaja cada uno (ADR 0071) -----------------------------------------------
+
+-- El mismo escritorio, que a esta altura volvió a «Presupuesto enviado». Hoy, en el taller, es el 25 de
+-- septiembre: el día propuesto tiene que ser desde mañana.
+select set_config('maun.hoy_en_el_taller', '2026-09-25', true);
+
+update public.proyectos set listo_el = '2026-09-20', entrega_comprometida = '2026-10-01'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+
+select is(
+  array[tests.la_vista() #> '{fechas,listo}', tests.la_vista() -> 'entrega'],
+  array['null'::jsonb, '{"comprometida": null, "propuesta": null, "respuesta": null}'::jsonb],
+  'sin aprobar, ni el listo ni la entrega viajan: la base ni siquiera los guarda'
+);
+
+update public.proyectos set estado = 'en_curso'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+
+select is(
+  array[tests.la_vista() #> '{fechas,listo}', tests.la_vista() -> 'entrega'],
+  array['null'::jsonb, '{"comprometida": null, "propuesta": null, "respuesta": null}'::jsonb],
+  'aprobado y todavía en fabricación, no hay listo ni nada que coordinar'
+);
+
+update public.proyectos set listo_el = '2026-09-24'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+
+select is(tests.la_vista() #>> '{fechas,listo}', '2026-09-24', 'listo, viaja el día en que se terminó');
+
+insert into public.propuestas_de_entrega (id, proyecto_id, forma, fecha, franja)
+  values ('bbbbbbbb-0000-7000-8000-000000000500', 'bbbbbbbb-0000-7000-8000-000000000010',
+          'un_dia', '2026-10-01', 'manana');
+
+select is(
+  tests.la_vista() #> '{entrega,propuesta}',
+  jsonb_build_object(
+    'id', 'bbbbbbbb-0000-7000-8000-000000000500', 'forma', 'un_dia', 'fecha', '2026-10-01',
+    'franja', 'manana'
+  ),
+  'listo y con un día propuesto, viaja la propuesta con el id con el que el cliente le contesta'
+);
+
+select tests.salir();
+insert into public.respuestas_de_entrega (household_id, proyecto_id, propuesta_id, respuesta, dias, nota)
+  values (tests.id('household_a'), 'bbbbbbbb-0000-7000-8000-000000000010',
+          'bbbbbbbb-0000-7000-8000-000000000500', 'mis_dias',
+          '[{"fecha": "2026-10-02", "franjas": ["tarde"]}]', 'Tercer piso por escalera');
+select tests.entrar_como(tests.id('ana'));
+
+select is(
+  tests.la_vista() #> '{entrega,respuesta}',
+  '{"respuesta": "mis_dias", "dias": [{"fecha": "2026-10-02", "franjas": ["tarde"]}], "nota": "Tercer piso por escalera"}'::jsonb,
+  'y lo que el cliente contestó, tal como lo mandó'
+);
+
+-- El día propuesto pasó sin que nadie lo acordara: para el cliente no hay nada propuesto.
+select set_config('maun.hoy_en_el_taller', '2026-10-02', true);
+
+select is(
+  tests.la_vista() -> 'entrega',
+  '{"comprometida": null, "propuesta": null, "respuesta": null}'::jsonb,
+  'una propuesta de un día que ya pasó no viaja, ni lo que se le contestó'
+);
+
+select set_config('maun.hoy_en_el_taller', '2026-09-25', true);
+
+update public.proyectos set entrega_comprometida = '2026-10-03', entrega_comprometida_franja = 'tarde'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+
+select is(
+  tests.la_vista() -> 'entrega',
+  '{"comprometida": {"fecha": "2026-10-03", "franja": "tarde"}, "propuesta": null, "respuesta": null}'::jsonb,
+  'comprometida, viaja la comprometida con su franja y ya no hay nada que contestar'
+);
+
+update public.proyectos set estado = 'entregado', fecha_entrega = '2026-10-03'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+
+select is(
+  array[
+    tests.la_vista() #>> '{fechas,listo}',
+    tests.la_vista() #>> '{fechas,entregado}',
+    tests.la_vista() #>> '{entrega,comprometida}'
+  ],
+  array['2026-09-24', '2026-10-03', null],
+  'entregado, lo que cuenta es el día en que se entregó: la comprometida deja de viajar y el listo queda'
+);
+
+update public.proyectos set estado = 'en_curso'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+update public.proyectos set estado = 'presupuesto_enviado'
+  where id = 'bbbbbbbb-0000-7000-8000-000000000010';
+
+select is(
+  array[tests.la_vista() #> '{fechas,listo}', tests.la_vista() -> 'entrega'],
+  array['null'::jsonb, '{"comprometida": null, "propuesta": null, "respuesta": null}'::jsonb],
+  'vuelto a presupuesto, el listo y la comprometida se van con la aprobación'
+);
 
 select * from finish();

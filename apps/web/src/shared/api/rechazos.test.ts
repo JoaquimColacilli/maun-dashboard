@@ -142,6 +142,21 @@ describe('los MN00x traducidos a castellano de taller', () => {
     );
   });
 
+  it('MN021: la propuesta de la entrega, con el mensaje y la salida que escribe la base', () => {
+    const traducido = traducirRechazo(
+      deLaBase(
+        'MN021',
+        'La entrega se coordina con el mueble listo',
+        'Marcá en la ficha que ya está listo y proponele el día.',
+      ),
+    );
+    expect(traducido).toEqual({
+      titulo: 'La entrega se coordina con el mueble listo.',
+      queHacer: 'Marcá en la ficha que ya está listo y proponele el día. No se guardó nada.',
+      codigo: 'MN021',
+    });
+  });
+
   it('42501: la cuenta no tiene acceso', () => {
     expect(texto('42501', { operacion: 'cobro', sujeto: 'Placard' })).toBe(
       'Tu cuenta no tiene acceso a esto. Puede que el trabajo sea de otro taller, o que tu cuenta ' +

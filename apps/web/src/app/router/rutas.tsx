@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router';
 
 import { AgendaPage, AnotarPage } from '@/pages/agenda';
 import { AjustesPage, AvisosPage } from '@/pages/ajustes';
+import { AnaliticoPage } from '@/pages/analitico';
 import { ClienteFichaPage, ClientesPage } from '@/pages/clientes';
 import { DiezmoPage } from '@/pages/diezmo';
 import { FinanzasPage, MovimientoEdicionPage, MovimientoNuevoPage } from '@/pages/finanzas';
@@ -23,6 +24,7 @@ import {
   HOJAS_POR_RUTA,
   RUTA_DE_CONSULTAS,
   RUTA_DE_CONTACTO_NUEVO,
+  RUTA_DEL_ANALITICO,
   type PatronDeHoja,
 } from '@/shared/lib';
 
@@ -36,6 +38,7 @@ export const RUTAS_DE_PANTALLA: RouteObject[] = [
   { path: '/seguimiento/nuevo', element: <RutaVieja a={RUTA_DE_CONTACTO_NUEVO} /> },
   { path: '/proyectos', element: <ProyectosPage /> },
   { path: '/proyectos/nuevo', element: <ProyectoNuevoPage /> },
+  { path: RUTA_DEL_ANALITICO, element: <AnaliticoPage /> },
   { path: '/proyectos/:id', element: <ProyectoFichaPage /> },
   { path: '/proyectos/:id/editar', element: <ProyectoEdicionPage /> },
   { path: '/proyectos/:id/aprobar', element: <ProyectoPasajePage /> },

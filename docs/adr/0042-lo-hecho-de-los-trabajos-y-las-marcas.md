@@ -6,6 +6,8 @@
   día y la marca de importante) y al [0038](0038-el-embudo-del-seguimiento.md) (la visita y las etapas).
   Sigue el precedente de las tareas de presupuestar del 0038: un conjunto chico y fijo de marcas sobre un
   trabajo son columnas booleanas.
+- Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): listo sigue el
+  mismo umbral, pero es un día (`listo_el`), no una marca ni un estado.
 
 ## Contexto
 

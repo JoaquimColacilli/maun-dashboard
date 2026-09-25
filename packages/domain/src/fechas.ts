@@ -93,6 +93,19 @@ export function diasEntre(desde: string, hasta: string): number {
   return diaDesdeEpoca(hasta) - diaDesdeEpoca(desde);
 }
 
+export function esFechaQueExiste(fecha: string): boolean {
+  try {
+    diaDesdeEpoca(fecha);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function diaDeLaSemana(fecha: string): number {
+  return new Date(diaDesdeEpoca(fecha) * MS_POR_DIA).getUTCDay();
+}
+
 export function mesDe(fecha: string): string {
   diaDesdeEpoca(fecha);
   return fecha.slice(0, 7);

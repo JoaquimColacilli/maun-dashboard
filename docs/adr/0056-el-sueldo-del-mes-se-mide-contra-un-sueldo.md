@@ -5,6 +5,20 @@ Estado: aceptada, 2026-09-21. Corrige la sección «La barra "Sueldo del mes"» 
 [0020](0020-pulido-visual.md). **No toca la regla de reparto**: el tope de sueldo sigue siendo por
 proyecto, como decidió el 0011.
 
+**Superada en parte el 2026-09-25 por el [ADR 0072](0072-el-sueldo-se-topea-por-mes.md)**: la
+objeción de plata se resolvió y el sueldo se topea por mes. «Lo que NO cambia» ya no vale para el
+reparto.
+
+**Completada el 2026-09-25**, en el PR de la entrega (ADR 0071):
+
+- **`cobros` cuenta los cobros que pagaron sueldo**, no los que tenían un objetivo. «Ya está cubierto:
+  los N cobros del mes pagaron…» nombra a quien pagó. Un cobro que no llegó a pagar sueldo no suma:
+  uno con la neta en cero, o uno que llegó con el mes ya cubierto si el sueldo se topea por mes.
+- **La distribución de la ganancia dice por qué un escalón quedó en cero cuando lo cubrió el mes.**
+  Con objetivo y tope en cero, abajo del escalón dice «ya lo cubrieron otros cobros del mes». Hoy
+  pasa con los fijos, que son mensuales; con el sueldo, solo si se topea por mes.
+- **La ayuda del sueldo en Ajustes dice cómo se topea**: por trabajo cobrado, o por mes.
+
 ## Qué se reportó
 
 El dueño de MAUN Muebles cargó un sueldo de $1.800.000 y en Inicio vio «Sueldo del mes — $X de

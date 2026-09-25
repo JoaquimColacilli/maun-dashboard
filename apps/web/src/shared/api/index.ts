@@ -13,6 +13,12 @@ export {
   urlDelArchivo,
 } from './archivos';
 export { escucharLosCambiosDelTaller, type OyentesDeLosCambios } from './cambios';
+export {
+  contestarLaEntrega,
+  guardarLaEntregaDelTrabajo,
+  marcarLaRespuestaDeEntregaLeida,
+  proponerleLaEntrega,
+} from './entrega';
 export { clienteMaun, vinoPorRecuperacion } from './cliente';
 export {
   compartirElArchivo,
@@ -89,6 +95,7 @@ export {
 } from './datos';
 export {
   ajustesDe,
+  analisisDeLaReplica,
   aplicarFilaLocal,
   cantidadDe,
   COLUMNA_DE_LA_FECHA,
@@ -98,6 +105,7 @@ export {
   COLUMNAS_DE_ANOTACION,
   COLUMNAS_DE_CLIENTE,
   COLUMNAS_DE_COSTOS,
+  COLUMNAS_DE_LA_ENTREGA,
   COLUMNAS_DE_LA_FECHA,
   COLUMNAS_DE_MARCAS,
   COLUMNAS_DE_MOVIMIENTO,
@@ -105,7 +113,10 @@ export {
   COLUMNAS_DE_TAREAS,
   datosDeLaAgenda,
   datosDeLaAgendaDeLaReplica,
+  datosDelAnalisis,
   datosDelLibro,
+  entregaComprometida,
+  franjaDeLaEntrega,
   horaDeLaEntrega,
   horaDeLaVisita,
   debeReintentarse,
@@ -136,6 +147,7 @@ export {
   type CambiosDeCliente,
   type CambiosDeCostos,
   type CambiosDeFormasDeCobro,
+  type CambiosDeLaEntrega,
   type CambiosDeMarcas,
   type CambiosDeMovimiento,
   type BajaDeFilaHija,
@@ -151,6 +163,7 @@ export {
   type ClienteNuevo,
   type ColumnaDeCosto,
   type ColumnaDeFormaDeCobro,
+  type ColumnaDeLaEntrega,
   type ColumnaDeLaFecha,
   type ColumnaDeMarca,
   type ColumnaDeTarea,
@@ -166,6 +179,7 @@ export {
   type ProximoParaGuardar,
   type PedidoDeLiquidacion,
   type PedidoDeReversion,
+  type PropuestaNueva,
   type ProyectoGuardado,
   type ProyectoParaGuardar,
   type RechazoDeLaBase,
@@ -177,7 +191,10 @@ export {
   type EnlaceNuevo,
   COLUMNAS_DE_PREGUNTA,
   motivoDelRechazo,
+  motivoDelRechazoDeLaEntrega,
   type ColumnaDePregunta,
+  type DatosDelAnalisis,
+  type ResultadoDeResponder,
   type EncuestaCompartida,
   type EncuestaNueva,
   type LoQueContesto,

@@ -131,6 +131,15 @@ export const CATALOGO: readonly Pantalla[] = [
     forma: 'capa',
   },
   {
+    id: 'analitico',
+    patron: '/proyectos/analitico',
+    nombre: 'Analítico de entregas',
+    seccion: 'proyectos',
+    raiz: false,
+    profundidad: 1,
+    forma: 'pantalla',
+  },
+  {
     id: 'ficha',
     patron: '/proyectos/:id',
     nombre: 'Proyectos',

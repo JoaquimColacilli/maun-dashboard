@@ -290,6 +290,8 @@ Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
       lugar: '',
       hecha: false,
       importante: false,
+      comprometida: false,
+      franja: null,
     },
     {
       clase: 'propia',
@@ -316,6 +318,8 @@ Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
       lugar: '',
       hecha: false,
       importante: false,
+      comprometida: false,
+      franja: null,
     },
     {
       clase: 'derivada',
@@ -330,6 +334,8 @@ Deno.test('el texto dice lo de hoy primero y resume lo que no entra', () => {
       lugar: '',
       hecha: false,
       importante: false,
+      comprometida: false,
+      franja: null,
     },
     {
       clase: 'propia',

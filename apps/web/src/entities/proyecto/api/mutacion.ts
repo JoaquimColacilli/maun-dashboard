@@ -8,6 +8,7 @@ import {
   filaPorId,
   filasDe,
   guardarElProyecto,
+  guardarLaEntregaDelTrabajo,
   guardarLasFormasDeCobro,
   guardarLosCostosEstimados,
   householdDe,
@@ -17,6 +18,7 @@ import {
   quitarFilaLocal,
   type CambiosDeCostos,
   type CambiosDeFormasDeCobro,
+  type CambiosDeLaEntrega,
   type CambiosDeMarcas,
   type CambiosDeProyecto,
   type CambiosDeTareas,
@@ -33,6 +35,7 @@ import { cambiaLaFila, versionDelGuardado } from '../model/formulario';
 import { datosActualesDelProyecto } from '../model/liquidacion';
 import { cambiaAlgunaForma } from '../model/cobro';
 import { cambiaAlgunCosto } from '../model/costos';
+import { cambiaAlgoDeLaEntrega } from '../model/entrega';
 import { cambiaAlgunaMarca } from '../model/marcas';
 import { ultimoContactoAlGuardar } from '../model/consultas';
 import { cambiaAlgunaTarea } from '../model/tareas';
@@ -44,6 +47,7 @@ export const CLAVE_DE_MARCAS = ['proyectos', 'marcas'] as const;
 export const CLAVE_DE_MARCA_DEL_SEGUIMIENTO = ['proyectos', 'marca-del-seguimiento'] as const;
 export const CLAVE_DE_COSTOS = ['proyectos', 'costos'] as const;
 export const CLAVE_DE_FORMAS_DE_COBRO = ['proyectos', 'formas-de-cobro'] as const;
+export const CLAVE_DE_LA_ENTREGA = ['proyectos', 'entrega'] as const;
 export const CLAVE_DE_BAJA_DE_PROYECTO = ['proyectos', 'borrar'] as const;
 
 const REINTENTOS = 5;
@@ -268,6 +272,9 @@ function conElAgregado(replica: Replica, pedido: ProyectoParaGuardar): Replica {
         reapertura_sueldo_mensual: null,
         reapertura_fecha_cobro: null,
         reparto_ya_en_la_apertura: false,
+        listo_el: null,
+        entrega_comprometida: null,
+        entrega_comprometida_franja: null,
       } satisfies FilaDe<'proyectos'>);
 
   let siguiente = aplicarFilaLocal(replica, 'proyectos', fila);
@@ -512,7 +519,7 @@ export interface FormasDeCobroDelTrabajo {
 }
 
 type CambiosDeUnaColumnaSuelta =
-  CambiosDeTareas | CambiosDeMarcas | CambiosDeCostos | CambiosDeFormasDeCobro;
+  CambiosDeTareas | CambiosDeMarcas | CambiosDeCostos | CambiosDeFormasDeCobro | CambiosDeLaEntrega;
 
 function conUnaColumnaSuelta(
   replica: Replica,
@@ -648,6 +655,38 @@ export const MUTACION_DE_FORMAS_DE_COBRO: MutationOptions<
     await client.cancelQueries({ queryKey: claveDeTodaReplica() });
     cambiarReplicas(client, (replica) =>
       conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgunaForma(actual, cambios)),
+    );
+    await guardarCacheAhora();
+  },
+  onSuccess: (fila, _variables, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => aplicarSiNoEsVieja(replica, fila));
+  },
+  onError: (_error, { id, previos, version }, _contexto, { client }) => {
+    cambiarReplicas(client, (replica) => sinLaColumnaSuelta(replica, id, previos, version));
+  },
+};
+
+export interface CambioDeLaEntrega {
+  id: string;
+  cambios: CambiosDeLaEntrega;
+  previos: CambiosDeLaEntrega;
+  version: number;
+}
+
+export const MUTACION_DE_LA_ENTREGA: MutationOptions<
+  FilaDe<'proyectos'>,
+  unknown,
+  CambioDeLaEntrega
+> = {
+  mutationKey: CLAVE_DE_LA_ENTREGA,
+  mutationFn: ({ id, cambios }) => guardarLaEntregaDelTrabajo(id, cambios),
+  scope: COLA_DE_SALIDA,
+  gcTime: DURACION_DEL_RECHAZO_MS,
+  retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
+  onMutate: async ({ id, cambios }, { client }) => {
+    await client.cancelQueries({ queryKey: claveDeTodaReplica() });
+    cambiarReplicas(client, (replica) =>
+      conUnaColumnaSuelta(replica, id, cambios, (actual) => cambiaAlgoDeLaEntrega(actual, cambios)),
     );
     await guardarCacheAhora();
   },

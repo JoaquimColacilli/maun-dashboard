@@ -31,6 +31,7 @@ import {
   rutaDeCierre,
   rutaDeCobro,
   rutaDelProyecto,
+  tiposParaSugerir,
   totalDeLasFilas,
   valoresDelFormulario,
   type FormularioDeProyecto,
@@ -319,6 +320,22 @@ export function PantallaDeProyecto({
                   error={errors.titulo?.message}
                 />
               </CamposJuntos>
+
+              <Campo
+                {...register('tipo_de_proyecto')}
+                etiqueta="Tipo de proyecto"
+                placeholder="Cocina, placard, vestidor…"
+                list={`${idCampos}-tipos`}
+                autoComplete="off"
+                maxLength={60}
+                ayuda="Con el tipo, el Analítico de entregas te muestra cuánto tardás en cada clase de mueble."
+                error={errors.tipo_de_proyecto?.message}
+              />
+              <datalist id={`${idCampos}-tipos`}>
+                {tiposParaSugerir(filasDe(replica, 'proyectos')).map((tipo) => (
+                  <option key={tipo} value={tipo} />
+                ))}
+              </datalist>
 
               <CamposJuntos separacion="gap-5" campoMinimo="14rem">
                 <div className="flex flex-col gap-1.5">

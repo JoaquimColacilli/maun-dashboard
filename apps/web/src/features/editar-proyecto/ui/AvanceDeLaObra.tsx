@@ -5,6 +5,8 @@ import {
   cambiosAlPasar,
   cambiosDeEstado,
   guardadoDeUnPaso,
+  listoDelTrabajo,
+  MUTACION_DE_LA_ENTREGA,
   MUTACION_DE_PROYECTO,
   rutaDeAprobacion,
   situacionDeLaObra,
@@ -20,6 +22,17 @@ export interface AvanceDeLaObraProps {
   hoy: string;
 }
 
+interface Accion {
+  clave: string;
+  etiqueta: string;
+  principal: boolean;
+  hacer: () => void;
+}
+
+const YA_ESTA_LISTO = 'Ya está listo';
+
+const TODAVIA_NO_ESTA_LISTO = 'Todavía no está listo';
+
 export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
   const { proyecto } = resumen;
   const ir = useIr();
@@ -27,14 +40,22 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
     ...MUTACION_DE_PROYECTO,
     meta: metaDeAvisos('proyectoAvanzado', { errorEnPantalla: true, sujeto: proyecto.titulo }),
   });
+  const terminar = useMutation({
+    ...MUTACION_DE_LA_ENTREGA,
+    meta: metaDeAvisos('yaEstaListo', { errorEnPantalla: true, sujeto: proyecto.titulo }),
+  });
+  const reabrir = useMutation({
+    ...MUTACION_DE_LA_ENTREGA,
+    meta: metaDeAvisos('todaviaNoEstaListo', { errorEnPantalla: true, sujeto: proyecto.titulo }),
+  });
   const [rechazo, setRechazo] = useState<unknown>(null);
 
   const cambios = cambiosDeEstado(proyecto.estado);
   const situacion = situacionDeLaObra(resumen, hoy);
   if (cambios.length === 0 || situacion === undefined) return null;
 
-  const adelante = cambios.filter((cambio) => cambio.sentido === 'adelante');
-  const atras = cambios.filter((cambio) => cambio.sentido === 'atras');
+  const enCurso = proyecto.estado === 'en_curso';
+  const listo = listoDelTrabajo(proyecto);
 
   function pasar(cambio: CambioDeEstado): void {
     if (cambio.camino === 'pasaje') {
@@ -47,6 +68,57 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
     });
   }
 
+  function marcarListo(valor: string | null): void {
+    setRechazo(null);
+    (valor === null ? reabrir : terminar).mutate(
+      {
+        id: proyecto.id,
+        cambios: { listo_el: valor },
+        previos: { listo_el: listo },
+        version: proyecto.version,
+      },
+      { onError: setRechazo },
+    );
+  }
+
+  const deEstado = (cambio: CambioDeEstado, principal: boolean): Accion => ({
+    clave: cambio.hacia,
+    etiqueta: cambio.etiqueta,
+    principal,
+    hacer: () => {
+      pasar(cambio);
+    },
+  });
+
+  const adelante = cambios.filter((cambio) => cambio.sentido === 'adelante');
+  const atras = cambios.filter((cambio) => cambio.sentido === 'atras');
+
+  const acciones: Accion[] = [];
+  if (enCurso && listo === null) {
+    acciones.push({
+      clave: 'listo',
+      etiqueta: YA_ESTA_LISTO,
+      principal: true,
+      hacer: () => {
+        marcarListo(hoy);
+      },
+    });
+    acciones.push(...adelante.map((cambio) => deEstado(cambio, false)));
+  } else {
+    acciones.push(...adelante.map((cambio) => deEstado(cambio, true)));
+    if (enCurso) {
+      acciones.push({
+        clave: 'no-listo',
+        etiqueta: TODAVIA_NO_ESTA_LISTO,
+        principal: false,
+        hacer: () => {
+          marcarListo(null);
+        },
+      });
+    }
+  }
+  acciones.push(...atras.map((cambio) => deEstado(cambio, false)));
+
   return (
     <div>
       <PanelDePaso
@@ -57,25 +129,13 @@ export function AvanceDeLaObra({ resumen, hoy }: AvanceDeLaObraProps) {
         tono={situacion.tono}
       >
         <FilaDeAcciones className="mt-3">
-          {adelante.map((cambio) => (
+          {acciones.map((accion) => (
             <Button
-              key={cambio.hacia}
-              onClick={() => {
-                pasar(cambio);
-              }}
+              key={accion.clave}
+              variant={accion.principal ? 'primario' : 'secundario'}
+              onClick={accion.hacer}
             >
-              {cambio.etiqueta}
-            </Button>
-          ))}
-          {atras.map((cambio) => (
-            <Button
-              key={cambio.hacia}
-              variant="secundario"
-              onClick={() => {
-                pasar(cambio);
-              }}
-            >
-              {cambio.etiqueta}
+              {accion.etiqueta}
             </Button>
           ))}
         </FilaDeAcciones>

@@ -9,7 +9,7 @@ select tests.guardar('a', tests.crear_usuario('a@maun.test'));
 select tests.guardar('household_a', private.crear_household('Taller A', tests.id('a')));
 
 update public.ajustes
-set sueldo_mensual_centavos = 50000000, costos_fijos_centavos = 25000000
+set sueldo_mensual_centavos = 50000000, costos_fijos_centavos = 25000000, sueldo_tope_mensual = false
 where household_id = tests.id('household_a');
 
 select tests.entrar_como(tests.id('a'));

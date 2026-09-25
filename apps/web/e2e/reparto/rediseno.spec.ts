@@ -53,6 +53,7 @@ const VACIAS = [
   'seguimiento',
   'activos',
   'historial',
+  'analitico',
   'clientes',
   'finanzas',
   'opiniones',

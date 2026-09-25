@@ -19,6 +19,7 @@ import {
   FUIMOS_A_MEDIR,
   HITO_DEL_ESTIMATIVO,
   HITOS,
+  LISTO_PARA_ENTREGAR,
   llegoAl,
   LO_LLEVAMOS_Y_LO_INSTALAMOS,
   NOTA_DEL_RELEVAMIENTO,
@@ -30,20 +31,26 @@ import {
   RESUMEN_FALTA_MEDIR,
   SIGUE,
   SIGUE_CON_EL_PRESUPUESTO_MANDADO,
+  SIGUE_CON_LA_COMPROMETIDA,
   SIGUE_CON_LA_SENA_CUBIERTA,
   SIGUE_FALTA_LA_SENA,
   SIGUE_FALTA_MEDIR,
+  SIGUE_LISTO,
   SIN_FECHA_PARA_LA_VISITA,
   TE_PASAMOS_EL_ESTIMATIVO,
   TE_PASAMOS_EL_PRESUPUESTO,
+  TERMINAMOS_TU_MUEBLE,
   textoDeLaProyeccion,
   TITULAR_DEL_APROBADO,
+  TITULAR_LISTO,
   tuvoEstimativo,
   VAMOS_TOMANDO_LOS_TRABAJOS,
   vistaDelCliente,
   hayComoTransferir,
   YA_ESTA_PAGADO,
   type CobroDelTaller,
+  type ComprometidaDelTrabajo,
+  type EntregaQueSeCoordina,
   type EstadoDelHito,
   type EstadoDelRelevamiento,
   type EtapaDeLaVista,
@@ -52,6 +59,9 @@ import {
   type HitoDelTrabajo,
   type PagoDelCliente,
   type PagoPendiente,
+  type PropuestaDeEntrega,
+  type RespuestaDelCliente,
+  type TitularDeLaVista,
   type TrabajoDelCliente,
   type VistaAprobada,
   type VistaDelCliente,
@@ -75,6 +85,7 @@ function fechas(cambios: Partial<FechasDelTrabajo>): FechasDelTrabajo {
     aprobado: null,
     inicio: null,
     entregaPautada: null,
+    listo: null,
     entregado: null,
     cobro: null,
     valeHasta: null,
@@ -93,6 +104,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
     sena: null,
     fechas: fechas({}),
     visita: { dia: null, hecha: false },
+    entrega: { comprometida: null, propuesta: null, respuesta: null },
     pago: { instancia: null, formas: [], monto: null, siguiente: null },
     cobro: { alias: null, cbu: null, titular: null, cuit: null, link: null },
     pagos: [],
@@ -349,35 +361,60 @@ describe('el camino', () => {
     expect(entregado.titular).toBe('Ya está instalado en tu casa');
   });
 
-  it('el amarillo avanza de a un paso: la aprobación está en curso antes de tildarse, y solo la entrega se tilda junto con la fabricación', () => {
-    const dias: readonly Partial<TrabajoDelCliente>[] = [
-      { estado: 'contacto', precio: null },
-      { estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-10' }) },
-      {
-        estado: 'en_curso',
-        fechas: fechas({ presupuesto: '2026-09-10', aprobado: '2026-09-18', inicio: '2026-09-18' }),
-      },
-      {
-        estado: 'entregado',
-        fechas: fechas({
-          presupuesto: '2026-09-10',
-          aprobado: '2026-09-18',
-          inicio: '2026-09-18',
-          entregado: '2026-09-18',
-        }),
-      },
-    ];
+  function sinPasarPorElAmarillo(dias: readonly Partial<TrabajoDelCliente>[]): HitoDelTrabajo[] {
     const caminos = dias.map((cambios) => vistaDelCliente(trabajo(cambios), HOY).hitos);
-    const sinPasarPorElAmarillo: HitoDelTrabajo[] = [];
+    const saltados: HitoDelTrabajo[] = [];
     for (let dia = 1; dia < caminos.length; dia += 1) {
       const antes = caminos[dia - 1] ?? [];
       (caminos[dia] ?? []).forEach((hito, paso) => {
         const estabaAntes = antes[paso]?.estado;
-        if (hito.estado === 'pasado' && estabaAntes === 'futuro')
-          sinPasarPorElAmarillo.push(hito.id);
+        if (hito.estado === 'pasado' && estabaAntes === 'futuro') saltados.push(hito.id);
       });
     }
-    expect(sinPasarPorElAmarillo).toEqual(['entregado']);
+    return saltados;
+  }
+
+  const HASTA_FABRICAR: readonly Partial<TrabajoDelCliente>[] = [
+    { estado: 'contacto', precio: null },
+    { estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-10' }) },
+    {
+      estado: 'en_curso',
+      fechas: fechas({ presupuesto: '2026-09-10', aprobado: '2026-09-18', inicio: '2026-09-18' }),
+    },
+  ];
+
+  const ENTREGADO_EL_MISMO_DIA = fechas({
+    presupuesto: '2026-09-10',
+    aprobado: '2026-09-18',
+    inicio: '2026-09-18',
+    entregado: '2026-09-18',
+  });
+
+  it('el amarillo avanza de a un paso: la aprobación está en curso antes de tildarse, y con el mueble listo la entrega también', () => {
+    expect(
+      sinPasarPorElAmarillo([
+        ...HASTA_FABRICAR,
+        {
+          estado: 'en_curso',
+          fechas: fechas({
+            presupuesto: '2026-09-10',
+            aprobado: '2026-09-18',
+            inicio: '2026-09-18',
+            listo: '2026-09-18',
+          }),
+        },
+        { estado: 'entregado', fechas: { ...ENTREGADO_EL_MISMO_DIA, listo: '2026-09-18' } },
+      ]),
+    ).toEqual([]);
+  });
+
+  it('un trabajo que se entregó sin que nadie marcara que estaba listo tilda la entrega junto con la fabricación', () => {
+    expect(
+      sinPasarPorElAmarillo([
+        ...HASTA_FABRICAR,
+        { estado: 'entregado', fechas: ENTREGADO_EL_MISMO_DIA },
+      ]),
+    ).toEqual(['entregado']);
   });
 
   it('pagado entero antes de la entrega, el último paso no pide el saldo: dice que ya está pagado', () => {
@@ -1233,7 +1270,7 @@ interface CasoDeEtapa {
   cambios: Partial<TrabajoDelCliente>;
   etapa: EtapaDeLaVista;
   camino: readonly (readonly [HitoDelTrabajo, EstadoDelHito])[];
-  titular: string;
+  titular: TitularDeLaVista;
   relevamiento: { estado: 'pendiente' | 'hecho'; fecha: string | null } | null;
   nota: EstadoDelRelevamiento | null;
   sigue: string;
@@ -1259,6 +1296,45 @@ const CON_ESTIMATIVO = (
 const COMPLETO: readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] = HITOS.map(
   (hito) => [hito.id, 'pasado'] as const,
 );
+
+const INICIO = '2026-09-01';
+
+const LISTO = '2026-09-17';
+
+const SIN_COORDINAR: EntregaQueSeCoordina = {
+  comprometida: null,
+  propuesta: null,
+  respuesta: null,
+};
+
+const UN_DIA: PropuestaDeEntrega = {
+  id: '0192a3b4-c5d6-7e8f-9a0b-000000000071',
+  forma: 'un_dia',
+  fecha: '2026-09-24',
+  franja: 'manana',
+};
+
+const SUS_DIAS: PropuestaDeEntrega = {
+  id: '0192a3b4-c5d6-7e8f-9a0b-000000000072',
+  forma: 'sus_dias',
+  fecha: null,
+  franja: null,
+};
+
+const SUS_DIAS_MANDADOS: RespuestaDelCliente = {
+  respuesta: 'mis_dias',
+  dias: [{ fecha: '2026-09-22', franjas: ['manana', 'tarde'] }],
+  nota: 'Tercer piso',
+};
+
+const COMPROMETIDA: ComprometidaDelTrabajo = { fecha: '2026-09-25', franja: 'manana' };
+
+function conPropuesta(
+  propuesta: PropuestaDeEntrega,
+  respuesta: RespuestaDelCliente | null = null,
+): EntregaQueSeCoordina {
+  return { comprometida: null, propuesta, respuesta };
+}
 
 const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
   {
@@ -1526,6 +1602,115 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
     nota: null,
     sigue: '',
   },
+  {
+    nombre: 'listo y sin nada pedido: la entrega en curso, y lo que sigue es acordar el día',
+    cambios: { fechas: fechas({ inicio: INICIO, listo: LISTO }) },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO['sin-pedido'],
+  },
+  {
+    nombre: 'listo con un día propuesto: lo que sigue es que diga si le queda bien',
+    cambios: { fechas: fechas({ inicio: INICIO, listo: LISTO }), entrega: conPropuesta(UN_DIA) },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO['un-dia'],
+  },
+  {
+    nombre: 'listo con un día propuesto que ya pasó: es como si no hubiera nada pedido',
+    cambios: {
+      fechas: fechas({ inicio: INICIO, listo: LISTO }),
+      entrega: conPropuesta({ ...UN_DIA, fecha: '2026-09-17' }),
+    },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO['sin-pedido'],
+  },
+  {
+    nombre: 'listo esperando sus días',
+    cambios: { fechas: fechas({ inicio: INICIO, listo: LISTO }), entrega: conPropuesta(SUS_DIAS) },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO['sus-dias'],
+  },
+  {
+    nombre: 'listo con sus días mandados: lo que sigue es que el taller confirme uno',
+    cambios: {
+      fechas: fechas({ inicio: INICIO, listo: LISTO }),
+      entrega: conPropuesta(SUS_DIAS, SUS_DIAS_MANDADOS),
+    },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO.mandados,
+  },
+  {
+    nombre: 'listo, dijo que no puede el día propuesto y mandó los suyos',
+    cambios: {
+      fechas: fechas({ inicio: INICIO, listo: LISTO }),
+      entrega: conPropuesta(UN_DIA, SUS_DIAS_MANDADOS),
+    },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO.mandados,
+  },
+  {
+    nombre: 'listo con la entrega comprometida: el titular es la buena noticia',
+    cambios: {
+      fechas: fechas({ inicio: INICIO, listo: LISTO }),
+      entrega: { ...SIN_COORDINAR, comprometida: COMPROMETIDA },
+    },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: { comprometida: COMPROMETIDA },
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_CON_LA_COMPROMETIDA,
+  },
+  {
+    nombre:
+      'en fabricación con la entrega ya comprometida: manda la comprometida, y el paso sigue en la fabricación',
+    cambios: {
+      fechas: fechas({ inicio: INICIO }),
+      entrega: { ...SIN_COORDINAR, comprometida: COMPROMETIDA },
+    },
+    etapa: 'fabricacion',
+    camino: SIN_ESTIMATIVO('fabricacion'),
+    titular: { comprometida: COMPROMETIDA },
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_CON_LA_COMPROMETIDA,
+  },
+  {
+    nombre: 'listo con una comprometida que ya pasó: no se muestra, y vuelve a lo de la etapa',
+    cambios: {
+      fechas: fechas({ inicio: INICIO, listo: LISTO }),
+      entrega: { ...SIN_COORDINAR, comprometida: { fecha: '2026-09-17', franja: 'tarde' } },
+    },
+    etapa: 'listo',
+    camino: SIN_ESTIMATIVO('entregado'),
+    titular: TITULAR_LISTO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_LISTO['sin-pedido'],
+  },
 ];
 
 describe('qué ve el cliente en cada etapa del trabajo', () => {
@@ -1535,7 +1720,7 @@ describe('qué ve el cliente en cada etapa del trabajo', () => {
 
       expect(vista.etapa).toBe(caso.etapa);
       expect(vista.hitos.map((hito) => [hito.id, hito.estado])).toEqual(caso.camino);
-      expect(vista.titular).toBe(caso.titular);
+      expect(vista.titular).toEqual(caso.titular);
       if (caso.relevamiento === null) expect(vista.relevamiento).toBeNull();
       else expect(vista.relevamiento).toEqual(caso.relevamiento);
       expect(notaDelRelevamiento(vista, FORMATOS)?.estado ?? null).toBe(caso.nota);
@@ -1839,7 +2024,7 @@ describe('un trabajo sin aprobar, con dirección, inicio, entrega y un pago carg
     expect(vista.datos).toMatchObject({
       direccion: DIRECCION_CARGADA,
       inicio: INICIO_CARGADO,
-      entrega: { situacion: 'pautada', fecha: ENTREGA_CARGADA },
+      entrega: { situacion: 'estimada', fecha: ENTREGA_CARGADA },
     });
   });
 });
@@ -1849,7 +2034,7 @@ describe('la tarjeta de datos, desde la aprobación', () => {
     const vista = aprobada(vistaDelCliente(trabajo({ direccion: '   ' }), HOY));
     expect(vista.datos.direccion).toBeNull();
     expect(vista.datos.inicio).toBeNull();
-    expect(vista.datos.entrega).toEqual({ situacion: 'pautada', fecha: null });
+    expect(vista.datos.entrega).toEqual({ situacion: 'estimada', fecha: null });
   });
 
   it('entregado, la entrega es la del día que se entregó', () => {
@@ -1865,14 +2050,14 @@ describe('la tarjeta de datos, desde la aprobación', () => {
     expect(vista.datos.entrega).toEqual({ situacion: 'entregado', fecha: '2026-09-16' });
   });
 
-  it('en curso, un día de entrega cargado de más no la da por entregada: sigue la pautada', () => {
+  it('en curso, un día de entrega cargado de más no la da por entregada: sigue la estimada', () => {
     const vista = aprobada(
       vistaDelCliente(
         trabajo({ fechas: fechas({ entregaPautada: '2026-09-20', entregado: '2026-09-16' }) }),
         HOY,
       ),
     );
-    expect(vista.datos.entrega).toEqual({ situacion: 'pautada', fecha: '2026-09-20' });
+    expect(vista.datos.entrega).toEqual({ situacion: 'estimada', fecha: '2026-09-20' });
   });
 });
 
@@ -2134,5 +2319,139 @@ describe('hasta dónde llegó el trabajo', () => {
     expect(tuvoEstimativo(trabajo({ estado: 'presupuesto_estimativo' }))).toBe(true);
     expect(tuvoEstimativo(trabajo({ fechas: fechas({ estimativo: '2026-08-01' }) }))).toBe(true);
     expect(tuvoEstimativo(trabajo({ estado: 'a_presupuestar' }))).toBe(false);
+  });
+});
+
+describe('el mueble listo y la entrega que se coordina', () => {
+  const LISTO_SIN_NADA = trabajo({ fechas: fechas({ inicio: INICIO, listo: LISTO }) });
+
+  function listo(entrega: EntregaQueSeCoordina): VistaAprobada {
+    return aprobada(
+      vistaDelCliente(trabajo({ fechas: fechas({ inicio: INICIO, listo: LISTO }), entrega }), HOY),
+    );
+  }
+
+  it('listo, la fabricación queda tildada con su día y la entrega en curso, sin fecha', () => {
+    const vista = aprobada(vistaDelCliente(LISTO_SIN_NADA, HOY));
+    expect(vista.hitos[2]).toMatchObject({ id: 'fabricacion', estado: 'pasado', fecha: INICIO });
+    expect(vista.hitos[3]).toMatchObject({
+      id: 'entregado',
+      estado: 'actual',
+      fecha: null,
+      texto: LISTO_PARA_ENTREGAR,
+    });
+    expect(vista.hitoActual).toBe('fabricacion');
+    expect(llegoAl(vista, 'fabricacion')).toBe(true);
+    expect(llegoAl(vista, 'entregado')).toBe(false);
+  });
+
+  it('con la entrega comprometida, el paso en curso lleva el día acordado: es un acuerdo registrado', () => {
+    const vista = listo({ ...SIN_COORDINAR, comprometida: COMPROMETIDA });
+    expect(vista.hitos[3]).toMatchObject({
+      estado: 'actual',
+      fecha: COMPROMETIDA.fecha,
+      texto: LO_LLEVAMOS_Y_LO_INSTALAMOS,
+    });
+    expect(vista.coordinacion).toBeNull();
+  });
+
+  it('en fabricación, aunque esté comprometida, la entrega es un paso que viene: sin fecha', () => {
+    const vista = aprobada(
+      vistaDelCliente(
+        trabajo({
+          fechas: fechas({ inicio: INICIO }),
+          entrega: { ...SIN_COORDINAR, comprometida: COMPROMETIDA },
+        }),
+        HOY,
+      ),
+    );
+    expect(vista.hitos[3]).toMatchObject({ estado: 'futuro', fecha: null });
+    expect(vista.datos.entrega).toEqual({
+      situacion: 'confirmada',
+      fecha: COMPROMETIDA.fecha,
+      franja: 'manana',
+    });
+  });
+
+  it('una comprometida que ya pasó no se muestra en ningún lado', () => {
+    const vista = listo({ ...SIN_COORDINAR, comprometida: { fecha: '2026-09-16', franja: null } });
+    expect(vista.titular).toBe(TITULAR_LISTO);
+    expect(vista.hitos[3]).toMatchObject({ fecha: null, texto: LISTO_PARA_ENTREGAR });
+    expect(vista.datos.entrega).toEqual({ situacion: 'a-confirmar' });
+    expect(JSON.stringify(vista)).not.toContain('2026-09-16');
+  });
+
+  it('la tarjeta dice la estimada mientras se fabrica, y ninguna fecha si ya pasó', () => {
+    const conEstimada = (entregaPautada: string) =>
+      aprobada(
+        vistaDelCliente(trabajo({ fechas: fechas({ inicio: INICIO, entregaPautada }) }), HOY),
+      ).datos.entrega;
+    expect(conEstimada('2026-10-02')).toEqual({ situacion: 'estimada', fecha: '2026-10-02' });
+    expect(conEstimada(HOY)).toEqual({ situacion: 'estimada', fecha: HOY });
+    expect(conEstimada('2026-09-17')).toEqual({ situacion: 'estimada', fecha: null });
+  });
+
+  it('listo y sin comprometida, la tarjeta no compite con el día que se le propone: a coordinar', () => {
+    const vista = listo(conPropuesta(UN_DIA));
+    expect(vista.datos.entrega).toEqual({ situacion: 'a-coordinar' });
+  });
+
+  it('entregado sin fecha registrada, la tarjeta igual dice que se entregó', () => {
+    const vista = aprobada(vistaDelCliente(trabajo({ estado: 'entregado' }), HOY));
+    expect(vista.datos.entrega).toEqual({ situacion: 'entregado', fecha: null });
+  });
+
+  it('lo que hay para coordinar sale de la propuesta vigente y de lo último que contestó', () => {
+    expect(listo(SIN_COORDINAR).coordinacion).toEqual({ situacion: 'sin-pedido' });
+    expect(listo(conPropuesta(UN_DIA)).coordinacion).toEqual({
+      situacion: 'un-dia',
+      propuesta: UN_DIA,
+      respuesta: null,
+    });
+    expect(listo(conPropuesta(SUS_DIAS, SUS_DIAS_MANDADOS)).coordinacion).toEqual({
+      situacion: 'sus-dias',
+      propuesta: SUS_DIAS,
+      respuesta: SUS_DIAS_MANDADOS,
+    });
+    expect(listo(conPropuesta({ ...UN_DIA, fecha: null })).coordinacion).toEqual({
+      situacion: 'sin-pedido',
+    });
+    expect(
+      aprobada(vistaDelCliente(trabajo({ fechas: fechas({ inicio: INICIO }) }), HOY)).coordinacion,
+    ).toBeNull();
+  });
+
+  it('en lo que fue pasando, «Terminamos tu mueble» con el día en que quedó listo', () => {
+    const vista = vistaDelCliente(
+      trabajo({ fechas: fechas({ inicio: LISTO, listo: LISTO }) }),
+      HOY,
+    );
+    expect(vista.eventos.map((evento) => [evento.texto, evento.fecha])).toEqual([
+      [TERMINAMOS_TU_MUEBLE, LISTO],
+      [EMPEZAMOS_A_FABRICARLO, LISTO],
+    ]);
+  });
+
+  it('un inicio cargado después del día en que quedó listo no se cuenta como el arranque', () => {
+    const vista = vistaDelCliente(trabajo({ fechas: fechas({ inicio: HOY, listo: LISTO }) }), HOY);
+    expect(vista.eventos.map((evento) => evento.texto)).toEqual([TERMINAMOS_TU_MUEBLE]);
+  });
+
+  it('no le cuenta cuánto hace que está listo', () => {
+    const vista = listo(conPropuesta(SUS_DIAS, SUS_DIAS_MANDADOS));
+    expect(JSON.stringify(vista)).not.toMatch(HACE_TANTOS_DIAS);
+  });
+
+  it('una vista guardada por la versión anterior, sin el listo ni la entrega, se lee como que no hubo', () => {
+    const { entrega: _entrega, ...viejo } = trabajo({ fechas: fechas({ inicio: INICIO }) });
+    const { listo: _listo, ...fechasViejas } = viejo.fechas;
+    const comoLoGuardoLaVersionVieja = {
+      ...viejo,
+      fechas: fechasViejas,
+    } as unknown as TrabajoDelCliente;
+    const vista = aprobada(vistaDelCliente(comoLoGuardoLaVersionVieja, HOY));
+    expect(vista.etapa).toBe('fabricacion');
+    expect(vista.coordinacion).toBeNull();
+    expect(vista.titular).toBe('Lo estamos fabricando');
   });
 });

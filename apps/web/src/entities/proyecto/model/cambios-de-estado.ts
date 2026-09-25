@@ -63,7 +63,7 @@ export function cambiosAlPasar(
   hoy: string,
 ): CambiosDeProyecto {
   if (hacia === 'entregado') {
-    return { estado: hacia, fecha_entrega: proyecto.fecha_entrega ?? hoy };
+    return { estado: hacia, fecha_entrega: hoy };
   }
   if (proyecto.estado === 'entregado') return { estado: hacia, fecha_entrega: null };
   return { estado: hacia };

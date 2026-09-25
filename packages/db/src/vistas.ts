@@ -1,11 +1,15 @@
 import {
+  analisisDeEntregas,
   fechaDeApertura,
   saldosDelLibro,
+  type AnalisisDeEntregas,
+  type CambioDeFechaParaElAnalisis,
   type DatosDelLibro,
   type EstadoLiquidado,
   type LiquidacionRegistrada,
   type Money,
   type SaldosPorTesoro,
+  type TrabajoParaElAnalisis,
 } from '@maun/domain';
 
 import { dinero } from './dinero.ts';
@@ -138,6 +142,42 @@ export function liquidacionesDeLaReplica(
     if (liquidacion) liquidaciones.push(liquidacion);
   }
   return liquidaciones;
+}
+
+export interface DatosDelAnalisis {
+  trabajos: TrabajoParaElAnalisis[];
+  cambios: CambioDeFechaParaElAnalisis[];
+}
+
+export function datosDelAnalisis(replica: Replica): DatosDelAnalisis {
+  return {
+    trabajos: filasDe(replica, 'proyectos').map((proyecto) => {
+      const quizas = proyecto as Partial<typeof proyecto>;
+      return {
+        id: proyecto.id,
+        titulo: proyecto.titulo,
+        tipo: quizas.tipo_de_proyecto ?? null,
+        estado: proyecto.estado,
+        inicio: proyecto.fecha_inicio,
+        listo: quizas.listo_el ?? null,
+        entregado: proyecto.fecha_entrega,
+      };
+    }),
+    cambios: filasDe(replica, 'cambios_de_fecha').map((cambio) => ({
+      id: cambio.id,
+      proyectoId: cambio.proyecto_id,
+      tipo: cambio.tipo,
+      fecha: cambio.fecha,
+      origen: cambio.origen,
+      creadoEn: cambio.created_at,
+      trabajosEnCurso: cambio.trabajos_en_curso,
+    })),
+  };
+}
+
+export function analisisDeLaReplica(replica: Replica): AnalisisDeEntregas {
+  const { trabajos, cambios } = datosDelAnalisis(replica);
+  return analisisDeEntregas(trabajos, cambios);
 }
 
 export function objetivosDeLaReplica(replica: Replica): {

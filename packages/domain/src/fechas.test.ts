@@ -3,13 +3,36 @@ import { describe, expect, it } from 'vitest';
 import {
   DIAS_HABILES_DE_ENTREGA,
   DIAS_HABILES_PARA_PRESUPUESTAR,
+  diaDeLaSemana,
   diasEntre,
   entregaEstimada,
+  esFechaQueExiste,
   mesDe,
   sumarDias,
   sumarDiasHabiles,
   vencimientoDelPresupuesto,
 } from './fechas.ts';
+
+describe('esFechaQueExiste', () => {
+  it('es una fecha AAAA-MM-DD que está en el calendario', () => {
+    expect(esFechaQueExiste('2028-02-29')).toBe(true);
+    expect(esFechaQueExiste('2026-02-29')).toBe(false);
+    expect(esFechaQueExiste('2026-9-14')).toBe(false);
+    expect(esFechaQueExiste('mañana')).toBe(false);
+  });
+});
+
+describe('diaDeLaSemana', () => {
+  it('va de 0, el domingo, a 6, el sábado', () => {
+    expect(diaDeLaSemana('2026-09-27')).toBe(0);
+    expect(diaDeLaSemana('2026-09-28')).toBe(1);
+    expect(diaDeLaSemana('2026-10-03')).toBe(6);
+  });
+
+  it('rechaza una fecha que no existe', () => {
+    expect(() => diaDeLaSemana('2026-02-30')).toThrow(RangeError);
+  });
+});
 
 describe('vencimientoDelPresupuesto', () => {
   it('es una semana de trabajo desde el relevamiento: cinco días hábiles', () => {

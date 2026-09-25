@@ -100,6 +100,21 @@ export { usePantallaDespierta } from './pantalla-despierta';
 export { useAlgoEnCurso, useHayAlgoEnCurso } from './en-curso';
 export { useTirarParaActualizar, type FaseDelTiron, type Tiron } from './tirar-para-actualizar';
 export { formatearPesos } from './plata';
+export {
+  DIAS_DE_LA_SEMANA,
+  diaDeLaSemana,
+  fechasDelMes,
+  INICIALES_DE_LA_SEMANA,
+  mesesEntre,
+  mesPrevio,
+  mesSiguiente,
+  primerDiaDelMes,
+  rangoDeLaGrilla,
+  semanasDelMes,
+  ultimoDiaDelMes,
+  type CeldaDelMes,
+  type RangoDeLaGrilla,
+} from './mes';
 export { hayCambios } from './cambios';
 export {
   codificarLienzo,
@@ -178,6 +193,8 @@ export {
   RUTA_DE_PROYECTOS,
   RUTA_DE_CONSULTAS,
   RUTA_DE_SEGUIMIENTO,
+  RUTA_DEL_ANALITICO,
+  RUTA_DEL_HISTORIAL,
 } from './rutas';
 export { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from './tesoros';
 export { formatearPorcentaje, parsearPorcentaje, SENA_MAXIMA_BP } from './porcentaje';

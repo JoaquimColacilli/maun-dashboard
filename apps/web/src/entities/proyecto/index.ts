@@ -17,6 +17,7 @@ export {
   CLAVE_DE_BAJA_DE_PROYECTO,
   CLAVE_DE_COSTOS,
   CLAVE_DE_FORMAS_DE_COBRO,
+  CLAVE_DE_LA_ENTREGA,
   CLAVE_DE_MARCA_DEL_SEGUIMIENTO,
   CLAVE_DE_MARCAS,
   CLAVE_DE_NOTAS,
@@ -28,12 +29,14 @@ export {
   MUTACION_DE_BAJA_DE_PROYECTO,
   MUTACION_DE_COSTOS,
   MUTACION_DE_FORMAS_DE_COBRO,
+  MUTACION_DE_LA_ENTREGA,
   MUTACION_DE_MARCA_DEL_SEGUIMIENTO,
   MUTACION_DE_MARCAS,
   MUTACION_DE_NOTAS,
   MUTACION_DE_PROYECTO,
   MUTACION_DE_TAREAS,
   type BajaDeProyecto,
+  type CambioDeLaEntrega,
   type CostosDelTrabajo,
   type EdicionDeProyecto,
   type FormasDeCobroDelTrabajo,
@@ -134,8 +137,18 @@ export {
   type DiferenciaDelAjuste,
 } from './model/liquidacion';
 export {
+  cambiaAlgoDeLaEntrega,
+  cambiosDeLaComprometida,
   CLASE_DE_ENTREGA,
+  entregaDelResumen,
+  entregaGuardada,
+  estaListo,
+  fechaConSuFranja,
+  FRANJA_DE_LA_ENTREGA,
+  listoDelTrabajo,
+  tipoDelTrabajo,
   urgenciaDeEntrega,
+  type EntregaDelResumen,
   type TonoDeEntrega,
   type Urgencia,
 } from './model/entrega';
@@ -172,6 +185,7 @@ export {
   type SentidoDelCambio,
 } from './model/cambios-de-estado';
 export { situacionDeLaObra, type SituacionDeLaObra } from './model/obra';
+export { TIPOS_DE_ARRANQUE, tiposParaSugerir } from './model/tipos';
 export {
   contactosEnOrden,
   diaDeLaMarca,
@@ -243,6 +257,7 @@ export { CostosDeCotizar, type CostosDeCotizarProps } from './ui/CostosDeCotizar
 export { DistribucionDespiece, type DistribucionDespieceProps } from './ui/DistribucionDespiece';
 export { EntregaRelativa, type EntregaRelativaProps } from './ui/EntregaRelativa';
 export { EstadoBadge } from './ui/EstadoBadge';
+export { MarcaDeListo, type MarcaDeListoProps } from './ui/MarcaDeListo';
 export {
   LiquidacionesSinConfirmar,
   type LiquidacionesSinConfirmarProps,

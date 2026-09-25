@@ -31,6 +31,7 @@ export interface PiezaDelDespiece {
   tesoro: Tesoro;
   monto: Money;
   falta: Money;
+  cubierto: boolean;
   parte: number;
 }
 
@@ -135,11 +136,16 @@ export function despieceDeLaLiquidacion(liquidacion: Liquidacion): Despiece {
     cobrado: liquidacion.cobrado,
     gastos: liquidacion.gastos,
     neta: liquidacion.neta,
-    piezas: piezasDe(liquidacion),
+    piezas: piezasDe(liquidacion, liquidacion.objetivos),
   };
 }
 
-function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
+interface ObjetivosDelDespiece {
+  sueldo: Money;
+  fijos: Money;
+}
+
+function piezasDe(distribucion: Distribucion, objetivos: ObjetivosDelDespiece): PiezaDelDespiece[] {
   const base = distribucion.neta > 0 ? distribucion.neta : 0;
   const parte = (monto: Money) => (base === 0 ? 0 : monto / base);
 
@@ -150,6 +156,7 @@ function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
       tesoro: 'diezmo',
       monto: distribucion.diezmo,
       falta: centavos(0),
+      cubierto: false,
       parte: parte(distribucion.diezmo),
     },
     {
@@ -158,6 +165,7 @@ function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
       tesoro: 'hogar',
       monto: distribucion.sueldo,
       falta: distribucion.faltaSueldo,
+      cubierto: objetivos.sueldo > 0 && distribucion.topeSueldo === 0,
       parte: parte(distribucion.sueldo),
     },
     {
@@ -166,6 +174,7 @@ function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
       tesoro: 'maun',
       monto: distribucion.fijos,
       falta: distribucion.faltaFijos,
+      cubierto: objetivos.fijos > 0 && distribucion.topeFijos === 0,
       parte: parte(distribucion.fijos),
     },
     {
@@ -174,6 +183,7 @@ function piezasDe(distribucion: Distribucion): PiezaDelDespiece[] {
       tesoro: 'maun',
       monto: distribucion.remanente,
       falta: centavos(0),
+      cubierto: false,
       parte: parte(distribucion.remanente > 0 ? distribucion.remanente : centavos(0)),
     },
   ];
@@ -209,7 +219,10 @@ export function despieceDelProyecto(replica: Replica, proyecto: Proyecto, hoy: s
       cobrado: congelada.cobrado,
       gastos: congelada.gastos,
       neta: congelada.neta,
-      piezas: piezasDe(congelada),
+      piezas: piezasDe(congelada, {
+        sueldo: dinero(proyecto.dist_objetivo_sueldo_centavos ?? 0),
+        fijos: dinero(proyecto.dist_objetivo_fijos_centavos ?? 0),
+      }),
     };
   }
 
@@ -223,6 +236,6 @@ export function despieceDelProyecto(replica: Replica, proyecto: Proyecto, hoy: s
     cobrado: proyectada.cobrado,
     gastos: proyectada.gastos,
     neta: proyectada.neta,
-    piezas: piezasDe(proyectada),
+    piezas: piezasDe(proyectada, proyectada.objetivos),
   };
 }

@@ -1,4 +1,4 @@
-import type { EstadoLiquidado } from '@maun/domain';
+import { diaDeLaSemana, sumarDias, type EstadoLiquidado } from '@maun/domain';
 import type pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -15,6 +15,9 @@ const LEAD_DEL_SEED = '5eed0000-0000-7000-8000-000000020011';
 const PAGO_DEL_SEED = '5eed0000-0000-7000-8000-000000030004';
 const ENCUESTA_DEL_SEED = '5eed0000-0000-7000-8000-000000060001';
 const TOKEN_DE_LA_ENCUESTA_DEL_SEED = '5eed-encuesta-del-vanitory-0001';
+const TRABAJO_LISTO_DEL_SEED = '5eed0000-0000-7000-8000-000000020015';
+const PROPUESTA_DEL_SEED = '5eed0000-0000-7000-8000-000000070002';
+const TOKEN_DE_LA_ENTREGA_DEL_SEED = '5eed-entrega-del-placard-0001';
 
 const abiertas: pg.Client[] = [];
 const pendientes: Promise<unknown>[] = [];
@@ -213,6 +216,114 @@ describe('dos personas contra el mismo enlace de la encuesta, con conexiones rea
 
     await cliente.query('rollback');
     await expect(baja).resolves.toBeDefined();
+  });
+});
+
+async function propuestaDelSeedAbierta(monitor: pg.Client): Promise<string> {
+  const { rows } = await monitor.query<{ abierta: boolean; hoy: string }>(
+    `select exists (
+       select 1 from public.propuestas_de_entrega d
+       join public.proyectos p on p.id = d.proyecto_id
+       where d.id = $1 and d.cerrada_at is null and d.deleted_at is null and d.fecha >= private.hoy_en_el_taller()
+         and p.estado = 'en_curso' and p.listo_el is not null and p.entrega_comprometida is null
+     ) as abierta,
+     private.hoy_en_el_taller()::text as hoy`,
+    [PROPUESTA_DEL_SEED],
+  );
+  const fila = rows[0];
+  if (fila === undefined || !fila.abierta) {
+    throw new Error(
+      'El test de concurrencia usa la propuesta de entrega abierta del seed. Cargalo con `pnpm --filter @maun/db db:seed`.',
+    );
+  }
+  return fila.hoy;
+}
+
+function meQuedaBien(id: string): string {
+  return JSON.stringify({
+    id,
+    propuesta_id: PROPUESTA_DEL_SEED,
+    respuesta: 'me_queda_bien',
+    dias: [],
+    nota: '',
+  });
+}
+
+function unDiaQueSePuede(hoy: string): string {
+  for (let distancia = 2; distancia <= 30; distancia++) {
+    const dia = sumarDias(hoy, distancia);
+    if (diaDeLaSemana(dia) !== 0) return dia;
+  }
+  throw new Error('No hay ningún día para elegir.');
+}
+
+async function responder(cliente: pg.Client, respuesta: string): Promise<unknown> {
+  const { rows } = await cliente.query<{ resultado: unknown }>(
+    'select public.responder_la_entrega($1, $2::jsonb) as resultado',
+    [TOKEN_DE_LA_ENTREGA_DEL_SEED, respuesta],
+  );
+  return rows[0]?.resultado;
+}
+
+describe('el cliente y el dueño contra la entrega del mismo trabajo, con conexiones reales y todo en rollback', () => {
+  it('dos «me queda bien» a la vez: el segundo espera al primero en el lock del trabajo', async () => {
+    const primera = await sesion();
+    const segunda = await sesion();
+    const monitor = await sesion();
+
+    await propuestaDelSeedAbierta(monitor);
+
+    await abrirTransaccion(primera);
+    await comoAnonimo(primera);
+    expect(await responder(primera, meQuedaBien('0192a3b4-c5d6-7e8f-9a0b-000000000071'))).toEqual({
+      estado: 'guardada',
+    });
+
+    await abrirTransaccion(segunda);
+    await comoAnonimo(segunda);
+    const pidSegunda = await pidDe(segunda);
+    const resultado = sinRechazoSuelto(
+      responder(segunda, meQuedaBien('0192a3b4-c5d6-7e8f-9a0b-000000000072')),
+    );
+
+    expect(await esperarQueEspere(monitor, pidSegunda)).toContain(await pidDe(primera));
+
+    await primera.query('rollback');
+    await expect(resultado).resolves.toEqual({ estado: 'guardada' });
+  });
+
+  it('una propuesta nueva del dueño espera a la respuesta que se está guardando', async () => {
+    const cliente = await sesion();
+    const duenio = await sesion();
+    const monitor = await sesion();
+
+    const hoy = await propuestaDelSeedAbierta(monitor);
+    const misDias = JSON.stringify({
+      id: '0192a3b4-c5d6-7e8f-9a0b-000000000073',
+      propuesta_id: PROPUESTA_DEL_SEED,
+      respuesta: 'mis_dias',
+      dias: [{ fecha: unDiaQueSePuede(hoy), franjas: ['tarde'] }],
+      nota: '',
+    });
+
+    await abrirTransaccion(cliente);
+    await comoAnonimo(cliente);
+    expect(await responder(cliente, misDias)).toEqual({ estado: 'guardada' });
+
+    await abrirTransaccion(duenio);
+    await entrarAlHousehold(duenio);
+    const pidDuenio = await pidDe(duenio);
+    const propuesta = sinRechazoSuelto(
+      duenio.query('select public.proponer_la_entrega($1, $2::jsonb)', [
+        TRABAJO_LISTO_DEL_SEED,
+        JSON.stringify({ id: '0192a3b4-c5d6-7e8f-9a0b-000000000074', forma: 'sus_dias' }),
+      ]),
+    );
+
+    expect(await esperarQueEspere(monitor, pidDuenio)).toContain(await pidDe(cliente));
+
+    await cliente.query('rollback');
+    await expect(propuesta).resolves.toBeDefined();
   });
 });
 

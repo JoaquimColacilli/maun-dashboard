@@ -4,6 +4,8 @@ Estado: aceptada, 2026-09-11. Actualizada el mismo día con los topes mensuales,
 
 **Corregida el 2026-09-21 por el [ADR 0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)**, solo en la sección «La barra "Sueldo del mes"»: la barra vuelve a medir contra **un** sueldo por mes, que es la necesidad del hogar, y nombra el excedente cuando los cobros pagan más. La regla de reparto —el tope de sueldo por proyecto— queda como está.
 
+**Corregida el 2026-09-25 por el [ADR 0072](0072-el-sueldo-se-topea-por-mes.md)**: el tope de sueldo pasa a ser por mes, como los fijos, en todos los talleres menos el seed. «El tope de sueldo se queda por proyecto» queda como historia de por qué no se hizo antes. «Pasar el sueldo a tope mensual» es lo que se hizo, y su costo sin conexión ya lo había resuelto el [ADR 0016](0016-el-cobro-y-el-rechazo-que-encuentra-al-usuario.md).
+
 ## Contexto
 
 La regla central del negocio, la cascada que reparte la ganancia de un proyecto, se necesita en dos lugares:

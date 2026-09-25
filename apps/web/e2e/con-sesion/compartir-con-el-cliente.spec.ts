@@ -339,7 +339,7 @@ test('la ayuda explica el camino, el estimativo y el casillero, y se recorre de 
 
   const ayuda = page.getByRole('dialog', { name: 'Cómo lo ve tu cliente' });
   await expect(ayuda).toBeVisible(CARGA);
-  await expect(ayuda).toContainText('1 de 7', { useInnerText: true });
+  await expect(ayuda).toContainText('1 de 8', { useInnerText: true });
   await expect(ayuda.getByRole('button', { name: 'Atrás' })).toBeDisabled();
 
   // El alto no cambia de lámina en lámina: si cambiara, el modal saltaría abajo del dedo. Se mide
@@ -347,9 +347,9 @@ test('la ayuda explica el camino, el estimativo y el casillero, y se recorre de 
   const medir = async (): Promise<number> =>
     ayuda.evaluate((nodo) => (nodo instanceof HTMLElement ? nodo.offsetHeight : 0));
   const alto = await medir();
-  for (const numero of [2, 3, 4, 5, 6, 7]) {
+  for (const numero of [2, 3, 4, 5, 6, 7, 8]) {
     await ayuda.getByRole('button', { name: 'Siguiente' }).click();
-    await expect(ayuda).toContainText(`${String(numero)} de 7`, { useInnerText: true });
+    await expect(ayuda).toContainText(`${String(numero)} de 8`, { useInnerText: true });
     await expect(ayuda.getByRole('heading', { level: 3 })).toHaveCount(1);
     expect(await medir()).toBe(alto);
   }

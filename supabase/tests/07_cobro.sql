@@ -10,7 +10,7 @@ select tests.guardar('household_a', private.crear_household('Taller A', tests.id
 select tests.guardar('household_b', private.crear_household('Taller B', tests.id('b')));
 
 update public.ajustes
-set sueldo_mensual_centavos = 180000000, costos_fijos_centavos = 25000000
+set sueldo_mensual_centavos = 180000000, costos_fijos_centavos = 25000000, sueldo_tope_mensual = false
 where household_id in (tests.id('household_a'), tests.id('household_b'));
 
 select tests.entrar_como(tests.id('a'));

@@ -128,7 +128,8 @@ select set_eq(
     'visita_hecha', 'visita_importante', 'entrega_importante', 'presupuesto_importante',
     'sena_bp', 'entrega_hora', 'visita_hora',
     'costo_madera_centavos', 'costo_herrajes_centavos', 'costo_flete_centavos',
-    'costo_ayudante_centavos', 'presupuesto_vale_hasta'
+    'costo_ayudante_centavos', 'presupuesto_vale_hasta',
+    'listo_el', 'entrega_comprometida', 'entrega_comprometida_franja', 'tipo_de_proyecto'
   ],
   'toda columna de proyectos está clasificada para la encuesta: viaja el título y nada más'
 );

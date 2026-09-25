@@ -9,15 +9,16 @@
 -- No suma miembros: para verlo desde la app hay que asignarle un usuario de prueba a mano.
 --
 -- Importes en centavos. Ajustes: sueldo $1.800.000 por proyecto, fijos $250.000 por mes, diezmo
--- 10%; un perdido con seña paga diezmo y no sueldo (ADR 0011).
+-- 10%; un perdido con seña paga diezmo y no sueldo (ADR 0011). El sueldo por proyecto va escrito:
+-- desde el ADR 0072 el default es por mes, y las liquidaciones de abajo se congelaron por proyecto.
 
 delete from public.households where id = '5eed0000-0000-7000-8000-000000000001';
 
 insert into public.households (id, nombre)
 values ('5eed0000-0000-7000-8000-000000000001', '[seed] Taller de prueba');
 
-insert into public.ajustes (id, household_id, sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp)
-values ('5eed0000-0000-7000-8000-000000000002', '5eed0000-0000-7000-8000-000000000001', 180000000, 25000000, 1000000000, 4000);
+insert into public.ajustes (id, household_id, sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, sueldo_tope_mensual)
+values ('5eed0000-0000-7000-8000-000000000002', '5eed0000-0000-7000-8000-000000000001', 180000000, 25000000, 1000000000, 4000, false);
 
 
 -- Clientes ---------------------------------------------------------------------------------------
@@ -271,3 +272,27 @@ select private.sembrar_la_encuesta('5eed0000-0000-7000-8000-000000000001');
 insert into public.encuestas_enviadas (id, household_id, proyecto_id, token_hash, token) values
   ('5eed0000-0000-7000-8000-000000060001', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020002',
    encode(sha256(convert_to('5eed-encuesta-del-vanitory-0001', 'UTF8')), 'hex'), '5eed-encuesta-del-vanitory-0001');
+
+
+-- La entrega -------------------------------------------------------------------------------------
+-- Un placard en curso y ya listo, con su enlace de token fijo y un día de entrega propuesto que nadie
+-- contestó: packages/db/tests/concurrencia.test.ts lo usa para contestar dos veces a la vez y para
+-- proponer otra cosa mientras el cliente contesta, siempre en rollback. El día propuesto está lejos a
+-- propósito, para que el seed siga sirviendo aunque pasen los meses.
+
+insert into public.proyectos (
+  id, household_id, cliente_id, titulo, estado, presupuesto_centavos, forma_pago, comprobante,
+  fecha_inicio, entrega_estimada, direccion_entrega, listo_el, tipo_de_proyecto
+) values (
+  '5eed0000-0000-7000-8000-000000020015', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000010005',
+  'Placard de dos cuerpos con espejo', 'en_curso', 180000000, 'transferencia', 'factura_b',
+  '2026-09-01', '2026-09-30', 'Belgrano 455, Haedo', '2026-09-24', 'Placard'
+);
+
+insert into public.enlaces_publicos (id, household_id, proyecto_id, token_hash, token) values
+  ('5eed0000-0000-7000-8000-000000070001', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020015',
+   encode(sha256(convert_to('5eed-entrega-del-placard-0001', 'UTF8')), 'hex'), '5eed-entrega-del-placard-0001');
+
+insert into public.propuestas_de_entrega (id, household_id, proyecto_id, forma, fecha, franja) values
+  ('5eed0000-0000-7000-8000-000000070002', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020015',
+   'un_dia', '2030-10-01', 'manana');

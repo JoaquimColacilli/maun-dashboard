@@ -3,7 +3,12 @@ import { centavos, faseDe, type Fase, type Money } from '@maun/domain';
 import { filasDe, totalesPorProyecto, type FilaDe, type Replica } from '@/shared/api';
 
 import type { Gasto, Pago, Proyecto } from './catalogos';
-import { urgenciaDeEntrega, type Urgencia } from './entrega';
+import {
+  entregaDelResumen,
+  urgenciaDeEntrega,
+  type EntregaDelResumen,
+  type Urgencia,
+} from './entrega';
 
 export interface ResumenDeProyecto {
   proyecto: Proyecto;
@@ -14,6 +19,7 @@ export interface ResumenDeProyecto {
   cobrado: Money;
   gastos: Money;
   saldo: Money | null;
+  entrega: EntregaDelResumen;
   urgencia: Urgencia | undefined;
 }
 
@@ -29,6 +35,7 @@ export function resumenesDeProyectos(replica: Replica, hoy: string): ResumenDePr
 
   return filasDe(replica, 'proyectos').map((proyecto) => {
     const cliente = clientes.get(proyecto.cliente_id);
+    const entrega = entregaDelResumen(proyecto);
     const { cobrado, gastos } = totales.get(proyecto.id) ?? {
       cobrado: centavos(0),
       gastos: centavos(0),
@@ -43,7 +50,8 @@ export function resumenesDeProyectos(replica: Replica, hoy: string): ResumenDePr
       cobrado,
       gastos,
       saldo: saldoDe(proyecto.presupuesto_centavos, cobrado),
-      urgencia: urgenciaDeEntrega(proyecto.entrega_estimada, proyecto.estado, hoy),
+      entrega,
+      urgencia: urgenciaDeEntrega(entrega.fecha, proyecto.estado, hoy),
     };
   });
 }

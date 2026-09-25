@@ -194,7 +194,50 @@ test('dos cobros del mismo mes hechos sin señal drenan en orden y ninguno rebot
 
   expect((await distribucionDe(sesion, uno.id))?.dist_fijos_centavos).toBe(13_000_000);
   expect((await distribucionDe(sesion, dos.id))?.dist_fijos_centavos).toBe(12_000_000);
+  expect((await distribucionDe(sesion, uno.id))?.dist_sueldo_centavos).toBe(SUELDO);
+  expect(await distribucionDe(sesion, dos.id)).toMatchObject({
+    dist_sueldo_centavos: 0,
+    dist_remanente_centavos: 78_000_000,
+  });
   await expect(page.getByText('El servidor lo rechazó')).toBeHidden();
+});
+
+test('el sueldo se cuenta por mes: con el mes cubierto, el reparto lo dice y Ajustes lo explica', async ({
+  page,
+}) => {
+  const uno = await proyecto('Cobrado a principio de mes', { pago: 70_000_000 });
+  const dos = await proyecto('Cobrado con el sueldo cubierto', { pago: 100_000_000 });
+  const fila = await leerProyecto(sesion, uno.titulo);
+  await cobrarPorRpc(sesion, {
+    p_proyecto_id: uno.id,
+    p_version: fila?.version ?? 1,
+    p_fecha_cobro: hoyEnElTaller(),
+    p_cobrado_centavos: 70_000_000,
+    p_gastos_centavos: 0,
+    p_tope_sueldo_centavos: SUELDO,
+    p_tope_fijos_centavos: FIJOS,
+    p_diezmo_centavos: 7_000_000,
+    p_sueldo_centavos: 50_000_000,
+    p_fijos_centavos: 13_000_000,
+    p_remanente_centavos: 0,
+  });
+
+  await page.goto(`/proyectos/${dos.id}`);
+  await listoParaCortar(page);
+  const sueldo = page
+    .getByRole('region', { name: 'Distribución de la ganancia' })
+    .getByRole('listitem')
+    .filter({ hasText: 'Sueldo' });
+  await expect(sueldo).toContainText('ya lo cubrieron otros cobros del mes');
+  await expect(sueldo).toContainText('$ 0');
+  await expect(sueldo).not.toContainText('faltan');
+
+  await page.goto('/ajustes');
+  await expect(
+    page.getByText(
+      'Lo que tu casa necesita por mes. Los cobros del mes lo van pagando y, una vez cubierto, lo que sobra queda en el taller.',
+    ),
+  ).toBeVisible({ timeout: 20_000 });
 });
 
 test('un cobro rechazado con el formulario ya cerrado avisa igual y se ve en el proyecto', async ({
@@ -287,11 +330,13 @@ test('un cobro con el acumulado del mes desactualizado vuelve ajustado y muestra
   const congelada = await distribucionDe(sesion, dos.id);
   expect(congelada?.dist_tope_fijos_centavos).toBe(12_000_000);
   expect(congelada?.dist_fijos_centavos).toBe(12_000_000);
-  expect(congelada?.dist_remanente_centavos).toBe(28_000_000);
+  expect(congelada?.dist_sueldo_centavos).toBe(0);
+  expect(congelada?.dist_remanente_centavos).toBe(78_000_000);
 
   await expect(page.getByText('El reparto salió distinto del que viste.')).toBeVisible({
     timeout: 30_000,
   });
+  await expect(page.getByText('Sueldo: esperabas', { exact: false })).toBeVisible();
   await expect(page.getByText('Costos fijos: esperabas', { exact: false })).toBeVisible();
 });
 

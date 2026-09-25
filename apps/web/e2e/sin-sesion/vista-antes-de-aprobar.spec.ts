@@ -139,7 +139,7 @@ async function capturar(
 async function loQueNoTieneQueEstar(page: Page): Promise<void> {
   const texto = await page.getByRole('main').innerText();
   for (const prometido of [
-    'Entrega pautada',
+    'Entrega estimada',
     'Empezamos',
     DIRECCION,
     'Te falta pagar',
@@ -250,7 +250,7 @@ test('aprobado y en fabricación: vuelven la tarjeta con la dirección, el inici
     const tarjeta = region(page, 'Datos del trabajo');
     await expect(tarjeta).toContainText(DIRECCION);
     await expect(tarjeta).toContainText('Empezamos');
-    await expect(tarjeta).toContainText('Entrega pautada');
+    await expect(tarjeta).toContainText('Entrega estimada');
     await expect(tarjeta).toContainText('$ 624.000 · pagada');
     await expect(region(page, 'Para cuándo')).toHaveCount(0);
 

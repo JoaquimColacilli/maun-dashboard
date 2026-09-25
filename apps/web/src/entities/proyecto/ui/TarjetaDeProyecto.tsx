@@ -6,6 +6,7 @@ import { Tablero } from '@/shared/ui';
 import type { ResumenDeProyecto } from '../model/resumen';
 import { rutaDelProyecto } from '../model/rutas';
 import { EstadoBadge } from './EstadoBadge';
+import { MarcaDeListo } from './MarcaDeListo';
 import { MarcaDeLiquidacion } from './MarcaDeLiquidacion';
 
 export interface TarjetaDeProyectoProps {
@@ -34,7 +35,10 @@ export function TarjetaDeProyecto({
     >
       <div className="flex items-center justify-between gap-2">
         <div className="relative z-10 min-w-0">{cliente}</div>
-        <EstadoBadge estado={proyecto.estado} />
+        <span className="flex flex-none items-center gap-1.5">
+          <MarcaDeListo proyecto={proyecto} />
+          <EstadoBadge estado={proyecto.estado} />
+        </span>
       </div>
 
       <MarcaDeLiquidacion proyectoId={proyecto.id} />

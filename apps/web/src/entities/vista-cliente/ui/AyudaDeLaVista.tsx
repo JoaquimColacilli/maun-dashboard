@@ -1,4 +1,9 @@
-import { HITO_DEL_ESTIMATIVO, NOTA_DEL_RELEVAMIENTO } from '@maun/domain';
+import {
+  HITO_DEL_ESTIMATIVO,
+  LISTO_PARA_ENTREGAR,
+  NOTA_DEL_RELEVAMIENTO,
+  TITULAR_LISTO,
+} from '@maun/domain';
 import { useState } from 'react';
 
 import { useAnchoDePantalla } from '@/shared/lib';
@@ -135,14 +140,49 @@ const LAMINAS: readonly Lamina[] = [
         texto: 'Se marca cuando tocás «Ya lo entregué», con la fecha de ese día.',
       },
       {
-        clave: 'pautada',
+        clave: 'estimada',
         icono: 'calendar-days',
-        titulo: 'La fecha pautada',
+        titulo: 'La fecha estimada',
         texto:
-          'Desde que lo aprueba, la entrega estimada que cargaste la lee como «Entrega pautada». Si la movés, la próxima vez que abra ve la nueva.',
+          'Mientras lo fabricás, la entrega estimada que cargaste la lee como «Fecha estimada de entrega». Si la movés, la próxima vez que abra ve la nueva. Una fecha que ya pasó no la ve: la ficha te avisa para que la muevas.',
       },
     ],
     pie: 'Sin fecha de inicio cargada, el paso 3 nunca dice «Lo estamos fabricando»: se queda en «Vamos a empezar a fabricarlo» hasta que lo entregás, y ahí se tilda sin día.',
+  },
+  {
+    id: 'listo',
+    titulo: 'Cuando está listo',
+    entrada: 'Tocás «Ya está listo» en la ficha y la entrega se coordina desde su pantalla.',
+    filas: [
+      {
+        clave: 'listo',
+        icono: 'circle-check',
+        titulo: TITULAR_LISTO,
+        texto: `Así lo lee arriba de todo, y el paso 4 dice «${LISTO_PARA_ENTREGAR}». Si no le pedís nada, lee que lo próximo es acordar el día.`,
+      },
+      {
+        clave: 'un-dia',
+        icono: 'calendar-check',
+        titulo: 'Un día que le proponés',
+        texto:
+          'Lo ve con dos botones: «Me queda bien» y «No puedo ese día». Si lo acepta, la entrega queda comprometida sola.',
+      },
+      {
+        clave: 'sus-dias',
+        icono: 'calendar-days',
+        titulo: 'Sus días',
+        texto:
+          'Si le pedís sus días, o no puede el que le propusiste, marca en un calendario los que le quedan bien, a la mañana, a la tarde o las dos, y te puede dejar una nota. Elige de pasado mañana a 30 días, sin domingos. Vos confirmás uno.',
+      },
+      {
+        clave: 'comprometida',
+        icono: 'truck',
+        titulo: 'La entrega comprometida',
+        texto:
+          'Con el día confirmado lee «¡Buenas noticias! Lo estamos entregando el…». La podés poner también mientras lo fabricás. Si hay que cambiarla, la cambiás vos desde la ficha: él no puede.',
+      },
+    ],
+    pie: 'Lo que te contesta te llega a la app abierta y a Inicio, sin aviso al celular.',
   },
   {
     id: 'saldo',

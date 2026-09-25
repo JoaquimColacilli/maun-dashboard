@@ -20,9 +20,9 @@ balance the application shows is a sum over the entries that move money into, ou
 A job starts as a lead: a call, a visit, a quote, sometimes a deposit collected at the visit. When the
 client approves it, the same record becomes an active project with a budget, payments and expenses.
 When it is paid, collecting it splits the net profit, meaning what was collected minus what was spent,
-in a fixed order: the tithe, the owner's salary, the fixed costs the month has not yet covered, and a
-remainder that stays in the workshop. A lead that does not go ahead is closed as lost, and a deposit
-kept from it goes through the same cascade. Either settlement can be undone, but only explicitly, never
+in a fixed order: the tithe, then the part of the owner's monthly salary and of the fixed costs that the
+month has not yet covered, and a remainder that stays in the workshop. A lead that does not go ahead is
+closed as lost, and a deposit kept from it goes through the same cascade. Either settlement can be undone, but only explicitly, never
 as a side effect of editing.
 
 Around that core sit a client list, a ledger of every movement, a tithe screen that states the debt in

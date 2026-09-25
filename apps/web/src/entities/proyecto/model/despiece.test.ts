@@ -4,7 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { TABLAS_REPLICADAS, type Replica, type TablaReplicada } from '@/shared/api';
 
 import type { Proyecto } from './catalogos';
-import { fechaDelCobroPropuesta, repartoEnLaAperturaPropuesto } from './despiece';
+import {
+  despieceDelProyecto,
+  despieceDeLaLiquidacion,
+  fechaDelCobroPropuesta,
+  repartoEnLaAperturaPropuesto,
+} from './despiece';
 import { filaLiquidada, filaRevertida, pedidoDeLiquidacion } from './liquidacion';
 
 const HOY = '2026-09-23';
@@ -86,6 +91,84 @@ describe('repartoEnLaAperturaPropuesto', () => {
         APERTURA,
       ),
     ).toBe(true);
+  });
+});
+
+describe('el escalón que el mes ya cubrió', () => {
+  const MES_CUBIERTO = {
+    destino: 'cobrado',
+    fecha: '2026-09-25',
+    cobrado: 154_584_953,
+    gastos: 0,
+    neta: 154_584_953,
+    diezmoBp: 1000,
+    topeSueldo: 0,
+    topeFijos: 0,
+    diezmo: 15_458_495,
+    sueldo: 0,
+    fijos: 0,
+    remanente: 139_126_458,
+    faltaSueldo: 0,
+    faltaFijos: 0,
+    previo: { sueldo: 248_506_878, fijos: 0 },
+    objetivos: { sueldo: 180_000_000, fijos: 0, sueldoMensual: true },
+  } as unknown as Liquidacion;
+
+  function pieza(piezas: ReturnType<typeof despieceDeLaLiquidacion>['piezas'], id: string) {
+    return piezas.find((una) => una.id === id);
+  }
+
+  it('con sueldo por mes y el mes cubierto, el sueldo queda en cero y lo dice', () => {
+    const { piezas } = despieceDeLaLiquidacion(MES_CUBIERTO);
+    expect(pieza(piezas, 'sueldo')).toMatchObject({ monto: 0, falta: 0, cubierto: true });
+    expect(pieza(piezas, 'fijos')).toMatchObject({ monto: 0, cubierto: false });
+    expect(pieza(piezas, 'remanente')).toMatchObject({ monto: 139_126_458, cubierto: false });
+  });
+
+  it('un cobro ya congelado lo lee de su objetivo y su tope', () => {
+    const cobrado = proyecto({
+      estado: 'cobrado',
+      fecha_cobro: '2026-09-25',
+      dist_cobrado_centavos: 154_584_953,
+      dist_gastos_centavos: 0,
+      dist_diezmo_bp: 1000,
+      dist_tope_sueldo_centavos: 0,
+      dist_tope_fijos_centavos: 12_000_000,
+      dist_diezmo_centavos: 15_458_495,
+      dist_sueldo_centavos: 0,
+      dist_fijos_centavos: 12_000_000,
+      dist_remanente_centavos: 127_126_458,
+      dist_objetivo_sueldo_centavos: 180_000_000,
+      dist_objetivo_fijos_centavos: 25_000_000,
+    });
+    const { piezas } = despieceDelProyecto(replicaCon([]), cobrado, HOY);
+    expect(pieza(piezas, 'sueldo')?.cubierto).toBe(true);
+    expect(pieza(piezas, 'fijos')?.cubierto).toBe(false);
+
+    const sinObjetivo = proyecto({
+      ...cobrado,
+      dist_objetivo_sueldo_centavos: null,
+      dist_objetivo_fijos_centavos: null,
+    });
+    expect(
+      pieza(despieceDelProyecto(replicaCon([]), sinObjetivo, HOY).piezas, 'sueldo'),
+    ).toMatchObject({ cubierto: false });
+  });
+
+  it('con sueldo por trabajo el tope es el objetivo entero y nunca se da por cubierto', () => {
+    const porTrabajo = {
+      ...MES_CUBIERTO,
+      topeSueldo: 180_000_000,
+      sueldo: 139_126_458,
+      remanente: 0,
+      faltaSueldo: 40_873_542,
+      objetivos: { sueldo: 180_000_000, fijos: 0, sueldoMensual: false },
+    } as unknown as Liquidacion;
+    expect(pieza(despieceDeLaLiquidacion(porTrabajo).piezas, 'sueldo')).toMatchObject({
+      monto: 139_126_458,
+      falta: 40_873_542,
+      cubierto: false,
+    });
   });
 });
 

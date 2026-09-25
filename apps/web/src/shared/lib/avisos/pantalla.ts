@@ -206,6 +206,41 @@ export const TEXTOS_DE_AVISO = {
     enCola: 'Recordatorio anotado sin señal: se guarda solo cuando vuelva.',
     error: 'No se anotó el recordatorio.',
   },
+  yaEstaListo: {
+    hecho: 'Listo: tu cliente ya ve que está terminado.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo marcar que está listo.',
+  },
+  todaviaNoEstaListo: {
+    hecho: 'Volvió a fabricación.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo sacar la marca de listo.',
+  },
+  entregaEstimada: {
+    hecho: 'Entrega estimada guardada.',
+    enCola: 'Entrega estimada anotada sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la entrega estimada.',
+  },
+  entregaComprometida: {
+    hecho: 'Entrega comprometida: tu cliente ya la ve.',
+    enCola: 'Entrega comprometida anotada sin señal: se guarda sola cuando vuelva.',
+    error: 'No se guardó la entrega comprometida.',
+  },
+  sinEntregaComprometida: {
+    hecho: 'Ya no hay entrega comprometida.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo sacar la entrega comprometida.',
+  },
+  pedidoDeEntrega: {
+    hecho: 'Listo: tu cliente ya lo ve en su enlace.',
+    enCola: 'Para pedírselo hace falta señal.',
+    error: 'No se pudo mandar el pedido de la entrega.',
+  },
+  respuestaDeEntregaLeida: {
+    hecho: 'Respuesta leída.',
+    enCola: 'Anotado sin señal: se guarda solo cuando vuelva.',
+    error: 'No se pudo marcar la respuesta como leída.',
+  },
 } as const satisfies Record<string, TextosDeAviso>;
 
 export type QueSeGuarda = keyof typeof TEXTOS_DE_AVISO;

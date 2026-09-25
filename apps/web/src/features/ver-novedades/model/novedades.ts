@@ -5,6 +5,23 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-25.3',
+    lineas: [
+      'Tu sueldo ahora se cuenta por mes: los cobros lo van pagando hasta completar el que cargaste en Ajustes, y lo que sobra queda en el taller.',
+      'Si el mes ya tiene el sueldo cubierto, el reparto de un cobro lo dice y no le manda nada al hogar.',
+      'Lo que ya cobraste queda repartido como estaba.',
+    ],
+  },
+  {
+    version: '2026-09-25.2',
+    lineas: [
+      'Cuando terminás un mueble, tocá «Ya está listo» en su ficha: tu cliente lo ve y podés proponerle un día o pedirle que marque los días y horarios que le quedan bien.',
+      'Si acepta el día, la entrega queda comprometida sola y su página le dice «¡Buenas noticias! Lo estamos entregando el …». Si te pasa sus días, confirmás uno.',
+      'Mientras lo fabricás, tu cliente ve la fecha como estimada. La app guarda la primera de cada trabajo y la compara con el día en que lo entregaste.',
+      'En el Analítico de entregas, desde Historial, ves qué tan preciso sos estimando y cuánto demorás por tipo de proyecto, que ahora le podés poner a cada trabajo.',
+    ],
+  },
+  {
     version: '2026-09-25',
     lineas: [
       'La página de tu cliente ya no le muestra un mueble que no es el suyo: el dibujo cuenta en qué anda el trabajo, del número estimado al presupuesto, la seña, el taller y su casa.',

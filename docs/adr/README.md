@@ -59,7 +59,7 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0053](0053-como-te-paga-cada-trabajo-y-el-qr-del-enlace.md)                | Cómo te paga cada trabajo, y el QR que lleva a su página            | Aceptada, corregida  |
 | [0054](0054-el-link-de-cobro-de-mercado-pago.md)                            | El link de cobro de Mercado Pago, pegado a mano en Ajustes          | Aceptada, corregida  |
 | [0055](0055-lo-que-se-guarda-en-el-aparato-y-lo-que-no.md)                  | Lo que se guarda en el aparato, y lo que no                         | Aceptada             |
-| [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                          | Aceptada             |
+| [0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md)                  | El sueldo del mes se mide contra un sueldo                          | Superada en parte    |
 | [0057](0057-las-opiniones-de-los-clientes.md)                               | Las opiniones: la primera vez que alguien de afuera escribe         | Aceptada             |
 | [0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md)    | El estimativo y el relevamiento en el camino del cliente            | Aceptada, corregida  |
 | [0059](0059-la-nota-del-relevamiento-reemplaza-al-casillero.md)             | La nota del relevamiento reemplaza al casillero                     | Aceptada, corregida  |
@@ -74,3 +74,5 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0068](0068-la-mesa-y-el-plano.md)                                          | La mesa y el plano: tarjetas sobre una mesa y dibujos en su lámina  | Aceptada, corregida  |
 | [0069](0069-el-dibujo-del-trabajo-del-cliente.md)                           | El dibujo del trabajo del cliente: el proceso, no el mueble         | Aceptada             |
 | [0070](0070-el-camino-tilda-lo-que-paso.md)                                 | El camino tilda lo que pasó y deja en curso lo que falta            | Aceptada             |
+| [0071](0071-la-entrega-y-sus-fechas.md)                                     | La entrega y sus fechas: listo, estimada, comprometida y respuesta  | Aceptada             |
+| [0072](0072-el-sueldo-se-topea-por-mes.md)                                  | El sueldo se topea por mes                                          | Aceptada             |

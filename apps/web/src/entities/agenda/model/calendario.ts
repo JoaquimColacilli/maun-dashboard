@@ -1,64 +1,22 @@
-import { diasEntre, sumarDias, type EventoDeLaAgenda, type RangoDeLaAgenda } from '@maun/domain';
+import { diasEntre, type EventoDeLaAgenda } from '@maun/domain';
 
-import { diasDelMes, nombreDelMes, relativa } from '@/shared/lib';
+import { DIAS_DE_LA_SEMANA, diaDeLaSemana, nombreDelMes, relativa } from '@/shared/lib';
 
 import { DERIVADA } from './categorias';
 
-export const DIAS_DE_LA_SEMANA = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'] as const;
-
-export const INICIALES_DE_LA_SEMANA = ['l', 'm', 'm', 'j', 'v', 's', 'd'] as const;
-
-const UN_LUNES = '2024-01-01';
-
-export interface CeldaDelMes {
-  fecha: string;
-  fuera: boolean;
-}
-
-export function diaDeLaSemana(fecha: string): number {
-  return ((diasEntre(UN_LUNES, fecha) % 7) + 7) % 7;
-}
-
-export function primerDiaDelMes(mes: string): string {
-  return `${mes}-01`;
-}
-
-export function ultimoDiaDelMes(mes: string): string {
-  return `${mes}-${String(diasDelMes(mes)).padStart(2, '0')}`;
-}
-
-export function mesSiguiente(mes: string): string {
-  return sumarDias(ultimoDiaDelMes(mes), 1).slice(0, 7);
-}
-
-export function mesPrevio(mes: string): string {
-  return sumarDias(primerDiaDelMes(mes), -1).slice(0, 7);
-}
-
-export function fechasDelMes(mes: string): string[] {
-  const primero = primerDiaDelMes(mes);
-  return Array.from({ length: diasDelMes(mes) }, (_, indice) => sumarDias(primero, indice));
-}
-
-export function rangoDeLaGrilla(mes: string): RangoDeLaAgenda {
-  const primero = primerDiaDelMes(mes);
-  const ultimo = ultimoDiaDelMes(mes);
-  return {
-    desde: sumarDias(primero, -diaDeLaSemana(primero)),
-    hasta: sumarDias(ultimo, 6 - diaDeLaSemana(ultimo)),
-  };
-}
-
-export function semanasDelMes(mes: string): CeldaDelMes[][] {
-  const { desde, hasta } = rangoDeLaGrilla(mes);
-  const semanas: CeldaDelMes[][] = [];
-  for (let indice = 0; indice <= diasEntre(desde, hasta); indice += 1) {
-    const fecha = sumarDias(desde, indice);
-    if (indice % 7 === 0) semanas.push([]);
-    semanas[semanas.length - 1]?.push({ fecha, fuera: fecha.slice(0, 7) !== mes });
-  }
-  return semanas;
-}
+export {
+  DIAS_DE_LA_SEMANA,
+  diaDeLaSemana,
+  fechasDelMes,
+  INICIALES_DE_LA_SEMANA,
+  mesPrevio,
+  mesSiguiente,
+  primerDiaDelMes,
+  rangoDeLaGrilla,
+  semanasDelMes,
+  ultimoDiaDelMes,
+  type CeldaDelMes,
+} from '@/shared/lib';
 
 export function mesEnPalabras(mes: string, hoy: string): string {
   const nombre = nombreDelMes(mes).toLowerCase();

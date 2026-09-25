@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { indicadorDeSync } from '../apoyo/pantalla';
 import { entrarConLaSesion } from '../apoyo/sesion';
 import { iniciarSesionDePrueba, type SesionDePrueba } from '../apoyo/taller';
 import { abrirComparador } from './capturas';
@@ -168,6 +169,7 @@ test('si al volver su tarjeta ya no está a la vista, el encabezado se apaga en 
   await page.getByRole('button', { name: /^Cobrar y repartir/ }).click();
   await expect(page).toHaveURL(new RegExp(`/proyectos/${entregado.id}$`));
   await expect(titulo(page, entregado.titulo)).toBeVisible();
+  await expect(indicadorDeSync(page)).toBeHidden(CARGA);
   await sinTransicionEnCurso(page);
   await page.mouse.move(1, 1);
 

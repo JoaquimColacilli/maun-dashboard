@@ -40,6 +40,8 @@ export const RUTA_DE_PROYECTOS = '/proyectos';
 
 export const RUTA_DE_CONSULTAS = '/consultas';
 export const RUTA_DE_SEGUIMIENTO = '/proyectos?etapa=seguimiento';
+export const RUTA_DEL_HISTORIAL = '/proyectos?etapa=historial';
+export const RUTA_DEL_ANALITICO = '/proyectos/analitico';
 
 export const RUTA_DE_CONTACTO_NUEVO = '/consultas/nueva';
 

@@ -268,6 +268,75 @@ export type Database = {
           },
         ];
       };
+      cambios_de_fecha: {
+        Row: {
+          created_at: string;
+          decidido_el: string;
+          deleted_at: string | null;
+          fecha: string | null;
+          fecha_anterior: string | null;
+          franja: Database['public']['Enums']['franja_de_entrega'] | null;
+          household_id: string;
+          id: string;
+          origen: Database['public']['Enums']['origen_de_la_fecha'];
+          proyecto_id: string;
+          tipo: Database['public']['Enums']['tipo_de_fecha'];
+          trabajos_en_curso: number | null;
+          trabajos_sin_terminar: number | null;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          decidido_el: string;
+          deleted_at?: string | null;
+          fecha?: string | null;
+          fecha_anterior?: string | null;
+          franja?: Database['public']['Enums']['franja_de_entrega'] | null;
+          household_id: string;
+          id?: string;
+          origen: Database['public']['Enums']['origen_de_la_fecha'];
+          proyecto_id: string;
+          tipo: Database['public']['Enums']['tipo_de_fecha'];
+          trabajos_en_curso?: number | null;
+          trabajos_sin_terminar?: number | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          decidido_el?: string;
+          deleted_at?: string | null;
+          fecha?: string | null;
+          fecha_anterior?: string | null;
+          franja?: Database['public']['Enums']['franja_de_entrega'] | null;
+          household_id?: string;
+          id?: string;
+          origen?: Database['public']['Enums']['origen_de_la_fecha'];
+          proyecto_id?: string;
+          tipo?: Database['public']['Enums']['tipo_de_fecha'];
+          trabajos_en_curso?: number | null;
+          trabajos_sin_terminar?: number | null;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'cambios_de_fecha_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'cambios_de_fecha_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       clientes: {
         Row: {
           condicion_fiscal: Database['public']['Enums']['condicion_fiscal'];
@@ -896,6 +965,63 @@ export type Database = {
           },
         ];
       };
+      propuestas_de_entrega: {
+        Row: {
+          cerrada_at: string | null;
+          created_at: string;
+          deleted_at: string | null;
+          fecha: string | null;
+          forma: Database['public']['Enums']['forma_de_coordinar'];
+          franja: Database['public']['Enums']['franja_de_entrega'] | null;
+          household_id: string;
+          id: string;
+          proyecto_id: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          cerrada_at?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          fecha?: string | null;
+          forma: Database['public']['Enums']['forma_de_coordinar'];
+          franja?: Database['public']['Enums']['franja_de_entrega'] | null;
+          household_id?: string;
+          id?: string;
+          proyecto_id: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          cerrada_at?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          fecha?: string | null;
+          forma?: Database['public']['Enums']['forma_de_coordinar'];
+          franja?: Database['public']['Enums']['franja_de_entrega'] | null;
+          household_id?: string;
+          id?: string;
+          proyecto_id?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'propuestas_de_entrega_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'propuestas_de_entrega_proyecto_fk';
+            columns: ['household_id', 'proyecto_id'];
+            isOneToOne: false;
+            referencedRelation: 'proyectos';
+            referencedColumns: ['household_id', 'id'];
+          },
+        ];
+      };
       proximos_contactos: {
         Row: {
           created_at: string;
@@ -991,6 +1117,8 @@ export type Database = {
           dist_sueldo_previo_centavos: number | null;
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
+          entrega_comprometida: string | null;
+          entrega_comprometida_franja: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada: string | null;
           entrega_hora: string | null;
           entrega_importante: boolean;
@@ -1002,6 +1130,7 @@ export type Database = {
           forma_pago: Database['public']['Enums']['forma_pago'] | null;
           household_id: string;
           id: string;
+          listo_el: string | null;
           notas: string;
           presupuesto_centavos: number | null;
           presupuesto_cotizacion: boolean;
@@ -1016,6 +1145,7 @@ export type Database = {
           reapertura_sueldo_mensual: boolean | null;
           reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
+          tipo_de_proyecto: string | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -1053,6 +1183,8 @@ export type Database = {
           dist_sueldo_previo_centavos?: number | null;
           dist_tope_fijos_centavos?: number | null;
           dist_tope_sueldo_centavos?: number | null;
+          entrega_comprometida?: string | null;
+          entrega_comprometida_franja?: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada?: string | null;
           entrega_hora?: string | null;
           entrega_importante?: boolean;
@@ -1064,6 +1196,7 @@ export type Database = {
           forma_pago?: Database['public']['Enums']['forma_pago'] | null;
           household_id?: string;
           id?: string;
+          listo_el?: string | null;
           notas?: string;
           presupuesto_centavos?: number | null;
           presupuesto_cotizacion?: boolean;
@@ -1078,6 +1211,7 @@ export type Database = {
           reapertura_sueldo_mensual?: boolean | null;
           reparto_ya_en_la_apertura?: boolean;
           sena_bp?: number | null;
+          tipo_de_proyecto?: string | null;
           titulo: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
@@ -1115,6 +1249,8 @@ export type Database = {
           dist_sueldo_previo_centavos?: number | null;
           dist_tope_fijos_centavos?: number | null;
           dist_tope_sueldo_centavos?: number | null;
+          entrega_comprometida?: string | null;
+          entrega_comprometida_franja?: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada?: string | null;
           entrega_hora?: string | null;
           entrega_importante?: boolean;
@@ -1126,6 +1262,7 @@ export type Database = {
           forma_pago?: Database['public']['Enums']['forma_pago'] | null;
           household_id?: string;
           id?: string;
+          listo_el?: string | null;
           notas?: string;
           presupuesto_centavos?: number | null;
           presupuesto_cotizacion?: boolean;
@@ -1140,6 +1277,7 @@ export type Database = {
           reapertura_sueldo_mensual?: boolean | null;
           reparto_ya_en_la_apertura?: boolean;
           sena_bp?: number | null;
+          tipo_de_proyecto?: string | null;
           titulo?: string;
           ultimo_contacto?: string | null;
           updated_at?: string;
@@ -1290,6 +1428,66 @@ export type Database = {
           },
         ];
       };
+      respuestas_de_entrega: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          dias: Json;
+          household_id: string;
+          id: string;
+          leida_at: string | null;
+          nota: string;
+          propuesta_id: string;
+          proyecto_id: string;
+          respuesta: Database['public']['Enums']['respuesta_de_entrega'];
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          dias?: Json;
+          household_id: string;
+          id?: string;
+          leida_at?: string | null;
+          nota?: string;
+          propuesta_id: string;
+          proyecto_id: string;
+          respuesta: Database['public']['Enums']['respuesta_de_entrega'];
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          dias?: Json;
+          household_id?: string;
+          id?: string;
+          leida_at?: string | null;
+          nota?: string;
+          propuesta_id?: string;
+          proyecto_id?: string;
+          respuesta?: Database['public']['Enums']['respuesta_de_entrega'];
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'respuestas_de_entrega_household_id_fkey';
+            columns: ['household_id'];
+            isOneToOne: false;
+            referencedRelation: 'households';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'respuestas_de_entrega_propuesta_fk';
+            columns: ['household_id', 'proyecto_id', 'propuesta_id'];
+            isOneToOne: false;
+            referencedRelation: 'propuestas_de_entrega';
+            referencedColumns: ['household_id', 'proyecto_id', 'id'];
+          },
+        ];
+      };
     };
     Views: {
       libro_mayor: {
@@ -1367,6 +1565,8 @@ export type Database = {
           dist_sueldo_previo_centavos: number | null;
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
+          entrega_comprometida: string | null;
+          entrega_comprometida_franja: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada: string | null;
           entrega_hora: string | null;
           entrega_importante: boolean;
@@ -1378,6 +1578,7 @@ export type Database = {
           forma_pago: Database['public']['Enums']['forma_pago'] | null;
           household_id: string;
           id: string;
+          listo_el: string | null;
           notas: string;
           presupuesto_centavos: number | null;
           presupuesto_cotizacion: boolean;
@@ -1392,6 +1593,7 @@ export type Database = {
           reapertura_sueldo_mensual: boolean | null;
           reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
+          tipo_de_proyecto: string | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -1453,6 +1655,8 @@ export type Database = {
           dist_sueldo_previo_centavos: number | null;
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
+          entrega_comprometida: string | null;
+          entrega_comprometida_franja: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada: string | null;
           entrega_hora: string | null;
           entrega_importante: boolean;
@@ -1464,6 +1668,7 @@ export type Database = {
           forma_pago: Database['public']['Enums']['forma_pago'] | null;
           household_id: string;
           id: string;
+          listo_el: string | null;
           notas: string;
           presupuesto_centavos: number | null;
           presupuesto_cotizacion: boolean;
@@ -1478,6 +1683,7 @@ export type Database = {
           reapertura_sueldo_mensual: boolean | null;
           reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
+          tipo_de_proyecto: string | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -1520,6 +1726,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      proponer_la_entrega: {
+        Args: { p_propuesta: Json; p_proyecto_id: string };
+        Returns: Json;
+      };
       reabrir_proyecto: {
         Args: { p_proyecto_id: string; p_version: number };
         Returns: {
@@ -1550,6 +1760,8 @@ export type Database = {
           dist_sueldo_previo_centavos: number | null;
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
+          entrega_comprometida: string | null;
+          entrega_comprometida_franja: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada: string | null;
           entrega_hora: string | null;
           entrega_importante: boolean;
@@ -1561,6 +1773,7 @@ export type Database = {
           forma_pago: Database['public']['Enums']['forma_pago'] | null;
           household_id: string;
           id: string;
+          listo_el: string | null;
           notas: string;
           presupuesto_centavos: number | null;
           presupuesto_cotizacion: boolean;
@@ -1575,6 +1788,7 @@ export type Database = {
           reapertura_sueldo_mensual: boolean | null;
           reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
+          tipo_de_proyecto: string | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -1625,6 +1839,8 @@ export type Database = {
           dist_sueldo_previo_centavos: number | null;
           dist_tope_fijos_centavos: number | null;
           dist_tope_sueldo_centavos: number | null;
+          entrega_comprometida: string | null;
+          entrega_comprometida_franja: Database['public']['Enums']['franja_de_entrega'] | null;
           entrega_estimada: string | null;
           entrega_hora: string | null;
           entrega_importante: boolean;
@@ -1636,6 +1852,7 @@ export type Database = {
           forma_pago: Database['public']['Enums']['forma_pago'] | null;
           household_id: string;
           id: string;
+          listo_el: string | null;
           notas: string;
           presupuesto_centavos: number | null;
           presupuesto_cotizacion: boolean;
@@ -1650,6 +1867,7 @@ export type Database = {
           reapertura_sueldo_mensual: boolean | null;
           reparto_ya_en_la_apertura: boolean;
           sena_bp: number | null;
+          tipo_de_proyecto: string | null;
           titulo: string;
           ultimo_contacto: string | null;
           updated_at: string;
@@ -1673,6 +1891,10 @@ export type Database = {
           p_p256dh: string;
           p_zona: string;
         };
+        Returns: Json;
+      };
+      responder_la_entrega: {
+        Args: { p_respuesta: Json; p_token: string };
         Returns: Json;
       };
       suscripciones_para_probar: {
@@ -1700,10 +1922,15 @@ export type Database = {
         | 'entregado'
         | 'cobrado';
       forma_de_cobro: 'transferencia' | 'efectivo';
+      forma_de_coordinar: 'un_dia' | 'sus_dias';
       forma_pago: 'efectivo' | 'transferencia' | 'cuotas' | 'mixto';
+      franja_de_entrega: 'manana' | 'tarde';
       origen_contacto: 'referido' | 'redes' | 'volvio' | 'cartel' | 'otro';
+      origen_de_la_fecha: 'taller' | 'cliente' | 'importada';
+      respuesta_de_entrega: 'me_queda_bien' | 'mis_dias';
       rol_household: 'titular' | 'miembro';
       tesoro: 'hogar' | 'maun' | 'diezmo' | 'cocos';
+      tipo_de_fecha: 'estimada' | 'comprometida';
       tipo_de_necesidad: 'herraje' | 'herramienta' | 'material';
       tipo_de_pregunta: 'escala5' | 'sitalvezno' | 'una' | 'varias' | 'texto';
       tipo_movimiento:
@@ -1846,10 +2073,15 @@ export const Constants = {
         'cobrado',
       ],
       forma_de_cobro: ['transferencia', 'efectivo'],
+      forma_de_coordinar: ['un_dia', 'sus_dias'],
       forma_pago: ['efectivo', 'transferencia', 'cuotas', 'mixto'],
+      franja_de_entrega: ['manana', 'tarde'],
       origen_contacto: ['referido', 'redes', 'volvio', 'cartel', 'otro'],
+      origen_de_la_fecha: ['taller', 'cliente', 'importada'],
+      respuesta_de_entrega: ['me_queda_bien', 'mis_dias'],
       rol_household: ['titular', 'miembro'],
       tesoro: ['hogar', 'maun', 'diezmo', 'cocos'],
+      tipo_de_fecha: ['estimada', 'comprometida'],
       tipo_de_necesidad: ['herraje', 'herramienta', 'material'],
       tipo_de_pregunta: ['escala5', 'sitalvezno', 'una', 'varias', 'texto'],
       tipo_movimiento: [

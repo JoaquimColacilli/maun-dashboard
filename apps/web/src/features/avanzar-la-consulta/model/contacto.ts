@@ -227,6 +227,7 @@ const DATOS_DE_UN_CONTACTO_NUEVO: DatosDeProyecto = {
   vencimiento_presupuesto: null,
   visita_hecha: false,
   presupuesto_vale_hasta: null,
+  tipo_de_proyecto: null,
 };
 
 function pagosDeLaSena(
