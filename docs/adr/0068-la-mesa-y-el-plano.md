@@ -11,6 +11,9 @@
   `SeccionEnFila` como tarjeta). Sigue al [0066](0066-las-transiciones-del-celular.md): el lienzo de las
   transiciones pasa a la mesa y el encabezado de la ficha, que es donde termina la tarjeta de la lista,
   es una tarjeta.
+- Enmendado el 2026-09-25 por el [ADR 0069](0069-el-dibujo-del-trabajo-del-cliente.md): «Tu mueble»
+  dibuja el proceso del trabajo (`TrabajoEnEtapa`) y no un mueble, Gracias es una tarjeta firmada, y el
+  lienzo centra el dibujo también de costado. `MuebleEnEtapa` y `Carcasa` ya no existen.
 
 ## Contexto
 
@@ -216,6 +219,10 @@ Los tokens cambian en `theme.css` y todo lo que ya usaba tokens cambia solo.
   línea arriba suman `self-stretch`, porque la columna es `items-start` y la línea quedaba del ancho del
   texto. El dibujo no tiene texto, así que el `innerText` de «Tu mueble» sigue siendo el mismo en la app
   y por el enlace.
+  - **Enmendado por el [ADR 0069](0069-el-dibujo-del-trabajo-del-cliente.md).** El mueble de la etapa
+    era siempre el mismo, y el cliente de una cocina veía una cómoda. La lámina dibuja el proceso: el
+    anotador, el presupuesto, el presupuesto con la seña encima, el serrucho, la casa y la casa con la
+    tilde, según `etapaDelDibujo`. Gracias, una tarjeta firmada.
 
 ### 6. La barra del celular
 
@@ -315,8 +322,8 @@ en Historial vacío, y el vacío tiene que estar pintado desde el primer cuadro.
 | Enlace muerto, «no está»         | `anulado`                         | la hoja con el plano tachado a mano                                       | lo que había ahí se dio de baja                                         |
 | Sin señal                        | `sin-senal`                       | la hoja con el plano de trazos                                            | el trabajo está, pero no llega: se ve el contorno y no el mueble        |
 | Error de carga y de los enlaces  | `se-corto`                        | la hoja partida en dos con el eje del corte                               | se cortó algo en el medio, y el enlace sigue sirviendo                  |
-| Gracias                          | `gracias`                         | el mueble terminado con la tilde que se traza                             | el cliente terminó; la tilde es la marca del dueño                      |
-| «Tu mueble»                      | `MuebleEnEtapa`                   | el mueble en plano, en el taller (sin puertas), terminado o pagado        | el cliente ve en qué anda su mueble, en el mismo idioma que el camino   |
+| Gracias                          | `gracias`                         | la tarjeta de agradecimiento con la firma que se traza (ADR 0069)         | el cliente terminó; el taller le agradece de su puño                    |
+| «Tu mueble»                      | `TrabajoEnEtapa`                  | lo que está sobre la mesa en cada etapa, sin mueble (ADR 0069)            | el cliente ve en qué anda su trabajo, sea cual sea el mueble            |
 | Portada de Inicio                | `TableroCortado`, `TableroEntero` | el corte del mes, el tablero sin cortar o el tablero con las herramientas | es el gráfico mismo: qué parte de lo cobrado fue a cada tesoro          |
 | Despiece de la ficha             | `TableroCortado`                  | el tablero de un trabajo, de trazos o cortado                             | es el gráfico mismo, para un solo trabajo                               |
 
