@@ -5,6 +5,14 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-25.3',
+    lineas: [
+      'Tu sueldo ahora se cuenta por mes: los cobros lo van pagando hasta completar el que cargaste en Ajustes, y lo que sobra queda en el taller.',
+      'Si el mes ya tiene el sueldo cubierto, el reparto de un cobro lo dice y no le manda nada al hogar.',
+      'Lo que ya cobraste queda repartido como estaba.',
+    ],
+  },
+  {
     version: '2026-09-25.2',
     lineas: [
       'Cuando terminás un mueble, tocá «Ya está listo» en su ficha: tu cliente lo ve y podés proponerle un día o pedirle que marque los días y horarios que le quedan bien.',

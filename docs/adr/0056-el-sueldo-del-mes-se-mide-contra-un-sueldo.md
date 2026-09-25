@@ -5,6 +5,10 @@ Estado: aceptada, 2026-09-21. Corrige la sección «La barra "Sueldo del mes"» 
 [0020](0020-pulido-visual.md). **No toca la regla de reparto**: el tope de sueldo sigue siendo por
 proyecto, como decidió el 0011.
 
+**Superada en parte el 2026-09-25 por el [ADR 0072](0072-el-sueldo-se-topea-por-mes.md)**: la
+objeción de plata se resolvió y el sueldo se topea por mes. «Lo que NO cambia» ya no vale para el
+reparto.
+
 **Completada el 2026-09-25**, en el PR de la entrega (ADR 0071):
 
 - **`cobros` cuenta los cobros que pagaron sueldo**, no los que tenían un objetivo. «Ya está cubierto:

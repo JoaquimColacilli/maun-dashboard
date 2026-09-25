@@ -27,12 +27,12 @@ No se replican los errores del sistema viejo: el sueldo que suma a HOGAR sin res
 
 - `planDeLiquidacion` elige la fecha, el diezmo y los objetivos: los ajustes, la foto de una reapertura, o los parámetros del perdido (sin sueldo y con diezmo, por defecto).
 - `liquidadoDelMes` suma lo que ya liquidaron los otros proyectos en el mes calendario de la fecha.
-- `topesDeLaLiquidacion` saca los topes: los fijos, por lo que falta del mes; el sueldo, por proyecto o por mes.
+- `topesDeLaLiquidacion` saca los topes: los fijos, por lo que falta del mes; el sueldo, por mes o por proyecto según `sueldoTopeMensual`. Desde el ADR 0072 los talleres reparten por mes; por proyecto quedan el seed y lo ya congelado.
 - La app le pasa las liquidaciones que tiene replicadas, **incluidas las que todavía están en la cola**, sin el proyecto que se liquida.
 
 `resumenDelMes` es lo que se muestra por mes: objetivo, liquidado y lo que falta, de sueldo y de fijos.
 
-`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra **un** sueldo, el del mes según `resumenDelMes` (el de los ajustes para el mes en curso; el objetivo del último cobro para un mes cerrado). **No suma un sueldo por cobro**, aunque el reparto sea por proyecto: el sueldo que se asigna el dueño es lo que el hogar necesita por mes, y la regla por proyecto es cómo se junta, no cuánto hace falta. Si los cobros pagan más, lo pagado pasa lo esperado y la pantalla lo nombra (ADR 0056, que corrige al 0011). `cobros` cuenta los cobros del mes que pagaron sueldo, no los que tenían objetivo. Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
+`sueldoDelMes` es lo que mide la barra «Sueldo del mes» de Inicio: el sueldo que pagaron los cobros del mes contra **un** sueldo, el del mes según `resumenDelMes` (el de los ajustes para el mes en curso; el objetivo del último cobro para un mes cerrado). **No suma un sueldo por cobro**: el sueldo que se asigna el dueño es lo que el hogar necesita por mes, y desde el ADR 0072 el reparto también lo topea por mes. Un mes con cobros por proyecto (el seed, o lo congelado antes del cambio) puede pagar de más. Si los cobros pagan más, lo pagado pasa lo esperado y la pantalla lo nombra (ADR 0056, que corrige al 0011). `cobros` cuenta los cobros del mes que pagaron sueldo, no los que tenían objetivo. Ni `resumenDelMes` ni `sueldoDelMes` tienen gemela en SQL: nada en la base los consume.
 
 ## La seña
 
