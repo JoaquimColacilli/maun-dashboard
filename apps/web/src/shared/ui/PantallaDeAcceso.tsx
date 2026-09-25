@@ -134,15 +134,15 @@ export function PantallaDeAcceso({
           ? { height: ventana.alto, transform: `translateY(${String(ventana.arriba)}px)` }
           : undefined
       }
-      className="h-full overflow-y-auto overscroll-contain bg-paper"
+      className="h-full overflow-y-auto overscroll-contain bg-mesa"
     >
       <div className="flex min-h-full flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[auto_1fr_auto]">
         <aside
-          className={`relative flex flex-1 flex-col gap-1 overflow-hidden bg-marca px-(--page-pad-mobile) pt-[calc(env(safe-area-inset-top)+18px)] text-sobre-marca md:px-(--page-pad-tablet) lg:row-span-3 lg:grid lg:min-h-0 lg:grid-rows-subgrid lg:gap-0 lg:p-12 ${
+          className={`relative flex flex-1 flex-col gap-1 overflow-hidden bg-marca px-5 pt-[calc(env(safe-area-inset-top)+18px)] text-sobre-marca md:px-(--page-pad-tablet) lg:row-span-3 lg:grid lg:min-h-0 lg:grid-rows-subgrid lg:gap-0 lg:p-12 ${
             compacto ? 'min-h-0 pb-4' : 'min-h-[calc(env(safe-area-inset-top)+64px)] pb-7'
           }`}
         >
-          <p className="font-display text-h1-lg leading-none lg:row-start-1">MAUN</p>
+          <p className="font-display text-[30px] leading-none lg:row-start-1">MAUN</p>
           <p className="text-label text-sobre-marca/60 lg:row-start-3 lg:self-end">
             Un taller, cuatro tesoros.
           </p>

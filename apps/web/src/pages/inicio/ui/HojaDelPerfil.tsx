@@ -71,7 +71,7 @@ function Fila({
 }) {
   return (
     <Ir a={ruta} className={FILA}>
-      <span className={`flex size-9 flex-none items-center justify-center rounded-panel ${fondo}`}>
+      <span className={`flex size-9 flex-none items-center justify-center rounded-field ${fondo}`}>
         <Icono nombre={icono} tamano={18} />
       </span>
       <span className="min-w-0 flex-1">

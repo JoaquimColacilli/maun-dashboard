@@ -166,9 +166,14 @@ async function obra(
   return id;
 }
 
-async function cobrado(sesion: SesionDePrueba, cliente: string, indice: number): Promise<void> {
+export async function cobrado(
+  sesion: SesionDePrueba,
+  cliente: string,
+  indice: number,
+  fecha: string = dia(-(indice + 1) * 31),
+  gastos = 0,
+): Promise<string> {
   const monto = 120_000_000 + indice * 10_000_000;
-  const fecha = dia(-(indice + 1) * 31);
   const id = crypto.randomUUID();
   await guardarProyectoPorRpc(sesion, {
     proyecto: {
@@ -181,24 +186,36 @@ async function cobrado(sesion: SesionDePrueba, cliente: string, indice: number):
       comprobante: 'sin_comprobante',
     },
     pagos: [{ id: crypto.randomUUID(), fecha, concepto: 'Todo', monto_centavos: monto }],
-    gastos: [],
+    gastos:
+      gastos === 0
+        ? []
+        : [
+            {
+              id: crypto.randomUUID(),
+              fecha,
+              descripcion: 'Placas de melamina y herrajes',
+              monto_centavos: gastos,
+            },
+          ],
   });
-  const diezmo = Math.floor((monto * 1000 + 5000) / 10000);
-  const sueldo = Math.min(SUELDO, monto - diezmo);
-  const fijos = Math.min(FIJOS, monto - diezmo - sueldo);
+  const neta = monto - gastos;
+  const diezmo = Math.floor((neta * 1000 + 5000) / 10000);
+  const sueldo = Math.min(SUELDO, neta - diezmo);
+  const fijos = Math.min(FIJOS, neta - diezmo - sueldo);
   await cobrarPorRpc(sesion, {
     p_proyecto_id: id,
     p_version: 1,
     p_fecha_cobro: fecha,
     p_cobrado_centavos: monto,
-    p_gastos_centavos: 0,
+    p_gastos_centavos: gastos,
     p_tope_sueldo_centavos: SUELDO,
     p_tope_fijos_centavos: FIJOS,
     p_diezmo_centavos: diezmo,
     p_sueldo_centavos: sueldo,
     p_fijos_centavos: fijos,
-    p_remanente_centavos: monto - diezmo - sueldo - fijos,
+    p_remanente_centavos: neta - diezmo - sueldo - fijos,
   });
+  return id;
 }
 
 async function opinion(sesion: SesionDePrueba, proyecto: string, indice: number): Promise<string> {

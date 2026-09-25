@@ -8,7 +8,7 @@ export interface SeccionesEnFilasProps {
 
 export function SeccionesEnFilas({
   children,
-  separacion = 'gap-8',
+  separacion = 'gap-3 @min-[40rem]/secciones:gap-4',
   className = '',
 }: SeccionesEnFilasProps) {
   return (
@@ -38,7 +38,7 @@ export function SeccionEnFila({ id, titulo, bajada, children, cuerpo = '' }: Sec
     <section
       aria-labelledby={id}
       data-reparto="fila"
-      className="relative flex max-w-[560px] min-w-0 flex-col gap-3.5 border-t border-hairline pt-5 @min-[44rem]/secciones:grid @min-[44rem]/secciones:max-w-none @min-[44rem]/secciones:grid-cols-[15rem_minmax(0,1fr)] @min-[44rem]/secciones:items-start @min-[44rem]/secciones:gap-x-12"
+      className="relative flex min-w-0 flex-col gap-3.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5 @min-[44rem]/secciones:grid @min-[44rem]/secciones:grid-cols-[15rem_minmax(0,1fr)] @min-[44rem]/secciones:items-start @min-[44rem]/secciones:gap-x-12"
     >
       <div className="flex min-w-0 flex-col gap-3.5 @min-[44rem]/secciones:gap-1.5">
         <h2 id={id} className="text-section font-semibold">

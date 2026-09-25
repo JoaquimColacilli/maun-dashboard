@@ -267,11 +267,11 @@ export function PantallaDeProyecto({
       style={enCelular && altoVisible !== undefined ? { height: altoVisible } : undefined}
       className={
         enCelular
-          ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-paper'
+          ? 'fixed inset-x-0 top-0 z-30 flex h-[100dvh] flex-col bg-mesa'
           : 'flex min-h-full flex-col'
       }
     >
-      <header className="flex-none border-b border-hairline bg-paper md:sticky md:top-0 md:z-20">
+      <header className="flex-none border-b border-hairline bg-mesa md:sticky md:top-0 md:z-20">
         <div className="mx-auto grid w-full max-w-content grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-2 md:h-17 md:px-(--page-pad-tablet) md:py-0 lg:px-(--page-pad-desktop)">
           <Button variant="terciario" className="justify-self-start" onClick={cancelar.volver}>
             <Icono nombre="x" tamano={20} />
@@ -290,14 +290,14 @@ export function PantallaDeProyecto({
       >
         <div
           data-pagina=""
-          className={`mx-auto min-h-0 w-full max-w-content flex-1 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop) lg:py-6 ${
+          className={`mx-auto min-h-0 w-full max-w-content flex-1 px-(--page-pad-mobile) py-4 md:px-(--page-pad-tablet) md:py-6 lg:px-(--page-pad-desktop) lg:py-7 ${
             enCelular
               ? 'overflow-y-auto'
               : '[&_:is(input,select,textarea,button)]:scroll-mt-40 [&_:is(input,select,textarea,button)]:scroll-mb-28'
           }`}
         >
-          <SeccionesEnFilas separacion="gap-6">
-            <div className="@container/datos flex min-w-0 flex-col gap-5">
+          <SeccionesEnFilas separacion="gap-3 @min-[40rem]/secciones:gap-4">
+            <div className="@container/datos flex min-w-0 flex-col gap-5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5">
               <CamposJuntos separacion="gap-5">
                 <ClienteCombobox
                   clientes={clientes}
@@ -387,7 +387,7 @@ export function PantallaDeProyecto({
 
               <fieldset className="flex flex-col gap-1.5">
                 <legend className="mb-1.5 text-label text-text-2">Forma de pago</legend>
-                <div className="grid grid-cols-2 gap-0.5 rounded-field bg-surface p-1 @sm/datos:grid-cols-4">
+                <div className="grid grid-cols-2 gap-1 rounded-panel bg-ink/6 p-1 @sm/datos:grid-cols-4">
                   {FORMAS_EN_ORDEN.map((forma) => (
                     <BotonDeOpcion
                       key={forma}
@@ -488,7 +488,7 @@ export function PantallaDeProyecto({
                       rel="noopener noreferrer"
                       aria-label="Abrir la dirección en el mapa"
                       aria-disabled={direccion.trim() === '' ? true : undefined}
-                      className={`flex size-field flex-none items-center justify-center rounded-field border border-border ${
+                      className={`flex size-field flex-none items-center justify-center rounded-pill border border-border ${
                         direccion.trim() === ''
                           ? 'pointer-events-none text-text-3'
                           : 'hover:bg-surface'
@@ -543,11 +543,11 @@ export function PantallaDeProyecto({
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-col gap-7">
+            <div className="flex min-w-0 flex-col gap-3 md:gap-4">
               {liquidado && (
                 <div
                   role="alert"
-                  className="rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2"
+                  className="rounded-panel border border-hairline bg-paper px-4 py-4 text-label leading-snug text-text-2 md:px-5"
                 >
                   <p>
                     Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()} y su reparto
@@ -613,7 +613,7 @@ export function PantallaDeProyecto({
           </SeccionesEnFilas>
         </div>
 
-        <footer className="flex-none border-t border-hairline bg-paper md:sticky md:bottom-0 md:z-20">
+        <footer className="flex-none border-t border-hairline bg-mesa md:sticky md:bottom-0 md:z-20">
           <div className="@container/barra mx-auto flex w-full max-w-content flex-wrap items-center gap-3 px-(--page-pad-mobile) py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-(--page-pad-tablet) md:py-3.5 lg:px-(--page-pad-desktop)">
             {rechazo !== null && (
               <p role="alert" className="basis-full text-label font-medium text-alerta">
@@ -679,7 +679,7 @@ function BotonDeOpcion({
       role="radio"
       aria-checked={elegido}
       onClick={alElegir}
-      className={`min-h-tap rounded-control text-label ${
+      className={`min-h-tap rounded-[16px] text-label ${
         elegido ? 'bg-elevado font-semibold text-ink shadow-float' : 'font-medium text-text-2'
       }`}
     >

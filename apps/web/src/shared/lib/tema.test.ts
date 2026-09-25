@@ -60,6 +60,27 @@ describe('la preferencia de tema', () => {
     expect(result.current).toEqual({ preferencia: 'system', oscuro: true });
   });
 
+  it('la barra de estado toma la mesa del tema elegido, y con «según el sistema» cada una vuelve a la suya', () => {
+    document.head.innerHTML = `
+      <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f1ed" />
+      <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0b" />`;
+    const colores = () =>
+      Array.from(document.querySelectorAll('meta[name="theme-color"]'), (meta) =>
+        meta.getAttribute('content'),
+      );
+
+    elegirTema('dark');
+    expect(colores()).toEqual(['#0b0b0b', '#0b0b0b']);
+
+    elegirTema('light');
+    expect(colores()).toEqual(['#f2f1ed', '#f2f1ed']);
+
+    elegirTema('system');
+    expect(colores()).toEqual(['#f2f1ed', '#0b0b0b']);
+
+    document.head.innerHTML = '';
+  });
+
   it('una elección explícita manda sobre el sistema y avisa a quien la está mirando', () => {
     simularSistema(true);
     const { result } = renderHook(() => useTema());

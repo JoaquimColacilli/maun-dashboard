@@ -47,7 +47,7 @@ function Segmentado({
     <div
       role="radiogroup"
       aria-label="Tipo"
-      className="grid grid-cols-4 gap-0.5 rounded-field bg-surface-2 p-1"
+      className="grid grid-cols-4 gap-0.5 rounded-pill bg-ink/6 p-1"
     >
       {GRUPOS.map((opcion) => (
         <button
@@ -58,7 +58,7 @@ function Segmentado({
           onClick={() => {
             alElegir(opcion.id);
           }}
-          className={`min-h-tap rounded-control text-label ${
+          className={`min-h-tap rounded-pill text-label ${
             grupo === opcion.id
               ? 'bg-elevado font-semibold text-ink shadow-float'
               : 'font-medium text-text-2'
@@ -217,7 +217,7 @@ export function HojaDeMovimiento({
                   onClick={() => {
                     elegirClase(opcion.id);
                   }}
-                  className={`flex min-h-tap items-center gap-2 rounded-control border px-3 text-label font-medium ${
+                  className={`flex min-h-tap items-center gap-2 rounded-pill border px-3 text-label font-medium ${
                     clase === opcion.id
                       ? 'border-ink bg-ink text-paper'
                       : 'border-border bg-paper text-ink'
@@ -311,7 +311,7 @@ export function HojaDeMovimiento({
                   onClick={() => {
                     setFecha(atajo.id);
                   }}
-                  className={`h-field rounded-field border px-4 text-body font-medium ${
+                  className={`h-field rounded-pill border px-4 text-body font-medium ${
                     fecha === atajo.id
                       ? 'border-ink bg-ink text-paper'
                       : 'border-border bg-paper text-ink'

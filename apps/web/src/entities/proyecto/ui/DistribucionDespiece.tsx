@@ -1,59 +1,15 @@
-import type { CSSProperties } from 'react';
+import { formatearPesos, TESORO, useAnchoDePantalla } from '@/shared/lib';
+import { Lamina, TableroCortado, type PiezaDelTablero } from '@/shared/ui';
 
-import { formatearPesos, TESORO } from '@/shared/lib';
+import type { Despiece, PiezaDelDespiece } from '../model/despiece';
+import { porcentaje } from '../model/porcentaje';
 
-import type { Despiece } from '../model/despiece';
-
-function porcentaje(parte: number): string {
-  return `${String(Math.round(parte * 100))}%`;
-}
-
-function animacionDelCorte(indice: number): CSSProperties {
-  return {
-    animationName: 'maun-corte',
-    animationDuration: 'var(--dur-corte)',
-    animationTimingFunction: 'var(--ease-out)',
-    animationFillMode: 'both',
-    animationDelay: `calc(${String(indice)} * var(--dur-corte-stagger))`,
-  };
-}
-
-function Tablero({ despiece, animar }: { despiece: Despiece; animar: boolean }) {
-  const visibles = despiece.piezas.filter((pieza) => pieza.monto > 0);
-  if (visibles.length === 0) return null;
-
-  return (
-    <div
-      aria-hidden
-      className={`mt-3 flex h-16 gap-0.5 overflow-hidden rounded-control ${
-        despiece.modo === 'real' ? 'bg-ink' : 'bg-border'
-      }`}
-    >
-      {visibles.map((pieza, indice) => {
-        const tesoro = TESORO[pieza.tesoro];
-        return (
-          <div
-            key={pieza.id}
-            style={{
-              flex: `${pieza.parte.toFixed(4)} 1 0`,
-              ...(animar ? animacionDelCorte(indice) : {}),
-            }}
-            title={`${pieza.etiqueta}: ${formatearPesos(pieza.monto)}`}
-            className={`flex min-w-[3px] items-end p-1.5 ${
-              despiece.modo === 'real'
-                ? `${tesoro.barra} text-paper`
-                : `${tesoro.fondo} border border-current ${tesoro.texto}`
-            }`}
-          >
-            {pieza.parte >= 0.16 && (
-              <span className="truncate text-badge font-semibold">{pieza.etiqueta}</span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const NOMBRE_EN_EL_TABLERO = {
+  diezmo: 'Diezmo',
+  sueldo: 'Sueldo',
+  fijos: 'Costos fijos',
+  remanente: 'Remanente',
+} as const satisfies Record<PiezaDelDespiece['id'], string>;
 
 export interface DistribucionDespieceProps {
   despiece: Despiece;
@@ -66,11 +22,26 @@ export function DistribucionDespiece({
   animar = false,
   provisoria = false,
 }: DistribucionDespieceProps) {
+  const ancho = useAnchoDePantalla();
   const enProyeccion = despiece.modo === 'proyeccion';
 
+  const piezas: PiezaDelTablero[] = despiece.piezas
+    .filter((pieza) => pieza.monto > 0)
+    .map((pieza) => ({
+      id: pieza.id,
+      tono: pieza.tesoro,
+      parte: pieza.parte,
+      nombre: NOMBRE_EN_EL_TABLERO[pieza.id],
+      porcentaje: porcentaje(pieza.parte),
+      detalle: `${pieza.etiqueta}: ${formatearPesos(pieza.monto)}`,
+    }));
+
   return (
-    <section aria-label="Distribución de la ganancia" className="tabular-nums">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section
+      aria-label="Distribución de la ganancia"
+      className="flex flex-col gap-3 rounded-panel border border-hairline bg-paper p-1.5 tabular-nums"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3 px-3.5 pt-3">
         <div>
           <h2 className="text-section font-semibold">Distribución de la ganancia</h2>
           <p className="mt-0.5 text-meta text-text-2">
@@ -91,25 +62,32 @@ export function DistribucionDespiece({
       </div>
 
       {despiece.neta <= 0 ? (
-        <p className="mt-3 rounded-field border border-dashed border-border px-4 py-5 text-center text-label leading-relaxed text-text-2">
+        <p className="rounded-lamina border border-dashed border-border px-4 py-5 text-center text-label leading-relaxed text-text-2">
           {despiece.cobrado === 0
             ? 'Todavía no entró plata de este trabajo. Cuando se cobre, acá se ve cómo se corta la ganancia entre los cuatro tesoros.'
             : 'Los gastos se comieron lo cobrado: no hay ganancia que repartir y la pérdida queda en el remanente del taller.'}
         </p>
       ) : (
         <>
-          <Tablero despiece={despiece} animar={animar} />
-          <ul className="mt-2.5 list-none">
+          <Lamina className="h-[176px] md:h-[216px]">
+            <TableroCortado
+              piezas={piezas}
+              formato={ancho === 'movil' ? 'medio' : 'amplio'}
+              proyectado={enProyeccion}
+              animar={animar}
+            />
+          </Lamina>
+          <ul className="list-none px-3.5 pb-1">
             {despiece.piezas.map((pieza) => {
               const tesoro = TESORO[pieza.tesoro];
               return (
                 <li
                   key={pieza.id}
-                  className="flex items-center gap-2.5 border-t border-hairline-soft py-2 text-label"
+                  className="flex items-center gap-2.5 border-t border-hairline-soft py-2 text-label first:border-t-0"
                 >
                   <span
                     aria-hidden
-                    className={`size-3 flex-none rounded-control ${
+                    className={`size-3 flex-none rounded-[3px] ${
                       despiece.modo === 'real' ? tesoro.barra : tesoro.fondo
                     }`}
                   />
@@ -138,14 +116,14 @@ export function DistribucionDespiece({
       )}
 
       {enProyeccion && (
-        <p className="mt-2.5 text-meta leading-normal text-text-3">
+        <p className="px-3.5 pb-3 text-meta leading-normal text-text-3">
           Proyección sobre lo cobrado hasta hoy. El corte se hace efectivo cuando el proyecto se
           cobre.
         </p>
       )}
 
       {provisoria && (
-        <p className="mt-2.5 rounded-field bg-atencion-tint px-3 py-2 text-meta leading-normal text-atencion">
+        <p className="mx-2 mb-2 rounded-field bg-atencion-tint px-3 py-2 text-meta leading-normal text-atencion">
           Este reparto todavía no lo confirmó el servidor: es el que va a quedar si nada cambió del
           otro lado. Se confirma solo cuando vuelva la señal.
         </p>

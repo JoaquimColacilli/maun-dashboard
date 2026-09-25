@@ -22,7 +22,10 @@ export function ArchivosQueVeElCliente({ archivos }: ArchivosQueVeElClienteProps
   const hoy = hoyLocal();
 
   return (
-    <section aria-label="Qué archivos ve" className="mt-7">
+    <section
+      aria-label="Qué archivos ve"
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2.5">
         <h2 className="text-section font-semibold">Qué archivos ve</h2>
         <span className="text-label text-text-2">{cuantosVeElCliente(archivos)}</span>
@@ -34,7 +37,7 @@ export function ArchivosQueVeElCliente({ archivos }: ArchivosQueVeElClienteProps
       {vistos.ninguno && (
         <p
           role="alert"
-          className="mb-2.5 flex items-baseline gap-2 rounded-panel bg-surface px-3.5 py-3 text-body leading-normal"
+          className="mb-2.5 flex items-baseline gap-2 rounded-field bg-surface px-3.5 py-3 text-body leading-normal"
         >
           <Icono nombre="eye-off" tamano={16} className="flex-none translate-y-0.5 text-text-2" />
           <span>

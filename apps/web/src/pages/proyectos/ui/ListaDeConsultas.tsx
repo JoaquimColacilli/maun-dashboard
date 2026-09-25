@@ -15,7 +15,7 @@ import {
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
 import { conFondo, fechaLarga, formatearPesos, useIr } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, EstadoVacio, Icono } from '@/shared/ui';
 
 function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: string }) {
   const { resumen, situacion } = contacto;
@@ -121,16 +121,11 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
 
   if (contactos.length === 0) {
     return (
-      <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-        <span className="flex size-12 items-center justify-center rounded-field bg-surface">
-          <Icono nombre="route" tamano={24} />
-        </span>
-        <h2 className="mt-1 text-h1 leading-tight font-semibold">No hay consultas por ahora</h2>
-        <p className="text-body leading-relaxed text-text-2">
-          Cuando te llame alguien, cargalo acá con lo que pide y la fecha de la visita. Si en la
-          visita te dejó una seña, anotala: entra a la caja del taller desde ese día. Cuando lo
-          apruebe, pasa a Activos.
-        </p>
+      <EstadoVacio
+        ilustracion="sin-consultas"
+        titulo="No hay consultas por ahora"
+        detalle="Cuando te llame alguien, cargalo acá con lo que pide y la fecha de la visita. Si en la visita te dejó una seña, anotala: entra a la caja del taller desde ese día. Cuando lo apruebe, pasa a Activos."
+      >
         <Button
           onClick={() => {
             ir(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
@@ -139,7 +134,7 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
           <Icono nombre="user-plus" tamano={18} />
           Cargar el primer contacto
         </Button>
-      </section>
+      </EstadoVacio>
     );
   }
 
@@ -147,8 +142,8 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <label className="flex h-9 max-w-full min-w-[180px] flex-1 items-center gap-2 rounded-field border border-border px-3 md:max-w-[320px]">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex h-9 w-full items-center gap-2 rounded-pill border border-hairline bg-paper px-3.5 md:w-auto md:max-w-[320px] md:min-w-[180px] md:flex-1">
           <Icono nombre="search" tamano={16} className="flex-none text-text-2" />
           <input
             type="search"
@@ -172,8 +167,8 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
               onClick={() => {
                 setFiltro(estado);
               }}
-              className={`h-9 rounded-control border px-3 text-label font-medium ${
-                activo ? 'border-ink bg-ink text-paper' : 'border-border text-ink'
+              className={`h-9 rounded-pill border px-3.5 text-label font-medium ${
+                activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
               }`}
             >
               {estado === 'todos' ? 'Todos' : ESTADO[estado].etiqueta}
@@ -183,7 +178,7 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
       </div>
 
       {visibles.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 py-7">
+        <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-border px-5 py-6 text-center">
           <p className="text-body-lg text-text-2">
             {buscando
               ? `Ningún contacto coincide con «${consulta}».`
@@ -201,7 +196,7 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
         </div>
       ) : (
         <>
-          <p className="mb-2.5 text-meta text-text-2">
+          <p className="px-1 text-meta text-text-2">
             Primero lo que hace más que espera; las visitas agendadas, al final.
           </p>
           <TarjetasDeProyectos etiqueta="Contactos">

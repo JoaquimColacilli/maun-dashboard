@@ -73,7 +73,7 @@ export function TareasDelPresupuesto({ proyecto }: TareasDelPresupuestoProps) {
               </label>
               {tarea.columna === 'presupuesto_cotizacion' && (
                 <div className="mb-1 ml-8 border-l border-hairline pl-3">
-                  <CostosDeCotizar proyecto={proyecto} />
+                  <CostosDeCotizar proyecto={proyecto} anidado />
                 </div>
               )}
             </li>

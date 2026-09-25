@@ -13,7 +13,7 @@ import {
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
 import { fechaLarga, formatearPesos, relativa } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, EstadoVacio, Icono } from '@/shared/ui';
 
 function cuandoLeToca({ pendiente, atrasado, esHoy }: EnSeguimiento, hoy: string): string {
   if (pendiente === undefined) return 'Sin fecha para volver a escribirle';
@@ -106,24 +106,18 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
 
   if (enSeguimiento.length === 0) {
     return (
-      <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-        <span className="flex size-12 items-center justify-center rounded-field bg-surface">
-          <Icono nombre="clock" tamano={24} />
-        </span>
-        <h2 className="mt-1 text-h1 leading-tight font-semibold">Nadie en seguimiento</h2>
-        <p className="text-body leading-relaxed text-text-2">
-          Cuando una consulta te diga «por ahora no», pasala a seguimiento desde su ficha con el día
-          en que le volvés a escribir. Acá quedan en orden, los atrasados primero, y la agenda te
-          avisa cuándo toca.
-        </p>
-      </section>
+      <EstadoVacio
+        ilustracion="sin-seguimiento"
+        titulo="Nadie en seguimiento"
+        detalle="Cuando una consulta te diga «por ahora no», pasala a seguimiento desde su ficha con el día en que le volvés a escribir. Acá quedan en orden, los atrasados primero, y la agenda te avisa cuándo toca."
+      />
     );
   }
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <label className="flex h-9 max-w-full min-w-[180px] flex-1 items-center gap-2 rounded-field border border-border px-3 md:max-w-[320px]">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex h-9 w-full items-center gap-2 rounded-pill border border-hairline bg-paper px-3.5 md:w-auto md:max-w-[320px] md:min-w-[180px] md:flex-1">
           <Icono nombre="search" tamano={16} className="flex-none text-text-2" />
           <input
             type="search"
@@ -139,7 +133,7 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
       </div>
 
       {visibles.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 py-7">
+        <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-border px-5 py-6 text-center">
           <p className="text-body-lg text-text-2">
             Nadie en seguimiento coincide con «{consulta}».
           </p>
@@ -154,7 +148,7 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
         </div>
       ) : (
         <>
-          <p className="mb-2.5 text-meta text-text-2">
+          <p className="px-1 text-meta text-text-2">
             Por el día en que le volvés a escribir: los atrasados, primero.
           </p>
           <TarjetasDeProyectos etiqueta="En seguimiento">

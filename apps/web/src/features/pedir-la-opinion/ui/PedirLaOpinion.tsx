@@ -51,7 +51,7 @@ const SIN_SENAL =
   'Para crear el enlace de la encuesta hace falta señal. Cuando vuelva, tocá de nuevo.';
 
 const BOTON =
-  'inline-flex min-h-field items-center justify-center gap-2.25 rounded-field px-4.5 text-body font-medium no-underline';
+  'inline-flex min-h-field items-center justify-center gap-2.25 rounded-pill px-4.5 text-body font-medium no-underline';
 
 const PRIMARIO = `${BOTON} bg-ink text-paper hover:bg-ink-hover`;
 
@@ -252,7 +252,7 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
   }
 
   const pie = (
-    <p className="mt-6.5 max-w-[560px] text-label leading-relaxed text-text-3">
+    <p className="max-w-[560px] px-1 text-label leading-relaxed text-text-3">
       La encuesta que recibe sale de{' '}
       <Ir a={RUTA_DE_PREGUNTAS} className="font-medium text-ink underline underline-offset-3">
         Opiniones › Preguntas
@@ -264,17 +264,17 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
   if (pedido.estado === 'contestada') {
     const ficha = respuesta === undefined ? null : fichaDeLaRespuesta(replica, respuesta.id);
     return (
-      <div>
+      <div className="flex flex-col gap-3 md:gap-4">
         <section
           aria-labelledby={idDelBloque}
-          className="flex flex-col gap-3.5 rounded-panel border border-hairline px-4.5 pt-4.5 pb-5"
+          className="flex flex-col gap-3.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
         >
           <Encabezado
             id={idDelBloque}
             icono="message-square-quote"
             titulo={`${nombre} ya te contestó`}
             chip={
-              <span className="rounded-control bg-ink px-2 py-0.5 text-badge font-semibold text-paper">
+              <span className="rounded-pill bg-ink px-2 py-0.5 text-badge font-semibold text-paper">
                 contestada
               </span>
             }
@@ -290,7 +290,7 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
           {respuesta !== undefined && (
             <Ir
               a={rutaDeLaRespuesta(respuesta.id)}
-              className="flex items-start gap-3.5 rounded-panel border border-hairline bg-paper p-3.5 text-left text-ink no-underline hover:border-ink"
+              className="flex items-start gap-3.5 rounded-field border border-hairline bg-paper p-3.5 text-left text-ink no-underline hover:border-ink"
             >
               {ficha?.titular && (
                 <span className="flex-none pt-0.5">
@@ -326,17 +326,17 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
     const enlace = enlaceDeLaEncuesta(encuesta.token);
     const recordada = pedido.estado === 'recordada';
     return (
-      <div>
+      <div className="flex flex-col gap-3 md:gap-4">
         <section
           aria-labelledby={idDelBloque}
-          className="flex flex-col gap-3.5 rounded-panel border border-hairline px-4.5 pt-4.5 pb-5"
+          className="flex flex-col gap-3.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
         >
           <Encabezado
             id={idDelBloque}
             icono="send"
             titulo="Le pediste la opinión"
             chip={
-              <span className="rounded-control bg-surface px-2 py-0.5 text-badge font-semibold text-text-2">
+              <span className="rounded-pill bg-surface px-2 py-0.5 text-badge font-semibold text-text-2">
                 sin contestar
               </span>
             }
@@ -392,10 +392,10 @@ export function PedirLaOpinion({ proyecto, cliente }: PedirLaOpinionProps) {
   const sinPreguntas = recibe.length === 0;
 
   return (
-    <div>
+    <div className="flex flex-col gap-3 md:gap-4">
       <section
         aria-labelledby={idDelBloque}
-        className="flex flex-col gap-3.5 rounded-panel border border-ink px-4.5 pt-4.5 pb-5"
+        className="flex flex-col gap-3.5 rounded-panel border border-ink bg-paper px-4 py-4 md:px-5"
       >
         <Encabezado
           id={idDelBloque}

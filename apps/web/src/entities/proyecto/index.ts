@@ -109,10 +109,12 @@ export {
   type Pago,
   type Proyecto,
 } from './model/catalogos';
+export { corteDelMes, fraseDelCorte, piezasDelCorte, type CorteDelMes } from './model/corte';
 export {
   ajustesDeLaReplica,
   despieceDeLaLiquidacion,
   despieceDelProyecto,
+  distribucionCongelada,
   fechaDelCobroPropuesta,
   liquidacionProyectada,
   reaperturaDe,

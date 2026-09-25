@@ -21,7 +21,7 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
           {actual?.etiqueta}
         </h1>
       </div>
-      <nav aria-label="Opiniones" className="flex gap-0.5 rounded-panel bg-surface-2 p-0.5">
+      <nav aria-label="Opiniones" className="flex gap-0.5 rounded-pill bg-ink/6 p-1">
         {SECCIONES.map((opcion) => {
           const activa = opcion.id === seccion;
           return (
@@ -29,7 +29,7 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
               key={opcion.id}
               a={opcion.ruta}
               aria-current={activa ? 'page' : undefined}
-              className={`relative flex h-9 items-center rounded-field px-3.5 text-body-sm no-underline ${
+              className={`relative flex h-9 items-center rounded-pill px-3.5 text-body-sm no-underline ${
                 activa ? 'font-semibold text-ink' : 'font-medium text-text-2 hover:text-ink'
               }`}
             >
@@ -37,7 +37,7 @@ export function EncabezadoDeOpiniones({ seccion }: { seccion: Seccion }) {
                 <span
                   aria-hidden
                   data-fondo-de-la-pestana
-                  className="absolute inset-0 rounded-field bg-paper shadow-float"
+                  className="absolute inset-0 rounded-pill bg-elevado shadow-float"
                 />
               )}
               <span data-etiqueta-de-la-pestana className="relative">
@@ -59,9 +59,9 @@ export function PaginaDeOpiniones({
   children: ReactNode;
 }) {
   return (
-    <Pagina className="pb-10">
+    <Pagina className="gap-3 pb-10 md:gap-4">
       <EncabezadoDeOpiniones seccion={seccion} />
-      <div data-bajo-las-pestanas className="flex flex-col">
+      <div data-bajo-las-pestanas className="flex flex-col gap-3 md:gap-4">
         {children}
       </div>
     </Pagina>

@@ -38,7 +38,7 @@ export function BotonDelQr({ proyectoId, trabajo, className = '' }: BotonDelQrPr
         onClick={() => {
           setAbierto(true);
         }}
-        className={`flex min-h-tap w-fit items-center gap-2 rounded-field border border-border px-3 text-label font-medium hover:bg-surface ${className}`}
+        className={`flex min-h-tap w-fit items-center gap-2 rounded-pill border border-hairline bg-paper px-3 text-label font-medium hover:bg-surface ${className}`}
       >
         <Icono nombre="qr-code" tamano={16} />
         {MOSTRAR_EL_QR}

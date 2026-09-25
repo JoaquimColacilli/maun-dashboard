@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-24.2',
+    lineas: [
+      'La app cambió de cara. El fondo ahora es una mesa de trabajo y todo va en tarjetas apoyadas encima, con las puntas redondeadas.',
+      'Inicio arranca con el corte del mes, un tablero dibujado que muestra qué parte de lo que cobraste fue al hogar, al taller y al diezmo, y cuánto se llevaron los gastos.',
+      'En la ficha de cada trabajo, la ganancia se ve como un tablero, de trazos mientras es proyección y cortado en las piezas de cada tesoro cuando lo cobrás.',
+      'Las pantallas vacías, los errores y la página de tu cliente tienen dibujos propios.',
+    ],
+  },
+  {
     version: '2026-09-24',
     lineas: [
       'La página de tu cliente ya no le promete nada antes de que te apruebe: no ve la dirección ni las fechas de inicio y de entrega, y lo que te pagó figura como un pago, a cuenta de la seña.',

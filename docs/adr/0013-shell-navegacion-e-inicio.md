@@ -27,6 +27,7 @@ La fase 2C dejó la réplica del household en IndexedDB, la cola de salida y el 
 
 - **Menos de 768: barra inferior flotante**, píldora translúcida con blur, cuatro destinos y el FAB central por encima. Seguimiento no es destino: vive adentro de Proyectos, y `destinoResaltado` lo marca ahí.
 - **De 768 a 1279: riel de íconos.** **Desde 1280: sidebar con label**, y ahí Seguimiento, Diezmo y Ajustes son destinos propios.
+- **Enmendado por el [ADR 0068](0068-la-mesa-y-el-plano.md).** La barra inferior queda en su lugar, con sus cuatro destinos y el FAB en el medio; el destino activo lleva una cápsula `bg-ink/7` adentro de la píldora, que sigue su curva. El riel y la sidebar pierden el fondo y el borde, quedan sobre la mesa y marcan el destino con una cápsula de papel.
 
 **Tres cosas del celular que se resuelven en el marco, no en cada pantalla:**
 

@@ -108,7 +108,7 @@ export function ClienteCombobox({
             onClick={() => {
               alElegir(null);
             }}
-            className="flex size-11 flex-none items-center justify-center rounded-field text-text-2 hover:bg-surface"
+            className="flex size-11 flex-none items-center justify-center rounded-pill text-text-2 hover:bg-surface"
             aria-label={`Cambiar el cliente, ahora ${elegido.nombre}`}
           >
             <Icono nombre="arrow-left-right" tamano={18} />

@@ -38,7 +38,7 @@ export function FilaDelLibro({ linea, tesoro, sinConfirmar, alAbrir }: FilaDelLi
     <button
       type="button"
       onClick={alAbrir}
-      className="flex min-h-[56px] w-full items-center gap-3 border-b border-hairline-soft py-2 text-left hover:bg-surface-3"
+      className="flex min-h-[56px] w-full items-center gap-3 py-2 text-left hover:bg-surface-3"
     >
       <span
         aria-hidden
@@ -61,7 +61,7 @@ export function FilaDelLibro({ linea, tesoro, sinConfirmar, alAbrir }: FilaDelLi
           )}
           {linea.categoria !== '' && !mueve && <span>{linea.categoria}</span>}
           {linea.proyectoTitulo !== null && (
-            <span className="flex items-center gap-1 rounded-control border border-hairline px-1.5 text-badge text-text-2">
+            <span className="flex items-center gap-1 rounded-pill border border-hairline px-2 text-badge text-text-2">
               <Icono nombre="folder-kanban" tamano={10} />
               {linea.proyectoTitulo}
             </span>

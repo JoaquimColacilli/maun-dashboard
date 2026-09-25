@@ -85,7 +85,7 @@ export function PrincipalYApoyo({
   children,
   apoyoPrimero = false,
   amplio = false,
-  separacion = 'gap-y-5',
+  separacion = 'gap-y-3',
   className = '',
 }: PrincipalYApoyoProps) {
   const refDelApoyo = useRef<HTMLDivElement>(null);
@@ -112,7 +112,7 @@ export function PrincipalYApoyo({
     <div data-reparto="apoyo" className={['min-w-0 md:@container/apoyo', className].join(' ')}>
       <div
         className={[
-          'grid grid-cols-1 items-start @min-[52rem]/apoyo:gap-x-11',
+          'grid grid-cols-1 items-start @min-[52rem]/apoyo:gap-x-4',
           COLUMNAS[apoyoPrimero ? 'antes' : 'despues'][amplio ? 'amplio' : 'normal'],
           separacion,
         ].join(' ')}

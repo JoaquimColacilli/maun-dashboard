@@ -53,13 +53,13 @@ export function DiezmoPage() {
     estado.generado <= 0 ? 100 : Math.min(100, Math.round((estado.pagado / estado.generado) * 100));
 
   return (
-    <Pagina className="gap-4">
+    <Pagina className="gap-3 md:gap-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Diezmo</h1>
         <Ir
           a={RUTA_DEL_PAGO}
           state={conFondo(location)}
-          className="flex h-button items-center gap-2 rounded-field bg-diezmo px-[18px] text-body font-medium text-paper"
+          className="flex h-button items-center gap-2 rounded-pill bg-diezmo px-[18px] text-body font-medium text-paper"
         >
           <Icono nombre="hand-coins" tamano={18} />
           Registrar diezmo
@@ -69,11 +69,12 @@ export function DiezmoPage() {
       <PrincipalYApoyo
         apoyoPrimero
         amplio
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
-          <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-3 md:gap-4">
             <section
               aria-label="Estado del diezmo"
-              className="@container flex flex-col gap-1 rounded-panel bg-diezmo-tint px-5 py-5"
+              className="@container relative flex flex-col gap-1 overflow-hidden rounded-panel border border-hairline bg-paper px-4 pt-4 pb-5 md:px-5"
             >
               <span className="flex items-center gap-2 text-label font-semibold text-diezmo">
                 <Icono nombre="church" tamano={16} />
@@ -95,9 +96,13 @@ export function DiezmoPage() {
                 </span>
               )}
               <span className="mt-1 text-label leading-relaxed text-text-2">{frase.detalle}</span>
+              <span aria-hidden className="absolute inset-x-0 bottom-0 h-[5px] bg-diezmo" />
             </section>
 
-            <section aria-label="Generado y pagado" className="@container flex flex-col gap-2.5">
+            <section
+              aria-label="Generado y pagado"
+              className="@container flex flex-col gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+            >
               <div className="grid grid-cols-1 gap-3 tabular-nums @min-[22.5rem]:grid-cols-2">
                 <div>
                   <span className="block text-meta text-text-2">Generado en total</span>
@@ -132,12 +137,12 @@ export function DiezmoPage() {
           </div>
         }
       >
-        <section aria-labelledby="titulo-historial" className="flex min-w-0 flex-col gap-1">
-          <h2 id="titulo-historial" className="text-section font-semibold">
+        <section aria-labelledby="titulo-historial" className="flex min-w-0 flex-col gap-3">
+          <h2 id="titulo-historial" className="px-1 text-section font-semibold">
             Lo generado y lo pagado
           </h2>
           {dias.length === 0 ? (
-            <p className="py-6 text-body leading-relaxed text-text-2">
+            <p className="px-1 py-6 text-body leading-relaxed text-text-2">
               Todavía no se generó diezmo. El 10% de cada ganancia se anota acá solo, cuando cobrás
               un trabajo. Después lo vas cancelando con pagos.
             </p>

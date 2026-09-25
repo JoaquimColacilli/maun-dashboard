@@ -5,12 +5,12 @@ import { Icono, Pagina } from '@/shared/ui';
 export function AvisosPage() {
   const vuelta = useVolver(RUTA_DE_AJUSTES, 'Ajustes');
   return (
-    <Pagina className="gap-5">
+    <Pagina className="gap-3 md:gap-4">
       <header className="flex flex-col items-start gap-1.5">
         <Ir
           a={RUTA_DE_AJUSTES}
           alTocar={vuelta.volver}
-          className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+          className="-ml-1 flex min-h-tap items-center gap-1 rounded-pill pr-3 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
         >
           <Icono nombre="chevron-left" tamano={20} />
           {vuelta.etiqueta}

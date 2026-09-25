@@ -55,14 +55,24 @@ import {
   useSenalDeUnaVez,
   useVolver,
 } from '@/shared/lib';
-import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
+import {
+  Button,
+  ESCENA_EN_LA_LAMINA,
+  Icono,
+  Ilustracion,
+  Pagina,
+  PanelDeAvisos,
+  PrincipalYApoyo,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
+} from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 import { FichaDeSeguimiento } from './FichaDeSeguimiento';
 
 function Dato({ clave, valor, extra }: { clave: string; valor: string; extra?: string }) {
   return (
-    <div className="flex items-center gap-3 border-t border-hairline py-3">
+    <div className="flex items-center gap-3 border-t border-hairline-soft py-3">
       <div className="min-w-0 flex-1">
         <span className="block text-meta text-text-2">{clave}</span>
         <span className="mt-0.5 block text-body-lg leading-snug font-medium">{valor}</span>
@@ -96,13 +106,21 @@ export function ProyectoFichaPage() {
 
   if (!resumen) {
     return (
-      <Pagina className="items-start gap-3">
-        <h1 className="font-display text-h1 leading-tight">Ese proyecto no está</h1>
-        <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-          Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto de
-          otro taller.
-        </p>
-        <Button onClick={vuelta.volver}>Volver a Proyectos</Button>
+      <Pagina>
+        <TarjetaConLamina
+          como="div"
+          dibujo={<Ilustracion nombre="anulado" />}
+          lamina={ESCENA_EN_LA_LAMINA}
+        >
+          <h1 className={TITULO_DE_LAMINA}>Ese proyecto no está</h1>
+          <p className="max-w-[44ch] text-body leading-relaxed text-text-2">
+            Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto
+            de otro taller.
+          </p>
+          <div className="w-full pt-2">
+            <Button onClick={vuelta.volver}>Volver a Proyectos</Button>
+          </div>
+        </TarjetaConLamina>
       </Pagina>
     );
   }
@@ -162,21 +180,22 @@ export function ProyectoFichaPage() {
   }
 
   return (
-    <Pagina>
-      <div className="mb-2.5 flex items-center justify-between">
+    <Pagina className="gap-3 md:gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-y-2">
         <Ir
           a={padre}
           alTocar={vuelta.volver}
-          className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+          className="-ml-1 flex min-h-tap items-center gap-1 rounded-pill pr-1 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
         >
           <Icono nombre="chevron-left" tamano={20} />
           {vuelta.etiqueta}
         </Ir>
-        <div className="flex flex-none gap-2">
+        <div className="ml-auto flex flex-none gap-1">
           <AyudaDeLaVista />
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="sm:px-4"
             aria-label="Mostrarle al cliente"
             onClick={() => {
               ir(rutaDeCompartir(proyecto.id));
@@ -193,8 +212,9 @@ export function ProyectoFichaPage() {
             }}
           />
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="sm:px-4"
             aria-label="Editar"
             onClick={() => {
               ir(rutaDeEdicion(proyecto.id));
@@ -206,8 +226,11 @@ export function ProyectoFichaPage() {
         </div>
       </div>
 
-      <header className="flex flex-col gap-2">
-        <div {...destinoDeLaTarjeta(proyecto.id)} className="flex flex-col gap-2">
+      <header
+        {...destinoDeLaTarjeta(proyecto.id)}
+        className="flex flex-col gap-2 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+      >
+        <div className="flex flex-col gap-2">
           {cliente === undefined ? (
             <span className="text-label text-text-3">{resumen.nombreDelCliente}</span>
           ) : (
@@ -247,27 +270,23 @@ export function ProyectoFichaPage() {
         )}
       </header>
 
-      {avisos.length > 0 && (
-        <div className="mt-4">
-          <PanelDeAvisos avisos={avisos} />
-        </div>
-      )}
+      {avisos.length > 0 && <PanelDeAvisos avisos={avisos} />}
 
-      <div className="@container mt-4">
-        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @lg:grid-cols-3">
-          <div className="flex items-baseline justify-between gap-3 py-2.5 @lg:block @lg:py-3 @lg:pr-3">
+      <div className="@container">
+        <dl className="grid grid-cols-1 rounded-panel border border-hairline bg-paper px-4 @lg:grid-cols-3 @lg:px-0 @lg:py-3.5">
+          <div className="flex items-baseline justify-between gap-2 py-3 @lg:block @lg:px-4 @lg:py-0">
             <dt className="text-meta text-text-2">Presupuesto</dt>
             <dd className="text-money-lg font-semibold tabular-nums whitespace-nowrap">
               {proyecto.presupuesto_centavos === null ? '—' : formatearPesos(resumen.presupuesto)}
             </dd>
           </div>
-          <div className="flex items-baseline justify-between gap-3 border-t border-hairline py-2.5 @lg:block @lg:border-t-0 @lg:border-l @lg:px-3 @lg:py-3">
+          <div className="flex items-baseline justify-between gap-2 border-t border-hairline-soft py-3 @lg:block @lg:border-t-0 @lg:border-l @lg:px-4 @lg:py-0">
             <dt className="text-meta text-text-2">Cobrado</dt>
             <dd className="text-money-lg font-semibold text-hogar tabular-nums whitespace-nowrap">
               {formatearPesos(resumen.cobrado)}
             </dd>
           </div>
-          <div className="flex items-baseline justify-between gap-3 border-t border-hairline py-2.5 @lg:block @lg:border-t-0 @lg:border-l @lg:py-3 @lg:pl-3">
+          <div className="flex items-baseline justify-between gap-2 border-t border-hairline-soft py-3 @lg:block @lg:border-t-0 @lg:border-l @lg:px-4 @lg:py-0">
             <dt className="text-meta text-text-2">Saldo</dt>
             <dd
               className={`text-money-lg font-semibold tabular-nums whitespace-nowrap ${
@@ -290,9 +309,9 @@ export function ProyectoFichaPage() {
 
       <PrincipalYApoyo
         apoyoPrimero
-        className="mt-5"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3 md:gap-4">
             {(proyecto.estado === 'entregado' || proyecto.estado === 'cobrado') && (
               <PedirLaOpinion proyecto={proyecto} cliente={cliente} />
             )}
@@ -305,10 +324,10 @@ export function ProyectoFichaPage() {
             <AvanceDeLaObra resumen={resumen} hoy={hoy} />
 
             {hayAcciones && (
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-col gap-2.5">
                 {puedeCobrar(proyecto.estado) && (
                   <Button
-                    className="w-full sm:w-auto"
+                    className="w-full"
                     onClick={() => {
                       ir(rutaDeCobro(proyecto.id));
                     }}
@@ -323,7 +342,7 @@ export function ProyectoFichaPage() {
                 {puedeCerrarPerdido(proyecto.estado) && (
                   <Button
                     variant="secundario"
-                    className="w-full sm:w-auto"
+                    className="w-full"
                     onClick={() => {
                       ir(rutaDeCierre(proyecto.id));
                     }}
@@ -339,10 +358,13 @@ export function ProyectoFichaPage() {
           </div>
         }
       >
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3 md:gap-4">
           <OpcionesDelTrabajo proyecto={proyecto} />
 
-          <section aria-label="Pagos recibidos">
+          <section
+            aria-label="Pagos recibidos"
+            className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+          >
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
               <h2 className="text-section font-semibold">Pagos recibidos</h2>
               <span className="text-label text-text-2 tabular-nums">
@@ -352,7 +374,7 @@ export function ProyectoFichaPage() {
               </span>
             </div>
             {pagos.length === 0 ? (
-              <p className="border-t border-hairline py-3.5 text-label text-text-2">
+              <p className="border-t border-hairline-soft pt-3 text-label text-text-2">
                 Todavía no cobraste nada de este proyecto. La seña suele ir primero.
               </p>
             ) : (
@@ -389,7 +411,10 @@ export function ProyectoFichaPage() {
             )}
           </section>
 
-          <section aria-label="Gastos e insumos">
+          <section
+            aria-label="Gastos e insumos"
+            className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+          >
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
               <h2 className="text-section font-semibold">Gastos e insumos</h2>
               <span className="text-label text-text-2 tabular-nums">
@@ -399,7 +424,7 @@ export function ProyectoFichaPage() {
               </span>
             </div>
             {gastos.length === 0 ? (
-              <p className="border-t border-hairline py-3.5 text-label text-text-2">
+              <p className="border-t border-hairline-soft pt-3 text-label text-text-2">
                 Sin gastos cargados. Todo lo que compres para este mueble va acá y se descuenta de
                 la ganancia.
               </p>
@@ -444,26 +469,27 @@ export function ProyectoFichaPage() {
               Cargar pagos y gastos
             </Button>
             {liquidado && (
-              <p className="mt-1.5 text-meta leading-snug text-text-3">
+              <p className="mt-1.5 px-1 text-meta leading-snug text-text-3">
                 Este proyecto está {ESTADO[proyecto.estado].etiqueta.toLowerCase()}: sus pagos y sus
                 gastos quedaron congelados con la distribución.
               </p>
             )}
           </div>
 
-          <div className="rounded-panel border border-hairline px-4 pt-4 pb-3.5">
-            <DistribucionDespiece
-              despiece={despiece}
-              animar={recienLiquidado}
-              provisoria={enVuelo !== undefined && despiece.modo === 'real'}
-            />
-          </div>
+          <DistribucionDespiece
+            despiece={despiece}
+            animar={recienLiquidado}
+            provisoria={enVuelo !== undefined && despiece.modo === 'real'}
+          />
 
           <CostosDeCotizar proyecto={proyecto} abiertoAlPrincipio={!liquidado} />
 
           <LoQueHaceFalta proyecto={proyecto} />
 
-          <section aria-label="Entrega y comprobante" className="flex flex-col">
+          <section
+            aria-label="Entrega y comprobante"
+            className="flex flex-col rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+          >
             <h2 className="mb-1.5 text-section font-semibold">Entrega y comprobante</h2>
             <Dato
               clave="Dirección de entrega"
@@ -479,7 +505,7 @@ export function ProyectoFichaPage() {
                 href={enlaceDeMapa(proyecto.direccion_entrega, '') ?? '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 mb-3 flex min-h-tap items-center gap-2 self-start rounded-field border border-border px-3 text-label font-medium hover:bg-surface"
+                className="mt-2 mb-3 flex min-h-tap items-center gap-2 self-start rounded-pill border border-border px-4 text-label font-medium hover:bg-surface"
               >
                 <Icono nombre="map-pin" tamano={16} />
                 Abrir en el mapa

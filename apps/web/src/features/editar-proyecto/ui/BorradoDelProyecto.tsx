@@ -26,8 +26,9 @@ export function BorradoDelProyecto({ proyecto, sustantivo, alBorrar }: BorradoDe
   return (
     <>
       <Button
-        variant="secundario"
-        size="chico"
+        variant="herramienta"
+        size="herramienta"
+        className="sm:px-4"
         aria-label="Borrar"
         onClick={() => {
           setConfirmando(true);

@@ -94,8 +94,12 @@ export function FilasDinamicas({
   const erroresDeLista = errores[lista];
 
   return (
-    <section aria-label={titulo} className="@container/filas flex flex-col gap-2" ref={contenedor}>
-      <div className="flex flex-col gap-2 bg-paper md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pt-3 md:pb-2.5">
+    <section
+      aria-label={titulo}
+      className="@container/filas flex flex-col gap-2 rounded-panel border border-hairline bg-paper px-4 pb-4 md:px-5"
+      ref={contenedor}
+    >
+      <div className="flex flex-col gap-2 bg-paper pt-4 md:sticky md:top-17 md:z-10 md:border-b md:border-hairline-soft md:pb-2.5">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-section font-semibold">{titulo}</h2>
@@ -127,7 +131,7 @@ export function FilasDinamicas({
             <li
               key={campo.clave}
               data-fila={campo.id}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] items-center gap-2 border-t border-hairline-soft py-2.5 @lg/filas:grid-cols-[minmax(0,1fr)_10.5rem_9rem_44px]"
+              className="grid grid-cols-[minmax(8rem,1fr)_minmax(0,1fr)_44px] items-center gap-2 border-t border-hairline-soft py-2.5 @lg/filas:grid-cols-[minmax(0,1fr)_10.5rem_9rem_44px]"
             >
               <input
                 {...register(`${lista}.${indice}.detalle` as const)}
@@ -179,7 +183,7 @@ export function FilasDinamicas({
                 }}
                 disabled={bloqueado}
                 aria-label={`Quitar ${etiquetaDelDetalle.toLowerCase()} ${String(indice + 1)}`}
-                className="col-start-3 row-start-1 flex size-11 items-center justify-center justify-self-center rounded-field text-text-3 hover:bg-surface hover:text-alerta @lg/filas:col-start-auto @lg/filas:row-start-auto"
+                className="col-start-3 row-start-1 flex size-11 items-center justify-center justify-self-center rounded-pill text-text-3 hover:bg-surface hover:text-alerta @lg/filas:col-start-auto @lg/filas:row-start-auto"
               >
                 <Icono nombre="trash-2" tamano={18} />
               </button>

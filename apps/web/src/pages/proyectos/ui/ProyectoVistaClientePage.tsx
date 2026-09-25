@@ -22,12 +22,12 @@ export function ProyectoVistaClientePage() {
 
   return (
     <>
-      <div className="mx-auto flex w-full max-w-content flex-col gap-2 px-(--page-pad-mobile) pt-3 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
+      <div className="mx-auto flex w-full max-w-content flex-col gap-3 px-(--page-pad-mobile) pt-4 md:px-(--page-pad-tablet) lg:px-(--page-pad-desktop)">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Ir
             a={rutaDelProyecto(id)}
             alTocar={vuelta.volver}
-            className="flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+            className="-ml-1 flex min-h-tap w-fit items-center gap-1 rounded-pill pr-3 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
           >
             <Icono nombre="chevron-left" tamano={20} />
             {vuelta.etiqueta}
@@ -39,7 +39,7 @@ export function ProyectoVistaClientePage() {
         {desactualizada && (
           <p
             role="status"
-            className="flex items-center gap-2 rounded-field bg-surface px-3 py-2 text-label font-medium text-text-2"
+            className="flex items-center gap-2 rounded-panel border border-hairline bg-paper px-4 py-2.5 text-label font-medium text-text-2"
           >
             <Icono nombre="cloud-off" tamano={16} />
             Sin señal: esto es lo último que trajimos. Puede no estar al día.

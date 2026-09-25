@@ -17,19 +17,22 @@ const TEXTO: Readonly<Record<AvisoAnotado['tipo'], string>> = {
 
 export interface PanelDeAvisosProps {
   avisos: readonly AvisoAnotado[];
+  anidado?: boolean;
   children?: (aviso: AvisoAnotado) => ReactNode;
 }
 
-export function PanelDeAvisos({ avisos, children }: PanelDeAvisosProps) {
+export function PanelDeAvisos({ avisos, anidado = false, children }: PanelDeAvisosProps) {
   const queryClient = useQueryClient();
   if (avisos.length === 0) return null;
 
   return (
-    <ul className="flex list-none flex-col gap-2.5">
+    <ul className={`flex list-none flex-col ${anidado ? 'gap-2.5' : 'gap-3'}`}>
       {avisos.map((aviso) => (
         <li
           key={aviso.id}
-          className={`rounded-panel border px-4 py-3.5 ${TONO[aviso.tipo]}`}
+          className={`${
+            anidado ? 'rounded-field border px-4 py-3.5' : 'rounded-panel border px-4 py-4 md:px-5'
+          } ${TONO[aviso.tipo]}`}
           role={aviso.tipo === 'rechazo' ? 'alert' : undefined}
         >
           <p className={`text-meta font-semibold uppercase ${TEXTO[aviso.tipo]}`}>

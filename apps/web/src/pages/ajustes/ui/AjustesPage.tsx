@@ -136,7 +136,7 @@ function Avisos() {
 
   return (
     <>
-      <PanelDeAvisos avisos={avisos}>
+      <PanelDeAvisos avisos={avisos} anidado>
         {(aviso) =>
           aviso.ruta === null ? null : (
             <Ir
@@ -161,7 +161,7 @@ export function AjustesPage() {
   const usado = espacioUsado(replica);
 
   return (
-    <Pagina className="gap-5">
+    <Pagina className="gap-3 md:gap-4">
       <header className="flex min-h-button flex-wrap items-end justify-between gap-3">
         <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Ajustes</h1>
       </header>

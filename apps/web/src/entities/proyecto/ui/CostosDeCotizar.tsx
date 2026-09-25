@@ -74,9 +74,14 @@ function Margen({ margen, sinAprobar }: { margen: MargenDelTrabajo; sinAprobar: 
 export interface CostosDeCotizarProps {
   proyecto: Proyecto;
   abiertoAlPrincipio?: boolean;
+  anidado?: boolean;
 }
 
-export function CostosDeCotizar({ proyecto, abiertoAlPrincipio = true }: CostosDeCotizarProps) {
+export function CostosDeCotizar({
+  proyecto,
+  abiertoAlPrincipio = true,
+  anidado = false,
+}: CostosDeCotizarProps) {
   const guardar = useMutation({
     ...MUTACION_DE_COSTOS,
     meta: metaDeAvisos('costosEstimados', { silencioso: true, sujeto: proyecto.titulo }),
@@ -121,6 +126,7 @@ export function CostosDeCotizar({ proyecto, abiertoAlPrincipio = true }: CostosD
     <BloquePlegable
       titulo="Costos estimados"
       abiertoAlPrincipio={abiertoAlPrincipio}
+      enTarjeta={!anidado}
       ayuda="Lo que calculás que vas a gastar. No toca el presupuesto: ese lo ponés vos, con tu ganancia adentro."
       resumen={
         <span className="flex items-center gap-2.5">

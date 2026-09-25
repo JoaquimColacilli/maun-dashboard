@@ -7,6 +7,10 @@
 - Revisa el [0020](0020-pulido-visual.md) en el molde: `Pagina` sigue siendo uno, con el mismo ancho y
   centrado, y ninguna pantalla lo cambia. El reparto de Ajustes por temas, a izquierda y derecha, que
   anotaba `apps/web/CLAUDE.md`, queda reemplazado.
+- Enmendado el 2026-09-24 por el [ADR 0068](0068-la-mesa-y-el-plano.md): cada `SeccionEnFila` es una
+  tarjeta de papel a todo el ancho, sin el tope de 560 ni la línea de arriba; las secciones se separan
+  con `gap-3`, y `gap-4` desde 40rem; `PrincipalYApoyo` junta sus columnas a `gap-x-4` y separa por
+  defecto con `gap-y-3`. El orden del DOM sigue siendo el que se ve.
 
 ## Contexto
 

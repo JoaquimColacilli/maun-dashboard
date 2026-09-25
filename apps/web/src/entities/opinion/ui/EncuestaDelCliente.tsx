@@ -11,7 +11,13 @@ import {
 } from '@maun/domain';
 import { useId, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 
-import { Icono } from '@/shared/ui';
+import {
+  ESCENA_EN_LA_LAMINA,
+  Icono,
+  Ilustracion,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
+} from '@/shared/ui';
 
 import { colorDelPaso, ICONO_DE_LA_CARA } from '../model/polos';
 import {
@@ -32,8 +38,8 @@ export function MarcaDelTaller({ taller, conLema = false }: { taller: string; co
 }
 
 function marcoDeLaOpcion(elegida: boolean): string {
-  return `relative flex cursor-pointer rounded-panel border-[1.5px] transition-colors duration-(--dur-fast) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
-    elegida ? 'border-ink bg-surface' : 'border-border bg-paper hover:border-text-3'
+  return `relative flex cursor-pointer rounded-field border-[1.5px] bg-paper transition-colors duration-(--dur-fast) has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
+    elegida ? 'border-ink' : 'border-border hover:border-text-3'
   }`;
 }
 
@@ -92,7 +98,7 @@ function Punto({ elegida, cuadrado }: { elegida: boolean; cuadrado: boolean }) {
     <span
       aria-hidden
       className={`flex size-5.5 flex-none items-center justify-center border-[1.5px] ${
-        cuadrado ? 'rounded-control' : 'rounded-pill'
+        cuadrado ? 'rounded-[4px]' : 'rounded-pill'
       } ${elegida ? 'border-ink' : 'border-border'} ${cuadrado && elegida ? 'bg-ink text-paper' : ''}`}
     >
       {cuadrado
@@ -164,7 +170,7 @@ function Comentario({
       onChange={(evento) => {
         alCambiar(evento.target.value);
       }}
-      className="papel-rayado w-full resize-y rounded-panel border-[1.5px] border-border bg-position-[0_11px] px-3.5 py-3 text-body-lg leading-7 text-ink placeholder:text-text-3 focus:border-ink"
+      className="papel-rayado w-full resize-y rounded-field border-[1.5px] border-border bg-position-[0_11px] px-3.5 py-3 text-body-lg leading-7 text-ink placeholder:text-text-3 focus:border-ink"
     />
   );
 }
@@ -334,7 +340,7 @@ export function FormularioDeLaEncuesta({
             <button
               type="submit"
               aria-disabled={enviando}
-              className={`flex min-h-14 w-full items-center justify-center gap-2.5 rounded-panel bg-ink text-subtitulo font-medium text-paper ${
+              className={`flex min-h-14 w-full items-center justify-center gap-2.5 rounded-pill bg-ink text-subtitulo font-medium text-paper ${
                 enviando ? 'opacity-70' : 'hover:bg-ink-hover'
               }`}
             >
@@ -365,16 +371,21 @@ export function GraciasPorContestar({ taller, cliente, resena }: GraciasPorConte
   const nombre = cliente === null ? '' : primeraPalabra(cliente);
   return (
     <div className="@container w-full">
-      <div className="mx-auto flex w-full max-w-[520px] flex-col items-start gap-4 px-5 pt-5.5 pb-11 @lg:px-7 @lg:pt-10 @lg:pb-14">
+      <div className="mx-auto flex w-full max-w-[520px] flex-col gap-3 px-5 pt-5.5 pb-11 @lg:px-7 @lg:pt-10 @lg:pb-14">
         <MarcaDelTaller taller={taller} />
-        <h1 className="mt-1.5 font-display text-h1 leading-tight font-normal @lg:text-h1-lg">
-          {nombre === '' ? 'Gracias' : `Gracias, ${nombre}`}
-        </h1>
-        <p className="text-body-lg leading-relaxed text-text-2">
-          Lo leemos nosotros, no un sistema. Lo que nos marcaste nos sirve para el próximo mueble.
-        </p>
+        <TarjetaConLamina
+          como="div"
+          dibujo={<Ilustracion nombre="gracias" animar />}
+          lamina={ESCENA_EN_LA_LAMINA}
+          className="mt-1"
+        >
+          <h1 className={TITULO_DE_LAMINA}>{nombre === '' ? 'Gracias' : `Gracias, ${nombre}`}</h1>
+          <p className="text-body-lg leading-relaxed text-text-2">
+            Lo leemos nosotros, no un sistema. Lo que nos marcaste nos sirve para el próximo mueble.
+          </p>
+        </TarjetaConLamina>
         {resena !== null && (
-          <div className="mt-2 flex w-full flex-col gap-2.5 rounded-panel bg-surface px-4.5 py-4">
+          <div className="flex w-full flex-col gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4">
             <span className="text-body font-semibold">¿Nos dejás la misma reseña en Google?</span>
             <span className="text-body-sm leading-relaxed text-text-2">
               Se lo pedimos a todos los clientes, contesten lo que contesten. A un taller chico le
@@ -384,7 +395,7 @@ export function GraciasPorContestar({ taller, cliente, resena }: GraciasPorConte
               href={resena}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-12 w-fit items-center gap-2 rounded-field border border-border px-4.5 text-body font-medium no-underline hover:bg-paper"
+              className="flex min-h-12 w-fit items-center gap-2 rounded-pill border border-border px-4.5 text-body font-medium no-underline hover:bg-surface"
             >
               <Icono nombre="star" tamano={17} />
               Dejar una reseña

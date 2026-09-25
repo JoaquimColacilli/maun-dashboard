@@ -27,7 +27,7 @@ export function AvisosDelDispositivo() {
   const activos = fase === 'activos' && preferencias !== null;
 
   return (
-    <div className="flex flex-col gap-6.5">
+    <div className="flex flex-col gap-3 md:gap-4">
       {fase === 'sin-claves' && <SinClaves />}
       {fase === 'sin-instalar' && <InstalarEnElIphone />}
       {fase === 'sin-soporte' && <SinSoporte />}

@@ -11,7 +11,6 @@ import { DatoCopiable, Icono, LogoDeMercadoPago } from '@/shared/ui';
 
 export interface ComoPagarProps {
   como: Como | null;
-  margen?: string;
 }
 
 export const PAGAR_CON_MERCADO_PAGO = 'Pagar con Mercado Pago';
@@ -34,7 +33,7 @@ function PorMercadoPago({ link }: { link: string }) {
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 flex min-h-tap w-full items-center justify-center gap-2 rounded-field bg-ink px-4 text-body font-semibold text-paper sm:w-auto"
+        className="mt-2 flex min-h-tap w-full items-center justify-center gap-2 rounded-pill bg-ink px-4 text-body font-semibold text-paper sm:w-auto"
       >
         <Icono nombre="arrow-up-right" tamano={18} />
         {PAGAR_CON_MERCADO_PAGO}
@@ -43,7 +42,7 @@ function PorMercadoPago({ link }: { link: string }) {
   );
 }
 
-export function ComoPagar({ como, margen = 'mt-5' }: ComoPagarProps) {
+export function ComoPagar({ como }: ComoPagarProps) {
   if (como === null) return null;
   if (!como.transferencia && !como.efectivo && !como.faltanLosDatos) return null;
 
@@ -53,7 +52,7 @@ export function ComoPagar({ como, margen = 'mt-5' }: ComoPagarProps) {
   return (
     <section
       aria-label="Cómo pagar"
-      className={`relative ${margen} rounded-panel border border-hairline bg-surface px-4 py-3.5`}
+      className="relative rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-section font-semibold">{como.titulo}</h2>

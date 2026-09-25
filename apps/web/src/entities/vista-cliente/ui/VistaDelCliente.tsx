@@ -13,8 +13,16 @@ import {
 
 import { urlDelArchivo } from '@/shared/api';
 import { diaYMesCorto, fechaEnUnaFrase, fechaLarga, formatearPesos } from '@/shared/lib';
-import { Icono, MontoQueEntra, Pagina, PrincipalYApoyo } from '@/shared/ui';
+import {
+  Icono,
+  MontoQueEntra,
+  MuebleEnEtapa,
+  Pagina,
+  PrincipalYApoyo,
+  TarjetaConLamina,
+} from '@/shared/ui';
 
+import { etapaDelMueble } from '../model/etapa';
 import {
   A_CONFIRMAR,
   A_CUENTA_DE_LA_SENA,
@@ -42,7 +50,7 @@ const TIPO: Readonly<Record<string, string>> = {
   'application/pdf': 'PDF',
 };
 
-const PRIMERO_EN_EL_APOYO = 'mt-7 @min-[52rem]/apoyo:mt-0';
+const TARJETA = 'rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5';
 
 function esImagen(archivo: ArchivoDelCliente): boolean {
   return archivo.tipo === 'image/webp' || archivo.tipo === 'image/jpeg';
@@ -125,7 +133,7 @@ function EntradaAntesDelPresupuesto({
       <Titular texto={titular} bajada={bajada} />
       {vista.pagado > 0 && (
         <>
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 self-stretch border-t border-hairline-soft pt-3.5">
             <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
           </div>
           <p className="mt-2.5 text-body leading-relaxed text-text-2">{QUEDA_A_CUENTA}</p>
@@ -148,7 +156,7 @@ function EntradaEsperandoLaSena({
   return (
     <>
       <Titular texto={titular} bajada={bajada} />
-      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 self-stretch border-t border-hairline-soft pt-3.5">
         <Cifra
           clave="Presupuesto"
           valor={vista.presupuesto === null ? '—' : formatearPesos(vista.presupuesto)}
@@ -194,7 +202,7 @@ function EntradaAprobada({
             <span className="font-semibold tabular-nums">{formatearPesos(vista.pagado)}</span>
           </span>
         </div>
-        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline pt-3.5">
+        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 self-stretch border-t border-hairline-soft pt-3.5">
           <span className="text-body-lg font-semibold">{titular}</span>
           {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
         </div>
@@ -205,7 +213,7 @@ function EntradaAprobada({
   return (
     <>
       <Titular texto={titular} bajada={bajada} />
-      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline pt-3.5">
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 self-stretch border-t border-hairline-soft pt-3.5">
         <Cifra clave={saldo.etiqueta} valor={saldo.texto} grande tono={saldo.tono} />
         <Cifra clave="Vale" valor={precio} />
         <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
@@ -231,8 +239,8 @@ function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string
 
 function TarjetaDelTrabajo({ datos, hoy }: { datos: DatosDelTrabajo; hoy: string }) {
   return (
-    <section aria-label="Datos del trabajo" className={PRIMERO_EN_EL_APOYO}>
-      <dl className="rounded-panel border border-hairline px-3.5 py-1">
+    <section aria-label="Datos del trabajo">
+      <dl className="rounded-panel border border-hairline bg-paper px-4 py-1">
         <Dato clave="Dirección" valor={datos.direccion ?? A_CONFIRMAR} />
         <Dato
           clave="Empezamos"
@@ -254,8 +262,8 @@ function ParaCuando({ proyeccion, hoy }: { proyeccion: ProyeccionDeLaEntrega; ho
     enUnaFrase: (fecha) => fechaEnUnaFrase(fecha, hoy),
   });
   return (
-    <section aria-label="Para cuándo" className={PRIMERO_EN_EL_APOYO}>
-      <div className="rounded-panel border border-hairline px-3.5 py-3">
+    <section aria-label="Para cuándo">
+      <div className={TARJETA}>
         <p className="text-body leading-relaxed font-medium text-pretty">{principal}</p>
         {resto.map((linea) => (
           <p key={linea} className="mt-1.5 text-label leading-relaxed text-text-2">
@@ -270,7 +278,7 @@ function ParaCuando({ proyeccion, hoy }: { proyeccion: ProyeccionDeLaEntrega; ho
 function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
   switch (vista.etapa) {
     case 'antes-del-presupuesto':
-      return <ComoPagar como={vista.comoPagar} margen={PRIMERO_EN_EL_APOYO} />;
+      return <ComoPagar como={vista.comoPagar} />;
     case 'esperando-la-sena':
       return (
         <>
@@ -331,37 +339,41 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
   const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
 
   return (
-    <Pagina>
-      <header className="flex items-center justify-between gap-3 border-b border-hairline pb-3.5">
+    <Pagina className="gap-3 md:gap-4">
+      <header className="flex items-center justify-between gap-3 px-1">
         <span className="min-w-0 font-display text-lema leading-tight">{vista.taller}</span>
       </header>
 
       <PrincipalYApoyo
         amplio
-        separacion="gap-y-0"
-        className="mt-4"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
-          <div className="@container">
+          <div className="@container flex flex-col gap-3 md:gap-4">
             <ApoyoDeLaVista vista={vista} hoy={hoy} />
 
-            <p data-fin-de-la-vista className="mt-4 text-label leading-relaxed text-text-3">
+            <p data-fin-de-la-vista className="px-1 text-label leading-relaxed text-text-3">
               Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
               trabajo. Si algo no coincide, escribile al taller.
             </p>
           </div>
         }
       >
-        <div className="@container">
-          <section aria-label="Tu mueble" className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <TarjetaConLamina
+            como="section"
+            aria-label="Tu mueble"
+            dibujo={<MuebleEnEtapa etapa={etapaDelMueble(vista.hitoActual)} />}
+            lamina="[&>svg]:w-56 @min-[40rem]/con-lamina:[&>svg]:w-72"
+          >
             <span className="text-body text-text-2">{vista.cliente}</span>
             <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
               {vista.titulo}
             </h1>
 
             <EntradaDeLaVista vista={vista} bajada={nota?.resumen ?? ''} hoy={hoy} />
-          </section>
+          </TarjetaConLamina>
 
-          <section aria-label="En qué anda" className="mt-7">
+          <section aria-label="En qué anda" className={`@container ${TARJETA}`}>
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
             <CaminoDeHitos hitos={vista.hitos} nota={nota} hoy={hoy} />
             {vista.sigue !== '' && (
@@ -370,7 +382,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
           </section>
 
           {vista.eventos.length > 0 && (
-            <section aria-label="Lo que fue pasando" className="mt-8">
+            <section aria-label="Lo que fue pasando" className={TARJETA}>
               <h2 className="mb-1 text-section font-semibold">Lo que fue pasando</h2>
               <ol className="list-none">
                 {vista.eventos.map((evento, indice) => (
@@ -406,7 +418,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             </section>
           )}
 
-          <section aria-label="Lo que pagaste" className="mt-7">
+          <section aria-label="Lo que pagaste" className={TARJETA}>
             <h2 className="mb-1.5 text-section font-semibold">Lo que pagaste</h2>
             {vista.pagos.length === 0 ? (
               textoSinPagos !== '' && (
@@ -440,7 +452,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             <p className="mt-2.5 text-label leading-normal text-text-3">{textoDelPie}</p>
           </section>
 
-          <section aria-label="Fotos y planos" className="mt-8">
+          <section aria-label="Fotos y planos" className={TARJETA}>
             <div className="mb-3 flex items-baseline justify-between gap-2.5">
               <h2 className="text-section font-semibold">Fotos y planos</h2>
               {vista.archivos.length > 0 && (
@@ -453,7 +465,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
             </div>
 
             {vista.archivos.length === 0 ? (
-              <div className="flex flex-col gap-2 rounded-panel border border-dashed border-border px-4 py-5">
+              <div className="flex flex-col gap-2 rounded-field border border-dashed border-border px-4 py-5">
                 <span className="text-body font-medium">Todavía no hay fotos</span>
                 <span className="text-body leading-normal text-text-2">
                   Acá van a aparecer los planos, los renders y las fotos que el taller comparta, del
@@ -470,7 +482,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
                           href={urlDelArchivo(archivo.ruta)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex flex-col overflow-hidden rounded-panel border border-hairline hover:border-ink"
+                          className="flex flex-col overflow-hidden rounded-field border border-hairline hover:border-ink"
                         >
                           <img
                             src={urlDelArchivo(archivo.rutaMini)}

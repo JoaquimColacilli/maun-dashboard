@@ -43,6 +43,25 @@ test('sin sesión, la app manda al login en vez de mostrar un tablero vacío', a
   await expect(page.getByRole('button', { name: 'Mostrar la contraseña' })).toBeVisible();
 });
 
+test('la primera vez, el canto de los tesoros se corta', async ({ page }) => {
+  await page.goto('/acceso');
+
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-canto]')
+        .evaluate((canto) =>
+          canto
+            .getAnimations({ subtree: true })
+            .some(
+              (animacion) =>
+                animacion instanceof CSSAnimation && animacion.animationName === 'maun-corte',
+            ),
+        ),
+    )
+    .toBe(true);
+});
+
 test('el formulario avisa lo que falta antes de salir a la red', async ({ page }) => {
   await page.goto('/acceso');
 

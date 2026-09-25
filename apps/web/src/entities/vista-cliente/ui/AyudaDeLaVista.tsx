@@ -308,7 +308,7 @@ function Carrusel({ alCerrar }: { alCerrar: () => void }) {
             </ul>
 
             {una.pie !== undefined && (
-              <p className="rounded-panel bg-surface-3 px-3.5 py-2.5 text-label leading-relaxed text-text-2">
+              <p className="rounded-field bg-surface-3 px-3.5 py-2.5 text-label leading-relaxed text-text-2">
                 {una.pie}
               </p>
             )}
@@ -371,8 +371,8 @@ export function AyudaDeLaVista({ conTexto = false }: AyudaDeLaVistaProps) {
   return (
     <>
       <Button
-        variant="secundario"
-        size={conTexto ? 'normal' : 'chico'}
+        variant={conTexto ? 'secundario' : 'herramienta'}
+        size={conTexto ? 'normal' : 'herramienta'}
         aria-label="Cómo lo ve tu cliente"
         title="Cómo lo ve tu cliente"
         onClick={() => {

@@ -34,11 +34,15 @@ import {
 import {
   Button,
   ConSalida,
+  ESCENA_EN_LA_LAMINA,
   FilaDeAcciones,
   Hoja,
   Icono,
+  Ilustracion,
   Pagina,
   PrincipalYApoyo,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
   type NombreDeIcono,
 } from '@/shared/ui';
 
@@ -54,7 +58,7 @@ function Accion({
   externo?: boolean;
 }) {
   const clases =
-    'flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-field border border-border text-meta font-medium';
+    'flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-panel border border-hairline bg-paper text-meta font-medium';
 
   if (href === null) {
     return (
@@ -79,7 +83,7 @@ function Accion({
 
 function Dato({ clave, valor }: { clave: string; valor: string }) {
   return (
-    <div className="grid grid-cols-[110px_1fr] gap-3 border-t border-hairline py-2.5 text-body">
+    <div className="grid grid-cols-[110px_1fr] gap-3 border-t border-hairline-soft py-2.5 text-body first:border-t-0">
       <dt className="text-text-3">{clave}</dt>
       <dd className="leading-snug font-medium wrap-anywhere">{valor}</dd>
     </div>
@@ -90,7 +94,10 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
   const { cliente, proyectos } = resumen;
 
   return (
-    <section aria-label="Historial" className="mt-5">
+    <section
+      aria-label="Historial"
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <h2 className="text-body-lg font-semibold">Historial</h2>
         {proyectos.length > 0 && (
@@ -102,14 +109,14 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
       </div>
 
       <div className="@container">
-        <dl className="grid grid-cols-1 border-t border-b border-ink border-b-hairline @min-[22.5rem]:grid-cols-2">
+        <dl className="grid grid-cols-1 border-b border-hairline-soft @min-[22.5rem]:grid-cols-2">
           <div className="py-2.5 @min-[22.5rem]:pr-3">
             <dt className="text-meta text-text-2">Total facturado</dt>
             <dd className="text-money-lg font-semibold tabular-nums">
               {formatearPesos(resumen.facturado)}
             </dd>
           </div>
-          <div className="border-t border-hairline py-2.5 @min-[22.5rem]:border-t-0 @min-[22.5rem]:border-l @min-[22.5rem]:pl-3">
+          <div className="border-t border-hairline-soft py-2.5 @min-[22.5rem]:border-t-0 @min-[22.5rem]:border-l @min-[22.5rem]:pl-3">
             <dt className="text-meta text-text-2">Saldo pendiente</dt>
             <dd
               className={`text-money-lg font-semibold tabular-nums ${
@@ -123,7 +130,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
       </div>
 
       {proyectos.length === 0 ? (
-        <p className="py-4 text-body leading-relaxed text-text-2">
+        <p className="pt-3 text-body leading-relaxed text-text-2">
           Todavía no hay trabajos con {nombreCorto(cliente.nombre)}. Cuando arranques uno, aparece
           acá con su estado.
         </p>
@@ -135,7 +142,7 @@ function Historial({ resumen, hoy }: { resumen: ResumenDeCliente; hoy: string })
             return (
               <li
                 key={proyecto.id}
-                className="relative flex items-center gap-3 border-b border-hairline py-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink"
+                className="relative flex items-center gap-3 border-t border-hairline-soft py-3 first:border-t-0 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink"
               >
                 <span className="min-w-0 flex-1">
                   <Ir
@@ -193,13 +200,21 @@ export function ClienteFichaPage() {
 
   if (!resumen) {
     return (
-      <Pagina className="items-start gap-3">
-        <h1 className="font-display text-h1 leading-tight">Ese cliente no está</h1>
-        <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-          Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente de
-          otro taller.
-        </p>
-        <Button onClick={vuelta.volver}>Volver a Clientes</Button>
+      <Pagina>
+        <TarjetaConLamina
+          como="div"
+          dibujo={<Ilustracion nombre="anulado" />}
+          lamina={ESCENA_EN_LA_LAMINA}
+        >
+          <h1 className={TITULO_DE_LAMINA}>Ese cliente no está</h1>
+          <p className="max-w-[44ch] text-body leading-relaxed text-text-2">
+            Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente
+            de otro taller.
+          </p>
+          <div className="w-full pt-2">
+            <Button onClick={vuelta.volver}>Volver a Clientes</Button>
+          </div>
+        </TarjetaConLamina>
       </Pagina>
     );
   }
@@ -226,20 +241,21 @@ export function ClienteFichaPage() {
   }
 
   return (
-    <Pagina>
-      <div className="mb-2.5 flex items-center justify-between">
+    <Pagina className="gap-3 md:gap-4">
+      <div className="flex items-center justify-between">
         <Ir
           a="/clientes"
           alTocar={vuelta.volver}
-          className="flex min-h-tap items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+          className="-ml-1 flex min-h-tap items-center gap-1 rounded-pill pr-3 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
         >
           <Icono nombre="chevron-left" tamano={20} />
           {vuelta.etiqueta}
         </Ir>
-        <div className="flex gap-2">
+        <div className="flex flex-none gap-1">
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="px-4"
             onClick={() => {
               setConfirmando(true);
             }}
@@ -248,8 +264,9 @@ export function ClienteFichaPage() {
             Borrar
           </Button>
           <Button
-            variant="secundario"
-            size="chico"
+            variant="herramienta"
+            size="herramienta"
+            className="px-4"
             onClick={() => {
               setEditando(true);
             }}
@@ -270,7 +287,7 @@ export function ClienteFichaPage() {
             {cliente.zona !== '' && <span>{cliente.zona}</span>}
             <span
               title={condicion.etiqueta}
-              className="inline-flex items-center gap-1.5 rounded-control border border-ink px-1.5 text-badge font-semibold text-ink"
+              className="inline-flex items-center gap-1.5 rounded-pill border border-ink px-2 text-badge font-semibold text-ink"
             >
               {condicion.corto}
               <span className="font-medium text-text-2">{condicion.comprobante}</span>
@@ -280,7 +297,7 @@ export function ClienteFichaPage() {
         </div>
       </header>
 
-      <div className="mt-4 grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <Accion icono="phone" etiqueta="Llamar" href={enlaceDeLlamada(cliente.telefono)} />
         <Accion
           icono="message-circle"
@@ -299,10 +316,13 @@ export function ClienteFichaPage() {
 
       <PrincipalYApoyo
         apoyoPrimero
-        separacion="gap-y-0"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
-          <>
-            <section aria-label="Contacto" className="mt-5">
+          <div className="flex flex-col gap-3 md:gap-4">
+            <section
+              aria-label="Contacto"
+              className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+            >
               <h2 className="mb-1 text-body-lg font-semibold">Contacto</h2>
               <dl>
                 <Dato
@@ -317,9 +337,12 @@ export function ClienteFichaPage() {
               </dl>
             </section>
 
-            <section aria-label="Cómo llegó" className="mt-5">
+            <section
+              aria-label="Cómo llegó"
+              className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+            >
               <h2 className="mb-1 text-body-lg font-semibold">Cómo llegó</h2>
-              <p className="border-t border-hairline py-2.5 text-body leading-snug">
+              <p className="pt-1 text-body leading-snug">
                 <span className="font-medium">{origen?.etiqueta ?? 'Sin anotar'}.</span>{' '}
                 <span className="text-text-2">
                   {cliente.origen_detalle === ''
@@ -329,7 +352,10 @@ export function ClienteFichaPage() {
               </p>
             </section>
 
-            <section aria-label="Facturación" className="mt-5">
+            <section
+              aria-label="Facturación"
+              className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+            >
               <h2 className="mb-1 text-body-lg font-semibold">Facturación</h2>
               <dl>
                 {facturacion.map((fila) => (
@@ -337,25 +363,27 @@ export function ClienteFichaPage() {
                 ))}
               </dl>
             </section>
-          </>
+          </div>
         }
       >
-        {cliente.notas !== '' && (
-          <p className="mt-4 rounded-field bg-surface px-3 py-2.5 text-label leading-snug text-text-2">
-            {cliente.notas}
-          </p>
-        )}
+        <div className="flex flex-col gap-3 md:gap-4">
+          {cliente.notas !== '' && (
+            <p className="rounded-panel border border-hairline bg-paper px-4 py-4 text-label leading-snug text-text-2 md:px-5">
+              {cliente.notas}
+            </p>
+          )}
 
-        <Historial resumen={resumen} hoy={hoy} />
-        <Button
-          className="mt-4 w-full"
-          onClick={() => {
-            ir(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
-          }}
-        >
-          <Icono nombre="folder-plus" tamano={18} />
-          Arrancar un proyecto con {nombreCorto(cliente.nombre)}
-        </Button>
+          <Historial resumen={resumen} hoy={hoy} />
+          <Button
+            className="w-full"
+            onClick={() => {
+              ir(`${RUTA_DE_PROYECTO_NUEVO}?cliente=${cliente.id}`);
+            }}
+          >
+            <Icono nombre="folder-plus" tamano={18} />
+            Arrancar un proyecto con {nombreCorto(cliente.nombre)}
+          </Button>
+        </div>
       </PrincipalYApoyo>
 
       <ConSalida valor={editando}>

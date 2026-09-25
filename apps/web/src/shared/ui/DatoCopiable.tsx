@@ -68,7 +68,7 @@ export function DatoCopiable({
         type="button"
         aria-label={nombre}
         onClick={alTocar}
-        className={`flex min-h-tap flex-none items-center gap-1.5 rounded-field border px-3 text-label font-semibold ${
+        className={`flex min-h-tap flex-none items-center gap-1.5 rounded-pill border px-3.5 text-label font-semibold ${
           comoQuedo === 'copiado'
             ? 'border-hogar text-hogar'
             : 'border-border hover:border-ink hover:bg-surface'

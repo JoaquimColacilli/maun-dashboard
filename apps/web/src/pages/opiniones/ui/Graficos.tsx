@@ -231,7 +231,7 @@ export function TiraEnElTiempo({
             style={{
               height: `${String(Math.round(14 + (punto.paso.valor - 1) * ((alto - 22) / 4)))}px`,
             }}
-            className={`min-w-1.5 flex-1 rounded-control ${fondoDelPaso(punto.paso)} ${
+            className={`min-w-1.5 flex-1 rounded-[2px] ${fondoDelPaso(punto.paso)} ${
               conEvolucion ? 'max-w-4' : 'max-w-5.5'
             }`}
           />

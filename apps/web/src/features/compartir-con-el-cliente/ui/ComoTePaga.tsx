@@ -59,7 +59,10 @@ export function ComoTePaga({ resumen }: ComoTePagaProps) {
   }
 
   return (
-    <section aria-label="Cómo te paga" className="mt-7">
+    <section
+      aria-label="Cómo te paga"
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <h2 className="text-section font-semibold">Cómo te paga</h2>
       <p className="mt-1.5 mb-3 max-w-[520px] text-body leading-normal text-text-2">
         Elegí por cada pago cómo se lo cobrás. Tu cliente lo ve en su página, al lado de cuánto
@@ -81,7 +84,7 @@ export function ComoTePaga({ resumen }: ComoTePagaProps) {
               <div
                 role="group"
                 aria-label={`${NOMBRE_DE_LA_INSTANCIA[instancia]}: cómo te la paga`}
-                className="flex flex-none gap-0.5 rounded-field bg-surface p-1"
+                className="flex flex-none gap-1 rounded-pill bg-ink/6 p-1"
               >
                 {FORMAS_DE_COBRO.map((forma) => {
                   const elegida = ofrece(formas, forma);
@@ -94,7 +97,7 @@ export function ComoTePaga({ resumen }: ComoTePagaProps) {
                       onClick={() => {
                         tocar(instancia, forma, formas);
                       }}
-                      className={`flex min-h-tap items-center gap-1.5 rounded-control px-3 text-label ${
+                      className={`flex min-h-tap items-center gap-1.5 rounded-pill px-3 text-label ${
                         elegida
                           ? 'bg-elevado font-semibold text-ink shadow-float'
                           : 'font-medium text-text-2'

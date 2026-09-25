@@ -85,7 +85,7 @@ export function VisorDeImagenes({ imagenes, inicial, alCerrar, alBorrar }: Visor
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-tap items-center gap-1.5 rounded-field px-2 text-label font-medium underline underline-offset-3"
+              className="flex min-h-tap items-center gap-1.5 rounded-pill px-2 text-label font-medium underline underline-offset-3"
             >
               <Icono nombre="maximize-2" tamano={15} />
               Abrir en otra pestaña

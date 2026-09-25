@@ -79,19 +79,50 @@ function useEditando(): boolean {
   const [editando, setEditando] = useState(false);
 
   useEffect(() => {
+    let apretado = false;
+    let volverAlSoltar = false;
+    let reloj: ReturnType<typeof setTimeout> | undefined;
+
     const esCampo = (destino: EventTarget | null) =>
       destino instanceof HTMLElement &&
       (destino.tagName === 'INPUT' || destino.tagName === 'TEXTAREA' || destino.isContentEditable);
+    const volverDespuesDelToque = () => {
+      clearTimeout(reloj);
+      reloj = setTimeout(() => {
+        setEditando(false);
+      }, 0);
+    };
+    const apretar = () => {
+      apretado = true;
+    };
+    const soltar = () => {
+      apretado = false;
+      if (!volverAlSoltar) return;
+      volverAlSoltar = false;
+      volverDespuesDelToque();
+    };
     const entrar = (evento: FocusEvent) => {
-      if (esCampo(evento.target)) setEditando(true);
+      if (!esCampo(evento.target)) return;
+      volverAlSoltar = false;
+      clearTimeout(reloj);
+      setEditando(true);
     };
     const salir = (evento: FocusEvent) => {
-      if (esCampo(evento.target)) setEditando(false);
+      if (!esCampo(evento.target)) return;
+      if (apretado) volverAlSoltar = true;
+      else volverDespuesDelToque();
     };
 
+    document.addEventListener('pointerdown', apretar, true);
+    document.addEventListener('pointerup', soltar, true);
+    document.addEventListener('pointercancel', soltar, true);
     document.addEventListener('focusin', entrar);
     document.addEventListener('focusout', salir);
     return () => {
+      clearTimeout(reloj);
+      document.removeEventListener('pointerdown', apretar, true);
+      document.removeEventListener('pointerup', soltar, true);
+      document.removeEventListener('pointercancel', soltar, true);
       document.removeEventListener('focusin', entrar);
       document.removeEventListener('focusout', salir);
     };
@@ -201,8 +232,8 @@ function BarraInferior({
                 key={id}
                 type="button"
                 aria-current={esActivo ? 'page' : undefined}
-                className={`${columnas[indice] ?? ''} flex h-bottom-nav min-w-tap flex-col items-center justify-center gap-[3px] text-badge ${
-                  esActivo ? 'font-semibold text-ink' : 'font-medium text-text-3'
+                className={`${columnas[indice] ?? ''} flex h-[50px] min-w-tap flex-col items-center justify-center gap-[3px] rounded-pill text-badge first:ml-1.5 last:mr-1.5 ${
+                  esActivo ? 'bg-ink/7 font-semibold text-ink' : 'font-medium text-text-2'
                 }`}
                 onClick={() => {
                   irALaSeccion(destino.ruta);
@@ -237,11 +268,11 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
   return (
     <nav
       aria-label="Principal"
-      className="relative flex w-[76px] flex-none flex-col items-center gap-1.5 border-r border-hairline bg-surface-3 py-4.5"
+      className="relative flex w-[76px] flex-none flex-col items-center gap-1.5 py-4.5"
     >
       <LogoAInicio
         irA={irA}
-        className="mb-3.5 flex size-tap items-center justify-center rounded-panel font-display text-h1 hover:bg-surface-2"
+        className="mb-3.5 flex size-tap items-center justify-center rounded-pill font-display text-h1 hover:bg-ink/5"
       >
         M
       </LogoAInicio>
@@ -249,7 +280,7 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
         type="button"
         aria-label="Cargar algo nuevo"
         aria-expanded={abierto}
-        className="mb-4.5 flex size-tap items-center justify-center rounded-pill bg-ink text-paper"
+        className="mb-4.5 flex size-tap items-center justify-center rounded-pill bg-ink text-paper shadow-fab"
         onClick={() => {
           setAbierto(!abierto);
         }}
@@ -274,8 +305,10 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
             title={destino.etiqueta}
             aria-label={destino.etiqueta}
             aria-current={esActivo ? 'page' : undefined}
-            className={`flex h-12 w-13 items-center justify-center rounded-panel ${
-              esActivo ? 'bg-surface-2 text-ink' : 'text-text-3'
+            className={`flex h-12 w-13 items-center justify-center rounded-pill border ${
+              esActivo
+                ? 'border-hairline bg-paper text-ink'
+                : 'border-transparent text-text-2 hover:bg-ink/5'
             }`}
             onClick={() => {
               irA(destino.ruta);
@@ -291,12 +324,16 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
         title="Ajustes"
         aria-label="Ajustes"
         aria-current={activo === 'ajustes' ? 'page' : undefined}
-        className="flex h-12 w-13 items-center justify-center rounded-panel text-text-3"
+        className={`flex h-12 w-13 items-center justify-center rounded-pill border ${
+          activo === 'ajustes'
+            ? 'border-hairline bg-paper text-ink'
+            : 'border-transparent text-text-2 hover:bg-ink/5'
+        }`}
         onClick={() => {
           irA(DESTINOS.ajustes.ruta);
         }}
       >
-        <Icono nombre="settings" tamano={22} />
+        <Icono nombre="settings" tamano={22} grosor={activo === 'ajustes' ? 2.25 : 1.75} />
       </button>
     </nav>
   );
@@ -322,12 +359,12 @@ function Sidebar({
   return (
     <nav
       aria-label="Principal"
-      className="relative flex w-[232px] flex-none flex-col gap-0.5 border-r border-hairline bg-surface-3 px-3.5 pt-5.5 pb-4.5"
+      className="relative flex w-[232px] flex-none flex-col gap-0.5 px-3.5 pt-5.5 pb-4.5"
     >
       <div className="flex items-baseline justify-between pb-4.5">
         <LogoAInicio
           irA={irA}
-          className="rounded-field px-2.5 font-display text-h1-lg hover:bg-surface-2"
+          className="rounded-pill px-2.5 font-display text-h1-lg hover:bg-ink/5"
         >
           MAUN
         </LogoAInicio>
@@ -336,7 +373,7 @@ function Sidebar({
       <button
         type="button"
         aria-expanded={abierto}
-        className="mb-4 flex h-10 items-center justify-center gap-2 rounded-field bg-ink text-label font-medium text-paper"
+        className="mb-4 flex h-10 items-center justify-center gap-2 rounded-pill bg-ink text-label font-medium text-paper shadow-fab"
         onClick={() => {
           setAbierto(!abierto);
         }}
@@ -350,7 +387,7 @@ function Sidebar({
           setAbierto(false);
         }}
         irA={irA}
-        className="absolute top-[72px] left-3.5"
+        className="absolute top-[81px] left-3.5"
       />
       {NAV_ESCRITORIO.map((id) => {
         const destino = DESTINOS[id];
@@ -360,8 +397,10 @@ function Sidebar({
             key={id}
             type="button"
             aria-current={esActivo ? 'page' : undefined}
-            className={`flex h-10 items-center gap-3 rounded-field px-2.5 text-left text-label ${
-              esActivo ? 'bg-surface-2 font-semibold text-ink' : 'font-medium text-text-3'
+            className={`flex h-10 items-center gap-3 rounded-pill border px-2.5 text-left text-label ${
+              esActivo
+                ? 'border-hairline bg-paper font-semibold text-ink'
+                : 'border-transparent font-medium text-text-2 hover:bg-ink/5'
             }`}
             onClick={() => {
               irA(destino.ruta);

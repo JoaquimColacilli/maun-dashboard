@@ -28,7 +28,7 @@ export function TarjetaDeProyecto({
   return (
     <li
       {...origenDeLaTarjeta(proyecto.id)}
-      className={`relative flex flex-col gap-2 rounded-panel border px-3.5 pt-3.5 pb-3 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink ${
+      className={`relative flex flex-col gap-2 rounded-panel border bg-paper px-4 pt-4 pb-3.5 hover:bg-surface-3 has-[a[data-tarjeta]:focus-visible]:outline-2 has-[a[data-tarjeta]:focus-visible]:outline-offset-2 has-[a[data-tarjeta]:focus-visible]:outline-ink ${
         atencion ? 'border-atencion' : 'border-hairline'
       }`}
     >
@@ -50,7 +50,7 @@ export function TarjetaDeProyecto({
       {children}
 
       {pie !== undefined && (
-        <div className="relative z-10 -mx-3.5 mt-1 -mb-3 rounded-b-panel border-t border-hairline-soft px-3.5 pt-2.5 pb-3 @min-[1px]/tablero:mt-auto">
+        <div className="relative z-10 -mx-4 mt-1 -mb-3.5 rounded-b-panel border-t border-hairline-soft px-4 pt-2.5 pb-3.5 @min-[1px]/tablero:mt-auto">
           {pie}
         </div>
       )}
@@ -70,7 +70,7 @@ export function TarjetasDeProyectos({
       tarjetaMinima="19rem"
       como="ul"
       etiqueta={etiqueta}
-      className="list-none grid-cols-1 gap-3"
+      className="list-none grid-cols-1 gap-3 md:gap-4"
     >
       {children}
     </Tablero>

@@ -40,7 +40,10 @@ export function OpcionesDelTrabajo({
   if (opciones.length === 0) {
     if (!ofreceCargarLaPrimera) return null;
     return (
-      <section aria-label="Opciones de presupuesto">
+      <section
+        aria-label="Opciones de presupuesto"
+        className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+      >
         <h2 className="text-section font-semibold">Opciones de presupuesto</h2>
         <p className="mt-1.5 text-meta leading-normal text-text-3">
           Si le presentás más de una variante, cargá cada una con su importe. Cuando elija, tildás
@@ -88,7 +91,10 @@ export function OpcionesDelTrabajo({
   }
 
   return (
-    <section aria-label="Opciones de presupuesto">
+    <section
+      aria-label="Opciones de presupuesto"
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+    >
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <h2 className="text-section font-semibold">Opciones de presupuesto</h2>
         <span className="text-label text-text-2 tabular-nums">
@@ -108,7 +114,7 @@ export function OpcionesDelTrabajo({
             <li
               key={opcion.id}
               className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t py-2.5 ${
-                esLaAprobada ? 'border-hogar' : 'border-hairline'
+                esLaAprobada ? 'border-hogar' : 'border-hairline-soft'
               }`}
             >
               <span className="min-w-0 flex-1 basis-[12rem]">
@@ -135,7 +141,7 @@ export function OpcionesDelTrabajo({
                 onClick={() => {
                   alTildar(opcion, !esLaAprobada);
                 }}
-                className={`flex min-h-tap flex-none items-center gap-1.5 rounded-field border px-3 text-label font-medium ${
+                className={`flex min-h-tap flex-none items-center gap-1.5 rounded-pill border px-3 text-label font-medium ${
                   esLaAprobada
                     ? 'border-hogar bg-hogar-tint text-hogar'
                     : 'border-border text-text-2 hover:bg-surface'

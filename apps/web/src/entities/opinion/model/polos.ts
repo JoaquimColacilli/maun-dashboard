@@ -25,9 +25,9 @@ export const FONDO_DEL_POLO: Readonly<Record<Polo, string>> = {
 };
 
 export const BORDE_DEL_POLO: Readonly<Record<Polo, string>> = {
-  bien: 'border-op-bien',
-  neutro: 'border-op-neutro',
-  mal: 'border-op-mal',
+  bien: 'border-t-op-bien',
+  neutro: 'border-t-op-neutro',
+  mal: 'border-t-op-mal',
 };
 
 export function colorDelPaso(paso: Paso | null): string {

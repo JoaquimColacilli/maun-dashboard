@@ -16,7 +16,7 @@ export function HoyEnLaAgenda({ replica, hoy }: { replica: Replica; hoy: string 
   return (
     <section
       aria-labelledby="titulo-hoy-en-la-agenda"
-      className="rounded-panel border border-hairline px-4 pt-1.5 pb-3"
+      className="rounded-panel border border-hairline bg-paper px-4 pt-1.5 pb-3"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 id="titulo-hoy-en-la-agenda" className="text-section font-semibold">
@@ -24,7 +24,7 @@ export function HoyEnLaAgenda({ replica, hoy }: { replica: Replica; hoy: string 
         </h2>
         <Ir
           a={RUTA_DE_AGENDA}
-          className="-mr-1.5 flex min-h-tap items-center gap-1 rounded-field px-1.5 text-label font-medium text-text-2"
+          className="-mr-1.5 flex min-h-tap items-center gap-1 rounded-pill px-1.5 text-label font-medium text-text-2"
         >
           Ver la agenda
           <Icono nombre="chevron-right" tamano={16} />

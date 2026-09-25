@@ -160,6 +160,11 @@ las piezas de cada tesoro al volver de confirmar el cobro.
   hay un barrido global de `animation-duration`. La animación aparece entera, sin caso especial.
 - **Se anima una sola vez**, por el `state` de la navegación: volver a entrar a la ficha muestra el
   tablero quieto.
+- **Corregido por el [ADR 0068](0068-la-mesa-y-el-plano.md).** Esta animación nunca se vio en el build:
+  `@keyframes maun-corte` vivía en `@theme` y lo nombraban solo los `style` en línea, y Tailwind 4
+  descarta los `@keyframes` de `@theme` que el CSS no nombra. `--animate-maun-corte` lo hace emitir y
+  `cobro.spec.ts` mide que corra. La barra también se fue: el despiece es ahora un tablero dibujado, de
+  trazos en proyección y cortado en las piezas de cada tesoro al cobrar.
 
 ## El camino del gasto tardío
 

@@ -68,7 +68,7 @@ export function BotonDeReversion({ proyecto }: BotonDeReversionProps) {
   return (
     <section
       aria-label={esCobro ? 'Reabrir el cobro' : 'Reactivar el presupuesto'}
-      className="rounded-panel border border-hairline bg-surface-3 px-4 py-3.5"
+      className="rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
     >
       <h3 className="text-section font-semibold">
         {esCobro ? '¿Reabrís el cobro?' : '¿Reactivás el presupuesto?'}

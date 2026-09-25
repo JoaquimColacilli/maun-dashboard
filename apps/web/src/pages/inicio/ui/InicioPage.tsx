@@ -20,7 +20,7 @@ import {
 } from '@/entities/movimiento';
 import { novedadesDeOpiniones } from '@/entities/opinion';
 import { useReplicaDelTaller } from '@/entities/replica';
-import { LiquidacionesSinConfirmar } from '@/entities/proyecto';
+import { corteDelMes, LiquidacionesSinConfirmar } from '@/entities/proyecto';
 import { useNombreDeLaPersona, useSesionActiva } from '@/entities/sesion';
 import { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from '@/entities/tesoro';
 import {
@@ -53,10 +53,8 @@ import {
 } from '@/shared/lib';
 import {
   Avatar,
-  Button,
   caracteresDe,
   ConSalida,
-  FilaDeAcciones,
   Icono,
   MontoQueEntra,
   Pagina,
@@ -67,6 +65,7 @@ import {
 
 import { HojaDelPerfil } from './HojaDelPerfil';
 import { HoyEnLaAgenda } from './HoyEnLaAgenda';
+import { PortadaDeInicio } from './PortadaDeInicio';
 import { UltimaOpinion } from './UltimaOpinion';
 
 const DIAS_DE_PROYECCION = 365;
@@ -162,10 +161,10 @@ function Tarjeta({
     <button
       type="button"
       onClick={alElegir}
-      className={`@container flex min-h-[118px] min-w-0 flex-col justify-between gap-3 rounded-panel p-3 text-left @min-[20rem]:p-3.5 ${
+      className={`@container relative flex min-h-[118px] min-w-0 flex-col justify-between gap-3 overflow-hidden rounded-panel p-3 text-left @min-[20rem]:p-3.5 ${
         enNegativo
           ? 'border border-negativo-borde bg-negativo-bg text-negativo-texto'
-          : tesoro.fondo
+          : 'border border-hairline bg-paper pb-4 @min-[20rem]:pb-[18px]'
       }`}
     >
       <span className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
@@ -200,6 +199,9 @@ function Tarjeta({
           {detalle}
         </span>
       </span>
+      {!enNegativo && (
+        <span aria-hidden className={`absolute inset-x-0 bottom-0 h-[5px] ${tesoro.barra}`} />
+      )}
     </button>
   );
 }
@@ -261,7 +263,7 @@ function Acceso({
     <button
       type="button"
       onClick={alElegir}
-      className="flex w-full items-center gap-3 border-b border-hairline py-3.5 text-left @min-[52rem]/apoyo:gap-4"
+      className="flex w-full items-center gap-3 border-t border-hairline-soft py-3.5 text-left first:border-t-0 @min-[52rem]/apoyo:gap-4"
     >
       <span
         className={`flex size-9 flex-none items-center justify-center rounded-field ${fondo ?? 'bg-surface'} ${tono ?? ''}`}
@@ -323,7 +325,7 @@ function AccesoALaAgenda() {
     <Ir
       a="/agenda"
       aria-label="Agenda"
-      className="flex size-tap flex-none items-center justify-center rounded-pill text-ink hover:bg-surface"
+      className="flex size-tap flex-none items-center justify-center rounded-pill border border-hairline bg-paper text-ink hover:bg-ink/5"
     >
       <Icono nombre="calendar-days" tamano={22} />
     </Ir>
@@ -342,6 +344,8 @@ export function InicioPage() {
   const novedades = useMemo(() => novedadesDeOpiniones(replica, hoy), [replica, hoy]);
   const mes = mesDeLaFecha(hoy);
   const ajustes = ajustesDe(replica);
+  const arranque = faltaConfigurar(ajustes);
+  const corte = useMemo(() => corteDelMes(replica, mes), [replica, mes]);
   const saldos = saldosDeLaReplica(replica);
 
   const asientos = asientosDelLibro(datosDelLibro(replica));
@@ -386,14 +390,14 @@ export function InicioPage() {
   ];
 
   return (
-    <Pagina className="gap-4">
+    <Pagina className="gap-3 md:gap-4">
       <header className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-label text-text-2">{fechaLarga(hoy, hoy)}</span>
           <h1 className="font-display text-h1 leading-tight lg:text-h1-lg">Inicio</h1>
         </div>
         {ancho === 'movil' && (
-          <div className="flex flex-none items-center gap-1">
+          <div className="flex flex-none items-center gap-2">
             <AccesoALaAgenda />
             <BotonDeLaCuenta
               abierta={perfil}
@@ -406,11 +410,13 @@ export function InicioPage() {
         )}
       </header>
 
+      <PortadaDeInicio hoy={hoy} corte={corte} arranque={arranque} />
+
       <Tablero
         enUnaFila
         como="section"
         etiqueta="Tesoros"
-        className="@container grid-cols-2 gap-2.5"
+        className="@container grid-cols-2 gap-3 md:gap-4"
       >
         {TESOROS_EN_ORDEN.map((id) => (
           <Tarjeta
@@ -431,32 +437,16 @@ export function InicioPage() {
 
       <LiquidacionesSinConfirmar replica={replica} />
 
-      {faltaConfigurar(ajustes) ? (
-        <section
-          aria-labelledby="titulo-arranque"
-          className="flex max-w-[520px] flex-col gap-3 pt-4"
-        >
-          <h2 id="titulo-arranque" className="text-h1 leading-tight font-semibold">
-            El taller arranca acá
-          </h2>
-          <p className="text-body leading-relaxed text-text-2">
-            Cargá el sueldo que te asignás y tus costos fijos para que Inicio te cuente cuánto te
-            falta cada mes. Después, el primer proyecto.
-          </p>
-          <FilaDeAcciones className="mt-1.5">
-            <Button onClick={irA('/ajustes')}>Configurar sueldo y metas</Button>
-            <Button variant="secundario" onClick={irA('/proyectos')}>
-              Cargar el primer proyecto
-            </Button>
-          </FilaDeAcciones>
-        </section>
-      ) : (
+      {!arranque && (
         <PrincipalYApoyo
           amplio
-          separacion="gap-y-0"
+          separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
           apoyo={
-            <>
-              <section aria-label="Accesos" className="mt-5 border-t border-hairline">
+            <div className="flex flex-col gap-3 md:gap-4">
+              <section
+                aria-label="Accesos"
+                className="rounded-panel border border-hairline bg-paper px-4"
+              >
                 <Acceso
                   icono="truck"
                   etiqueta="Entrega más próxima"
@@ -492,7 +482,7 @@ export function InicioPage() {
 
               <section
                 aria-label="Proyección de Cocos"
-                className="@container mt-4.5 rounded-panel border border-hairline px-4 py-3.5"
+                className="@container rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
               >
                 <div className="flex flex-col gap-2.5 @min-[24rem]:flex-row @min-[24rem]:items-center @min-[24rem]:gap-3.5">
                   <div className="min-w-0 flex-1">
@@ -518,73 +508,80 @@ export function InicioPage() {
                   </div>
                 </div>
               </section>
-            </>
+            </div>
           }
         >
-          <p className="my-4 flex items-start gap-2.5 border-y border-hairline py-3.5 text-body-lg leading-normal">
-            <span
-              aria-hidden
-              className={`mt-2 size-2 flex-none rounded-pill ${
-                mensaje.alerta ? 'bg-atencion' : 'bg-hogar'
-              }`}
-            />
-            <span>{mensaje.texto}</span>
-          </p>
+          <div className="flex flex-col gap-3 md:gap-4">
+            <p className="flex items-start gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4 text-body-lg leading-normal md:px-5">
+              <span
+                aria-hidden
+                className={`mt-2 size-2 flex-none rounded-pill ${
+                  mensaje.alerta ? 'bg-atencion' : 'bg-hogar'
+                }`}
+              />
+              <span>{mensaje.texto}</span>
+            </p>
 
-          <section
-            aria-label={nombreDelMes(mes)}
-            className="@container rounded-panel bg-surface px-4 py-3.5"
-          >
-            <div className="mb-2.5 flex items-baseline justify-between">
-              <span className="text-label font-semibold">{nombreDelMes(mes)}</span>
-              <span className="text-meta text-text-2">
-                día {diaDelMes(hoy)} de {diasDelMes(mes)}
-              </span>
-            </div>
-            <dl className="grid grid-cols-1 gap-2 @min-[28rem]:grid-cols-3 @min-[28rem]:gap-3">
-              {estadisticas.map((estadistica) => {
-                const vs = comparacion(estadistica.valor, estadistica.previo, mes);
-                return (
-                  <div
-                    key={estadistica.etiqueta}
-                    className="flex min-w-0 items-baseline justify-between gap-3 @min-[28rem]:block"
-                  >
-                    <dt className="text-meta leading-tight text-text-2">{estadistica.etiqueta}</dt>
-                    <dd className="text-right @min-[28rem]:mt-0.5 @min-[28rem]:text-left">
-                      <span className="block text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
-                        {formatearPesos(estadistica.valor)}
-                      </span>
-                      {vs !== '' && (
-                        <span className="mt-0.5 block text-badge text-text-3">{vs}</span>
-                      )}
-                    </dd>
-                  </div>
-                );
-              })}
-            </dl>
-          </section>
+            <section
+              aria-label={nombreDelMes(mes)}
+              className="@container rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+            >
+              <div className="mb-2.5 flex items-baseline justify-between">
+                <span className="text-label font-semibold">{nombreDelMes(mes)}</span>
+                <span className="text-meta text-text-2">
+                  día {diaDelMes(hoy)} de {diasDelMes(mes)}
+                </span>
+              </div>
+              <dl className="grid grid-cols-1 gap-2 @min-[28rem]:grid-cols-3 @min-[28rem]:gap-3">
+                {estadisticas.map((estadistica) => {
+                  const vs = comparacion(estadistica.valor, estadistica.previo, mes);
+                  return (
+                    <div
+                      key={estadistica.etiqueta}
+                      className="flex min-w-0 items-baseline justify-between gap-3 @min-[28rem]:block"
+                    >
+                      <dt className="text-meta leading-tight text-text-2">
+                        {estadistica.etiqueta}
+                      </dt>
+                      <dd className="text-right @min-[28rem]:mt-0.5 @min-[28rem]:text-left">
+                        <span className="block text-body-lg font-semibold whitespace-nowrap tabular-nums lg:text-money-lg">
+                          {formatearPesos(estadistica.valor)}
+                        </span>
+                        {vs !== '' && (
+                          <span className="mt-0.5 block text-badge text-text-3">{vs}</span>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </section>
 
-          <section aria-label="Progreso" className="mt-5 flex flex-col gap-4">
-            <Barra
-              etiqueta="Sueldo del mes"
-              texto={fraseSueldo.texto}
-              detalle={fraseSueldo.detalle}
-              pct={porcentaje(sueldo.pagado, sueldo.esperado)}
-              color={TESORO.hogar.barra}
-            />
-            <Barra
-              etiqueta="Meta de Cocos"
-              texto={`${formatearPesos(saldos.cocos)} de ${formatearPesos(metaCocos)}`}
-              pct={porcentaje(saldos.cocos, metaCocos)}
-              color={TESORO.cocos.barra}
-            />
-            <Barra
-              etiqueta="Diezmo pagado"
-              texto={`${formatearPesos(diezmo.pagado)} de ${formatearPesos(diezmo.generado)}`}
-              pct={porcentaje(diezmo.pagado, diezmo.generado)}
-              color={TESORO.diezmo.barra}
-            />
-          </section>
+            <section
+              aria-label="Progreso"
+              className="flex flex-col gap-4 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
+            >
+              <Barra
+                etiqueta="Sueldo del mes"
+                texto={fraseSueldo.texto}
+                detalle={fraseSueldo.detalle}
+                pct={porcentaje(sueldo.pagado, sueldo.esperado)}
+                color={TESORO.hogar.barra}
+              />
+              <Barra
+                etiqueta="Meta de Cocos"
+                texto={`${formatearPesos(saldos.cocos)} de ${formatearPesos(metaCocos)}`}
+                pct={porcentaje(saldos.cocos, metaCocos)}
+                color={TESORO.cocos.barra}
+              />
+              <Barra
+                etiqueta="Diezmo pagado"
+                texto={`${formatearPesos(diezmo.pagado)} de ${formatearPesos(diezmo.generado)}`}
+                pct={porcentaje(diezmo.pagado, diezmo.generado)}
+                color={TESORO.diezmo.barra}
+              />
+            </section>
+          </div>
         </PrincipalYApoyo>
       )}
 

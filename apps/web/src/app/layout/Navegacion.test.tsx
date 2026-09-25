@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -85,7 +85,7 @@ describe('en el celular', () => {
     expect(screen.queryByRole('menuitem', { name: 'Movimiento' })).not.toBeInTheDocument();
   });
 
-  it('mientras se escribe en un campo, la barra no queda flotando sobre el teclado', () => {
+  it('mientras se escribe en un campo, la barra no queda flotando sobre el teclado', async () => {
     pantallaDe(390);
     const campo = document.createElement('input');
     document.body.append(campo);
@@ -97,9 +97,48 @@ describe('en el celular', () => {
     expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
 
     fireEvent.focusOut(campo);
-    expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
+    expect(await screen.findByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
 
     campo.remove();
+  });
+
+  it('el toque que saca el foco de un campo llega a su botón antes de que vuelva la barra', () => {
+    vi.useFakeTimers();
+    pantallaDe(390);
+    const campo = document.createElement('input');
+    const boton = document.createElement('button');
+    document.body.append(campo, boton);
+    montar('/');
+    const barra = () => screen.queryByRole('navigation', { name: 'Principal' });
+
+    fireEvent.focusIn(campo);
+    expect(barra()).not.toBeInTheDocument();
+
+    fireEvent.pointerDown(boton);
+    fireEvent.focusOut(campo);
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(barra()).not.toBeInTheDocument();
+
+    fireEvent.pointerUp(boton);
+    expect(barra()).not.toBeInTheDocument();
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(barra()).toBeInTheDocument();
+
+    fireEvent.focusIn(campo);
+    fireEvent.focusOut(campo);
+    fireEvent.focusIn(campo);
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(barra()).not.toBeInTheDocument();
+
+    campo.remove();
+    boton.remove();
+    vi.useRealTimers();
   });
 });
 

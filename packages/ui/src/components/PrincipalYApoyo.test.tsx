@@ -110,6 +110,6 @@ describe('PrincipalYApoyo', () => {
     );
 
     const { grilla } = columnas();
-    expect(grilla).toHaveClass('gap-y-4', '@min-[52rem]/apoyo:gap-x-11');
+    expect(grilla).toHaveClass('gap-y-4', '@min-[52rem]/apoyo:gap-x-4');
   });
 });

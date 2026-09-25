@@ -17,7 +17,7 @@ export function FilaParaSalir({ className = '' }: { className?: string }) {
         }}
         className={className}
       >
-        <span className="flex size-9 flex-none items-center justify-center rounded-panel bg-surface text-text-2">
+        <span className="flex size-9 flex-none items-center justify-center rounded-field bg-surface text-text-2">
           <Icono nombre="log-out" tamano={18} />
         </span>
         <span className="min-w-0 flex-1">

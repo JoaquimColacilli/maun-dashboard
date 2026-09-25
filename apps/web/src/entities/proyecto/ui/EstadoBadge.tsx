@@ -6,7 +6,7 @@ export function EstadoBadge({ estado }: { estado: EstadoProyecto }) {
   const datos = ESTADO[estado];
   return (
     <span
-      className={`inline-block rounded-control border px-1.5 py-0.5 text-badge font-semibold whitespace-nowrap ${datos.tono}`}
+      className={`inline-block rounded-pill border px-2 py-0.5 text-badge font-semibold whitespace-nowrap ${datos.tono}`}
     >
       {datos.etiqueta}
     </span>

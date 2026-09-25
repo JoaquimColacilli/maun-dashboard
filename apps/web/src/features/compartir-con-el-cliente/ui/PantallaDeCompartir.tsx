@@ -167,17 +167,17 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
   );
 
   return (
-    <Pagina>
+    <Pagina className="gap-3 md:gap-4">
       <Ir
         a={rutaDelProyecto(proyecto.id)}
         alTocar={vuelta.volver}
-        className="mb-2.5 flex min-h-tap w-fit items-center gap-1 rounded-field pr-2 text-body font-medium text-text-2 hover:bg-surface"
+        className="-ml-1 flex min-h-tap w-fit items-center gap-1 rounded-pill pr-3 pl-1 text-body font-medium text-text-2 hover:bg-ink/5"
       >
         <Icono nombre="chevron-left" tamano={20} />
         {vuelta.etiqueta}
       </Ir>
 
-      <header className="flex flex-col gap-1.5 border-b border-hairline pb-4">
+      <header className="flex flex-col gap-1.5">
         <span className="text-label text-text-2">
           {resumen.nombreDelCliente} · {proyecto.titulo}
         </span>
@@ -196,12 +196,11 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
 
       <PrincipalYApoyo
         apoyoPrimero
-        separacion="gap-y-0"
-        className="mt-5"
+        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
         apoyo={
           <div className="flex min-w-0 flex-col">
             {vista.como === 'sin_enlace' && (
-              <section className="flex flex-col gap-3.5 rounded-panel border border-hairline p-5">
+              <section className="flex flex-col gap-3.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5">
                 <span className="flex items-center gap-2.5 text-body-lg font-semibold">
                   <Icono nombre="link-2" tamano={20} />
                   Todavía no compartiste este trabajo
@@ -219,7 +218,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
             )}
 
             {vista.como === 'de_baja' && (
-              <section className="flex flex-col gap-3.5 rounded-panel border border-hairline p-5">
+              <section className="flex flex-col gap-3.5 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5">
                 <span className="flex items-center gap-2.5 text-body-lg font-semibold">
                   <Icono nombre="link-2-off" tamano={20} />
                   El enlace está dado de baja
@@ -238,7 +237,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
             {activo !== undefined && (
               <section
                 aria-label="El enlace"
-                className="flex flex-col gap-3 rounded-panel border border-hairline px-4 py-4"
+                className="flex flex-col gap-3 rounded-panel border border-hairline bg-paper px-4 py-4 md:px-5"
               >
                 <div className="flex flex-wrap items-center gap-2.5 text-body">
                   <span aria-hidden className="size-2 flex-none rounded-pill bg-hogar" />
@@ -285,7 +284,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                         )}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex min-h-tap w-fit items-center gap-2 rounded-field border border-border px-3 text-label font-medium hover:bg-surface @min-[52rem]/apoyo:w-full @min-[52rem]/apoyo:justify-center @min-[52rem]/apoyo:text-body"
+                        className="flex min-h-tap w-fit items-center gap-2 rounded-pill border border-border px-3 text-label font-medium hover:bg-surface @min-[52rem]/apoyo:w-full @min-[52rem]/apoyo:justify-center @min-[52rem]/apoyo:text-body"
                       >
                         <Icono nombre="message-circle" tamano={16} />
                         Mandárselo por WhatsApp
@@ -404,7 +403,7 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
           </div>
         }
       >
-        <div className="min-w-0 @min-[52rem]/apoyo:[&>section:first-child]:mt-0">
+        <div className="flex min-w-0 flex-col gap-3 md:gap-4">
           <ComoTePaga resumen={resumen} />
           <ArchivosQueVeElCliente archivos={archivos} />
         </div>
