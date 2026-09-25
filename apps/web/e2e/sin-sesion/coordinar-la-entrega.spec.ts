@@ -205,8 +205,11 @@ test('sus días: marca días y horarios en el calendario, deja una nota y el tal
   await expect(
     page.getByText('Listo: le pasamos tus días al taller. Te va a confirmar uno.'),
   ).toBeVisible(CARGA);
-  await expect(seccion(page)).toContainText('Nos pasaste estos días. Te vamos a confirmar uno.');
+  await expect(seccion(page)).toContainText(
+    'Nos pasaste estos días. Vamos a elegir uno y te lo confirmamos en esta página.',
+  );
   await expect(seccion(page)).toContainText(nota);
+  await expect(seccion(page).getByRole('button', { name: 'Mandar mis días' })).toHaveCount(0);
 
   const [respuesta] = await respuestasDeEntregaDe(sesion, trabajo.id);
   expect(respuesta).toMatchObject({
@@ -258,6 +261,40 @@ test('sin señal no se pierde lo marcado, y al volver se manda una sola vez', as
   await seccion(page).getByRole('button', { name: 'Mandar mis días' }).click();
   await expect(seccion(page)).toContainText('Nos pasaste estos días', CARGA);
   expect(await respuestasDeEntregaDe(sesion, trabajo.id)).toHaveLength(1);
+});
+
+test('cambiar sus días y volver a mandar los mismos cierra el calendario otra vez', async ({
+  page,
+}) => {
+  const trabajo = await trabajoListoConEnlace(sesion, {
+    titulo: 'Mesa de luz',
+    cliente: 'Ramiro Sosa',
+  });
+  await susDiasPedidos(trabajo);
+  const dia = diaHabilDesdeHoy(6);
+
+  await abrir(page, trabajo);
+  await seccion(page)
+    .getByRole('button', { name: paraLeer(dia), exact: true })
+    .click();
+  await seccion(page).getByRole('button', { name: 'Mandar mis días' }).click();
+  await expect(seccion(page)).toContainText('Nos pasaste estos días', CARGA);
+
+  await seccion(page).getByRole('button', { name: 'Cambiar mis días' }).click();
+  await seccion(page).getByRole('button', { name: 'Mandar mis días' }).click();
+  await expect(seccion(page).getByRole('button', { name: 'Cambiar mis días' })).toBeVisible(CARGA);
+  await expect(seccion(page).getByRole('button', { name: 'Mandar mis días' })).toHaveCount(0);
+  await expect(
+    seccion(page).getByRole('heading', { name: 'Coordinemos la entrega' }),
+  ).toBeFocused();
+
+  await seccion(page).getByRole('button', { name: 'Cambiar mis días' }).click();
+  await seccion(page).getByRole('button', { name: 'Dejarlos como estaban' }).click();
+  await expect(seccion(page)).toContainText('Nos pasaste estos días');
+
+  const respuestas = await respuestasDeEntregaDe(sesion, trabajo.id);
+  expect(respuestas).toHaveLength(2);
+  expect(new Set(respuestas.map((una) => una.id)).size).toBe(2);
 });
 
 test('si el taller cambió el pedido mientras elegía, se lo dice y le muestra lo nuevo', async ({

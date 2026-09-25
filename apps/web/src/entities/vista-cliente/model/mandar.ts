@@ -11,8 +11,3 @@ export type MandarLaEntrega = (
 ) => Promise<ResultadoDeMandar>;
 
 export type CoordinacionConPedido = Exclude<CoordinacionDeLaEntrega, { situacion: 'sin-pedido' }>;
-
-export function claveDeLaCoordinacion(coordinacion: CoordinacionConPedido): string {
-  const { propuesta, respuesta } = coordinacion;
-  return `${propuesta.id}:${respuesta === null ? 'sin' : JSON.stringify(respuesta)}`;
-}

@@ -102,6 +102,10 @@ datos guardados para, más adelante, estimar solo (eso no se construye ahora).
   el reintento usa el mismo id, así que no se duplica.
 - En la vista previa del taller los botones andan pero no mandan nada: «Acá no se guarda nada: así
   lo ve tu cliente.»
+- **Al mandar, el calendario se cierra solo.** Pasa a «Nos pasaste estos días. Vamos a elegir uno y
+  te lo confirmamos en esta página.», con la lista, la nota y «Cambiar mis días». Al cambiarlos,
+  «Dejarlos como estaban» vuelve sin mandar nada. En la vista previa hace el mismo recorrido sin
+  escribir, y «Me queda bien» cuenta lo que vería el cliente, con «Volver a empezar».
 - La página usa el día del taller, no el del teléfono del cliente, para calcular lo que se puede
   elegir y lo que ya pasó.
 
@@ -145,6 +149,20 @@ immediate`) y las vuelve a diferir: al commit correrían como `anon` y cortaría
 - Las respuestas que llegan con la ficha abierta también se dan por leídas: se están viendo.
 - El seed suma un placard listo con un día propuesto en 2030, para que no venza.
 - La grilla del mes pasó de la agenda a `shared/lib` para que la use también la página del cliente.
+
+### Lo que apareció al probarlo
+
+Joaquim probó la página y el botón de mandar se podía tocar una y otra vez. Pasaba en dos casos:
+
+- **En la vista previa del taller**, donde mandar no escribe y la sección quedaba igual.
+- **En la página del cliente, al volver a mandar los mismos días** con «Cambiar mis días».
+
+La sección esperaba a que volviera la vista para pasar a lo mandado: se remontaba con una clave que
+incluía la respuesta. Con la misma respuesta, la clave no cambiaba y el calendario seguía abierto.
+
+Ahora la clave es solo la propuesta, y al mandar la sección pasa a lo mandado por su cuenta, con un
+id nuevo para la próxima vez. Mientras manda, el botón se apaga y un segundo toque no sale. Pasar a
+lo mandado no espera a que vuelva la vista; si esa relectura falla, igual queda cerrado.
 
 ## Desvíos del pedido
 

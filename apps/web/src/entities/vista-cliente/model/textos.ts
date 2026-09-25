@@ -56,6 +56,23 @@ export const COORDINEMOS_LA_ENTREGA = 'Coordinemos la entrega';
 
 export const ACA_NO_SE_GUARDA_NADA = 'Acá no se guarda nada: así lo ve tu cliente.';
 
+export const LOS_DIAS_MANDADOS =
+  'Nos pasaste estos días. Vamos a elegir uno y te lo confirmamos en esta página.';
+
+export const LA_NOTA_MANDADA =
+  'Nos dejaste una nota. Vamos a elegir el día y te lo confirmamos en esta página.';
+
+export const QUEDO_CONFIRMADA =
+  'Nos dijiste que te queda bien ese día: la entrega quedó confirmada.';
+
+export function loQueVeConElDiaAceptado(
+  fecha: string,
+  franja: FranjaDeEntrega | null,
+  hoy: string,
+): string {
+  return `Con «Me queda bien», la entrega queda comprometida y tu cliente lee arriba: «¡Buenas noticias! Lo estamos entregando el ${fechaConFranja(fecha, franja, hoy)}.»`;
+}
+
 export const SIN_SENAL_AL_MANDAR =
   'No se pudo mandar: se cortó la conexión. Lo que marcaste sigue acá; probá de nuevo cuando vuelva la señal.';
 

@@ -9,7 +9,13 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { MandarLaEntrega, ResultadoDeMandar } from '../model/mandar';
-import { ACA_NO_SE_GUARDA_NADA, CAMBIO_EL_PEDIDO, YA_ESTABA_CONFIRMADA } from '../model/textos';
+import {
+  ACA_NO_SE_GUARDA_NADA,
+  CAMBIO_EL_PEDIDO,
+  LOS_DIAS_MANDADOS,
+  QUEDO_CONFIRMADA,
+  YA_ESTABA_CONFIRMADA,
+} from '../model/textos';
 import { VistaDelCliente } from './VistaDelCliente';
 
 vi.mock('@/shared/api', () => ({
@@ -117,6 +123,8 @@ describe('coordinar la entrega desde la página del cliente', () => {
       nota: '',
     });
     expect(anunciado('Listo: te esperamos el jue 8 oct, a la mañana.')).toBe(true);
+    expect(within(seccion()).getByText(QUEDO_CONFIRMADA)).toBeInTheDocument();
+    expect(within(seccion()).queryByRole('button', { name: 'Me queda bien' })).toBeNull();
   });
 
   it('si no puede ese día, abre el calendario y manda sus días con la nota', async () => {
@@ -153,6 +161,94 @@ describe('coordinar la entrega desde la página del cliente', () => {
       ],
       nota: 'Tercer piso, sin ascensor',
     });
+    expect(within(seccion()).getByText(LOS_DIAS_MANDADOS)).toBeInTheDocument();
+    expect(within(seccion()).getByText('lun 28 sep, a la mañana o a la tarde')).toBeInTheDocument();
+    expect(within(seccion()).queryByRole('button', { name: 'Mandar mis días' })).toBeNull();
+    expect(within(seccion()).queryByRole('button', { name: 'Me queda bien' })).toBeNull();
+    await act(async () => {
+      await new Promise((listo) => {
+        requestAnimationFrame(() => {
+          listo(undefined);
+        });
+      });
+    });
+    expect(document.activeElement).toBe(
+      within(seccion()).getByRole('heading', { name: 'Coordinemos la entrega' }),
+    );
+  });
+
+  it('volver a mandar los mismos días también cierra el calendario, con otro id', async () => {
+    const mandar = mandador();
+    dibujar(
+      {
+        propuesta: SUS_DIAS,
+        respuesta: {
+          respuesta: 'mis_dias',
+          dias: [{ fecha: '2026-09-29', franjas: ['tarde'] }],
+          nota: '',
+        },
+      },
+      mandar,
+    );
+
+    await tocar('Cambiar mis días');
+    await tocar('Mandar mis días');
+    expect(within(seccion()).getByText(LOS_DIAS_MANDADOS)).toBeInTheDocument();
+    expect(within(seccion()).queryByRole('button', { name: 'Mandar mis días' })).toBeNull();
+    const primera = lo(mandar).id;
+
+    await tocar('Cambiar mis días');
+    await tocar('Mandar mis días');
+    expect(within(seccion()).queryByRole('button', { name: 'Mandar mis días' })).toBeNull();
+    expect(mandar).toHaveBeenCalledTimes(2);
+    expect(lo(mandar).id).not.toBe(primera);
+    expect(lo(mandar).dias).toEqual([{ fecha: '2026-09-29', franjas: ['tarde'] }]);
+  });
+
+  it('abrir el calendario para cambiar y dejarlos como estaban no manda nada', async () => {
+    const mandar = mandador();
+    dibujar(
+      {
+        propuesta: SUS_DIAS,
+        respuesta: {
+          respuesta: 'mis_dias',
+          dias: [{ fecha: '2026-09-29', franjas: ['tarde'] }],
+          nota: 'Portero hasta las 18',
+        },
+      },
+      mandar,
+    );
+
+    await tocar('Cambiar mis días');
+    await tocar('martes 29 de septiembre');
+    await tocar('Dejarlos como estaban');
+    expect(mandar).not.toHaveBeenCalled();
+    expect(within(seccion()).getByText('mar 29 sep, a la tarde')).toBeInTheDocument();
+    await tocar('Cambiar mis días');
+    expect(
+      within(seccion()).getByRole('button', { name: 'martes 29 de septiembre' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('un doble toque mientras manda sale una sola vez', async () => {
+    let terminar: (resultado: ResultadoDeMandar) => void = () => undefined;
+    const mandar = vi.fn<MandarLaEntrega>(
+      () =>
+        new Promise((listo) => {
+          terminar = listo;
+        }),
+    );
+    dibujar({ propuesta: SUS_DIAS }, mandar);
+    await tocar('miércoles 30 de septiembre');
+    const boton = within(seccion()).getByRole('button', { name: 'Mandar mis días' });
+    fireEvent.click(boton);
+    fireEvent.click(boton);
+    expect(mandar).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      terminar({ tipo: 'guardada' });
+      await Promise.resolve();
+    });
+    expect(within(seccion()).getByText(LOS_DIAS_MANDADOS)).toBeInTheDocument();
   });
 
   it('los domingos y los días fuera del rango no son botones', async () => {
@@ -228,11 +324,30 @@ describe('coordinar la entrega desde la página del cliente', () => {
     expect(anunciado(CAMBIO_EL_PEDIDO)).toBe(true);
   });
 
-  it('en la vista previa del taller no se guarda nada', async () => {
+  it('en la vista previa del taller no se guarda nada, pero se ve cómo queda al aceptar', async () => {
     dibujar({ propuesta: UN_DIA });
     expect(within(seccion()).getByText(ACA_NO_SE_GUARDA_NADA)).toBeInTheDocument();
     await tocar('Me queda bien');
-    expect(anunciado(ACA_NO_SE_GUARDA_NADA)).toBe(true);
+    expect(
+      within(seccion()).getByText(
+        'Con «Me queda bien», la entrega queda comprometida y tu cliente lee arriba: «¡Buenas noticias! Lo estamos entregando el jue 8 oct, a la mañana.»',
+      ),
+    ).toBeInTheDocument();
+    expect(within(seccion()).getByText(ACA_NO_SE_GUARDA_NADA)).toBeInTheDocument();
+    expect(within(seccion()).queryByRole('button', { name: 'Me queda bien' })).toBeNull();
+    await tocar('Volver a empezar');
+    expect(within(seccion()).getByRole('button', { name: 'Me queda bien' })).toBeInTheDocument();
+  });
+
+  it('en la vista previa, mandar sus días muestra lo que vería el cliente', async () => {
+    dibujar({ propuesta: SUS_DIAS });
+    await tocar('miércoles 30 de septiembre');
+    await tocar('Mandar mis días');
+    expect(within(seccion()).getByText(LOS_DIAS_MANDADOS)).toBeInTheDocument();
+    expect(within(seccion()).getByText('mié 30 sep, a la mañana o a la tarde')).toBeInTheDocument();
+    expect(within(seccion()).getByText(ACA_NO_SE_GUARDA_NADA)).toBeInTheDocument();
+    expect(within(seccion()).queryByRole('button', { name: 'Mandar mis días' })).toBeNull();
+    expect(within(seccion()).getByRole('button', { name: 'Cambiar mis días' })).toBeInTheDocument();
   });
 
   it('con la entrega comprometida la sección se va y el titular da la buena noticia', () => {

@@ -24,11 +24,7 @@ import {
 } from '@/shared/ui';
 
 import { etapaDelDibujo } from '../model/etapa';
-import {
-  claveDeLaCoordinacion,
-  type CoordinacionConPedido,
-  type MandarLaEntrega,
-} from '../model/mandar';
+import type { CoordinacionConPedido, MandarLaEntrega } from '../model/mandar';
 import {
   A_CONFIRMAR,
   A_CUENTA_DE_LA_SENA,
@@ -424,7 +420,7 @@ export function VistaDelCliente({ vista, hoy, alMandar }: VistaDelClienteProps) 
 
           {coordinacion !== null && (
             <CoordinarLaEntrega
-              key={claveDeLaCoordinacion(coordinacion)}
+              key={coordinacion.propuesta.id}
               coordinacion={coordinacion}
               hoy={hoy}
               alMandar={alMandar}

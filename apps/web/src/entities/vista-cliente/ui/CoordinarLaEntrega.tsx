@@ -6,6 +6,8 @@ import {
   type DiaElegido,
   type FranjaDeEntrega,
   type RespuestaDeEntrega,
+  type RespuestaDeEntregaParaMandar,
+  type RespuestaDelCliente,
 } from '@maun/domain';
 import { useId, useRef, useState } from 'react';
 
@@ -26,8 +28,12 @@ import {
   CAMBIO_EL_PEDIDO,
   COORDINEMOS_LA_ENTREGA,
   fechaConFranja,
+  LA_NOTA_MANDADA,
   LLEGASTE_AL_MAXIMO,
+  loQueVeConElDiaAceptado,
+  LOS_DIAS_MANDADOS,
   MOTIVO_DE_LA_ENTREGA,
+  QUEDO_CONFIRMADA,
   textoDelDiaElegido,
   YA_ESTABA_CONFIRMADA,
 } from '../model/textos';
@@ -63,12 +69,6 @@ function diaParaLeer(fecha: string): string {
   const dia = DIAS_COMPLETOS[diaDeLaSemana(fecha)] ?? '';
   const mes = nombreDelMes(fecha.slice(0, 7)).toLowerCase();
   return `${dia} ${String(Number(fecha.slice(8, 10)))} de ${mes}`;
-}
-
-const ESPACIO_DURO = String.fromCodePoint(0xa0);
-
-function avisoDePrueba(veces: number): string {
-  return veces % 2 === 0 ? `${ACA_NO_SE_GUARDA_NADA}${ESPACIO_DURO}` : ACA_NO_SE_GUARDA_NADA;
 }
 
 function modoInicial(coordinacion: CoordinacionConPedido): Modo {
@@ -224,23 +224,21 @@ function LosDiasElegidos({
 function LoQueMandaste({
   respuesta,
   hoy,
+  enLaPrueba,
 }: {
-  respuesta: { respuesta: RespuestaDeEntrega; dias: readonly DiaElegido[]; nota: string };
+  respuesta: RespuestaDelCliente;
   hoy: string;
+  enLaPrueba: string | null;
 }) {
   if (respuesta.respuesta === 'me_queda_bien') {
     return (
-      <p className="mt-1 text-body leading-relaxed text-text-2">
-        Nos dijiste que te queda bien ese día. Te vamos a confirmar la entrega.
-      </p>
+      <p className="mt-1 text-body leading-relaxed text-text-2">{enLaPrueba ?? QUEDO_CONFIRMADA}</p>
     );
   }
   return (
     <>
       <p className="mt-1 text-body leading-relaxed text-text-2">
-        {respuesta.dias.length === 0
-          ? 'Nos dejaste una nota. Te vamos a confirmar el día.'
-          : 'Nos pasaste estos días. Te vamos a confirmar uno.'}
+        {respuesta.dias.length === 0 ? LA_NOTA_MANDADA : LOS_DIAS_MANDADOS}
       </p>
       {respuesta.dias.length > 0 && (
         <ul className="mt-2.5 list-none">
@@ -277,10 +275,10 @@ export function CoordinarLaEntrega({
     diasQueSiguenSirviendo(coordinacion.respuesta?.dias ?? [], hoy),
   );
   const [nota, setNota] = useState(() => coordinacion.respuesta?.nota ?? '');
-  const [idDeLaRespuesta] = useState(uuidv7);
+  const [mandada, setMandada] = useState<RespuestaDelCliente | null>(coordinacion.respuesta);
+  const [idDeLaRespuesta, setIdDeLaRespuesta] = useState(uuidv7);
   const [mandando, setMandando] = useState(false);
   const [error, setError] = useState('');
-  const [avisosDePrueba, setAvisosDePrueba] = useState(0);
   const { propuesta } = coordinacion;
   const esPrueba = alMandar === undefined;
 
@@ -294,13 +292,35 @@ export function CoordinarLaEntrega({
 
   function volverALaPropuesta(): void {
     setError('');
+    setMandada(coordinacion.respuesta);
     setModo('propuesta');
     requestAnimationFrame(() => {
       enfocar(titulo.current);
     });
   }
 
+  function dejarComoEstaban(anterior: RespuestaDelCliente): void {
+    setError('');
+    setElegidos(diasQueSiguenSirviendo(anterior.dias, hoy));
+    setNota(anterior.nota);
+    setModo('mandados');
+    requestAnimationFrame(() => {
+      enfocar(titulo.current);
+    });
+  }
+
+  function quedoMandada(armada: RespuestaDeEntregaParaMandar): void {
+    setMandada({ respuesta: armada.respuesta, dias: armada.dias, nota: armada.nota });
+    setIdDeLaRespuesta(uuidv7());
+    setModo('mandados');
+    alAnunciar(anuncioDeLoMandado(armada, propuesta, hoy));
+    requestAnimationFrame(() => {
+      enfocar(titulo.current);
+    });
+  }
+
   async function mandar(respuesta: RespuestaDeEntrega): Promise<void> {
+    if (mandando) return;
     setError('');
     const armada = armarRespuestaDeEntrega(
       idDeLaRespuesta,
@@ -315,7 +335,7 @@ export function CoordinarLaEntrega({
       return;
     }
     if (alMandar === undefined) {
-      setAvisosDePrueba((cuantos) => cuantos + 1);
+      quedoMandada(armada);
       return;
     }
     setMandando(true);
@@ -323,7 +343,7 @@ export function CoordinarLaEntrega({
     setMandando(false);
     switch (resultado.tipo) {
       case 'guardada':
-        alAnunciar(anuncioDeLoMandado(armada, propuesta, hoy));
+        quedoMandada(armada);
         return;
       case 'ya-confirmada':
         alAnunciar(YA_ESTABA_CONFIRMADA);
@@ -344,12 +364,7 @@ export function CoordinarLaEntrega({
         </p>
       )}
       {esPrueba && (
-        <>
-          <p className="mt-3 text-label leading-relaxed text-text-3">{ACA_NO_SE_GUARDA_NADA}</p>
-          <p role="status" className="sr-only">
-            {avisosDePrueba === 0 ? '' : avisoDePrueba(avisosDePrueba)}
-          </p>
-        </>
+        <p className="mt-3 text-label leading-relaxed text-text-3">{ACA_NO_SE_GUARDA_NADA}</p>
       )}
     </>
   );
@@ -442,9 +457,20 @@ export function CoordinarLaEntrega({
             >
               {mandando ? 'Mandando…' : 'Mandar mis días'}
             </Button>
-            {coordinacion.situacion === 'un-dia' && coordinacion.respuesta === null && (
+            {coordinacion.situacion === 'un-dia' && mandada === null && (
               <Button variant="secundario" disabled={mandando} onClick={volverALaPropuesta}>
                 Volver al día que te propusimos
+              </Button>
+            )}
+            {mandada !== null && (
+              <Button
+                variant="secundario"
+                disabled={mandando}
+                onClick={() => {
+                  dejarComoEstaban(mandada);
+                }}
+              >
+                Dejarlos como estaban
               </Button>
             )}
           </div>
@@ -452,16 +478,36 @@ export function CoordinarLaEntrega({
         </>
       )}
 
-      {modo === 'mandados' && coordinacion.respuesta !== null && (
+      {modo === 'mandados' && mandada !== null && (
         <>
-          <LoQueMandaste respuesta={coordinacion.respuesta} hoy={hoy} />
-          {coordinacion.respuesta.respuesta === 'mis_dias' && (
+          <LoQueMandaste
+            respuesta={mandada}
+            hoy={hoy}
+            enLaPrueba={
+              esPrueba && coordinacion.situacion === 'un-dia'
+                ? loQueVeConElDiaAceptado(
+                    coordinacion.propuesta.fecha,
+                    coordinacion.propuesta.franja,
+                    hoy,
+                  )
+                : null
+            }
+          />
+          {mandada.respuesta === 'mis_dias' && (
             <div className="mt-4">
               <Button variant="secundario" onClick={abrirElCalendario}>
                 Cambiar mis días
               </Button>
             </div>
           )}
+          {mandada.respuesta === 'me_queda_bien' && esPrueba && (
+            <div className="mt-4">
+              <Button variant="secundario" onClick={volverALaPropuesta}>
+                Volver a empezar
+              </Button>
+            </div>
+          )}
+          {esPrueba && pie}
         </>
       )}
     </section>
