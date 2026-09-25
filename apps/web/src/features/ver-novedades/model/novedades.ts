@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-25',
+    lineas: [
+      'La página de tu cliente ya no le muestra un mueble que no es el suyo: el dibujo cuenta en qué anda el trabajo, del número estimado al presupuesto, la seña, el taller y su casa.',
+      'Al terminar la encuesta, tu cliente ve una tarjeta de agradecimiento firmada.',
+      'Con el trabajo saldado, tu cliente ve el total pagado debajo de la seña.',
+      'Los dibujos quedan bien centrados, en el celular y en la compu.',
+    ],
+  },
+  {
     version: '2026-09-24.2',
     lineas: [
       'La app cambió de cara. El fondo ahora es una mesa de trabajo y todo va en tarjetas apoyadas encima, con las puntas redondeadas.',
