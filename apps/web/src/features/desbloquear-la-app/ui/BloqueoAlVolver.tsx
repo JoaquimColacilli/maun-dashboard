@@ -30,7 +30,7 @@ export function BloqueoAlVolver({ otraCuenta }: { otraCuenta?: ReactNode }) {
       onClose={() => {
         if (!saliendo.current) dialogo.current?.showModal();
       }}
-      className="fixed inset-0 m-0 size-full max-h-none max-w-none bg-paper p-0 text-ink backdrop:bg-paper"
+      className="fixed inset-0 m-0 size-full max-h-none max-w-none bg-mesa p-0 text-ink backdrop:bg-mesa"
     >
       <PantallaDeBloqueo otraCuenta={otraCuenta} />
     </dialog>

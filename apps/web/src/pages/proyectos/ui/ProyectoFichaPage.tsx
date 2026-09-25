@@ -505,7 +505,7 @@ export function ProyectoFichaPage() {
                 href={enlaceDeMapa(proyecto.direccion_entrega, '') ?? '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 mb-3 flex min-h-tap items-center gap-2 self-start rounded-pill border border-border px-3 text-label font-medium hover:bg-surface"
+                className="mt-2 mb-3 flex min-h-tap items-center gap-2 self-start rounded-pill border border-border px-4 text-label font-medium hover:bg-surface"
               >
                 <Icono nombre="map-pin" tamano={16} />
                 Abrir en el mapa

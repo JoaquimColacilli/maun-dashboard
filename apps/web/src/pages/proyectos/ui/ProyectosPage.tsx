@@ -147,11 +147,11 @@ function Tabla({
   alOrdenar: (id: string) => void;
 }) {
   return (
-    <div className="rounded-panel border border-hairline bg-paper p-1.5">
+    <div className="rounded-panel border border-hairline bg-paper px-1.5">
       <table className="w-full border-collapse text-body">
         <thead>
           <tr>
-            {CRITERIOS.map((criterio) => {
+            {CRITERIOS.map((criterio, indice) => {
               const activo = criterio.id === orden;
               const aLaDerecha = criterio.tipo === 'numero';
               return (
@@ -168,7 +168,9 @@ function Tabla({
                     }}
                     className={`flex h-10 w-full items-center gap-1.5 px-2.5 text-meta whitespace-nowrap hover:bg-surface ${
                       aLaDerecha ? 'justify-end' : 'justify-start'
-                    } ${activo ? 'bg-surface font-semibold text-ink' : 'font-medium text-text-3'}`}
+                    } ${activo ? 'bg-surface font-semibold text-ink' : 'font-medium text-text-3'} ${
+                      indice === 0 ? 'rounded-tl-[14px]' : ''
+                    } ${indice === CRITERIOS.length - 1 ? 'rounded-tr-[14px]' : ''}`}
                   >
                     {criterio.etiqueta}
                     <Icono
