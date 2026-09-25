@@ -9,15 +9,16 @@
 -- No suma miembros: para verlo desde la app hay que asignarle un usuario de prueba a mano.
 --
 -- Importes en centavos. Ajustes: sueldo $1.800.000 por proyecto, fijos $250.000 por mes, diezmo
--- 10%; un perdido con seña paga diezmo y no sueldo (ADR 0011).
+-- 10%; un perdido con seña paga diezmo y no sueldo (ADR 0011). El sueldo por proyecto va escrito:
+-- desde el ADR 0072 el default es por mes, y las liquidaciones de abajo se congelaron por proyecto.
 
 delete from public.households where id = '5eed0000-0000-7000-8000-000000000001';
 
 insert into public.households (id, nombre)
 values ('5eed0000-0000-7000-8000-000000000001', '[seed] Taller de prueba');
 
-insert into public.ajustes (id, household_id, sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp)
-values ('5eed0000-0000-7000-8000-000000000002', '5eed0000-0000-7000-8000-000000000001', 180000000, 25000000, 1000000000, 4000);
+insert into public.ajustes (id, household_id, sueldo_mensual_centavos, costos_fijos_centavos, meta_cocos_centavos, tasa_cocos_anual_bp, sueldo_tope_mensual)
+values ('5eed0000-0000-7000-8000-000000000002', '5eed0000-0000-7000-8000-000000000001', 180000000, 25000000, 1000000000, 4000, false);
 
 
 -- Clientes ---------------------------------------------------------------------------------------

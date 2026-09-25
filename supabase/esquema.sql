@@ -81,7 +81,7 @@ create table public.ajustes (
   updated_at timestamp with time zone not null default now(),
   deleted_at timestamp with time zone,
   version integer not null default 1,
-  sueldo_tope_mensual boolean not null default false,
+  sueldo_tope_mensual boolean not null default true,
   perdido_con_sueldo boolean not null default false,
   perdido_con_diezmo boolean not null default true,
   sena_bp integer not null default 5000,
@@ -107,11 +107,11 @@ create table public.ajustes (
   constraint ajustes_tasa_valida CHECK (tasa_cocos_anual_bp >= 0 AND tasa_cocos_anual_bp <= 100000)
 );
 comment on table public.ajustes is 'Parámetros del household: una fila por household, creada con él. Cambiarlos no reescribe las distribuciones ya congeladas.';
-comment on column public.ajustes.sueldo_mensual_centavos is 'Sueldo que el taller le paga al hogar: objetivo del escalón de sueldo, por proyecto o por mes según sueldo_tope_mensual.';
+comment on column public.ajustes.sueldo_mensual_centavos is 'Sueldo que el taller le paga al hogar por mes: objetivo del escalón de sueldo. Con sueldo_tope_mensual, los cobros del mes lo van cubriendo y lo que sobra queda en el taller.';
 comment on column public.ajustes.costos_fijos_centavos is 'Costos fijos mensuales del taller: objetivo del escalón de fijos, que se topea por lo que falta del mes.';
 comment on column public.ajustes.meta_cocos_centavos is 'Meta de ahorro en Cocos.';
 comment on column public.ajustes.tasa_cocos_anual_bp is 'Tasa anual estimada de Cocos, en puntos básicos (4000 = 40%). Solo para proyectar.';
-comment on column public.ajustes.sueldo_tope_mensual is 'false: cada cobro paga hasta un sueldo entero (la regla del dueño). true: el sueldo se topea por lo que falta del mes, como los fijos. El cliente no tiene grant para prenderlo: antes hay que resolver que una liquidación offline deja de ser determinista (ADR 0011).';
+comment on column public.ajustes.sueldo_tope_mensual is 'true (desde el ADR 0072, y el default): el sueldo se topea por lo que falta del mes, como los fijos. false: cada cobro paga hasta un sueldo entero, la regla del ADR 0011; la conservan el seed y lo ya congelado. El cliente no tiene grant para cambiarlo.';
 comment on column public.ajustes.perdido_con_sueldo is 'Si cerrar un perdido con seña retenida paga sueldo. Por defecto no: un lead que no prosperó no es un trabajo. Se aplica como objetivo de sueldo en cero para esa liquidación, no con otra cascada.';
 comment on column public.ajustes.perdido_con_diezmo is 'Si la seña retenida de un perdido paga diezmo. Por defecto sí: es ingreso reconocido.';
 comment on column public.ajustes.sena_bp is 'La seña que se pide para confirmar un trabajo, en puntos básicos del presupuesto (5000 = 50%, que es lo habitual). Se puede pisar por trabajo en proyectos.sena_bp.';
