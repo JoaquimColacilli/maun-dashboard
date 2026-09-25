@@ -430,6 +430,8 @@ export function ProyectosPage() {
       </div>
 
       <div data-bajo-las-pestanas className="flex flex-col gap-3 md:gap-4">
+        {etapa === 'historial' && <AccesoAlAnalitico replica={replica} />}
+
         {etapa === 'consultas' ? (
           <ListaDeConsultas resumenes={deLaEtapa} replica={replica} hoy={hoy} />
         ) : etapa === 'seguimiento' ? (
@@ -438,8 +440,6 @@ export function ProyectosPage() {
           <Vacio etapa={etapa} />
         ) : (
           <>
-            {etapa === 'historial' && <AccesoAlAnalitico replica={replica} />}
-
             <Metricas resumenes={resumenes} />
 
             <div className="flex flex-wrap items-center gap-2">

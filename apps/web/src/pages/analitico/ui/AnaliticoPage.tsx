@@ -110,9 +110,15 @@ function Grupo({ grupo }: { grupo: GrupoPorTipo }) {
         </span>
       </div>
       <dl className="mt-1">
-        <Dato clave="Del arranque a la entrega" valor={resumenDeLosDias(grupo.demora)} />
-        <Dato clave="Del arranque a listo" valor={resumenDeLosDias(grupo.fabricacion)} />
-        <Dato clave="Contra lo estimado" valor={resumenDelDesvio(grupo.desvio)} />
+        {grupo.demora.n > 0 && (
+          <Dato clave="Del arranque a la entrega" valor={resumenDeLosDias(grupo.demora)} />
+        )}
+        {grupo.fabricacion.n > 0 && (
+          <Dato clave="Del arranque a listo" valor={resumenDeLosDias(grupo.fabricacion)} />
+        )}
+        {grupo.desvio.n > 0 && (
+          <Dato clave="Contra lo estimado" valor={resumenDelDesvio(grupo.desvio)} />
+        )}
       </dl>
     </li>
   );
@@ -154,13 +160,15 @@ function PorCarga({ analisis }: { analisis: AnalisisDeEntregas }) {
       bajada="Del arranque a la entrega, según cuántos otros trabajos había en el taller cuando lo aprobaste."
     >
       <dl>
-        {analisis.porCarga.map((grupo) => (
-          <Dato
-            key={grupo.nombre}
-            clave={`${grupo.nombre} en curso`}
-            valor={resumenDeLosDias(grupo.demora)}
-          />
-        ))}
+        {analisis.porCarga
+          .filter((grupo) => grupo.demora.n > 0)
+          .map((grupo) => (
+            <Dato
+              key={grupo.nombre}
+              clave={`${grupo.nombre} en curso`}
+              valor={resumenDeLosDias(grupo.demora)}
+            />
+          ))}
       </dl>
     </Seccion>
   );
@@ -211,7 +219,8 @@ function FilaDelTrabajo({ fila, hoy }: { fila: FilaDelAnalisis; hoy: string }) {
 
 function TrabajoPorTrabajo({ analisis, hoy }: { analisis: AnalisisDeEntregas; hoy: string }) {
   const pocos = analisis.trabajos.length < UMBRAL_MEDIANA;
-  const [abierto, setAbierto] = useState(pocos);
+  const [elegido, setElegido] = useState<boolean | null>(null);
+  const abierto = pocos || (elegido ?? false);
   const id = useId();
   return (
     <Seccion
@@ -225,7 +234,7 @@ function TrabajoPorTrabajo({ analisis, hoy }: { analisis: AnalisisDeEntregas; ho
           aria-expanded={abierto}
           aria-controls={id}
           onClick={() => {
-            setAbierto((antes) => !antes);
+            setElegido(!abierto);
           }}
         >
           <Icono nombre={abierto ? 'chevron-up' : 'chevron-down'} tamano={16} />
