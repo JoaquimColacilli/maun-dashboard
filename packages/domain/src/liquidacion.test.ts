@@ -247,6 +247,30 @@ describe('la liquidación completa', () => {
     );
   });
 
+  it('con el sueldo mensual y el mes ya pasado del sueldo, lo que sobra del diezmo queda en el taller', () => {
+    const ajustes = { ...AJUSTES, sueldoTopeMensual: true, costosFijos: CERO };
+    const septiembre = [
+      registrada('2026-09-08', { sueldo: centavos(14_220_000) }),
+      registrada('2026-09-09', { sueldo: centavos(95_160_420) }),
+      registrada('2026-09-25', { sueldo: centavos(139_126_458) }),
+    ];
+    expect(
+      liquidar({
+        ajustes,
+        fecha: '2026-09-28',
+        cobrado: centavos(154_584_953),
+        liquidaciones: septiembre,
+      }),
+    ).toMatchObject({
+      topeSueldo: 0,
+      diezmo: 15_458_495,
+      sueldo: 0,
+      fijos: 0,
+      remanente: 139_126_458,
+      faltaSueldo: 0,
+    });
+  });
+
   it('una seña retenida de 200.000 paga diezmo y no sueldo: el resto queda en el taller', () => {
     const perdido = liquidar({ destino: 'perdido', cobrado: centavos(20_000_000) });
     expect(perdido).toMatchObject({
@@ -411,6 +435,20 @@ describe('el sueldo de un mes: se mide contra un sueldo, tenga los cobros que te
       pagado: SUELDO,
       esperado: SUELDO,
       cobros: 1,
+    });
+  });
+
+  it('cuenta los cobros que pagaron sueldo: uno que llegó con el mes ya cubierto no suma', () => {
+    const septiembre = [
+      registrada('2026-09-08', { sueldo: centavos(14_220_000) }),
+      registrada('2026-09-09', { sueldo: centavos(95_160_420) }),
+      registrada('2026-09-25', { sueldo: centavos(139_126_458) }),
+      registrada('2026-09-28', { sueldo: CERO, sueldoMensual: true }),
+    ];
+    expect(sueldoDelMes(septiembre, '2026-09', ajustes, '2026-09')).toEqual({
+      pagado: 248_506_878,
+      esperado: SUELDO,
+      cobros: 3,
     });
   });
 

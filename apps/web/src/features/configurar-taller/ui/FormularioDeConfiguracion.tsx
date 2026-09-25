@@ -127,7 +127,11 @@ export function FormularioDeConfiguracion({
         />
         <MoneyInput
           etiqueta="Sueldo que te asignás"
-          ayuda="Lo que cada trabajo cobrado transfiere al hogar."
+          ayuda={
+            ajustes.sueldo_tope_mensual
+              ? 'Lo que tu casa necesita por mes. Los cobros del mes lo van pagando y, una vez cubierto, lo que sobra queda en el taller.'
+              : 'Lo que cada trabajo cobrado transfiere al hogar.'
+          }
           value={sueldo}
           error={error?.campo === 'sueldo' ? error.mensaje : undefined}
           onChange={setSueldo}

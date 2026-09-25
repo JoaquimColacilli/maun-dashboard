@@ -266,7 +266,7 @@ export function sueldoDelMes(
 ): SueldoDelMes {
   const resumen = resumenDelMes(liquidaciones, mes, ajustes, mesEnCurso);
   const cobros = liquidaciones.filter(
-    (liquidacion) => mesDe(liquidacion.fecha) === mes && liquidacion.objetivoSueldo > 0,
+    (liquidacion) => mesDe(liquidacion.fecha) === mes && liquidacion.sueldo > 0,
   ).length;
 
   return {

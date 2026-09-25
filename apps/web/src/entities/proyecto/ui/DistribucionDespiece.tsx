@@ -101,6 +101,11 @@ export function DistribucionDespiece({
                         faltan {formatearPesos(pieza.falta)}
                       </span>
                     )}
+                    {pieza.cubierto && (
+                      <span className="text-meta text-text-2">
+                        ya lo cubrieron otros cobros del mes
+                      </span>
+                    )}
                   </span>
                   <span className="flex-none text-right font-semibold">
                     {formatearPesos(pieza.monto)}
