@@ -32,8 +32,6 @@ export { Ilustracion, NOMBRES_DE_ILUSTRACION } from './ilustracion/Ilustracion.t
 export type { IlustracionProps, NombreDeIlustracion } from './ilustracion/Ilustracion.tsx';
 export { Lamina } from './ilustracion/Lamina.tsx';
 export type { LaminaProps } from './ilustracion/Lamina.tsx';
-export { MuebleEnEtapa } from './ilustracion/MuebleEnEtapa.tsx';
-export type { EtapaDelMueble, MuebleEnEtapaProps } from './ilustracion/MuebleEnEtapa.tsx';
 export { TableroCortado, TableroEntero } from './ilustracion/TableroCortado.tsx';
 export type {
   FormatoDelTablero,
@@ -42,3 +40,5 @@ export type {
   TableroEnteroProps,
   TonoDeLaPieza,
 } from './ilustracion/TableroCortado.tsx';
+export { TrabajoEnEtapa } from './ilustracion/TrabajoEnEtapa.tsx';
+export type { EtapaDelTrabajo, TrabajoEnEtapaProps } from './ilustracion/TrabajoEnEtapa.tsx';

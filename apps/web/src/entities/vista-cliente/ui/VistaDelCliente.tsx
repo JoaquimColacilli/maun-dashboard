@@ -2,7 +2,6 @@ import {
   notaDelRelevamiento,
   textoDeLaProyeccion,
   type ArchivoDelCliente,
-  type DatosDelTrabajo,
   type ProyeccionDeLaEntrega,
   type SenaDeLaVista,
   type VistaAntesDelPresupuesto,
@@ -16,13 +15,13 @@ import { diaYMesCorto, fechaEnUnaFrase, fechaLarga, formatearPesos } from '@/sha
 import {
   Icono,
   MontoQueEntra,
-  MuebleEnEtapa,
   Pagina,
   PrincipalYApoyo,
   TarjetaConLamina,
+  TrabajoEnEtapa,
 } from '@/shared/ui';
 
-import { etapaDelMueble } from '../model/etapa';
+import { etapaDelDibujo } from '../model/etapa';
 import {
   A_CONFIRMAR,
   A_CUENTA_DE_LA_SENA,
@@ -34,6 +33,7 @@ import {
   saldoDeLaVista,
   sinPagosTodavia,
   textoDeLaSenaAcordada,
+  textoDelTotalPagado,
   valorDeLaEntrega,
 } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
@@ -223,7 +223,7 @@ function EntradaAprobada({
 }
 
 function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string; hoy: string }) {
-  const titular = vista.hitos[vista.hitoIndex]?.texto ?? '';
+  const { titular } = vista;
   switch (vista.etapa) {
     case 'antes-del-presupuesto':
       return <EntradaAntesDelPresupuesto vista={vista} titular={titular} bajada={bajada} />;
@@ -237,7 +237,9 @@ function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string
   }
 }
 
-function TarjetaDelTrabajo({ datos, hoy }: { datos: DatosDelTrabajo; hoy: string }) {
+function TarjetaDelTrabajo({ vista, hoy }: { vista: VistaAprobada; hoy: string }) {
+  const { datos } = vista;
+  const total = textoDelTotalPagado(vista);
   return (
     <section aria-label="Datos del trabajo">
       <dl className="rounded-panel border border-hairline bg-paper px-4 py-1">
@@ -252,15 +254,26 @@ function TarjetaDelTrabajo({ datos, hoy }: { datos: DatosDelTrabajo; hoy: string
           fuerte
         />
         <Dato clave="Seña" valor={textoDeLaSenaAcordada(datos.sena)} />
+        {total !== null && <Dato clave="Total" valor={total} />}
       </dl>
     </section>
   );
 }
 
-function ParaCuando({ proyeccion, hoy }: { proyeccion: ProyeccionDeLaEntrega; hoy: string }) {
-  const [principal, ...resto] = textoDeLaProyeccion(proyeccion, {
-    enUnaFrase: (fecha) => fechaEnUnaFrase(fecha, hoy),
-  });
+function ParaCuando({
+  proyeccion,
+  sena,
+  hoy,
+}: {
+  proyeccion: ProyeccionDeLaEntrega;
+  sena: SenaDeLaVista;
+  hoy: string;
+}) {
+  const [principal, ...resto] = textoDeLaProyeccion(
+    proyeccion,
+    { enUnaFrase: (fecha) => fechaEnUnaFrase(fecha, hoy) },
+    sena.situacion,
+  );
   return (
     <section aria-label="Para cuándo">
       <div className={TARJETA}>
@@ -282,7 +295,7 @@ function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
     case 'esperando-la-sena':
       return (
         <>
-          <ParaCuando proyeccion={vista.proyeccion} hoy={hoy} />
+          <ParaCuando proyeccion={vista.proyeccion} sena={vista.sena} hoy={hoy} />
           <ComoPagar como={vista.comoPagar} />
         </>
       );
@@ -292,7 +305,7 @@ function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
     case 'pagado':
       return (
         <>
-          <TarjetaDelTrabajo datos={vista.datos} hoy={hoy} />
+          <TarjetaDelTrabajo vista={vista} hoy={hoy} />
           <ComoPagar como={vista.comoPagar} />
         </>
       );
@@ -362,7 +375,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
           <TarjetaConLamina
             como="section"
             aria-label="Tu mueble"
-            dibujo={<MuebleEnEtapa etapa={etapaDelMueble(vista.hitoActual)} />}
+            dibujo={<TrabajoEnEtapa etapa={etapaDelDibujo(vista)} />}
             lamina="[&>svg]:w-56 @min-[40rem]/con-lamina:[&>svg]:w-72"
           >
             <span className="text-body text-text-2">{vista.cliente}</span>

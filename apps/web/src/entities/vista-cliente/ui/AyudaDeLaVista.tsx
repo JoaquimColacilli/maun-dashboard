@@ -64,14 +64,14 @@ const LAMINAS: readonly Lamina[] = [
         icono: 'send',
         titulo: HITO_DEL_ESTIMATIVO.etiqueta,
         texto:
-          'Solo si le mandaste un estimativo: le aparece como un paso antes del presupuesto, con el día que tocaste «Mandé el estimativo». El número no lo ve nunca.',
+          'Solo si le mandaste un estimativo: le aparece tildado, como un paso antes del presupuesto, con el día que tocaste «Mandé el estimativo», y el presupuesto queda en curso. El número no lo ve nunca.',
       },
       {
         clave: 'relevamiento',
         icono: 'info',
         titulo: NOTA_DEL_RELEVAMIENTO.pendiente.titulo,
         texto:
-          'Con el estimativo mandado y la visita pendiente, al lado del paso en curso le aparece una (i) que se lo explica, con el día de la visita si ya está agendada. Cuando tocás «Ya fui a relevar», le cuenta que el número sale de las medidas. Al aprobarlo, se va.',
+          'Con el estimativo mandado y la visita pendiente le aparece una (i) que se lo explica, con el día de la visita si ya está agendada: al lado del día del estimativo mientras sigue en «Estimativo enviado», y en el presupuesto en curso cuando lo pasás a relevamiento o a presupuestar. Cuando tocás «Ya fui a relevar», le cuenta que el número sale de las medidas. Al aprobarlo, se va.',
       },
       {
         clave: 'sin-medir',
@@ -98,24 +98,24 @@ const LAMINAS: readonly Lamina[] = [
         paso: 1,
         titulo: 'Presupuesto enviado',
         texto:
-          'Es el primer paso de todo trabajo que no tuvo estimativo. La fecha aparece el día que ponés el contacto en «Presupuesto enviado».',
+          'Es el primer paso de todo trabajo que no tuvo estimativo. Mientras lo preparás lo ve en curso, y el día que ponés el contacto en «Presupuesto enviado» se tilda con esa fecha.',
       },
       {
         clave: 'esperando',
         icono: 'clock',
         titulo: 'Mientras espera la seña',
         texto:
-          'No ve la dirección ni las fechas que tengas cargadas: esas aparecen cuando lo aprueba. Ve para cuándo podría estar listo si deja la seña antes del día hasta el que vale el presupuesto.',
+          'No ve la dirección ni las fechas que tengas cargadas: esas aparecen cuando lo aprueba. Ve para cuándo podría estar listo si deja la seña antes del día hasta el que vale el presupuesto, o si lo aprueba antes de ese día cuando lo que te pagó ya cubre la seña.',
       },
       {
         clave: 'paso-2',
         paso: 2,
         titulo: 'Aprobado, seña cobrada',
         texto:
-          'Se marca cuando pasás el trabajo a Proyectos. La seña que cargues ahí le aparece en «Lo que pagaste».',
+          'Queda en curso desde que le mandás el presupuesto: «Cuando lo apruebes y dejes la seña», o «Cuando lo apruebes» si lo que te pagó ya la cubre. Se tilda cuando pasás el trabajo a Proyectos; si falta la seña, sigue en curso con «Cuando dejes la seña» hasta que la deja o hasta que arrancás. La seña que cargues ahí le aparece en «Lo que pagaste».',
       },
     ],
-    pie: 'Si la fecha de inicio que cargaste al aprobar es de hoy o de antes, el camino salta derecho al paso 3.',
+    pie: 'Si la fecha de inicio que cargaste al aprobar es de hoy o de antes, ese mismo día se tilda el paso 2 y queda en curso el 3, con ese día de inicio.',
   },
   {
     id: 'taller',
@@ -126,7 +126,7 @@ const LAMINAS: readonly Lamina[] = [
         paso: 3,
         titulo: 'En fabricación',
         texto:
-          'No se marca al aprobar: se marca el día de la fecha de inicio que cargaste. Hasta que llegue, él lee que está en la cola del taller.',
+          'Queda en curso desde que se tilda el paso 2: «Vamos a empezar a fabricarlo», y arriba lee que está en la cola del taller. El día de la fecha de inicio que cargaste pasa a «Lo estamos fabricando», con ese día, y se tilda cuando lo entregás.',
       },
       {
         clave: 'paso-4',
@@ -142,7 +142,7 @@ const LAMINAS: readonly Lamina[] = [
           'Desde que lo aprueba, la entrega estimada que cargaste la lee como «Entrega pautada». Si la movés, la próxima vez que abra ve la nueva.',
       },
     ],
-    pie: 'Sin fecha de inicio cargada, el paso 3 no se marca nunca, aunque el trabajo esté en curso.',
+    pie: 'Sin fecha de inicio cargada, el paso 3 nunca dice «Lo estamos fabricando»: se queda en «Vamos a empezar a fabricarlo» hasta que lo entregás, y ahí se tilda sin día.',
   },
   {
     id: 'saldo',
@@ -153,7 +153,7 @@ const LAMINAS: readonly Lamina[] = [
         paso: 5,
         titulo: 'Pagado',
         texto:
-          'Se marca cuando el mueble ya está entregado y no queda saldo, o cuando cerrás el trabajo con «Cobrar y repartir».',
+          'Desde la entrega queda en curso mientras te debe: «Cuando esté saldado». Se tilda cuando no queda saldo, o cuando cerrás el trabajo con «Cobrar y repartir».',
       },
       {
         clave: 'foco',
@@ -167,7 +167,7 @@ const LAMINAS: readonly Lamina[] = [
         icono: 'truck',
         titulo: 'Primero sale del taller',
         texto:
-          'Aunque te pague todo antes, el paso 5 no se marca hasta que el mueble esté entregado.',
+          'Aunque te pague todo antes, el paso 5 no se tilda hasta que el mueble esté entregado: desde que lo pasás a Proyectos dice «Ya está pagado».',
       },
       {
         clave: 'transferir',

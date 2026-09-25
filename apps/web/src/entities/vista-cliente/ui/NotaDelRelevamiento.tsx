@@ -87,10 +87,12 @@ function HojaDeLaNota({
 
 function PasoConLaNota({
   nota,
+  actual,
   className,
   children,
 }: {
   nota: NotaDelRelevamiento;
+  actual: boolean;
   className: string;
   children: (boton: ReactNode) => ReactNode;
 }) {
@@ -159,6 +161,7 @@ function PasoConLaNota({
   return (
     <li
       ref={paso}
+      aria-current={actual ? 'step' : undefined}
       className={className}
       onMouseLeave={() => {
         if (!enCelular) cerrar();
@@ -182,16 +185,21 @@ function PasoConLaNota({
 
 export interface PasoDelCaminoProps {
   nota: NotaDelRelevamiento | null;
+  actual: boolean;
   className: string;
   children: (boton: ReactNode) => ReactNode;
 }
 
-export function PasoDelCamino({ nota, className, children }: PasoDelCaminoProps) {
+export function PasoDelCamino({ nota, actual, className, children }: PasoDelCaminoProps) {
   if (nota === null) {
-    return <li className={className}>{children(null)}</li>;
+    return (
+      <li aria-current={actual ? 'step' : undefined} className={className}>
+        {children(null)}
+      </li>
+    );
   }
   return (
-    <PasoConLaNota nota={nota} className={className}>
+    <PasoConLaNota nota={nota} actual={actual} className={className}>
       {children}
     </PasoConLaNota>
   );

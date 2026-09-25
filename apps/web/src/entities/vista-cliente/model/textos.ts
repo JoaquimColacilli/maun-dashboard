@@ -63,6 +63,11 @@ export function textoDeLaSenaAcordada(sena: SenaDeLaVista): string {
   }
 }
 
+export function textoDelTotalPagado(vista: VistaAprobada): string | null {
+  if (!vista.saldado || vista.precio === null) return null;
+  return `${formatearPesos(vista.precio)} · pagado`;
+}
+
 export function claveDeLaEntrega(entrega: EntregaDelTrabajo): string {
   return entrega.situacion === 'entregado' ? 'Entregado' : 'Entrega pautada';
 }

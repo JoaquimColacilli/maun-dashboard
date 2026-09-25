@@ -1,4 +1,10 @@
-import { centavos, vistaDelCliente, type TrabajoDelCliente } from '@maun/domain';
+import {
+  centavos,
+  COORDINAMOS_LA_ENTREGA_AL_APROBAR,
+  SIGUE_CON_LA_SENA_CUBIERTA,
+  vistaDelCliente,
+  type TrabajoDelCliente,
+} from '@maun/domain';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -283,6 +289,38 @@ describe('la tarjeta de datos, desde la aprobación', () => {
     );
   });
 
+  it('con todo pagado, debajo de la seña va el total, también pagado', () => {
+    dibujar(
+      trabajo({
+        estado: 'cobrado',
+        fechas: fechas({
+          presupuesto: '2026-08-01',
+          aprobado: '2026-08-04',
+          inicio: '2026-08-24',
+          entregaPautada: '2026-09-16',
+          entregado: '2026-09-16',
+          cobro: '2026-09-17',
+        }),
+        pagos: [
+          { id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: centavos(62_000_000) },
+          { id: 'p2', fecha: '2026-09-17', concepto: 'Saldo final', monto: centavos(62_000_000) },
+        ],
+      }),
+    );
+
+    expect(screen.getByRole('region', { name: 'Datos del trabajo' })).toHaveTextContent(
+      'Seña$ 620.000 · pagadaTotal$ 1.240.000 · pagado',
+    );
+  });
+
+  it('mientras queda saldo, la tarjeta no muestra el total', () => {
+    dibujar(trabajo());
+
+    expect(screen.getByRole('region', { name: 'Datos del trabajo' })).not.toHaveTextContent(
+      'Total',
+    );
+  });
+
   it('sin dirección ni fechas cargadas, cada dato dice que falta confirmarlo', () => {
     dibujar(trabajo({ direccion: '', fechas: fechas({}), sena: null }));
 
@@ -480,12 +518,96 @@ describe('antes de mandar el presupuesto', () => {
   });
 });
 
-function pasosDelCamino(): string[] {
+function itemsDelCamino(): HTMLElement[] {
   const camino = screen.getByRole('region', { name: 'En qué anda' });
-  return within(camino)
-    .getAllByRole('listitem')
-    .map((paso) => paso.textContent);
+  return within(camino).getAllByRole('listitem');
 }
+
+function pasosDelCamino(): string[] {
+  return itemsDelCamino().map((paso) => paso.textContent);
+}
+
+function tildado(paso: HTMLElement | undefined): boolean {
+  return paso?.querySelector('svg.lucide-check') !== null;
+}
+
+describe('el camino tilda lo que pasó y deja en curso lo que falta', () => {
+  it('con el presupuesto mandado, el paso queda tildado con su día y en curso queda que lo apruebe', () => {
+    dibujar(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        fechas: fechas({ presupuesto: '2026-09-15' }),
+        pagos: [],
+        pago: {
+          instancia: 'sena',
+          formas: ['efectivo'],
+          monto: centavos(62_000_000),
+          siguiente: null,
+        },
+      }),
+    );
+
+    const [presupuesto, aprobado, fabricacion] = itemsDelCamino();
+    expect(tildado(presupuesto)).toBe(true);
+    expect(presupuesto).toHaveTextContent('Presupuesto enviado');
+    expect(presupuesto).toHaveTextContent('mar 15 sep');
+    expect(presupuesto).not.toHaveAttribute('aria-current');
+    expect(aprobado).toHaveAttribute('aria-current', 'step');
+    expect(aprobado).toHaveTextContent('Cuando lo apruebes y dejes la seña');
+    expect(tildado(aprobado)).toBe(false);
+    expect(fabricacion).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('region', { name: 'Tu mueble' })).toHaveTextContent(
+      'Te pasamos el presupuesto',
+    );
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .filter((paso) => paso.getAttribute('aria-current') === 'step'),
+    ).toHaveLength(1);
+  });
+
+  it('con la seña ya cubierta antes de aprobar, ni el camino ni «Para cuándo» se la vuelven a pedir', () => {
+    dibujar(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        fechas: fechas({ presupuesto: '2026-09-15' }),
+        pagos: [{ id: 's', fecha: '2026-09-16', concepto: 'Seña', monto: centavos(62_000_000) }],
+        pago: { instancia: null, formas: [], monto: null, siguiente: null },
+      }),
+    );
+
+    const [, aprobado] = itemsDelCamino();
+    expect(aprobado).toHaveAttribute('aria-current', 'step');
+    expect(aprobado).toHaveTextContent(/^Cuando lo apruebes$/);
+    const camino = screen.getByRole('region', { name: 'En qué anda' });
+    expect(within(camino).getByText(SIGUE_CON_LA_SENA_CUBIERTA)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Para cuándo' })).toHaveTextContent(
+      COORDINAMOS_LA_ENTREGA_AL_APROBAR,
+    );
+    expect(document.body).not.toHaveTextContent('dejes la seña');
+  });
+
+  it('entregado con saldo, la entrega queda tildada y en curso queda el saldo', () => {
+    dibujar(
+      trabajo({
+        estado: 'entregado',
+        fechas: fechas({
+          presupuesto: '2026-08-01',
+          aprobado: '2026-08-04',
+          inicio: '2026-08-24',
+          entregado: '2026-09-16',
+        }),
+      }),
+    );
+
+    const pasos = itemsDelCamino();
+    expect(pasos.slice(0, 4).every(tildado)).toBe(true);
+    expect(pasos[3]).toHaveTextContent('Entregado');
+    expect(pasos[3]).toHaveTextContent('mié 16 sep');
+    expect(pasos[4]).toHaveAttribute('aria-current', 'step');
+    expect(pasos[4]).toHaveTextContent('Cuando esté saldado');
+  });
+});
 
 function conPantalla(ancho: 'celular' | 'escritorio'): void {
   vi.stubGlobal('matchMedia', () => ({
@@ -508,7 +630,7 @@ describe('el estimativo y el relevamiento en el camino', () => {
     vi.unstubAllGlobals();
   });
 
-  it('con el estimativo mandado, es el paso actual y va antes de los otros cinco', () => {
+  it('con el estimativo mandado, va tildado antes de los otros cinco y el presupuesto queda en curso', () => {
     dibujar(
       trabajo({
         estado: 'presupuesto_estimativo',
@@ -527,6 +649,9 @@ describe('el estimativo y el relevamiento en el camino', () => {
     expect(pasos[0]).toContain('Te pasamos un número estimado');
     expect(pasos[0]).toContain('mar 15 sep');
     expect(pasos[1]).toContain('Te vamos a pasar el presupuesto');
+    const [estimativo, presupuesto] = itemsDelCamino();
+    expect(estimativo?.querySelector('svg.lucide-check')).not.toBeNull();
+    expect(presupuesto).toHaveAttribute('aria-current', 'step');
   });
 
   it('sin estimativo el camino sigue siendo de cinco pasos', () => {
@@ -563,7 +688,7 @@ describe('el estimativo y el relevamiento en el camino', () => {
     });
   }
 
-  it('sin medir, una sola (i), al lado de la fecha del paso en curso, y el resumen abajo del titular', () => {
+  it('sin medir, una sola (i), al lado de la fecha del estimativo, y el resumen abajo del titular', () => {
     dibujar(sinMedir());
 
     const camino = screen.getByRole('region', { name: 'En qué anda' });

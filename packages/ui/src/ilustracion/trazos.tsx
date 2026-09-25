@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { iso, puntos, recorrido, type Volumen } from './proyeccion.ts';
+import { iso, puntos, recorrido, type Punto3, type Volumen } from './proyeccion.ts';
 
 export type Relleno = 'cara' | 'costado' | 'tinta' | 'hogar' | 'maun' | 'diezmo' | 'cocos' | 'nada';
 
@@ -60,6 +60,17 @@ export function Caja({
         className={claseDeLinea(linea)}
       />
     </g>
+  );
+}
+
+export interface CaraProps {
+  vertices: readonly Punto3[];
+  relleno: Exclude<Relleno, 'nada'>;
+}
+
+export function Cara({ vertices, relleno }: CaraProps) {
+  return (
+    <polygon points={puntos(...vertices.map(([x, y, z]) => iso(x, y, z)))} className={relleno} />
   );
 }
 

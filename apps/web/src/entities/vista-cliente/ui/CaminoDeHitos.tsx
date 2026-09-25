@@ -32,7 +32,8 @@ export function CaminoDeHitos({ hitos, nota, hoy }: CaminoDeHitosProps) {
       {hitos.map((hito, indice) => (
         <PasoDelCamino
           key={hito.id}
-          nota={hito.estado === 'actual' ? nota : null}
+          nota={nota?.hito === hito.id ? nota : null}
+          actual={hito.estado === 'actual'}
           className="relative grid grid-cols-[18px_minmax(0,1fr)] items-stretch gap-x-3 @xl:flex @xl:flex-col @xl:gap-2.5"
         >
           {(boton) => (

@@ -3,31 +3,24 @@ import type { ComponentType } from 'react';
 import {
   AgendaVacia,
   Anulado,
+  Gracias,
   SeCorto,
   SinClientes,
   SinConsultas,
   SinMovimientos,
   SinOpiniones,
+  SinProyectos,
   SinSenal,
   SinSeguimiento,
 } from './escenas.tsx';
-import { MuebleEnEtapa } from './MuebleEnEtapa.tsx';
 import { TableroEntero } from './TableroCortado.tsx';
 
 interface PropsDeLaEscena {
   animar: boolean;
 }
 
-function SinProyectos() {
-  return <MuebleEnEtapa etapa="plano" />;
-}
-
 function SinHistorial() {
   return <TableroEntero formato="escena" />;
-}
-
-function Gracias({ animar }: PropsDeLaEscena) {
-  return <MuebleEnEtapa etapa="pagado" animar={animar} />;
 }
 
 const ESCENAS = {

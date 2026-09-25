@@ -3,7 +3,10 @@
 Estado: aceptada, 2026-09-22. Corrige la parte del casillero del
 [0058](0058-el-estimativo-y-el-relevamiento-en-el-camino-del-cliente.md); el resto de ese ADR (el
 estimativo como paso, «lo próximo», la lista blanca y la entrada desde la app) sigue igual.
-Corregida el mismo día: la (i) va al lado de la fecha del paso, no después del rótulo.
+Corregida el mismo día: la (i) va al lado de la fecha del paso, no después del rótulo. Corregida el
+2026-09-25 por el [ADR 0070](0070-el-camino-tilda-lo-que-paso.md): sigue en el mismo paso
+(`nota.hito`, el `hitoActual`), pero ese paso ya no siempre es el que está en curso: con el
+estimativo o el presupuesto mandado está tildado.
 
 ## Contexto
 

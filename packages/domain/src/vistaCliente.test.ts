@@ -10,6 +10,9 @@ import {
   CERRANDO_EL_PRESUPUESTO,
   comoPagar,
   COORDINAMOS_LA_ENTREGA,
+  COORDINAMOS_LA_ENTREGA_AL_APROBAR,
+  CUANDO_DEJES_LA_SENA,
+  CUANDO_LO_APRUEBES,
   EMPEZAMOS_A_FABRICARLO,
   estaAprobada,
   FALTA_MEDIR_DEL_ESTIMADO,
@@ -27,6 +30,7 @@ import {
   RESUMEN_FALTA_MEDIR,
   SIGUE,
   SIGUE_CON_EL_PRESUPUESTO_MANDADO,
+  SIGUE_CON_LA_SENA_CUBIERTA,
   SIGUE_FALTA_LA_SENA,
   SIGUE_FALTA_MEDIR,
   SIN_FECHA_PARA_LA_VISITA,
@@ -38,6 +42,7 @@ import {
   VAMOS_TOMANDO_LOS_TRABAJOS,
   vistaDelCliente,
   hayComoTransferir,
+  YA_ESTA_PAGADO,
   type CobroDelTaller,
   type EstadoDelHito,
   type EstadoDelRelevamiento,
@@ -289,7 +294,151 @@ describe('el camino', () => {
       trabajo({ estado: 'en_curso', pagos: [pago('p1', '2026-08-04', 40_000_000)] }),
       HOY,
     );
-    expect(vista.hitos[1]).toMatchObject({ id: 'aprobado', estado: 'actual', fecha: null });
+    expect(vista.hitos[1]).toMatchObject({ id: 'aprobado', estado: 'pasado', fecha: null });
+  });
+
+  it('lo que ya pasó se tilda con su día, y en curso queda lo que se espera, sin fecha', () => {
+    const mandado = vistaDelCliente(
+      trabajo({ estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-14' }) }),
+      HOY,
+    );
+    expect(mandado.hitos[0]).toMatchObject({
+      estado: 'pasado',
+      fecha: '2026-09-14',
+      texto: 'Presupuesto enviado',
+    });
+    expect(mandado.hitos[1]).toMatchObject({
+      estado: 'actual',
+      fecha: null,
+      texto: 'Cuando lo apruebes y dejes la seña',
+    });
+    expect(mandado.titular).toBe(PRESUPUESTO_MANDADO);
+
+    const enLaCola = vistaDelCliente(
+      trabajo({
+        estado: 'en_curso',
+        fechas: fechas({ presupuesto: '2026-09-01', aprobado: '2026-09-05', inicio: '2026-09-28' }),
+      }),
+      HOY,
+    );
+    expect(enLaCola.hitos[1]).toMatchObject({ estado: 'pasado', fecha: '2026-09-05' });
+    expect(enLaCola.hitos[2]).toMatchObject({
+      estado: 'actual',
+      fecha: null,
+      texto: 'Vamos a empezar a fabricarlo',
+    });
+
+    const entregado = vistaDelCliente(
+      trabajo({
+        estado: 'entregado',
+        fechas: fechas({ inicio: '2026-09-01', entregado: '2026-09-16' }),
+        pagos: [pago('p1', '2026-08-04', 40_000_000)],
+      }),
+      HOY,
+    );
+    expect(entregado.hitos[3]).toMatchObject({
+      estado: 'pasado',
+      fecha: '2026-09-16',
+      texto: 'Entregado',
+    });
+    expect(entregado.hitos[4]).toMatchObject({
+      estado: 'actual',
+      fecha: null,
+      texto: 'Cuando esté saldado',
+    });
+    expect(entregado.titular).toBe('Ya está instalado en tu casa');
+  });
+
+  it('el amarillo avanza de a un paso: la aprobación está en curso antes de tildarse, y solo la entrega se tilda junto con la fabricación', () => {
+    const dias: readonly Partial<TrabajoDelCliente>[] = [
+      { estado: 'contacto', precio: null },
+      { estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-10' }) },
+      {
+        estado: 'en_curso',
+        fechas: fechas({ presupuesto: '2026-09-10', aprobado: '2026-09-18', inicio: '2026-09-18' }),
+      },
+      {
+        estado: 'entregado',
+        fechas: fechas({
+          presupuesto: '2026-09-10',
+          aprobado: '2026-09-18',
+          inicio: '2026-09-18',
+          entregado: '2026-09-18',
+        }),
+      },
+    ];
+    const caminos = dias.map((cambios) => vistaDelCliente(trabajo(cambios), HOY).hitos);
+    const sinPasarPorElAmarillo: HitoDelTrabajo[] = [];
+    for (let dia = 1; dia < caminos.length; dia += 1) {
+      const antes = caminos[dia - 1] ?? [];
+      (caminos[dia] ?? []).forEach((hito, paso) => {
+        const estabaAntes = antes[paso]?.estado;
+        if (hito.estado === 'pasado' && estabaAntes === 'futuro')
+          sinPasarPorElAmarillo.push(hito.id);
+      });
+    }
+    expect(sinPasarPorElAmarillo).toEqual(['entregado']);
+  });
+
+  it('pagado entero antes de la entrega, el último paso no pide el saldo: dice que ya está pagado', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        fechas: fechas({ inicio: '2026-09-01' }),
+        pagos: [pago('p1', '2026-09-10', 124_000_000)],
+      }),
+      HOY,
+    );
+    expect(vista.hitos[2]).toMatchObject({ estado: 'actual', texto: 'Lo estamos fabricando' });
+    expect(vista.hitos[4]).toMatchObject({ estado: 'futuro', texto: YA_ESTA_PAGADO, fecha: null });
+  });
+
+  it('un inicio que todavía no llegó o que es posterior a la entrega no se muestra como el día que arrancó', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'entregado',
+        fechas: fechas({ inicio: '2026-09-17', entregado: '2026-09-16' }),
+        pagos: [pago('p1', '2026-08-04', 40_000_000)],
+      }),
+      HOY,
+    );
+    expect(vista.hitos[2]).toMatchObject({ id: 'fabricacion', estado: 'pasado', fecha: null });
+    expect(vista.eventos.map((evento) => evento.texto)).not.toContain(EMPEZAMOS_A_FABRICARLO);
+  });
+
+  it('volver a preparar el presupuesto lo deja en curso, sin la fecha del que se mandó antes', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'a_presupuestar',
+        precio: null,
+        fechas: fechas({ presupuesto: '2026-09-10' }),
+      }),
+      HOY,
+    );
+    expect(vista.hitos[0]).toMatchObject({
+      id: 'presupuesto',
+      estado: 'actual',
+      fecha: null,
+      texto: 'Estamos preparando tu presupuesto',
+    });
+    expect(vista.eventos.map((evento) => evento.id)).not.toContain('presupuesto');
+
+    const alEstimativo = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_estimativo',
+        precio: null,
+        fechas: fechas({ estimativo: '2026-09-02', presupuesto: '2026-09-14' }),
+      }),
+      HOY,
+    );
+    expect(alEstimativo.eventos.map((evento) => evento.id)).toEqual(['estimativo']);
+
+    const mandadoDeNuevo = vistaDelCliente(
+      trabajo({ estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-10' }) }),
+      HOY,
+    );
+    expect(mandadoDeNuevo.eventos.map((evento) => [evento.id, evento.fecha])).toEqual([
+      ['presupuesto', '2026-09-10'],
+    ]);
   });
 
   it('con la fecha de aprobación registrada, el paso la lleva', () => {
@@ -327,11 +476,12 @@ describe('el camino', () => {
     );
     expect(vista.hitos.map((hito) => hito.estado)).toEqual(HITOS.map(() => 'pasado'));
     expect(vista.hitos.some((hito) => hito.estado === 'actual')).toBe(false);
-    expect(vista.hitos[vista.hitoIndex]).toMatchObject({
+    expect(vista.hitos[4]).toMatchObject({
       id: 'pagado',
       fecha: '2026-09-18',
       texto: 'Listo, está saldado',
     });
+    expect(vista.titular).toBe('Listo, está saldado');
   });
 
   it('y con fecha de cobro, esa manda', () => {
@@ -366,7 +516,7 @@ describe('el paso de la aprobación dice de la seña solo lo que es cierto', () 
     return aprobada(vistaDelCliente(trabajo({ estado: 'en_curso', ...cambios }), HOY));
   }
 
-  it('con la seña cubierta: «Aprobado, seña cobrada», está en la cola y lo próximo es fabricarlo', () => {
+  it('con la seña cubierta: «Aprobado, seña cobrada» tildado, en la cola, y lo próximo es fabricarlo', () => {
     const vista = enLaCola({
       precio: centavos(PRESUPUESTO),
       sena: centavos(SENA),
@@ -374,26 +524,36 @@ describe('el paso de la aprobación dice de la seña solo lo que es cierto', () 
       pago: PIDE_EL_SALDO,
     });
     expect(vista.hitos[1]).toMatchObject({
+      estado: 'pasado',
       etiqueta: 'Aprobado, seña cobrada',
-      texto: TITULAR_DEL_APROBADO.cubierta,
+      texto: 'Aprobado, seña cobrada',
     });
+    expect(vista.hitos[2]).toMatchObject({
+      estado: 'actual',
+      texto: 'Vamos a empezar a fabricarlo',
+    });
+    expect(vista.titular).toBe(TITULAR_DEL_APROBADO.cubierta);
     expect(TITULAR_DEL_APROBADO.cubierta).toBe(
       'Recibimos la seña y ya estás en la cola del taller',
     );
     expect(vista.sigue).toBe(SIGUE.aprobado);
   });
 
-  it('aprobado sin dejar la seña: no dice que la cobramos, y lo próximo es la seña', () => {
+  it('aprobado sin dejar la seña: no dice que la cobramos, queda en curso y lo próximo es la seña', () => {
     const vista = enLaCola({
       precio: centavos(PRESUPUESTO),
       sena: centavos(SENA),
+      fechas: fechas({ aprobado: '2026-09-05' }),
       pagos: [],
       pago: { ...PIDE_LA_SENA, monto: centavos(SENA) },
     });
     expect(vista.hitos[1]).toMatchObject({
+      estado: 'actual',
       etiqueta: APROBADO_SIN_LA_SENA,
-      texto: TITULAR_DEL_APROBADO.falta,
+      texto: CUANDO_DEJES_LA_SENA,
+      fecha: null,
     });
+    expect(vista.titular).toBe(TITULAR_DEL_APROBADO.falta);
     expect(vista.sigue).toBe(SIGUE_FALTA_LA_SENA);
     expect(vista.datos.sena).toEqual({
       situacion: 'falta',
@@ -406,9 +566,11 @@ describe('el paso de la aprobación dice de la seña solo lo que es cierto', () 
   it('sin presupuesto no se sabe cuánto es la seña: no afirma nada de ella', () => {
     const vista = enLaCola({ precio: null, sena: null });
     expect(vista.hitos[1]).toMatchObject({
+      estado: 'pasado',
       etiqueta: APROBADO_SIN_LA_SENA,
-      texto: TITULAR_DEL_APROBADO['sin-presupuesto'],
+      texto: APROBADO_SIN_LA_SENA,
     });
+    expect(vista.titular).toBe(TITULAR_DEL_APROBADO['sin-presupuesto']);
     expect(vista.sigue).toBe(SIGUE.aprobado);
   });
 
@@ -421,15 +583,29 @@ describe('el paso de la aprobación dice de la seña solo lo que es cierto', () 
     expect(vista.hitos[1]).toMatchObject({ estado: 'pasado', texto: APROBADO_SIN_LA_SENA });
   });
 
-  it('antes de aprobar, el paso futuro dice qué hace falta, como siempre', () => {
+  it('con el presupuesto mandado, el paso queda en curso y dice qué hace falta', () => {
     const vista = vistaDelCliente(
       trabajo({ estado: 'presupuesto_enviado', sena: centavos(SENA), pago: PIDE_LA_SENA }),
       HOY,
     );
     expect(vista.hitos[1]).toMatchObject({
-      estado: 'futuro',
+      estado: 'actual',
       texto: 'Cuando lo apruebes y dejes la seña',
     });
+  });
+
+  it('con la seña ya cubierta antes de aprobar, no se la vuelve a pedir: falta que lo apruebe', () => {
+    const vista = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        sena: centavos(SENA),
+        pagos: [pago('s', '2026-09-15', SENA)],
+      }),
+      HOY,
+    );
+    expect(vista.hitos[1]).toMatchObject({ estado: 'actual', texto: CUANDO_LO_APRUEBES });
+    expect(vista.sigue).toBe(SIGUE_CON_LA_SENA_CUBIERTA);
+    expect(SIGUE_CON_LA_SENA_CUBIERTA).toBe('Lo próximo es que lo apruebes.');
   });
 });
 
@@ -1064,9 +1240,9 @@ interface CasoDeEtapa {
 }
 
 const SIN_ESTIMATIVO = (
-  actual: HitoDelTrabajo,
+  enCurso: HitoDelTrabajo,
 ): readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] => {
-  const indice = HITOS.findIndex((hito) => hito.id === actual);
+  const indice = HITOS.findIndex((hito) => hito.id === enCurso);
   return HITOS.map(
     (hito, cual) =>
       [hito.id, cual < indice ? 'pasado' : cual === indice ? 'actual' : 'futuro'] as const,
@@ -1074,11 +1250,11 @@ const SIN_ESTIMATIVO = (
 };
 
 const CON_ESTIMATIVO = (
-  actual: HitoDelTrabajo,
-): readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] =>
-  actual === 'estimativo'
-    ? [['estimativo', 'actual'], ...HITOS.map((hito) => [hito.id, 'futuro'] as const)]
-    : [['estimativo', 'pasado'], ...SIN_ESTIMATIVO(actual)];
+  enCurso: HitoDelTrabajo,
+): readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] => [
+  ['estimativo', 'pasado'],
+  ...SIN_ESTIMATIVO(enCurso),
+];
 
 const COMPLETO: readonly (readonly [HitoDelTrabajo, EstadoDelHito])[] = HITOS.map(
   (hito) => [hito.id, 'pasado'] as const,
@@ -1108,14 +1284,14 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
   },
   {
     nombre:
-      'estimativo enviado antes de medir: es el paso actual y la nota dice que el número puede cambiar',
+      'estimativo enviado antes de medir: queda tildado, el presupuesto en curso, y la nota dice que el número puede cambiar',
     cambios: {
       estado: 'presupuesto_estimativo',
       precio: null,
       fechas: fechas({ estimativo: '2026-09-15' }),
     },
     etapa: 'antes-del-presupuesto',
-    camino: CON_ESTIMATIVO('estimativo'),
+    camino: CON_ESTIMATIVO('presupuesto'),
     titular: 'Te pasamos un número estimado',
     relevamiento: { estado: 'pendiente', fecha: null },
     nota: 'pendiente',
@@ -1130,7 +1306,7 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
       visita: { dia: '2026-09-12', hecha: false },
     },
     etapa: 'antes-del-presupuesto',
-    camino: CON_ESTIMATIVO('estimativo'),
+    camino: CON_ESTIMATIVO('presupuesto'),
     titular: 'Te pasamos un número estimado',
     relevamiento: { estado: 'hecho', fecha: '2026-09-12' },
     nota: 'hecho',
@@ -1202,14 +1378,15 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
     sigue: SIGUE.presupuesto,
   },
   {
-    nombre: 'presupuesto enviado: lo dice en pasado y lo que sigue es aprobarlo',
+    nombre:
+      'presupuesto enviado: el paso queda tildado, la aprobación en curso, y lo que sigue es aprobarlo',
     cambios: {
       estado: 'presupuesto_enviado',
       fechas: fechas({ presupuesto: '2026-09-14' }),
       visita: { dia: '2026-09-10', hecha: true },
     },
     etapa: 'esperando-la-sena',
-    camino: SIN_ESTIMATIVO('presupuesto'),
+    camino: SIN_ESTIMATIVO('aprobado'),
     titular: PRESUPUESTO_MANDADO,
     relevamiento: { estado: 'hecho', fecha: '2026-09-10' },
     nota: 'hecho',
@@ -1219,11 +1396,28 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
     nombre: 'presupuesto enviado sin haber ido a medir: tampoco hay nota',
     cambios: { estado: 'presupuesto_enviado', fechas: fechas({ presupuesto: '2026-09-14' }) },
     etapa: 'esperando-la-sena',
-    camino: SIN_ESTIMATIVO('presupuesto'),
+    camino: SIN_ESTIMATIVO('aprobado'),
     titular: PRESUPUESTO_MANDADO,
     relevamiento: null,
     nota: null,
     sigue: SIGUE_CON_EL_PRESUPUESTO_MANDADO,
+  },
+  {
+    nombre:
+      'presupuesto enviado con la seña ya cubierta a cuenta: lo único que falta es que lo apruebe',
+    cambios: {
+      estado: 'presupuesto_enviado',
+      precio: centavos(PRESUPUESTO),
+      sena: centavos(SENA),
+      fechas: fechas({ presupuesto: '2026-09-14' }),
+      pagos: [pago('s', '2026-09-15', SENA)],
+    },
+    etapa: 'esperando-la-sena',
+    camino: SIN_ESTIMATIVO('aprobado'),
+    titular: PRESUPUESTO_MANDADO,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_CON_LA_SENA_CUBIERTA,
   },
   {
     nombre: 'aprobado y sin empezar: la visita de antes cuenta como hecha y la nota ya no está',
@@ -1237,9 +1431,35 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
       visita: { dia: '2026-08-28', hecha: false },
     },
     etapa: 'aprobado',
-    camino: SIN_ESTIMATIVO('aprobado'),
+    camino: SIN_ESTIMATIVO('fabricacion'),
     titular: 'Recibimos la seña y ya estás en la cola del taller',
     relevamiento: { estado: 'hecho', fecha: '2026-08-28' },
+    nota: null,
+    sigue: SIGUE.aprobado,
+  },
+  {
+    nombre: 'aprobado sin la seña: la aprobación sigue en curso hasta que la deja',
+    cambios: {
+      estado: 'en_curso',
+      precio: centavos(PRESUPUESTO),
+      sena: centavos(SENA),
+      pago: { ...PIDE_LA_SENA, monto: centavos(SENA) },
+      fechas: fechas({ presupuesto: '2026-09-01', aprobado: '2026-09-05' }),
+    },
+    etapa: 'aprobado',
+    camino: SIN_ESTIMATIVO('aprobado'),
+    titular: TITULAR_DEL_APROBADO.falta,
+    relevamiento: null,
+    nota: null,
+    sigue: SIGUE_FALTA_LA_SENA,
+  },
+  {
+    nombre: 'aprobado sin presupuesto: no hay seña que esperar, y lo que sigue es arrancar',
+    cambios: { estado: 'en_curso', precio: null, sena: null },
+    etapa: 'aprobado',
+    camino: SIN_ESTIMATIVO('fabricacion'),
+    titular: TITULAR_DEL_APROBADO['sin-presupuesto'],
+    relevamiento: null,
     nota: null,
     sigue: SIGUE.aprobado,
   },
@@ -1261,7 +1481,7 @@ const CASOS_POR_ETAPA: readonly CasoDeEtapa[] = [
       pagos: [pago('p1', '2026-08-04', 40_000_000)],
     },
     etapa: 'entregado',
-    camino: SIN_ESTIMATIVO('entregado'),
+    camino: SIN_ESTIMATIVO('pagado'),
     titular: 'Ya está instalado en tu casa',
     relevamiento: null,
     nota: null,
@@ -1315,7 +1535,7 @@ describe('qué ve el cliente en cada etapa del trabajo', () => {
 
       expect(vista.etapa).toBe(caso.etapa);
       expect(vista.hitos.map((hito) => [hito.id, hito.estado])).toEqual(caso.camino);
-      expect(vista.hitos[vista.hitoIndex]?.texto).toBe(caso.titular);
+      expect(vista.titular).toBe(caso.titular);
       if (caso.relevamiento === null) expect(vista.relevamiento).toBeNull();
       else expect(vista.relevamiento).toEqual(caso.relevamiento);
       expect(notaDelRelevamiento(vista, FORMATOS)?.estado ?? null).toBe(caso.nota);
@@ -1326,7 +1546,7 @@ describe('qué ve el cliente en cada etapa del trabajo', () => {
 
   it('un estimativo de antes de que se guardaran los cambios de etapa igual aparece, sin fecha', () => {
     const vista = vistaDelCliente(trabajo({ estado: 'presupuesto_estimativo', precio: null }), HOY);
-    expect(vista.hitos[0]).toMatchObject({ id: 'estimativo', estado: 'actual', fecha: null });
+    expect(vista.hitos[0]).toMatchObject({ id: 'estimativo', estado: 'pasado', fecha: null });
     expect(vista.eventos).toEqual([]);
   });
 
@@ -1409,6 +1629,7 @@ describe('la nota del relevamiento', () => {
         visita: { dia: '2026-09-22', hecha: false },
       }),
     ).toEqual({
+      hito: 'estimativo',
       estado: 'pendiente',
       ...NOTA_DEL_RELEVAMIENTO.pendiente,
       lineas: [...FALTA_MEDIR_DEL_ESTIMADO, 'Quedamos en ir el larga(2026-09-22).'],
@@ -1431,11 +1652,33 @@ describe('la nota del relevamiento', () => {
         visita: { dia: '2026-09-16', hecha: true },
       }),
     ).toEqual({
+      hito: 'presupuesto',
       estado: 'hecho',
       ...NOTA_DEL_RELEVAMIENTO.hecho,
       lineas: [`${FUIMOS_A_MEDIR} el larga(2026-09-16).`, CERRANDO_EL_PRESUPUESTO],
       resumen: 'Medido el corta(2026-09-16)',
     });
+  });
+
+  it('cuelga del paso del número que explica, aunque ese paso ya esté tildado', () => {
+    const conElEstimativo = vistaDelCliente(
+      trabajo({ estado: 'presupuesto_estimativo', precio: null, fechas: estimativo }),
+      HOY,
+    );
+    expect(notaDelRelevamiento(conElEstimativo, FORMATOS)?.hito).toBe('estimativo');
+    expect(conElEstimativo.hitos[0]).toMatchObject({ id: 'estimativo', estado: 'pasado' });
+
+    const mandado = vistaDelCliente(
+      trabajo({
+        estado: 'presupuesto_enviado',
+        precio: centavos(10_000_000),
+        fechas: fechas({ presupuesto: '2026-09-17' }),
+        visita: { dia: '2026-09-16', hecha: true },
+      }),
+      HOY,
+    );
+    expect(notaDelRelevamiento(mandado, FORMATOS)?.hito).toBe('presupuesto');
+    expect(mandado.hitos[0]).toMatchObject({ id: 'presupuesto', estado: 'pasado' });
   });
 
   it('con el presupuesto ya mandado, no dice que lo está cerrando', () => {
@@ -1778,29 +2021,57 @@ describe('la proyección: hasta cuándo señar y para cuándo podría estar', ()
   });
 
   it('los textos son los que pidió el dueño: el «podríamos» es suyo y se queda', () => {
-    expect(textoDeLaProyeccion(proyeccionDeLaEntrega('2026-10-02', HOY), FORMATOS)).toEqual([
+    expect(
+      textoDeLaProyeccion(proyeccionDeLaEntrega('2026-10-02', HOY), FORMATOS, 'falta'),
+    ).toEqual([
       'Si dejás la seña antes del frase(2026-10-02), podríamos tenerlo listo para el frase(2026-11-02).',
       'Vamos tomando los trabajos a medida que entran las señas.',
     ]);
     expect(VAMOS_TOMANDO_LOS_TRABAJOS).toBe(
       'Vamos tomando los trabajos a medida que entran las señas.',
     );
-    expect(textoDeLaProyeccion({ situacion: 'sin-fecha' }, FORMATOS)).toEqual([
+    expect(textoDeLaProyeccion({ situacion: 'sin-fecha' }, FORMATOS, 'falta')).toEqual([
       'Cuando lo apruebes y dejes la seña, coordinamos la fecha de entrega.',
     ]);
     expect(COORDINAMOS_LA_ENTREGA).toBe(
       'Cuando lo apruebes y dejes la seña, coordinamos la fecha de entrega.',
     );
-    expect(textoDeLaProyeccion(proyeccionDeLaEntrega('2026-09-17', HOY), FORMATOS)).toEqual([
+    expect(
+      textoDeLaProyeccion(proyeccionDeLaEntrega('2026-09-17', HOY), FORMATOS, 'falta'),
+    ).toEqual([
       'Este presupuesto venció el frase(2026-09-17). Hablá con el taller para actualizarlo.',
+    ]);
+  });
+
+  it('con la seña ya cubierta no se la vuelve a pedir: lo que falta es aprobarlo', () => {
+    expect(
+      textoDeLaProyeccion(proyeccionDeLaEntrega('2026-10-02', HOY), FORMATOS, 'cubierta'),
+    ).toEqual([
+      'Si lo aprobás antes del frase(2026-10-02), podríamos tenerlo listo para el frase(2026-11-02).',
+      VAMOS_TOMANDO_LOS_TRABAJOS,
+    ]);
+    expect(textoDeLaProyeccion({ situacion: 'sin-fecha' }, FORMATOS, 'cubierta')).toEqual([
+      COORDINAMOS_LA_ENTREGA_AL_APROBAR,
+    ]);
+    expect(COORDINAMOS_LA_ENTREGA_AL_APROBAR).toBe(
+      'Cuando lo apruebes, coordinamos la fecha de entrega.',
+    );
+    expect(textoDeLaProyeccion({ situacion: 'sin-fecha' }, FORMATOS, 'sin-presupuesto')).toEqual([
+      COORDINAMOS_LA_ENTREGA,
     ]);
   });
 
   it('ningún texto de la proyección dice «arreglar» ni cuenta días', () => {
     for (const valeHasta of [null, '2026-09-17', '2026-10-02']) {
-      const texto = textoDeLaProyeccion(proyeccionDeLaEntrega(valeHasta, HOY), FORMATOS).join(' ');
-      expect(texto).not.toMatch(/arregl/i);
-      expect(texto).not.toMatch(HACE_TANTOS_DIAS);
+      for (const sena of ['falta', 'cubierta', 'sin-presupuesto'] as const) {
+        const texto = textoDeLaProyeccion(
+          proyeccionDeLaEntrega(valeHasta, HOY),
+          FORMATOS,
+          sena,
+        ).join(' ');
+        expect(texto).not.toMatch(/arregl/i);
+        expect(texto).not.toMatch(HACE_TANTOS_DIAS);
+      }
     }
   });
 
