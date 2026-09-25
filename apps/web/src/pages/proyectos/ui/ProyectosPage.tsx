@@ -36,7 +36,7 @@ import {
   Ir,
   useIr,
 } from '@/shared/lib';
-import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, EstadoVacio, Hoja, Icono, Pagina } from '@/shared/ui';
 
 import { ListaDeConsultas } from './ListaDeConsultas';
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
@@ -304,12 +304,11 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> })
   const texto = textos[etapa];
 
   return (
-    <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-      <span className="flex size-12 items-center justify-center rounded-field bg-ink/6">
-        <Icono nombre="folder-kanban" tamano={24} />
-      </span>
-      <h2 className="mt-1 text-h1 leading-tight font-semibold">{texto.titulo}</h2>
-      <p className="text-body leading-relaxed text-text-2">{texto.detalle}</p>
+    <EstadoVacio
+      ilustracion={etapa === 'activos' ? 'sin-proyectos' : 'sin-historial'}
+      titulo={texto.titulo}
+      detalle={texto.detalle}
+    >
       <Button
         onClick={() => {
           ir(RUTA_DE_PROYECTO_NUEVO);
@@ -317,7 +316,7 @@ function Vacio({ etapa }: { etapa: Exclude<Fase, 'consultas' | 'seguimiento'> })
       >
         Cargar un proyecto
       </Button>
-    </section>
+    </EstadoVacio>
   );
 }
 

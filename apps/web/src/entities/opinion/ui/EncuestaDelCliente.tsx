@@ -11,7 +11,13 @@ import {
 } from '@maun/domain';
 import { useId, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 
-import { Icono } from '@/shared/ui';
+import {
+  ESCENA_EN_LA_LAMINA,
+  Icono,
+  Ilustracion,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
+} from '@/shared/ui';
 
 import { colorDelPaso, ICONO_DE_LA_CARA } from '../model/polos';
 import {
@@ -365,16 +371,21 @@ export function GraciasPorContestar({ taller, cliente, resena }: GraciasPorConte
   const nombre = cliente === null ? '' : primeraPalabra(cliente);
   return (
     <div className="@container w-full">
-      <div className="mx-auto flex w-full max-w-[520px] flex-col items-start gap-4 px-5 pt-5.5 pb-11 @lg:px-7 @lg:pt-10 @lg:pb-14">
+      <div className="mx-auto flex w-full max-w-[520px] flex-col gap-3 px-5 pt-5.5 pb-11 @lg:px-7 @lg:pt-10 @lg:pb-14">
         <MarcaDelTaller taller={taller} />
-        <h1 className="mt-1.5 font-display text-h1 leading-tight font-normal @lg:text-h1-lg">
-          {nombre === '' ? 'Gracias' : `Gracias, ${nombre}`}
-        </h1>
-        <p className="text-body-lg leading-relaxed text-text-2">
-          Lo leemos nosotros, no un sistema. Lo que nos marcaste nos sirve para el próximo mueble.
-        </p>
+        <TarjetaConLamina
+          como="div"
+          dibujo={<Ilustracion nombre="gracias" animar />}
+          lamina={ESCENA_EN_LA_LAMINA}
+          className="mt-1"
+        >
+          <h1 className={TITULO_DE_LAMINA}>{nombre === '' ? 'Gracias' : `Gracias, ${nombre}`}</h1>
+          <p className="text-body-lg leading-relaxed text-text-2">
+            Lo leemos nosotros, no un sistema. Lo que nos marcaste nos sirve para el próximo mueble.
+          </p>
+        </TarjetaConLamina>
         {resena !== null && (
-          <div className="mt-2 flex w-full flex-col gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4">
+          <div className="flex w-full flex-col gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-4">
             <span className="text-body font-semibold">¿Nos dejás la misma reseña en Google?</span>
             <span className="text-body-sm leading-relaxed text-text-2">
               Se lo pedimos a todos los clientes, contesten lo que contesten. A un taller chico le

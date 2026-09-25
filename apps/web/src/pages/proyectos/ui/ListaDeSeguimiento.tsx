@@ -13,7 +13,7 @@ import {
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
 import { fechaLarga, formatearPesos, relativa } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, EstadoVacio, Icono } from '@/shared/ui';
 
 function cuandoLeToca({ pendiente, atrasado, esHoy }: EnSeguimiento, hoy: string): string {
   if (pendiente === undefined) return 'Sin fecha para volver a escribirle';
@@ -106,17 +106,11 @@ export function ListaDeSeguimiento({ resumenes, replica, hoy }: ListaDeSeguimien
 
   if (enSeguimiento.length === 0) {
     return (
-      <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-        <span className="flex size-12 items-center justify-center rounded-field bg-ink/6">
-          <Icono nombre="clock" tamano={24} />
-        </span>
-        <h2 className="mt-1 text-h1 leading-tight font-semibold">Nadie en seguimiento</h2>
-        <p className="text-body leading-relaxed text-text-2">
-          Cuando una consulta te diga «por ahora no», pasala a seguimiento desde su ficha con el día
-          en que le volvés a escribir. Acá quedan en orden, los atrasados primero, y la agenda te
-          avisa cuándo toca.
-        </p>
-      </section>
+      <EstadoVacio
+        ilustracion="sin-seguimiento"
+        titulo="Nadie en seguimiento"
+        detalle="Cuando una consulta te diga «por ahora no», pasala a seguimiento desde su ficha con el día en que le volvés a escribir. Acá quedan en orden, los atrasados primero, y la agenda te avisa cuándo toca."
+      />
     );
   }
 

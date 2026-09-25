@@ -35,7 +35,15 @@ import {
   TESOROS_EN_ORDEN,
   useIr,
 } from '@/shared/lib';
-import { Button, ComparacionMensual, ConSalida, Icono, Pagina, PrincipalYApoyo } from '@/shared/ui';
+import {
+  Button,
+  ComparacionMensual,
+  ConSalida,
+  EstadoVacio,
+  Icono,
+  Pagina,
+  PrincipalYApoyo,
+} from '@/shared/ui';
 
 const SENTIDOS: readonly { id: SentidoDeLinea | 'todos'; etiqueta: string }[] = [
   { id: 'todos', etiqueta: 'Todo' },
@@ -273,18 +281,11 @@ export function FinanzasPage() {
                 </Button>
               </div>
             ) : (
-              <div className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-                <span
-                  aria-hidden
-                  className="flex size-12 items-center justify-center rounded-field bg-ink/6 text-text-2"
-                >
-                  <Icono nombre="wallet" tamano={24} />
-                </span>
-                <h2 className="text-section font-semibold">Todavía no hay movimientos</h2>
-                <p className="text-body leading-relaxed text-text-2">
-                  Cargá el primer gasto o ingreso. Los cobros y las compras de cada trabajo se
-                  anotan solos desde el trabajo.
-                </p>
+              <EstadoVacio
+                ilustracion="sin-movimientos"
+                titulo="Todavía no hay movimientos"
+                detalle="Cargá el primer gasto o ingreso. Los cobros y las compras de cada trabajo se anotan solos desde el trabajo."
+              >
                 <Button
                   onClick={() => {
                     abrirHoja(RUTA_DE_MOVIMIENTO_NUEVO);
@@ -292,7 +293,7 @@ export function FinanzasPage() {
                 >
                   Cargar el primero
                 </Button>
-              </div>
+              </EstadoVacio>
             )
           ) : (
             <ListaDelLibro

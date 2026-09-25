@@ -43,7 +43,7 @@ import {
 } from '@/features/llevar-la-agenda';
 import { datosDeLaAgendaDeLaReplica, filaPorId } from '@/shared/api';
 import { hoyLocal, useAnchoDePantalla, type NuevoAviso } from '@/shared/lib';
-import { Button, ConSalida, Hoja, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, EstadoVacio, Hoja, Icono, Pagina } from '@/shared/ui';
 
 type Filtro = 'todo' | CategoriaDeAgenda | 'marcado';
 
@@ -130,16 +130,13 @@ function ListaDelMes({
 
   if (eventos.length === 0) {
     return (
-      <section aria-label="El mes está vacío" className="flex flex-col items-start gap-3 py-8">
-        <span aria-hidden className="flex items-center gap-1">
-          {CATEGORIAS_DE_AGENDA.slice(0, 4).map((categoria) => (
-            <MarcaDeCategoria key={categoria} categoria={categoria} />
-          ))}
-        </span>
-        <p className="mt-1 text-body-lg leading-snug font-semibold">
-          Todavía no hay nada en el mes
-        </p>
-        <p className="text-body leading-relaxed text-text-2">{MES_VACIO}</p>
+      <EstadoVacio
+        ilustracion="agenda-vacia"
+        etiqueta="El mes está vacío"
+        className="mt-4"
+        titulo="Todavía no hay nada en el mes"
+        detalle={MES_VACIO}
+      >
         <Button
           size="grande"
           onClick={() => {
@@ -148,7 +145,7 @@ function ListaDelMes({
         >
           Anotar lo primero
         </Button>
-      </section>
+      </EstadoVacio>
     );
   }
 

@@ -14,7 +14,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { formatearPesos, relativa, useIr } from '@/shared/lib';
-import { Button, ConSalida, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, EstadoVacio, Icono, Pagina } from '@/shared/ui';
 
 function detalleDe(resumen: ResumenDeCliente, hoy: string): string {
   const partes: string[] = [];
@@ -141,17 +141,11 @@ export function ClientesPage() {
       </header>
 
       {resumenes.length === 0 ? (
-        <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-          <span className="flex size-12 items-center justify-center rounded-field bg-ink/6">
-            <Icono nombre="users" tamano={24} />
-          </span>
-          <h2 className="mt-1 text-h1 leading-tight font-semibold">
-            La agenda del taller, todavía vacía
-          </h2>
-          <p className="text-body leading-relaxed text-text-2">
-            Cargá a cada cliente una sola vez: dirección, teléfono y cómo facturarle. La próxima vez
-            que te llame, todo ya está.
-          </p>
+        <EstadoVacio
+          ilustracion="sin-clientes"
+          titulo="La agenda del taller, todavía vacía"
+          detalle="Cargá a cada cliente una sola vez: dirección, teléfono y cómo facturarle. La próxima vez que te llame, todo ya está."
+        >
           <Button
             onClick={() => {
               setAbierta(true);
@@ -159,7 +153,7 @@ export function ClientesPage() {
           >
             Cargá tu primer cliente
           </Button>
-        </section>
+        </EstadoVacio>
       ) : (
         <>
           <label className="flex h-field max-w-full items-center gap-2 rounded-pill border border-hairline bg-paper px-3.5 md:max-w-[420px]">

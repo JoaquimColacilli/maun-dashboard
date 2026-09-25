@@ -15,7 +15,7 @@ import {
 } from '@/entities/proyecto';
 import type { Replica } from '@/shared/api';
 import { conFondo, fechaLarga, formatearPesos, useIr } from '@/shared/lib';
-import { Button, Icono } from '@/shared/ui';
+import { Button, EstadoVacio, Icono } from '@/shared/ui';
 
 function TarjetaDeContacto({ contacto, hoy }: { contacto: ContactoEnLista; hoy: string }) {
   const { resumen, situacion } = contacto;
@@ -121,16 +121,11 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
 
   if (contactos.length === 0) {
     return (
-      <section className="flex max-w-[520px] flex-col items-start gap-3 py-8">
-        <span className="flex size-12 items-center justify-center rounded-field bg-ink/6">
-          <Icono nombre="route" tamano={24} />
-        </span>
-        <h2 className="mt-1 text-h1 leading-tight font-semibold">No hay consultas por ahora</h2>
-        <p className="text-body leading-relaxed text-text-2">
-          Cuando te llame alguien, cargalo acá con lo que pide y la fecha de la visita. Si en la
-          visita te dejó una seña, anotala: entra a la caja del taller desde ese día. Cuando lo
-          apruebe, pasa a Activos.
-        </p>
+      <EstadoVacio
+        ilustracion="sin-consultas"
+        titulo="No hay consultas por ahora"
+        detalle="Cuando te llame alguien, cargalo acá con lo que pide y la fecha de la visita. Si en la visita te dejó una seña, anotala: entra a la caja del taller desde ese día. Cuando lo apruebe, pasa a Activos."
+      >
         <Button
           onClick={() => {
             ir(RUTA_DE_CONTACTO_NUEVO, { state: conFondo(location) });
@@ -139,7 +134,7 @@ export function ListaDeConsultas({ resumenes, replica, hoy }: ListaDeConsultasPr
           <Icono nombre="user-plus" tamano={18} />
           Cargar el primer contacto
         </Button>
-      </section>
+      </EstadoVacio>
     );
   }
 

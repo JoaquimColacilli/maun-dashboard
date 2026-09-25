@@ -13,8 +13,16 @@ import {
 
 import { urlDelArchivo } from '@/shared/api';
 import { diaYMesCorto, fechaEnUnaFrase, fechaLarga, formatearPesos } from '@/shared/lib';
-import { Icono, MontoQueEntra, Pagina, PrincipalYApoyo } from '@/shared/ui';
+import {
+  Icono,
+  MontoQueEntra,
+  MuebleEnEtapa,
+  Pagina,
+  PrincipalYApoyo,
+  TarjetaConLamina,
+} from '@/shared/ui';
 
+import { etapaDelMueble } from '../model/etapa';
 import {
   A_CONFIRMAR,
   A_CUENTA_DE_LA_SENA,
@@ -125,7 +133,7 @@ function EntradaAntesDelPresupuesto({
       <Titular texto={titular} bajada={bajada} />
       {vista.pagado > 0 && (
         <>
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline-soft pt-3.5">
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 self-stretch border-t border-hairline-soft pt-3.5">
             <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
           </div>
           <p className="mt-2.5 text-body leading-relaxed text-text-2">{QUEDA_A_CUENTA}</p>
@@ -148,7 +156,7 @@ function EntradaEsperandoLaSena({
   return (
     <>
       <Titular texto={titular} bajada={bajada} />
-      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline-soft pt-3.5">
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 self-stretch border-t border-hairline-soft pt-3.5">
         <Cifra
           clave="Presupuesto"
           valor={vista.presupuesto === null ? '—' : formatearPesos(vista.presupuesto)}
@@ -194,7 +202,7 @@ function EntradaAprobada({
             <span className="font-semibold tabular-nums">{formatearPesos(vista.pagado)}</span>
           </span>
         </div>
-        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t border-hairline-soft pt-3.5">
+        <div className="mt-3.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 self-stretch border-t border-hairline-soft pt-3.5">
           <span className="text-body-lg font-semibold">{titular}</span>
           {bajada !== '' && <span className="text-body text-text-2">{bajada}</span>}
         </div>
@@ -205,7 +213,7 @@ function EntradaAprobada({
   return (
     <>
       <Titular texto={titular} bajada={bajada} />
-      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-hairline-soft pt-3.5">
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 self-stretch border-t border-hairline-soft pt-3.5">
         <Cifra clave={saldo.etiqueta} valor={saldo.texto} grande tono={saldo.tono} />
         <Cifra clave="Vale" valor={precio} />
         <Cifra clave="Pagaste" valor={formatearPesos(vista.pagado)} />
@@ -351,14 +359,19 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
         }
       >
         <div className="flex flex-col gap-3 md:gap-4">
-          <section aria-label="Tu mueble" className={`@container flex flex-col gap-1.5 ${TARJETA}`}>
+          <TarjetaConLamina
+            como="section"
+            aria-label="Tu mueble"
+            dibujo={<MuebleEnEtapa etapa={etapaDelMueble(vista.hitoActual)} />}
+            lamina="[&>svg]:w-56 @min-[40rem]/con-lamina:[&>svg]:w-72"
+          >
             <span className="text-body text-text-2">{vista.cliente}</span>
             <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
               {vista.titulo}
             </h1>
 
             <EntradaDeLaVista vista={vista} bajada={nota?.resumen ?? ''} hoy={hoy} />
-          </section>
+          </TarjetaConLamina>
 
           <section aria-label="En qué anda" className={`@container ${TARJETA}`}>
             <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>

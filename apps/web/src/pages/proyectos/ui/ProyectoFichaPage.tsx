@@ -55,7 +55,17 @@ import {
   useSenalDeUnaVez,
   useVolver,
 } from '@/shared/lib';
-import { Button, Icono, Pagina, PanelDeAvisos, PrincipalYApoyo } from '@/shared/ui';
+import {
+  Button,
+  ESCENA_EN_LA_LAMINA,
+  Icono,
+  Ilustracion,
+  Pagina,
+  PanelDeAvisos,
+  PrincipalYApoyo,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
+} from '@/shared/ui';
 
 import { FichaDeContacto } from './FichaDeContacto';
 import { FichaDeSeguimiento } from './FichaDeSeguimiento';
@@ -96,13 +106,21 @@ export function ProyectoFichaPage() {
 
   if (!resumen) {
     return (
-      <Pagina className="items-start gap-3">
-        <h1 className="font-display text-h1 leading-tight">Ese proyecto no está</h1>
-        <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-          Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto de
-          otro taller.
-        </p>
-        <Button onClick={vuelta.volver}>Volver a Proyectos</Button>
+      <Pagina>
+        <TarjetaConLamina
+          como="div"
+          dibujo={<Ilustracion nombre="anulado" />}
+          lamina={ESCENA_EN_LA_LAMINA}
+        >
+          <h1 className={TITULO_DE_LAMINA}>Ese proyecto no está</h1>
+          <p className="max-w-[44ch] text-body leading-relaxed text-text-2">
+            Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un proyecto
+            de otro taller.
+          </p>
+          <div className="w-full pt-2">
+            <Button onClick={vuelta.volver}>Volver a Proyectos</Button>
+          </div>
+        </TarjetaConLamina>
       </Pagina>
     );
   }

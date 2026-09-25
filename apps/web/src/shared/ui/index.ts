@@ -10,6 +10,7 @@ export {
 } from './ComparacionMensual';
 export { EnConstruccion } from './EnConstruccion';
 export { EstadoDeGuardado, type EstadoDeGuardadoProps } from './EstadoDeGuardado';
+export { ESCENA_EN_LA_LAMINA, TITULO_DE_LAMINA } from './lamina';
 export { ConSalida, Hoja, type ConSalidaProps, type HojaProps } from './Hoja';
 export { LogoDeMercadoPago, type LogoDeMercadoPagoProps } from './LogoDeMercadoPago';
 export { MailEnviado, type MailEnviadoProps } from './MailEnviado';

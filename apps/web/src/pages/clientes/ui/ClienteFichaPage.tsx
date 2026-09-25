@@ -34,11 +34,15 @@ import {
 import {
   Button,
   ConSalida,
+  ESCENA_EN_LA_LAMINA,
   FilaDeAcciones,
   Hoja,
   Icono,
+  Ilustracion,
   Pagina,
   PrincipalYApoyo,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
   type NombreDeIcono,
 } from '@/shared/ui';
 
@@ -196,13 +200,21 @@ export function ClienteFichaPage() {
 
   if (!resumen) {
     return (
-      <Pagina className="items-start gap-3">
-        <h1 className="font-display text-h1 leading-tight">Ese cliente no está</h1>
-        <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-          Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente de
-          otro taller.
-        </p>
-        <Button onClick={vuelta.volver}>Volver a Clientes</Button>
+      <Pagina>
+        <TarjetaConLamina
+          como="div"
+          dibujo={<Ilustracion nombre="anulado" />}
+          lamina={ESCENA_EN_LA_LAMINA}
+        >
+          <h1 className={TITULO_DE_LAMINA}>Ese cliente no está</h1>
+          <p className="max-w-[44ch] text-body leading-relaxed text-text-2">
+            Puede que lo hayas borrado desde otro dispositivo, o que el enlace apunte a un cliente
+            de otro taller.
+          </p>
+          <div className="w-full pt-2">
+            <Button onClick={vuelta.volver}>Volver a Clientes</Button>
+          </div>
+        </TarjetaConLamina>
       </Pagina>
     );
   }

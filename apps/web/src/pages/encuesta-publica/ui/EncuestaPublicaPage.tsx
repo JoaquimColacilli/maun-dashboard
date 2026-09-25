@@ -11,7 +11,14 @@ import {
 } from '@/entities/opinion';
 import { contestarEncuesta, esFalloDeRed, motivoDelRechazo, rechazoDeLaBase } from '@/shared/api';
 import { hoyLocal, uuidv7 } from '@/shared/lib';
-import { Button } from '@/shared/ui';
+import {
+  Button,
+  ESCENA_EN_LA_LAMINA,
+  Ilustracion,
+  TarjetaConLamina,
+  TITULO_DE_LAMINA,
+  type NombreDeIlustracion,
+} from '@/shared/ui';
 
 export const TITULO_MUERTO = 'Este enlace ya no funciona';
 
@@ -26,15 +33,29 @@ const NO_SE_GUARDO = 'No pudimos guardar tu opinión. Probá de nuevo en un rato
 export const CAMBIO_LA_ENCUESTA =
   'Mientras contestabas, el taller cambió una de las preguntas. Ya está al día: revisá lo que marcaste y mandala de nuevo.';
 
-function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accion?: ReactNode }) {
+function Aviso({
+  titulo,
+  texto,
+  ilustracion,
+  accion,
+}: {
+  titulo: string;
+  texto: string;
+  ilustracion: NombreDeIlustracion;
+  accion?: ReactNode;
+}) {
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-6 py-10">
-      <div className="flex max-w-[400px] flex-col items-start gap-3.5">
-        <span className="font-display text-firma text-text-2">Taller MAUN</span>
-        <h1 className="text-h2 leading-snug font-semibold">{titulo}</h1>
+    <div className="mx-auto flex min-h-[70vh] w-full max-w-[520px] flex-col justify-center gap-3 px-(--page-pad-mobile) py-10">
+      <span className="px-1 font-display text-firma text-text-2">Taller MAUN</span>
+      <TarjetaConLamina
+        como="div"
+        dibujo={<Ilustracion nombre={ilustracion} />}
+        lamina={ESCENA_EN_LA_LAMINA}
+      >
+        <h1 className={TITULO_DE_LAMINA}>{titulo}</h1>
         <p className="text-body leading-relaxed text-text-2">{texto}</p>
-        {accion}
-      </div>
+        {accion !== undefined && <div className="w-full pt-2">{accion}</div>}
+      </TarjetaConLamina>
     </div>
   );
 }
@@ -93,12 +114,13 @@ export function EncuestaPublicaPage() {
 
   let contenido: ReactNode;
   if (murio || resultado.estado === 'muerto') {
-    contenido = <Aviso titulo={TITULO_MUERTO} texto={TEXTO_MUERTO} />;
+    contenido = <Aviso titulo={TITULO_MUERTO} texto={TEXTO_MUERTO} ilustracion="anulado" />;
   } else if (resultado.estado === 'sin-senal') {
     contenido = (
       <Aviso
         titulo="Sin conexión"
         texto="Necesitás señal para abrir la encuesta. Probá de nuevo cuando vuelva."
+        ilustracion="sin-senal"
       />
     );
   } else if (resultado.estado === 'error') {
@@ -106,6 +128,7 @@ export function EncuestaPublicaPage() {
       <Aviso
         titulo="No pudimos abrir la encuesta"
         texto="Se cortó la conexión. El enlace sigue siendo válido, probá de nuevo."
+        ilustracion="se-corto"
         accion={<Button onClick={resultado.reintentar}>Probar de nuevo</Button>}
       />
     );

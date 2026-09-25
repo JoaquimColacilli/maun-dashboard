@@ -14,6 +14,7 @@ import {
   TableroCortado,
   TableroEntero,
   TarjetaConLamina,
+  TITULO_DE_LAMINA,
 } from '@/shared/ui';
 
 let laPortadaYaSeCorto = false;
@@ -63,10 +64,7 @@ export function PortadaDeInicio({ hoy, corte, arranque }: PortadaDeInicioProps) 
     >
       {arranque ? (
         <>
-          <h2
-            id={titulo}
-            className="font-display text-lema leading-tight text-pretty @min-[40rem]/con-lamina:text-portada"
-          >
+          <h2 id={titulo} className={TITULO_DE_LAMINA}>
             El taller arranca acá
           </h2>
           <p className="text-body leading-relaxed text-text-2">
