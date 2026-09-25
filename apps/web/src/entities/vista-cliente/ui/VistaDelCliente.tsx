@@ -2,7 +2,6 @@ import {
   notaDelRelevamiento,
   textoDeLaProyeccion,
   type ArchivoDelCliente,
-  type DatosDelTrabajo,
   type ProyeccionDeLaEntrega,
   type SenaDeLaVista,
   type VistaAntesDelPresupuesto,
@@ -34,6 +33,7 @@ import {
   saldoDeLaVista,
   sinPagosTodavia,
   textoDeLaSenaAcordada,
+  textoDelTotalPagado,
   valorDeLaEntrega,
 } from '../model/textos';
 import { CaminoDeHitos } from './CaminoDeHitos';
@@ -237,7 +237,9 @@ function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string
   }
 }
 
-function TarjetaDelTrabajo({ datos, hoy }: { datos: DatosDelTrabajo; hoy: string }) {
+function TarjetaDelTrabajo({ vista, hoy }: { vista: VistaAprobada; hoy: string }) {
+  const { datos } = vista;
+  const total = textoDelTotalPagado(vista);
   return (
     <section aria-label="Datos del trabajo">
       <dl className="rounded-panel border border-hairline bg-paper px-4 py-1">
@@ -252,6 +254,7 @@ function TarjetaDelTrabajo({ datos, hoy }: { datos: DatosDelTrabajo; hoy: string
           fuerte
         />
         <Dato clave="Seña" valor={textoDeLaSenaAcordada(datos.sena)} />
+        {total !== null && <Dato clave="Total" valor={total} />}
       </dl>
     </section>
   );
@@ -292,7 +295,7 @@ function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
     case 'pagado':
       return (
         <>
-          <TarjetaDelTrabajo datos={vista.datos} hoy={hoy} />
+          <TarjetaDelTrabajo vista={vista} hoy={hoy} />
           <ComoPagar como={vista.comoPagar} />
         </>
       );

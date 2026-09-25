@@ -283,6 +283,38 @@ describe('la tarjeta de datos, desde la aprobación', () => {
     );
   });
 
+  it('con todo pagado, debajo de la seña va el total, también pagado', () => {
+    dibujar(
+      trabajo({
+        estado: 'cobrado',
+        fechas: fechas({
+          presupuesto: '2026-08-01',
+          aprobado: '2026-08-04',
+          inicio: '2026-08-24',
+          entregaPautada: '2026-09-16',
+          entregado: '2026-09-16',
+          cobro: '2026-09-17',
+        }),
+        pagos: [
+          { id: 'p1', fecha: '2026-08-04', concepto: 'Seña', monto: centavos(62_000_000) },
+          { id: 'p2', fecha: '2026-09-17', concepto: 'Saldo final', monto: centavos(62_000_000) },
+        ],
+      }),
+    );
+
+    expect(screen.getByRole('region', { name: 'Datos del trabajo' })).toHaveTextContent(
+      'Seña$ 620.000 · pagadaTotal$ 1.240.000 · pagado',
+    );
+  });
+
+  it('mientras queda saldo, la tarjeta no muestra el total', () => {
+    dibujar(trabajo());
+
+    expect(screen.getByRole('region', { name: 'Datos del trabajo' })).not.toHaveTextContent(
+      'Total',
+    );
+  });
+
   it('sin dirección ni fechas cargadas, cada dato dice que falta confirmarlo', () => {
     dibujar(trabajo({ direccion: '', fechas: fechas({}), sena: null }));
 
