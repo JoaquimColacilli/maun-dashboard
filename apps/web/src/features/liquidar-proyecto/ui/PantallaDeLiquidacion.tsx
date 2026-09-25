@@ -335,9 +335,7 @@ export function PantallaDeLiquidacion({ resumen, destino }: PantallaDeLiquidacio
         </section>
       )}
 
-      <div className="rounded-panel border border-hairline bg-paper px-4 pt-4 pb-3.5">
-        <DistribucionDespiece despiece={despiece} />
-      </div>
+      <DistribucionDespiece despiece={despiece} />
 
       <div>
         <Button

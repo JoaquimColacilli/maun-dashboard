@@ -458,13 +458,11 @@ export function ProyectoFichaPage() {
             )}
           </div>
 
-          <div className="rounded-panel border border-hairline bg-paper px-4 pt-4 pb-3.5">
-            <DistribucionDespiece
-              despiece={despiece}
-              animar={recienLiquidado}
-              provisoria={enVuelo !== undefined && despiece.modo === 'real'}
-            />
-          </div>
+          <DistribucionDespiece
+            despiece={despiece}
+            animar={recienLiquidado}
+            provisoria={enVuelo !== undefined && despiece.modo === 'real'}
+          />
 
           <CostosDeCotizar proyecto={proyecto} abiertoAlPrincipio={!liquidado} />
 
