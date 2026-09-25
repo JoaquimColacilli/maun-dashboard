@@ -52,6 +52,12 @@ export const PANTALLAS: readonly Pantalla[] = [
     listo: enElMarco,
   },
   {
+    clave: 'analitico',
+    nombre: 'Analítico de entregas',
+    ruta: () => '/proyectos/analitico',
+    listo: enElMarco,
+  },
+  {
     clave: 'obra',
     nombre: 'Ficha de una obra',
     ruta: (t) => `/proyectos/${t.obra}`,

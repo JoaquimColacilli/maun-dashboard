@@ -193,6 +193,8 @@ export {
   RUTA_DE_PROYECTOS,
   RUTA_DE_CONSULTAS,
   RUTA_DE_SEGUIMIENTO,
+  RUTA_DEL_ANALITICO,
+  RUTA_DEL_HISTORIAL,
 } from './rutas';
 export { TESORO, TESOROS_EN_ORDEN, type DatosDelTesoro } from './tesoros';
 export { formatearPorcentaje, parsearPorcentaje, SENA_MAXIMA_BP } from './porcentaje';

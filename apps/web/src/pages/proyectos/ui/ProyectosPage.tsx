@@ -39,6 +39,7 @@ import {
 } from '@/shared/lib';
 import { Button, ConSalida, EstadoVacio, Hoja, Icono, Pagina } from '@/shared/ui';
 
+import { AccesoAlAnalitico } from './AccesoAlAnalitico';
 import { ListaDeConsultas } from './ListaDeConsultas';
 import { ListaDeSeguimiento } from './ListaDeSeguimiento';
 
@@ -437,6 +438,8 @@ export function ProyectosPage() {
           <Vacio etapa={etapa} />
         ) : (
           <>
+            {etapa === 'historial' && <AccesoAlAnalitico replica={replica} />}
+
             <Metricas resumenes={resumenes} />
 
             <div className="flex flex-wrap items-center gap-2">
