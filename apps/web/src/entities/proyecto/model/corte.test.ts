@@ -194,6 +194,23 @@ describe('piezasDelCorte', () => {
     ]);
   });
 
+  it('el orden no cambia aunque falte una parte, y los gastos van sin color de tesoro', () => {
+    const piezas = piezasDelCorte(
+      corte(2, {
+        tablero: 30_000_000,
+        hogar: 0,
+        maun: 20_000_000,
+        diezmo: 3_000_000,
+        gastos: 7_000_000,
+      }),
+    );
+    expect(piezas.map((pieza) => [pieza.id, pieza.tono])).toEqual([
+      ['maun', 'maun'],
+      ['diezmo', 'diezmo'],
+      ['gastos', 'sobrante'],
+    ]);
+  });
+
   it('una parte en cero no es pieza', () => {
     const piezas = piezasDelCorte(
       corte(1, { tablero: 20_000_000, hogar: 12_000_000, maun: 8_000_000, diezmo: 0, gastos: 0 }),
@@ -277,5 +294,29 @@ describe('fraseDelCorte', () => {
     expect(
       fraseDelCorte(corte(1, { tablero: 0, hogar: 0, maun: 0, diezmo: 0, gastos: 0 }), SEPTIEMBRE),
     ).toBe('Un trabajo cerrado en septiembre, sin nada cobrado: no hubo nada para repartir.');
+  });
+
+  it('cada forma cuenta uno o varios trabajos, y ningún porcentaje lleva espacio antes', () => {
+    const formas = [
+      { tablero: 100, hogar: 60, maun: 30, diezmo: 10, gastos: 0 },
+      { tablero: 100_000_000, hogar: 60_000_000, maun: 39_700_000, diezmo: 300_000, gastos: 0 },
+      { tablero: 10_000_000, hogar: 0, maun: 0, diezmo: 1_000_000, gastos: 9_000_000 },
+      { tablero: 10_000_000, hogar: 0, maun: 0, diezmo: 0, gastos: 10_000_000 },
+      { tablero: 0, hogar: 0, maun: 0, diezmo: 0, gastos: 0 },
+    ];
+    const frases = [fraseDelCorte(null, SEPTIEMBRE)];
+
+    for (const partes of formas) {
+      const uno = fraseDelCorte(corte(1, partes), SEPTIEMBRE);
+      const varios = fraseDelCorte(corte(4, partes), SEPTIEMBRE);
+      expect(uno).toMatch(/^Un trabajo cerrado en septiembre[,:] /);
+      expect(varios).toMatch(/^4 trabajos cerrados en septiembre[,:] /);
+      expect(varios.replace(/^4 trabajos cerrados/, 'Un trabajo cerrado')).toBe(uno);
+      frases.push(uno, varios);
+    }
+
+    for (const frase of frases) {
+      expect(frase).not.toMatch(/\s%/);
+    }
   });
 });
