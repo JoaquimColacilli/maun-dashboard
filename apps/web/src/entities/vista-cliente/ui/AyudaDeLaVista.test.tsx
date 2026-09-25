@@ -1,4 +1,10 @@
-import { HITO_DEL_ESTIMATIVO, HITOS, NOTA_DEL_RELEVAMIENTO } from '@maun/domain';
+import {
+  HITO_DEL_ESTIMATIVO,
+  HITOS,
+  LISTO_PARA_ENTREGAR,
+  NOTA_DEL_RELEVAMIENTO,
+  TITULAR_LISTO,
+} from '@maun/domain';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,7 +37,7 @@ describe('la ayuda de la vista del cliente', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('El enlace y la pantalla');
-    expect(screen.getByText('1 de 7')).toBeInTheDocument();
+    expect(screen.getByText('1 de 8')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Atrás' })).toBeDisabled();
   });
 
@@ -59,6 +65,18 @@ describe('la ayuda de la vista del cliente', () => {
       expect(leido).toContain(hito.etiqueta);
     }
     expect(leido).toContain(NOTA_DEL_RELEVAMIENTO.pendiente.titulo);
+  });
+
+  it('cuenta cómo se coordina la entrega cuando el mueble está listo', () => {
+    abrir();
+
+    const leido = screen.getByRole('dialog').textContent;
+    expect(leido).toContain(TITULAR_LISTO);
+    expect(leido).toContain(LISTO_PARA_ENTREGAR);
+    expect(leido).toContain('«Me queda bien»');
+    expect(leido).toContain('«No puedo ese día»');
+    expect(leido).toContain('«Fecha estimada de entrega»');
+    expect(leido).not.toContain('pautada');
   });
 
   it('deja ver una lámina por vez', () => {

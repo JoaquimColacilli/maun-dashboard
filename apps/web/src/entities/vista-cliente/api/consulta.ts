@@ -8,7 +8,7 @@ import {
   vistaCompartida as traerCompartida,
   vistaDelCliente as traerDelTrabajo,
 } from '@/shared/api';
-import { hoyLocal } from '@/shared/lib';
+import { hoyEnElTaller } from '@/shared/lib';
 
 export const RAIZ_DE_LA_VISTA = 'vista-del-cliente';
 
@@ -67,7 +67,7 @@ export function useVistaDelTrabajo(proyectoId: string): ResultadoDeLaVista {
     staleTime: 0,
     retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
   });
-  return resultado(consulta, hoyLocal());
+  return resultado(consulta, hoyEnElTaller());
 }
 
 export function useVistaCompartida(token: string): ResultadoDeLaVista {
@@ -77,5 +77,5 @@ export function useVistaCompartida(token: string): ResultadoDeLaVista {
     staleTime: 0,
     retry: (intentos, error) => intentos < REINTENTOS && debeReintentarse(error),
   });
-  return resultado(consulta, hoyLocal());
+  return resultado(consulta, hoyEnElTaller());
 }

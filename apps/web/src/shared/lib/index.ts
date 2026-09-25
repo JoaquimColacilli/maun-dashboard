@@ -100,6 +100,21 @@ export { usePantallaDespierta } from './pantalla-despierta';
 export { useAlgoEnCurso, useHayAlgoEnCurso } from './en-curso';
 export { useTirarParaActualizar, type FaseDelTiron, type Tiron } from './tirar-para-actualizar';
 export { formatearPesos } from './plata';
+export {
+  DIAS_DE_LA_SEMANA,
+  diaDeLaSemana,
+  fechasDelMes,
+  INICIALES_DE_LA_SEMANA,
+  mesesEntre,
+  mesPrevio,
+  mesSiguiente,
+  primerDiaDelMes,
+  rangoDeLaGrilla,
+  semanasDelMes,
+  ultimoDiaDelMes,
+  type CeldaDelMes,
+  type RangoDeLaGrilla,
+} from './mes';
 export { hayCambios } from './cambios';
 export {
   codificarLienzo,

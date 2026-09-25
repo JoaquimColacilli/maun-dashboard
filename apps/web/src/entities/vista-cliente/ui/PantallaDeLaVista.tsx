@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { hoyLocal } from '@/shared/lib';
+import { hoyEnElTaller } from '@/shared/lib';
 import {
   Button,
   ESCENA_EN_LA_LAMINA,
@@ -12,12 +12,14 @@ import {
 } from '@/shared/ui';
 
 import type { ResultadoDeLaVista } from '../api/consulta';
+import type { MandarLaEntrega } from '../model/mandar';
 import { VistaDelCliente } from './VistaDelCliente';
 
 export interface PantallaDeLaVistaProps {
   resultado: ResultadoDeLaVista;
   tituloMuerto: string;
   textoMuerto: string;
+  alMandar?: MandarLaEntrega;
 }
 
 function Aviso({
@@ -81,9 +83,10 @@ export function PantallaDeLaVista({
   resultado,
   tituloMuerto,
   textoMuerto,
+  alMandar,
 }: PantallaDeLaVistaProps) {
   if (resultado.estado === 'lista') {
-    return <VistaDelCliente vista={resultado.vista} hoy={hoyLocal()} />;
+    return <VistaDelCliente vista={resultado.vista} hoy={hoyEnElTaller()} alMandar={alMandar} />;
   }
 
   if (resultado.estado === 'muerto') {
