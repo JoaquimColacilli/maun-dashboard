@@ -8,9 +8,9 @@ export const NOVEDADES: readonly Novedad[] = [
     version: '2026-09-25',
     lineas: [
       'La página de tu cliente ya no le muestra un mueble que no es el suyo: el dibujo cuenta en qué anda el trabajo, del número estimado al presupuesto, la seña, el taller y su casa.',
-      'Al terminar la encuesta, tu cliente ve una tarjeta de agradecimiento firmada.',
-      'Con el trabajo saldado, tu cliente ve el total pagado debajo de la seña.',
-      'Los dibujos quedan bien centrados, en el celular y en la compu.',
+      'En su camino, cada paso se tilda con su día cuando pasa y queda en curso lo que falta: con el presupuesto mandado, que lo apruebe y deje la seña.',
+      'Si ya te cubrió la seña antes de aprobar, la página no se la vuelve a pedir. Y con el trabajo saldado, ve el total pagado.',
+      'Los dibujos quedan bien centrados, y al terminar la encuesta tu cliente ve una tarjeta de agradecimiento firmada.',
     ],
   },
   {
