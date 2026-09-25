@@ -239,14 +239,36 @@ export {
 export {
   DIAS_HABILES_DE_ENTREGA,
   DIAS_HABILES_PARA_PRESUPUESTAR,
+  diaDeLaSemana,
   diasEntre,
   entregaEstimada,
+  esFechaQueExiste,
   mesDe,
   sumarDias,
   sumarDiasHabiles,
   sumarMeses,
   vencimientoDelPresupuesto,
 } from './fechas.ts';
+
+export {
+  DESDE_CUANTOS_DIAS,
+  DIAS_MAXIMOS_DE_LA_RESPUESTA,
+  esDiaDeLaEntrega,
+  esFranja,
+  FORMAS_DE_COORDINAR,
+  FRANJAS_DE_ENTREGA,
+  HASTA_CUANTOS_DIAS,
+  LARGO_MAXIMO_DE_LA_NOTA,
+  MOTIVOS_DE_LA_ENTREGA,
+  RESPUESTAS_DE_ENTREGA,
+  sePuedeElegir,
+  validarRespuestaDeEntrega,
+  type FormaDeCoordinar,
+  type FranjaDeEntrega,
+  type MotivoDeLaEntrega,
+  type MotivoDeLaValidacion,
+  type RespuestaDeEntrega,
+} from './entrega.ts';
 
 export {
   DIAS_QUE_VALE_UN_PRESUPUESTO,

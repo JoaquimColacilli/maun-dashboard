@@ -271,3 +271,27 @@ select private.sembrar_la_encuesta('5eed0000-0000-7000-8000-000000000001');
 insert into public.encuestas_enviadas (id, household_id, proyecto_id, token_hash, token) values
   ('5eed0000-0000-7000-8000-000000060001', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020002',
    encode(sha256(convert_to('5eed-encuesta-del-vanitory-0001', 'UTF8')), 'hex'), '5eed-encuesta-del-vanitory-0001');
+
+
+-- La entrega -------------------------------------------------------------------------------------
+-- Un placard en curso y ya listo, con su enlace de token fijo y un día de entrega propuesto que nadie
+-- contestó: packages/db/tests/concurrencia.test.ts lo usa para contestar dos veces a la vez y para
+-- proponer otra cosa mientras el cliente contesta, siempre en rollback. El día propuesto está lejos a
+-- propósito, para que el seed siga sirviendo aunque pasen los meses.
+
+insert into public.proyectos (
+  id, household_id, cliente_id, titulo, estado, presupuesto_centavos, forma_pago, comprobante,
+  fecha_inicio, entrega_estimada, direccion_entrega, listo_el, tipo_de_proyecto
+) values (
+  '5eed0000-0000-7000-8000-000000020015', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000010005',
+  'Placard de dos cuerpos con espejo', 'en_curso', 180000000, 'transferencia', 'factura_b',
+  '2026-09-01', '2026-09-30', 'Belgrano 455, Haedo', '2026-09-24', 'Placard'
+);
+
+insert into public.enlaces_publicos (id, household_id, proyecto_id, token_hash, token) values
+  ('5eed0000-0000-7000-8000-000000070001', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020015',
+   encode(sha256(convert_to('5eed-entrega-del-placard-0001', 'UTF8')), 'hex'), '5eed-entrega-del-placard-0001');
+
+insert into public.propuestas_de_entrega (id, household_id, proyecto_id, forma, fecha, franja) values
+  ('5eed0000-0000-7000-8000-000000070002', '5eed0000-0000-7000-8000-000000000001', '5eed0000-0000-7000-8000-000000020015',
+   'un_dia', '2030-10-01', 'manana');

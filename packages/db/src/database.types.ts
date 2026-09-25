@@ -1726,6 +1726,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      proponer_la_entrega: {
+        Args: { p_propuesta: Json; p_proyecto_id: string };
+        Returns: Json;
+      };
       reabrir_proyecto: {
         Args: { p_proyecto_id: string; p_version: number };
         Returns: {
@@ -1887,6 +1891,10 @@ export type Database = {
           p_p256dh: string;
           p_zona: string;
         };
+        Returns: Json;
+      };
+      responder_la_entrega: {
+        Args: { p_respuesta: Json; p_token: string };
         Returns: Json;
       };
       suscripciones_para_probar: {
