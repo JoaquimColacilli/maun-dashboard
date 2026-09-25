@@ -2,7 +2,8 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { Ilustracion, NOMBRES_DE_ILUSTRACION } from './Ilustracion.tsx';
-import { MuebleEnEtapa } from './MuebleEnEtapa.tsx';
+import { TILDE } from './mano.ts';
+import { ETAPAS_DEL_TRABAJO, TrabajoEnEtapa } from './TrabajoEnEtapa.tsx';
 
 const GRAMATICA = new Set([
   'ilustracion',
@@ -55,7 +56,7 @@ describe('Ilustracion', () => {
     },
   );
 
-  it('solo la tilde de «gracias» se traza, y solo si se pide', () => {
+  it('solo la firma de «gracias» se traza, y solo si se pide', () => {
     const quieta = render(<Ilustracion nombre="gracias" />);
     expect(quieta.container.querySelector('.trazar')).toBeNull();
     quieta.unmount();
@@ -81,24 +82,51 @@ describe('Ilustracion', () => {
   });
 });
 
-describe('MuebleEnEtapa', () => {
-  it('en plano el mueble es de trazos; en el taller, la carcasa sin puertas; terminado, entero', () => {
-    const plano = render(<MuebleEnEtapa etapa="plano" />);
-    expect(plano.container.querySelectorAll('.trazos').length).toBeGreaterThan(0);
-    expect(plano.container.querySelector('.tinta')).toBeNull();
-    plano.unmount();
+describe('TrabajoEnEtapa', () => {
+  it.each(ETAPAS_DEL_TRABAJO)(
+    '«%s» es una escena de 160 × 120 hecha solo con la gramática',
+    (etapa) => {
+      const { container } = render(<TrabajoEnEtapa etapa={etapa} />);
+      const [dibujo] = container.querySelectorAll('svg');
 
-    const taller = render(<MuebleEnEtapa etapa="taller" />);
-    expect(taller.container.querySelector('.trazos')).toBeNull();
-    expect(taller.container.querySelectorAll('.tinta').length).toBeGreaterThan(2);
-    taller.unmount();
+      expect(dibujo).toHaveAttribute('aria-hidden', 'true');
+      expect(dibujo).toHaveAttribute('width', '160');
+      expect(dibujo).toHaveAttribute('height', '120');
+      expect(container.innerHTML).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
+      expect(container.innerHTML).not.toMatch(/\b(fill|stroke)="/);
+      expect(container.querySelector('text')).toBeNull();
+      for (const clase of clasesUsadas(container)) expect(GRAMATICA).toContain(clase);
+    },
+  );
 
-    const terminado = render(<MuebleEnEtapa etapa="terminado" />);
-    expect(terminado.container.querySelector('.trazos')).toBeNull();
-    expect(terminado.container.querySelector('.mano')).toBeNull();
-    terminado.unmount();
+  it('cada etapa tiene su dibujo', () => {
+    const dibujos = ETAPAS_DEL_TRABAJO.map((etapa) => {
+      const { container, unmount } = render(<TrabajoEnEtapa etapa={etapa} />);
+      const dibujo = container.innerHTML;
+      unmount();
+      return dibujo;
+    });
 
-    const pagado = render(<MuebleEnEtapa etapa="pagado" />);
-    expect(pagado.container.querySelectorAll('.mano')).toHaveLength(1);
+    expect(new Set(dibujos).size).toBe(ETAPAS_DEL_TRABAJO.length);
+  });
+
+  it('la tilde es solo de «pagado», y no se traza', () => {
+    for (const etapa of ETAPAS_DEL_TRABAJO) {
+      const { container, unmount } = render(<TrabajoEnEtapa etapa={etapa} />);
+      const tildes = container.querySelectorAll(`path[d="${TILDE}"]`);
+
+      expect(tildes).toHaveLength(etapa === 'pagado' ? 1 : 0);
+      expect(container.querySelector('.trazar')).toBeNull();
+      unmount();
+    }
+  });
+
+  it('mientras se prepara el presupuesto, lo que falta escribir va de trazos', () => {
+    const preparando = render(<TrabajoEnEtapa etapa="preparando" />);
+    expect(preparando.container.querySelectorAll('.trazos').length).toBeGreaterThan(0);
+    preparando.unmount();
+
+    const presupuesto = render(<TrabajoEnEtapa etapa="presupuesto" />);
+    expect(presupuesto.container.querySelector('.trazos')).toBeNull();
   });
 });

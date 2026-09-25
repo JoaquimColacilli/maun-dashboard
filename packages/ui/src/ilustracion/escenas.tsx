@@ -11,8 +11,16 @@ import {
   Mueble,
   PlanoDelMueble,
 } from './objetos.tsx';
-import { limites, planoDelPiso, type Limites, type Volumen } from './proyeccion.ts';
-import { Caja, EnElPlano } from './trazos.tsx';
+import {
+  encerrar,
+  limites,
+  planoDeFrente,
+  planoDelPiso,
+  planoInclinado,
+  type Limites,
+  type Volumen,
+} from './proyeccion.ts';
+import { Caja, Cara, Cota, EnElPlano } from './trazos.tsx';
 
 function Escena({
   volumenes,
@@ -35,6 +43,25 @@ function Escena({
 }
 
 const HOJA: Volumen = { x: 0, y: 0, z: 0, largo: 88, ancho: 66, alto: 0 };
+
+const MUEBLE = { largo: 72, profundidad: 28, alto: 48 } as const;
+
+export function SinProyectos() {
+  const { largo, profundidad, alto } = MUEBLE;
+  return (
+    <Escena
+      volumenes={[
+        { x: -2, y: -1, z: 0, largo: largo + 4, ancho: profundidad + 3, alto },
+        { x: 0, y: profundidad, z: -12, largo, ancho: 0, alto: 12 },
+      ]}
+    >
+      <Mueble x={0} y={0} z={0} {...MUEBLE} fantasma />
+      <EnElPlano transform={planoDeFrente(profundidad)}>
+        <Cota desde={0} hasta={largo} borde={0} separacion={-9} />
+      </EnElPlano>
+    </Escena>
+  );
+}
 
 export function SinConsultas() {
   return (
@@ -88,6 +115,34 @@ export function SinOpiniones() {
       <Mueble x={0} y={0} z={0} largo={72} profundidad={28} alto={48}>
         <Etiqueta />
       </Mueble>
+    </Escena>
+  );
+}
+
+const TARJETA = { largo: 80, pie: 19, alto: 46 } as const;
+const FIRMA =
+  'M2 18c4-10 9-19 13-17c4 2-4 14-8 16c6-7 12-9 15-6c2 2-1 5 2 5c4 0 8-7 12-9c-3 7-6 11-4 12c3 1 9-4 12-6c-10 8-26 11-44 12';
+
+export function Gracias({ animar }: { animar: boolean }) {
+  const { largo, pie, alto } = TARJETA;
+  const lomo = [
+    [0, pie, alto],
+    [largo, pie, alto],
+  ] as const;
+  return (
+    <Escena
+      medida={encerrar([...lomo, [0, 0, 0], [largo, 0, 0], [largo, 2 * pie, 0], [0, 2 * pie, 0]])}
+    >
+      <Cara vertices={[...lomo, [largo, 0, 0], [0, 0, 0]]} relleno="costado" />
+      <Cara vertices={[...lomo, [largo, 2 * pie, 0], [0, 2 * pie, 0]]} relleno="cara" />
+      <EnElPlano transform={planoInclinado([0, pie, alto], [0, 2 * pie, 0])}>
+        <path
+          d={FIRMA}
+          pathLength={1}
+          transform="translate(18 12) scale(1.1)"
+          className={animar ? 'mano trazar' : 'mano'}
+        />
+      </EnElPlano>
     </Escena>
   );
 }

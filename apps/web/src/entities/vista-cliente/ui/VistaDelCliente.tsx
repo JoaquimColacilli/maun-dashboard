@@ -15,13 +15,13 @@ import { diaYMesCorto, fechaEnUnaFrase, fechaLarga, formatearPesos } from '@/sha
 import {
   Icono,
   MontoQueEntra,
-  MuebleEnEtapa,
   Pagina,
   PrincipalYApoyo,
   TarjetaConLamina,
+  TrabajoEnEtapa,
 } from '@/shared/ui';
 
-import { etapaDelMueble } from '../model/etapa';
+import { etapaDelDibujo } from '../model/etapa';
 import {
   A_CONFIRMAR,
   A_CUENTA_DE_LA_SENA,
@@ -365,7 +365,7 @@ export function VistaDelCliente({ vista, hoy }: VistaDelClienteProps) {
           <TarjetaConLamina
             como="section"
             aria-label="Tu mueble"
-            dibujo={<MuebleEnEtapa etapa={etapaDelMueble(vista.hitoActual)} />}
+            dibujo={<TrabajoEnEtapa etapa={etapaDelDibujo(vista)} />}
             lamina="[&>svg]:w-56 @min-[40rem]/con-lamina:[&>svg]:w-72"
           >
             <span className="text-body text-text-2">{vista.cliente}</span>

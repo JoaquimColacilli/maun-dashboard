@@ -1,16 +1,16 @@
-import type { HitoDelTrabajo } from '@maun/domain';
+import type { VistaDelCliente } from '@maun/domain';
 
-import type { EtapaDelMueble } from '@/shared/ui';
+import type { EtapaDelTrabajo } from '@/shared/ui';
 
-const ETAPA: Readonly<Record<HitoDelTrabajo, EtapaDelMueble>> = {
-  estimativo: 'plano',
-  presupuesto: 'plano',
-  aprobado: 'plano',
-  fabricacion: 'taller',
-  entregado: 'terminado',
-  pagado: 'pagado',
-};
-
-export function etapaDelMueble(hito: HitoDelTrabajo): EtapaDelMueble {
-  return ETAPA[hito];
+export function etapaDelDibujo(vista: VistaDelCliente): EtapaDelTrabajo {
+  switch (vista.etapa) {
+    case 'antes-del-presupuesto':
+      return vista.hitoActual === 'estimativo' ? 'estimativo' : 'preparando';
+    case 'esperando-la-sena':
+      return 'presupuesto';
+    case 'aprobado':
+      return vista.datos.sena.situacion === 'cubierta' ? 'sena' : 'presupuesto';
+    default:
+      return vista.etapa;
+  }
 }
