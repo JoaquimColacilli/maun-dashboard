@@ -17,7 +17,7 @@ export interface LienzoProps {
 export function Lienzo({ limites, ancho, alto, className = '', children }: LienzoProps) {
   const anchoFinal = ancho ?? Math.ceil(limites.derecha - limites.izquierda + 2 * AIRE);
   const altoFinal = alto ?? Math.ceil(limites.abajo - limites.arriba + 2 * AIRE);
-  const x = Math.floor(limites.izquierda - AIRE);
+  const x = Math.floor((limites.izquierda + limites.derecha - anchoFinal) / 2);
   const y = Math.floor((limites.arriba + limites.abajo - altoFinal) / 2);
   return (
     <svg
