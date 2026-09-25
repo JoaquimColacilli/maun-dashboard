@@ -52,6 +52,8 @@ export {
   COLUMNAS_DE_MARCAS,
   datosDeLaAgenda,
   datosDeLaAgendaDeLaReplica,
+  entregaComprometida,
+  franjaDeLaEntrega,
   horaDeLaEntrega,
   horaDeLaVisita,
   marcadaComoImportante,

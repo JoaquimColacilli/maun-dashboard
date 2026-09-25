@@ -1,6 +1,16 @@
-import { esLinkDeMercadoPago, FORMAS_DE_COBRO, INSTANCIAS_DE_PAGO } from '@maun/domain';
+import {
+  esFranja,
+  esLinkDeMercadoPago,
+  FORMAS_DE_COBRO,
+  FORMAS_DE_COORDINAR,
+  INSTANCIAS_DE_PAGO,
+  RESPUESTAS_DE_ENTREGA,
+} from '@maun/domain';
 import type {
   CobroDelTaller,
+  ComprometidaDelTrabajo,
+  DiaQueLeQuedaBien,
+  EntregaQueSeCoordina,
   ArchivoDelCliente,
   EstadoProyecto,
   FechasDelTrabajo,
@@ -10,6 +20,9 @@ import type {
   PagoDelCliente,
   PagoOfrecido,
   PagoPendiente,
+  PropuestaDeEntrega,
+  RespuestaDelCliente,
+  FranjaDeEntrega,
   TrabajoDelCliente,
   VisitaDelTrabajo,
 } from '@maun/domain';
@@ -155,7 +168,8 @@ function fechas(valor: unknown): FechasDelTrabajo {
     presupuesto: fechaONada(crudas.presupuesto, 'la fecha del presupuesto'),
     aprobado: fechaONada(crudas.aprobado, 'la fecha de la aprobación'),
     inicio: fechaONada(crudas.inicio, 'la fecha de inicio'),
-    entregaPautada: fechaONada(crudas.entrega_pautada, 'la entrega pautada'),
+    entregaPautada: fechaONada(crudas.entrega_pautada, 'la entrega estimada'),
+    listo: fechaONada(crudas.listo, 'el día en que quedó listo'),
     entregado: fechaONada(crudas.entregado, 'la fecha de entrega'),
     cobro: fechaONada(crudas.cobro, 'la fecha de cobro'),
     valeHasta: fechaONada(crudas.vale_hasta, 'hasta cuándo vale el presupuesto'),
@@ -178,6 +192,64 @@ function visita(valor: unknown): VisitaDelTrabajo {
   return { dia: fechaONada(cruda.dia, 'el día de la visita'), hecha: cruda.hecha };
 }
 
+const SIN_ENTREGA: EntregaQueSeCoordina = { comprometida: null, propuesta: null, respuesta: null };
+
+function franja(valor: unknown): FranjaDeEntrega | null {
+  return esFranja(valor) ? valor : null;
+}
+
+function comprometida(valor: unknown): ComprometidaDelTrabajo | null {
+  if (valor === null || valor === undefined) return null;
+  const cruda = objeto(valor, 'la entrega comprometida');
+  return {
+    fecha: texto(cruda.fecha, 'el día de la entrega comprometida'),
+    franja: franja(cruda.franja),
+  };
+}
+
+function propuesta(valor: unknown): PropuestaDeEntrega | null {
+  if (valor === null || valor === undefined) return null;
+  const cruda = objeto(valor, 'lo que te propone el taller');
+  const forma = FORMAS_DE_COORDINAR.find((una) => una === cruda.forma);
+  if (forma === undefined) return null;
+  return {
+    id: texto(cruda.id, 'el id de lo que te propone el taller'),
+    forma,
+    fecha: fechaONada(cruda.fecha, 'el día que te propone el taller'),
+    franja: franja(cruda.franja),
+  };
+}
+
+function diaQueLeQuedaBien(valor: unknown): DiaQueLeQuedaBien {
+  const dia = objeto(valor, 'un día que te queda bien');
+  return {
+    fecha: texto(dia.fecha, 'la fecha de un día que te queda bien'),
+    franjas: lista(dia.franjas, 'las franjas de un día que te queda bien').filter(esFranja),
+  };
+}
+
+function respuesta(valor: unknown): RespuestaDelCliente | null {
+  if (valor === null || valor === undefined) return null;
+  const cruda = objeto(valor, 'lo que contestaste');
+  const cual = RESPUESTAS_DE_ENTREGA.find((una) => una === cruda.respuesta);
+  if (cual === undefined) return null;
+  return {
+    respuesta: cual,
+    dias: lista(cruda.dias, 'los días que mandaste').map(diaQueLeQuedaBien),
+    nota: texto(cruda.nota, 'la nota que mandaste'),
+  };
+}
+
+function entrega(valor: unknown): EntregaQueSeCoordina {
+  if (valor === null || valor === undefined) return SIN_ENTREGA;
+  const cruda = objeto(valor, 'la entrega');
+  return {
+    comprometida: comprometida(cruda.comprometida),
+    propuesta: propuesta(cruda.propuesta),
+    respuesta: respuesta(cruda.respuesta),
+  };
+}
+
 export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
   const cuerpo = objeto(valor, 'el trabajo');
   return {
@@ -190,6 +262,7 @@ export function leerVistaDelCliente(valor: unknown): TrabajoDelCliente {
     sena: importeONada(cuerpo.sena_centavos, 'la seña'),
     fechas: fechas(cuerpo.fechas),
     visita: visita(cuerpo.visita),
+    entrega: entrega(cuerpo.entrega),
     pago: pagoPendiente(cuerpo.pago),
     cobro: cobro(cuerpo.cobro),
     pagos: pagos(cuerpo.pagos),

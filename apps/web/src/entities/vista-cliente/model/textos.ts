@@ -1,7 +1,9 @@
 import {
   estaAprobada,
   type EntregaDelTrabajo,
+  type FranjaDeEntrega,
   type SenaDeLaVista,
+  type TitularDeLaVista,
   type VistaAprobada,
   type VistaDelCliente,
 } from '@maun/domain';
@@ -25,6 +27,32 @@ export const QUEDA_A_CUENTA = 'Lo que pagaste queda a cuenta de la seña.';
 export const LA_SENA_YA_ESTA_CUBIERTA = 'Con lo que pagaste ya está cubierta la seña.';
 
 export const A_CONFIRMAR = 'A confirmar';
+
+export const A_COORDINAR = 'A coordinar';
+
+export const PODEMOS_ENTREGARLO = 'Podemos entregarlo.';
+
+export const SI_NECESITAS_CAMBIAR_EL_DIA = 'Si necesitás cambiar el día, escribile al taller.';
+
+const FRANJA: Readonly<Record<FranjaDeEntrega, string>> = {
+  manana: 'a la mañana',
+  tarde: 'a la tarde',
+};
+
+export function textoDeLaFranja(franja: FranjaDeEntrega): string {
+  return FRANJA[franja];
+}
+
+export function fechaConFranja(fecha: string, franja: FranjaDeEntrega | null, hoy: string): string {
+  const dia = fechaLarga(fecha, hoy);
+  return franja === null ? dia : `${dia}, ${FRANJA[franja]}`;
+}
+
+export function textoDelTitular(titular: TitularDeLaVista, hoy: string): string {
+  if (typeof titular === 'string') return titular;
+  const { fecha, franja } = titular.comprometida;
+  return `¡Buenas noticias! Lo estamos entregando el ${fechaConFranja(fecha, franja, hoy)}.`;
+}
 
 export function sinPagosTodavia(vista: VistaDelCliente): string {
   if (vista.pagos.length > 0) return '';
@@ -69,18 +97,49 @@ export function textoDelTotalPagado(vista: VistaAprobada): string | null {
 }
 
 export function claveDeLaEntrega(entrega: EntregaDelTrabajo): string {
-  return entrega.situacion === 'entregado' ? 'Entregado' : 'Entrega pautada';
+  switch (entrega.situacion) {
+    case 'estimada':
+      return 'Entrega estimada';
+    case 'confirmada':
+      return 'Entrega confirmada';
+    case 'entregado':
+      return 'Entregado';
+    case 'a-coordinar':
+    case 'a-confirmar':
+      return 'Entrega';
+  }
 }
 
 export function valorDeLaEntrega(entrega: EntregaDelTrabajo, hoy: string): string {
-  return entrega.fecha === null ? A_CONFIRMAR : fechaLarga(entrega.fecha, hoy);
+  switch (entrega.situacion) {
+    case 'estimada':
+      return entrega.fecha === null ? A_CONFIRMAR : fechaLarga(entrega.fecha, hoy);
+    case 'confirmada':
+      return fechaConFranja(entrega.fecha, entrega.franja, hoy);
+    case 'entregado':
+      return entrega.fecha === null ? '—' : fechaLarga(entrega.fecha, hoy);
+    case 'a-coordinar':
+      return A_COORDINAR;
+    case 'a-confirmar':
+      return A_CONFIRMAR;
+  }
 }
 
 export function bajadaDeLaEntrega(entrega: EntregaDelTrabajo, hoy: string): string {
-  if (entrega.fecha === null) return '';
-  return entrega.situacion === 'entregado'
-    ? `Entregado el ${fechaLarga(entrega.fecha, hoy)}`
-    : `Entrega pautada para el ${fechaLarga(entrega.fecha, hoy)}`;
+  switch (entrega.situacion) {
+    case 'estimada':
+      return entrega.fecha === null
+        ? ''
+        : `Fecha estimada de entrega: ${fechaLarga(entrega.fecha, hoy)}`;
+    case 'confirmada':
+      return SI_NECESITAS_CAMBIAR_EL_DIA;
+    case 'a-coordinar':
+      return PODEMOS_ENTREGARLO;
+    case 'entregado':
+      return entrega.fecha === null ? '' : `Entregado el ${fechaLarga(entrega.fecha, hoy)}`;
+    case 'a-confirmar':
+      return '';
+  }
 }
 
 export interface SaldoDeLaVista {

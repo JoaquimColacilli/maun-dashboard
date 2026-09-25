@@ -40,7 +40,15 @@ export const COLUMNA_DE_LA_FECHA: Readonly<Record<CategoriaDelTrabajo, ColumnaDe
 };
 
 type FilaQuizasSinLoHechoNiLasMarcas = Partial<
-  Pick<FilaDe<'proyectos'>, 'visita_hecha' | 'entrega_hora' | 'visita_hora' | ColumnaDeMarca>
+  Pick<
+    FilaDe<'proyectos'>,
+    | 'visita_hecha'
+    | 'entrega_hora'
+    | 'visita_hora'
+    | 'entrega_comprometida'
+    | 'entrega_comprometida_franja'
+    | ColumnaDeMarca
+  >
 >;
 
 export function visitaHecha(proyecto: FilaDe<'proyectos'>): boolean {
@@ -66,6 +74,16 @@ export function horaDeLaVisita(proyecto: FilaDe<'proyectos'>): string | null {
   return horaSinSegundos((proyecto as FilaQuizasSinLoHechoNiLasMarcas).visita_hora);
 }
 
+export function entregaComprometida(proyecto: FilaDe<'proyectos'>): string | null {
+  return (proyecto as FilaQuizasSinLoHechoNiLasMarcas).entrega_comprometida ?? null;
+}
+
+export function franjaDeLaEntrega(
+  proyecto: FilaDe<'proyectos'>,
+): FilaDe<'proyectos'>['entrega_comprometida_franja'] {
+  return (proyecto as FilaQuizasSinLoHechoNiLasMarcas).entrega_comprometida_franja ?? null;
+}
+
 export function datosDeLaAgenda(filas: FilasDeLaAgenda): DatosDeLaAgenda {
   return {
     proyectos: filas.proyectos.map((proyecto) => ({
@@ -78,6 +96,8 @@ export function datosDeLaAgenda(filas: FilasDeLaAgenda): DatosDeLaAgenda {
       visitaHecha: visitaHecha(proyecto),
       entregaEstimada: proyecto.entrega_estimada,
       entregaHora: horaDeLaEntrega(proyecto),
+      entregaComprometida: entregaComprometida(proyecto),
+      entregaFranja: franjaDeLaEntrega(proyecto),
       vencimientoPresupuesto: proyecto.vencimiento_presupuesto,
       direccionEntrega: proyecto.direccion_entrega,
       importante: {

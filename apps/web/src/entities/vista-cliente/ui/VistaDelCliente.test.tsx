@@ -26,6 +26,7 @@ function fechas(cambios: Partial<TrabajoDelCliente['fechas']>): TrabajoDelClient
     aprobado: null,
     inicio: null,
     entregaPautada: null,
+    listo: null,
     entregado: null,
     cobro: null,
     valeHasta: null,
@@ -49,6 +50,7 @@ function trabajo(cambios: Partial<TrabajoDelCliente> = {}): TrabajoDelCliente {
       entregaPautada: '2026-10-02',
     }),
     visita: { dia: null, hecha: false },
+    entrega: { comprometida: null, propuesta: null, respuesta: null },
     pago: {
       instancia: 'saldo',
       formas: ['efectivo'],
@@ -246,13 +248,13 @@ describe('la vista del cliente', () => {
 });
 
 describe('la tarjeta de datos, desde la aprobación', () => {
-  it('trae la dirección, el inicio, la entrega pautada y la seña acordada', () => {
+  it('trae la dirección, el inicio, la entrega estimada y la seña acordada', () => {
     dibujar(trabajo());
 
     const tarjeta = screen.getByRole('region', { name: 'Datos del trabajo' });
     expect(tarjeta).toHaveTextContent('DirecciónOlazábal 1240, Ituzaingó');
     expect(tarjeta).toHaveTextContent('Empezamoslun 24 ago');
-    expect(tarjeta).toHaveTextContent('Entrega pautadavie 2 oct');
+    expect(tarjeta).toHaveTextContent('Entrega estimadavie 2 oct');
     expect(tarjeta).toHaveTextContent('Seña$ 620.000 · pagada');
   });
 
@@ -327,7 +329,7 @@ describe('la tarjeta de datos, desde la aprobación', () => {
     const tarjeta = screen.getByRole('region', { name: 'Datos del trabajo' });
     expect(tarjeta).toHaveTextContent('DirecciónA confirmar');
     expect(tarjeta).toHaveTextContent('EmpezamosTodavía no');
-    expect(tarjeta).toHaveTextContent('Entrega pautadaA confirmar');
+    expect(tarjeta).toHaveTextContent('Entrega estimadaA confirmar');
     expect(tarjeta).toHaveTextContent('SeñaA confirmar');
   });
 

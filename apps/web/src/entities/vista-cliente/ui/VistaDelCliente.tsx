@@ -33,6 +33,7 @@ import {
   saldoDeLaVista,
   sinPagosTodavia,
   textoDeLaSenaAcordada,
+  textoDelTitular,
   textoDelTotalPagado,
   valorDeLaEntrega,
 } from '../model/textos';
@@ -223,7 +224,7 @@ function EntradaAprobada({
 }
 
 function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string; hoy: string }) {
-  const { titular } = vista;
+  const titular = textoDelTitular(vista.titular, hoy);
   switch (vista.etapa) {
     case 'antes-del-presupuesto':
       return <EntradaAntesDelPresupuesto vista={vista} titular={titular} bajada={bajada} />;
@@ -231,6 +232,7 @@ function EntradaDeLaVista({ vista, bajada, hoy }: { vista: Vista; bajada: string
       return <EntradaEsperandoLaSena vista={vista} titular={titular} bajada={bajada} />;
     case 'aprobado':
     case 'fabricacion':
+    case 'listo':
     case 'entregado':
     case 'pagado':
       return <EntradaAprobada vista={vista} titular={titular} hoy={hoy} />;
@@ -301,6 +303,7 @@ function ApoyoDeLaVista({ vista, hoy }: { vista: Vista; hoy: string }) {
       );
     case 'aprobado':
     case 'fabricacion':
+    case 'listo':
     case 'entregado':
     case 'pagado':
       return (
@@ -324,6 +327,7 @@ function CierreDeLosPagos({ vista }: { vista: Vista }) {
       );
     case 'aprobado':
     case 'fabricacion':
+    case 'listo':
     case 'entregado':
     case 'pagado': {
       const saldo = saldoDeLaVista(vista);

@@ -433,6 +433,36 @@ function limitesDeLaCasa(): Limites {
   );
 }
 
+const MES = { largo: 90, ancho: 92, celda: 11, arriba: 26, izquierda: 8 } as const;
+const DIA_ACORDADO = { columna: 4, semana: 2 } as const;
+
+function Listo() {
+  const { largo, ancho, celda, arriba, izquierda } = MES;
+  const grilla = [
+    ...Array.from(
+      { length: 8 },
+      (_, columna) =>
+        `M${String(izquierda + columna * celda)} ${String(arriba)}V${String(arriba + 5 * celda)}`,
+    ),
+    ...Array.from(
+      { length: 6 },
+      (_, semana) =>
+        `M${String(izquierda)} ${String(arriba + semana * celda)}H${String(izquierda + 7 * celda)}`,
+    ),
+  ].join('');
+  const x = izquierda + DIA_ACORDADO.columna * celda - 5;
+  const y = arriba + DIA_ACORDADO.semana * celda - 0.5;
+  return (
+    <Escena medida={limites([{ x: 0, y: 0, z: 0, largo, ancho, alto: 0 }])}>
+      <Hoja x={0} y={0} z={0} largo={largo} ancho={ancho} esquina>
+        <Encabezado />
+        <path d={grilla} className="fina" />
+        <path d={VUELTA} transform={`translate(${String(x)} ${String(y)})`} className="mano" />
+      </Hoja>
+    </Escena>
+  );
+}
+
 function Entregado() {
   return (
     <Escena medida={limitesDeLaCasa()}>
@@ -460,6 +490,7 @@ const ESCENAS = {
   presupuesto: Presupuesto,
   sena: Sena,
   fabricacion: Fabricacion,
+  listo: Listo,
   entregado: Entregado,
   pagado: Pagado,
 } as const satisfies Record<string, ComponentType>;

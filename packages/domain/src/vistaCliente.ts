@@ -1,3 +1,4 @@
+import type { FormaDeCoordinar, FranjaDeEntrega, RespuestaDeEntrega } from './entrega.ts';
 import type { EstadoProyecto } from './estados.ts';
 import { diasEntre, entregaEstimada } from './fechas.ts';
 import { restar, sumarTodos, type Money } from './money.ts';
@@ -35,9 +36,39 @@ export interface FechasDelTrabajo {
   aprobado: string | null;
   inicio: string | null;
   entregaPautada: string | null;
+  listo: string | null;
   entregado: string | null;
   cobro: string | null;
   valeHasta: string | null;
+}
+
+export interface ComprometidaDelTrabajo {
+  fecha: string;
+  franja: FranjaDeEntrega | null;
+}
+
+export interface PropuestaDeEntrega {
+  id: string;
+  forma: FormaDeCoordinar;
+  fecha: string | null;
+  franja: FranjaDeEntrega | null;
+}
+
+export interface DiaQueLeQuedaBien {
+  fecha: string;
+  franjas: readonly FranjaDeEntrega[];
+}
+
+export interface RespuestaDelCliente {
+  respuesta: RespuestaDeEntrega;
+  dias: readonly DiaQueLeQuedaBien[];
+  nota: string;
+}
+
+export interface EntregaQueSeCoordina {
+  comprometida: ComprometidaDelTrabajo | null;
+  propuesta: PropuestaDeEntrega | null;
+  respuesta: RespuestaDelCliente | null;
 }
 
 export interface CobroDelTaller {
@@ -76,6 +107,7 @@ export interface TrabajoDelCliente {
   sena: Money | null;
   fechas: FechasDelTrabajo;
   visita: VisitaDelTrabajo;
+  entrega: EntregaQueSeCoordina;
   pago: PagoPendiente;
   cobro: CobroDelTaller;
   pagos: readonly PagoDelCliente[];
@@ -250,7 +282,11 @@ export type ProyeccionDeLaEntrega =
   | { situacion: 'vencida'; vencio: string };
 
 export type EntregaDelTrabajo =
-  { situacion: 'pautada'; fecha: string | null } | { situacion: 'entregado'; fecha: string };
+  | { situacion: 'estimada'; fecha: string | null }
+  | { situacion: 'a-coordinar' }
+  | { situacion: 'confirmada'; fecha: string; franja: FranjaDeEntrega | null }
+  | { situacion: 'a-confirmar' }
+  | { situacion: 'entregado'; fecha: string | null };
 
 export interface DatosDelTrabajo {
   direccion: string | null;
@@ -259,12 +295,23 @@ export interface DatosDelTrabajo {
   sena: SenaDeLaVista;
 }
 
+export type TitularDeLaVista = string | { comprometida: ComprometidaDelTrabajo };
+
+export type CoordinacionDeLaEntrega =
+  | { situacion: 'sin-pedido' }
+  | {
+      situacion: 'un-dia';
+      propuesta: PropuestaDeEntrega & { fecha: string };
+      respuesta: RespuestaDelCliente | null;
+    }
+  | { situacion: 'sus-dias'; propuesta: PropuestaDeEntrega; respuesta: RespuestaDelCliente | null };
+
 interface LoComunDeLaVista {
   taller: string;
   cliente: string;
   titulo: string;
   hitoActual: HitoDelTrabajo;
-  titular: string;
+  titular: TitularDeLaVista;
   hitos: readonly HitoDeLaVista[];
   relevamiento: RelevamientoDeLaVista | null;
   eventos: readonly EventoDelCliente[];
@@ -286,7 +333,7 @@ export interface VistaEsperandoLaSena extends LoComunDeLaVista {
   proyeccion: ProyeccionDeLaEntrega;
 }
 
-export type EtapaAprobada = 'aprobado' | 'fabricacion' | 'entregado' | 'pagado';
+export type EtapaAprobada = 'aprobado' | 'fabricacion' | 'listo' | 'entregado' | 'pagado';
 
 export interface VistaAprobada extends LoComunDeLaVista {
   etapa: EtapaAprobada;
@@ -295,6 +342,7 @@ export interface VistaAprobada extends LoComunDeLaVista {
   saldado: boolean;
   foco: FocoDeLaVista;
   datos: DatosDelTrabajo;
+  coordinacion: CoordinacionDeLaEntrega | null;
 }
 
 export type VistaDelCliente = VistaAntesDelPresupuesto | VistaEsperandoLaSena | VistaAprobada;
@@ -363,6 +411,23 @@ export const SIGUE: Readonly<Record<HitoDelTrabajo, string>> = {
   entregado: 'Lo próximo que vas a ver acá es el pago del saldo.',
   pagado: '',
 };
+
+export const TITULAR_LISTO = 'Tu mueble está listo';
+
+export const LISTO_PARA_ENTREGAR = 'Listo para entregar';
+
+export const TERMINAMOS_TU_MUEBLE = 'Terminamos tu mueble';
+
+export const SIGUE_LISTO: Readonly<
+  Record<CoordinacionDeLaEntrega['situacion'] | 'mandados', string>
+> = {
+  'sin-pedido': 'Lo próximo es acordar el día de la entrega.',
+  'un-dia': 'Lo próximo es que nos digas si te queda bien ese día.',
+  'sus-dias': 'Lo próximo es que nos pases los días que te quedan bien.',
+  mandados: 'Lo próximo es que te confirmemos el día.',
+};
+
+export const SIGUE_CON_LA_COMPROMETIDA = 'Lo próximo que vas a ver acá es la entrega.';
 
 export const SIGUE_CON_EL_PRESUPUESTO_MANDADO = 'Lo próximo es que lo apruebes y dejes la seña.';
 
@@ -458,6 +523,48 @@ function fechaDelEstimativo(trabajo: TrabajoDelCliente): string | null {
   return fechasDe(trabajo).estimativo ?? null;
 }
 
+function listoDelTrabajo(trabajo: TrabajoDelCliente): string | null {
+  return fechasDe(trabajo).listo ?? null;
+}
+
+function entregaDe(trabajo: TrabajoDelCliente): EntregaQueSeCoordina {
+  const entrega = trabajo.entrega as Partial<EntregaQueSeCoordina> | undefined;
+  return {
+    comprometida: entrega?.comprometida ?? null,
+    propuesta: entrega?.propuesta ?? null,
+    respuesta: entrega?.respuesta ?? null,
+  };
+}
+
+function noPaso(fecha: string, hoy: string): boolean {
+  return diasEntre(hoy, fecha) >= 0;
+}
+
+function comprometidaVigente(
+  trabajo: TrabajoDelCliente,
+  hoy: string,
+): ComprometidaDelTrabajo | null {
+  const { comprometida } = entregaDe(trabajo);
+  return comprometida !== null && noPaso(comprometida.fecha, hoy) ? comprometida : null;
+}
+
+function coordinacionDelTrabajo(trabajo: TrabajoDelCliente, hoy: string): CoordinacionDeLaEntrega {
+  const { propuesta, respuesta } = entregaDe(trabajo);
+  if (propuesta === null) return { situacion: 'sin-pedido' };
+  if (propuesta.forma === 'sus_dias') return { situacion: 'sus-dias', propuesta, respuesta };
+  const { fecha } = propuesta;
+  if (fecha === null || !noPaso(fecha, hoy)) return { situacion: 'sin-pedido' };
+  return { situacion: 'un-dia', propuesta: { ...propuesta, fecha }, respuesta };
+}
+
+function loQueSigueListo(coordinacion: CoordinacionDeLaEntrega | null): string {
+  if (coordinacion === null) return SIGUE_LISTO['sin-pedido'];
+  if (coordinacion.situacion !== 'sin-pedido' && coordinacion.respuesta !== null) {
+    return SIGUE_LISTO.mandados;
+  }
+  return SIGUE_LISTO[coordinacion.situacion];
+}
+
 export function tuvoEstimativo(trabajo: TrabajoDelCliente): boolean {
   return trabajo.estado === 'presupuesto_estimativo' || fechaDelEstimativo(trabajo) !== null;
 }
@@ -531,7 +638,8 @@ function empezoAFabricarse(trabajo: TrabajoDelCliente, hoy: string): boolean {
 function inicioDeLaFabricacion(trabajo: TrabajoDelCliente, hoy: string): string | null {
   const { inicio = null, entregado = null } = fechasDe(trabajo);
   if (inicio === null || !empezoAFabricarse(trabajo, hoy)) return null;
-  return entregado !== null && diasEntre(inicio, entregado) < 0 ? null : inicio;
+  const hasta = [entregado, listoDelTrabajo(trabajo)];
+  return hasta.some((fecha) => fecha !== null && diasEntre(inicio, fecha) < 0) ? null : inicio;
 }
 
 function etapaDeLaVista(trabajo: TrabajoDelCliente, saldado: boolean, hoy: string): EtapaDeLaVista {
@@ -541,6 +649,7 @@ function etapaDeLaVista(trabajo: TrabajoDelCliente, saldado: boolean, hoy: strin
     case 'entregado':
       return saldado ? 'pagado' : 'entregado';
     case 'en_curso':
+      if (listoDelTrabajo(trabajo) !== null) return 'listo';
       return empezoAFabricarse(trabajo, hoy) ? 'fabricacion' : 'aprobado';
     case 'presupuesto_enviado':
       return 'esperando-la-sena';
@@ -553,7 +662,12 @@ function yaSeEntrego(etapa: EtapaDeLaVista): boolean {
   return etapa === 'entregado' || etapa === 'pagado';
 }
 
+function antesDeEntregar(etapa: EtapaDeLaVista): boolean {
+  return etapa === 'aprobado' || etapa === 'fabricacion' || etapa === 'listo';
+}
+
 function hitoDeLaEtapa(etapa: EtapaDeLaVista, trabajo: TrabajoDelCliente): HitoDelTrabajo {
+  if (etapa === 'listo') return 'fabricacion';
   if (etapa !== 'antes-del-presupuesto' && etapa !== 'esperando-la-sena') return etapa;
   return trabajo.estado === 'presupuesto_estimativo' ? 'estimativo' : 'presupuesto';
 }
@@ -603,6 +717,8 @@ function pasoEnCurso(
       return sena === 'falta' ? 'aprobado' : 'fabricacion';
     case 'fabricacion':
       return 'fabricacion';
+    case 'listo':
+      return 'entregado';
     case 'entregado':
       return 'pagado';
     case 'pagado':
@@ -731,6 +847,18 @@ function eventosDelTrabajo(
     });
   }
 
+  const listo = listoDelTrabajo(trabajo);
+  if (aprobado && listo !== null) {
+    eventos.push({
+      id: 'listo',
+      fecha: listo,
+      texto: TERMINAMOS_TU_MUEBLE,
+      hito: 'fabricacion',
+      monto: null,
+      orden: cantidad + 3,
+    });
+  }
+
   const entregado = fechas.entregado ?? null;
   if (yaSeEntrego(etapa) && entregado !== null) {
     eventos.push({
@@ -739,7 +867,7 @@ function eventosDelTrabajo(
       texto: LO_LLEVAMOS_Y_LO_INSTALAMOS,
       hito: 'entregado',
       monto: null,
-      orden: cantidad + 3,
+      orden: cantidad + 4,
     });
   }
 
@@ -759,21 +887,39 @@ function eventosDelTrabajo(
     }));
 }
 
+function entregaDeLaTarjeta(
+  trabajo: TrabajoDelCliente,
+  etapa: EtapaDeLaVista,
+  hoy: string,
+): EntregaDelTrabajo {
+  const fechas = fechasDe(trabajo);
+  if (yaSeEntrego(etapa)) return { situacion: 'entregado', fecha: fechas.entregado ?? null };
+  const { comprometida } = entregaDe(trabajo);
+  if (comprometida !== null) {
+    return noPaso(comprometida.fecha, hoy)
+      ? { situacion: 'confirmada', fecha: comprometida.fecha, franja: comprometida.franja }
+      : { situacion: 'a-confirmar' };
+  }
+  if (etapa === 'listo') return { situacion: 'a-coordinar' };
+  const estimada = fechas.entregaPautada ?? null;
+  return {
+    situacion: 'estimada',
+    fecha: estimada !== null && noPaso(estimada, hoy) ? estimada : null,
+  };
+}
+
 function datosDelTrabajo(
   trabajo: TrabajoDelCliente,
   etapa: EtapaDeLaVista,
   sena: SenaDeLaVista,
+  hoy: string,
 ): DatosDelTrabajo {
   const fechas = fechasDe(trabajo);
-  const entregado = fechas.entregado ?? null;
   const direccion = trabajo.direccion.trim();
   return {
     direccion: direccion === '' ? null : direccion,
     inicio: fechas.inicio ?? null,
-    entrega:
-      entregado !== null && yaSeEntrego(etapa)
-        ? { situacion: 'entregado', fecha: entregado }
-        : { situacion: 'pautada', fecha: fechas.entregaPautada ?? null },
+    entrega: entregaDeLaTarjeta(trabajo, etapa, hoy),
     sena,
   };
 }
@@ -794,6 +940,31 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
   const indiceEnCurso =
     enCurso === null ? camino.length : camino.findIndex((hito) => hito.id === enCurso);
   const fechaDe = fechasDeLosHitos(trabajo, saldado, hoy);
+  const comprometida = antesDeEntregar(etapa) ? comprometidaVigente(trabajo, hoy) : null;
+  const coordinacion =
+    etapa === 'listo' && entregaDe(trabajo).comprometida === null
+      ? coordinacionDelTrabajo(trabajo, hoy)
+      : null;
+
+  function fechaDelPasoEnCurso(hito: HitoDelTrabajo): string | null {
+    if (hito === 'fabricacion') return fechaDe.fabricacion;
+    return hito === 'entregado' ? (comprometida?.fecha ?? null) : null;
+  }
+
+  function textoDelPasoDeHoy(hito: HitoDelCamino): string {
+    if (etapa !== 'listo') return textoDelPasoEnCurso(hito, hitoActual, sena.situacion);
+    return comprometida === null ? LISTO_PARA_ENTREGAR : hito.futuro;
+  }
+
+  function titularDeLaVista(): TitularDeLaVista {
+    if (comprometida !== null) return { comprometida };
+    return etapa === 'listo' ? TITULAR_LISTO : textoEnCurso(hitoActual, contexto);
+  }
+
+  function loQueSigueEnLaVista(): string {
+    if (comprometida !== null) return SIGUE_CON_LA_COMPROMETIDA;
+    return etapa === 'listo' ? loQueSigueListo(coordinacion) : loQueSigue(hitoActual, contexto);
+  }
 
   const hitos: HitoDeLaVista[] = camino.map((hito, indice) => {
     const etiqueta = etiquetaDelHito(hito, contexto);
@@ -811,8 +982,8 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
         id: hito.id,
         etiqueta,
         estado: 'actual',
-        fecha: hito.id === 'fabricacion' ? fechaDe.fabricacion : null,
-        texto: textoDelPasoEnCurso(hito, hitoActual, sena.situacion),
+        fecha: fechaDelPasoEnCurso(hito.id),
+        texto: textoDelPasoDeHoy(hito),
       };
     }
     return {
@@ -829,11 +1000,11 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
     cliente: trabajo.cliente,
     titulo: trabajo.trabajo,
     hitoActual,
-    titular: textoEnCurso(hitoActual, contexto),
+    titular: titularDeLaVista(),
     hitos,
     relevamiento,
     eventos: eventosDelTrabajo(contexto, etapa, saldado, hoy),
-    sigue: loQueSigue(hitoActual, contexto),
+    sigue: loQueSigueEnLaVista(),
     pagos: trabajo.pagos,
     pagado,
     archivos: trabajo.archivos,
@@ -859,7 +1030,8 @@ export function vistaDelCliente(trabajo: TrabajoDelCliente, hoy: string): VistaD
     saldo,
     saldado,
     foco: yaSeEntrego(etapa) && saldo !== null && saldo > 0 ? 'saldo' : 'estado',
-    datos: datosDelTrabajo(trabajo, etapa, sena),
+    datos: datosDelTrabajo(trabajo, etapa, sena, hoy),
+    coordinacion,
   };
 }
 

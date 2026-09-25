@@ -18,11 +18,21 @@ function respuesta(cambios: Record<string, unknown> = {}): Record<string, unknow
       aprobado: '2026-08-04',
       inicio: '2026-08-24',
       entrega_pautada: '2026-10-02',
+      listo: '2026-09-24',
       entregado: null,
       cobro: null,
       vale_hasta: null,
     },
     visita: { dia: '2026-07-28', hecha: true },
+    entrega: {
+      comprometida: null,
+      propuesta: { id: 'd1', forma: 'sus_dias', fecha: null, franja: null },
+      respuesta: {
+        respuesta: 'mis_dias',
+        dias: [{ fecha: '2026-09-29', franjas: ['manana', 'tarde'] }],
+        nota: 'Tercer piso',
+      },
+    },
     pago: {
       instancia: 'sena',
       formas: ['transferencia', 'efectivo'],
@@ -73,11 +83,21 @@ describe('leer la vista del cliente', () => {
         aprobado: '2026-08-04',
         inicio: '2026-08-24',
         entregaPautada: '2026-10-02',
+        listo: '2026-09-24',
         entregado: null,
         cobro: null,
         valeHasta: null,
       },
       visita: { dia: '2026-07-28', hecha: true },
+      entrega: {
+        comprometida: null,
+        propuesta: { id: 'd1', forma: 'sus_dias', fecha: null, franja: null },
+        respuesta: {
+          respuesta: 'mis_dias',
+          dias: [{ fecha: '2026-09-29', franjas: ['manana', 'tarde'] }],
+          nota: 'Tercer piso',
+        },
+      },
       pago: {
         instancia: 'sena',
         formas: ['transferencia', 'efectivo'],
@@ -188,6 +208,50 @@ describe('leer la vista del cliente', () => {
     );
     expect(vieja.fechas.estimativo).toBeNull();
     expect(vieja.visita).toEqual({ dia: null, hecha: false });
+  });
+
+  it('lee la entrega comprometida con su franja', () => {
+    const comprometida = leerVistaDelCliente(
+      respuesta({
+        entrega: {
+          comprometida: { fecha: '2026-10-08', franja: 'manana' },
+          propuesta: null,
+          respuesta: null,
+        },
+      }),
+    );
+    expect(comprometida.entrega).toEqual({
+      comprometida: { fecha: '2026-10-08', franja: 'manana' },
+      propuesta: null,
+      respuesta: null,
+    });
+  });
+
+  it('una respuesta de antes, sin el listo ni la entrega, se lee como que no hubo', () => {
+    const { entrega: _entrega, ...sinEntrega } = respuesta();
+    const vieja = leerVistaDelCliente({
+      ...sinEntrega,
+      fechas: { presupuesto: '2026-08-01' },
+    });
+    expect(vieja.fechas.listo).toBeNull();
+    expect(vieja.entrega).toEqual({ comprometida: null, propuesta: null, respuesta: null });
+  });
+
+  it('una forma, una respuesta o una franja que esta versión no conoce se ignora en vez de romper la página', () => {
+    const nueva = leerVistaDelCliente(
+      respuesta({
+        entrega: {
+          comprometida: { fecha: '2026-10-08', franja: 'noche' },
+          propuesta: { id: 'd2', forma: 'por_telefono', fecha: null, franja: null },
+          respuesta: { respuesta: 'otra', dias: [], nota: '' },
+        },
+      }),
+    );
+    expect(nueva.entrega).toEqual({
+      comprometida: { fecha: '2026-10-08', franja: null },
+      propuesta: null,
+      respuesta: null,
+    });
   });
 
   it('un PDF viene sin medidas', () => {

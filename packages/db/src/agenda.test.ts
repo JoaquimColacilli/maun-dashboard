@@ -89,6 +89,8 @@ describe('datosDeLaAgenda', () => {
           visitaHecha: true,
           entregaEstimada: null,
           entregaHora: null,
+          entregaComprometida: null,
+          entregaFranja: null,
           vencimientoPresupuesto: '2026-09-10',
           direccionEntrega: 'Sarmiento 2310',
           importante: { presupuesto: false, visita: true, entrega: false },
@@ -173,12 +175,33 @@ describe('datosDeLaAgenda', () => {
       datosDeLaAgenda({ proyectos: [vieja], clientes: [], anotaciones: [] }).proyectos[0],
     ).toMatchObject({
       visitaHecha: false,
+      entregaComprometida: null,
+      entregaFranja: null,
       importante: { presupuesto: false, visita: false, entrega: false },
     });
   });
 
   it('cada evento derivado tiene su columna de marca, y son las tres de la base', () => {
     expect(Object.values(COLUMNA_DE_LA_MARCA)).toEqual([...COLUMNAS_DE_MARCAS]);
+  });
+});
+
+describe('la entrega comprometida', () => {
+  it('viaja con su franja, para que la agenda la ponga en ese día y no deje arrastrarla', () => {
+    const comprometida = {
+      ...PROYECTO,
+      estado: 'en_curso',
+      entrega_estimada: '2026-10-05',
+      entrega_comprometida: '2026-10-08',
+      entrega_comprometida_franja: 'manana',
+    } as unknown as FilaDe<'proyectos'>;
+    expect(
+      datosDeLaAgenda({ proyectos: [comprometida], clientes: [], anotaciones: [] }).proyectos[0],
+    ).toMatchObject({
+      entregaEstimada: '2026-10-05',
+      entregaComprometida: '2026-10-08',
+      entregaFranja: 'manana',
+    });
   });
 });
 

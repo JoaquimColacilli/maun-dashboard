@@ -36,6 +36,8 @@ function proyecto(cambios: Partial<ProyectoDeLaAgenda> = {}): ProyectoDeLaAgenda
     visitaHecha: false,
     entregaEstimada: null,
     entregaHora: null,
+    entregaComprometida: null,
+    entregaFranja: null,
     vencimientoPresupuesto: null,
     direccionEntrega: '',
     importante: SIN_MARCAS,
@@ -103,6 +105,8 @@ describe('eventosDeLaAgenda', () => {
         lugar: 'Rivadavia 1200',
         hecha: false,
         importante: false,
+        comprometida: false,
+        franja: null,
       },
     ]);
   });
@@ -137,6 +141,8 @@ describe('eventosDeLaAgenda', () => {
         lugar: 'Haedo',
         hecha: false,
         importante: false,
+        comprometida: false,
+        franja: null,
       },
     ]);
   });
@@ -550,6 +556,8 @@ describe('el seguimiento en la agenda', () => {
       lugar: 'Placard · después de las vacaciones',
       hecha: false,
       importante: false,
+      comprometida: false,
+      franja: null,
     });
   });
 
@@ -948,5 +956,74 @@ describe('qué se puede arrastrar', () => {
       anotaciones: [anotacion({ fecha: '2026-09-21', hecha: true })],
     });
     expect(eventos.map(puedeArrastrarse)).toEqual([false, false]);
+  });
+
+  it('una entrega comprometida no: es un acuerdo con el cliente y se cambia desde el proyecto', () => {
+    const eventos = elDia({
+      proyectos: [
+        proyecto({
+          entregaEstimada: '2026-09-18',
+          entregaComprometida: '2026-09-21',
+          entregaFranja: 'manana',
+        }),
+      ],
+    });
+    expect(eventos.map(puedeArrastrarse)).toEqual([false]);
+  });
+});
+
+describe('la entrega comprometida en la agenda', () => {
+  const RANGO = { desde: '2026-09-01', hasta: '2026-09-30' };
+
+  it('la entrega cae en la comprometida si hay, con su franja y sin la hora de la estimada', () => {
+    const eventos = eventosDeLaAgenda(
+      datos({
+        proyectos: [
+          proyecto({
+            entregaEstimada: '2026-09-18',
+            entregaHora: '10:00',
+            entregaComprometida: '2026-09-22',
+            entregaFranja: 'tarde',
+          }),
+        ],
+      }),
+      RANGO,
+    );
+    expect(eventos).toMatchObject([
+      {
+        categoria: 'entrega',
+        fecha: '2026-09-22',
+        hora: null,
+        franja: 'tarde',
+        comprometida: true,
+      },
+    ]);
+  });
+
+  it('sin comprometida, la estimada con su hora', () => {
+    const eventos = eventosDeLaAgenda(
+      datos({ proyectos: [proyecto({ entregaEstimada: '2026-09-18', entregaHora: '10:00' })] }),
+      RANGO,
+    );
+    expect(eventos).toMatchObject([
+      { fecha: '2026-09-18', hora: '10:00', franja: null, comprometida: false },
+    ]);
+  });
+
+  it('entregado, lo hecho queda en el día prometido, que es la comprometida si la hubo', () => {
+    const eventos = eventosDeLaAgenda(
+      datos({
+        proyectos: [
+          proyecto({
+            estado: 'entregado',
+            entregaEstimada: '2026-09-18',
+            entregaComprometida: '2026-09-22',
+            entregaFranja: null,
+          }),
+        ],
+      }),
+      RANGO,
+    );
+    expect(eventos).toMatchObject([{ fecha: '2026-09-22', hecha: true }]);
   });
 });

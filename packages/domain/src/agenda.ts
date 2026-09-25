@@ -1,3 +1,4 @@
+import type { FranjaDeEntrega } from './entrega.ts';
 import { faseDe, type EstadoProyecto } from './estados.ts';
 import { diasEntre, sumarDias } from './fechas.ts';
 
@@ -27,6 +28,8 @@ export interface ProyectoDeLaAgenda {
   visitaHecha: boolean;
   entregaEstimada: string | null;
   entregaHora: string | null;
+  entregaComprometida: string | null;
+  entregaFranja: FranjaDeEntrega | null;
   vencimientoPresupuesto: string | null;
   direccionEntrega: string;
   importante: Readonly<Record<CategoriaDelTrabajo, boolean>>;
@@ -83,6 +86,8 @@ export interface EventoDerivado {
   lugar: string;
   hecha: boolean;
   importante: boolean;
+  comprometida: boolean;
+  franja: FranjaDeEntrega | null;
 }
 
 export interface EventoPropio {
@@ -127,17 +132,23 @@ function derivadosDelProyecto(
     clienteId: proyecto.clienteId,
     titulo: proyecto.titulo,
     cliente: cliente?.nombre ?? '',
+    comprometida: false,
+    franja: null,
   };
   const zona = cliente?.zona ?? '';
   const eventos: EventoDerivado[] = [];
 
-  if ((proyecto.estado === 'en_curso' || entregada) && proyecto.entregaEstimada !== null) {
+  const comprometida = proyecto.entregaComprometida;
+  const prometida = comprometida ?? proyecto.entregaEstimada;
+  if ((proyecto.estado === 'en_curso' || entregada) && prometida !== null) {
     eventos.push({
       ...comun,
       id: `entrega:${proyecto.id}`,
       categoria: 'entrega',
-      fecha: proyecto.entregaEstimada,
-      hora: proyecto.entregaHora,
+      fecha: prometida,
+      hora: comprometida === null ? proyecto.entregaHora : null,
+      comprometida: comprometida !== null,
+      franja: comprometida === null ? null : proyecto.entregaFranja,
       lugar: proyecto.direccionEntrega.trim() === '' ? zona : proyecto.direccionEntrega,
       hecha: entregada,
       importante: proyecto.importante.entrega,
@@ -195,6 +206,8 @@ function derivadoDelSeguimiento(
     lugar: nota === '' ? proyecto.titulo : `${proyecto.titulo} · ${nota}`,
     hecha: proximo.hechoEl !== null,
     importante: proximo.importante,
+    comprometida: false,
+    franja: null,
   };
 }
 
@@ -342,7 +355,8 @@ export function diaPorHoras(
 }
 
 export function puedeArrastrarse(evento: EventoDeLaAgenda): boolean {
-  return !evento.hecha && evento.categoria !== 'seguimiento';
+  if (evento.hecha || evento.categoria === 'seguimiento') return false;
+  return evento.clase === 'propia' || !evento.comprometida;
 }
 
 export const AVISOS_DE_LA_AGENDA = [
