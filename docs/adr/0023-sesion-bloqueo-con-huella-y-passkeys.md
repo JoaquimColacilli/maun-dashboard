@@ -85,6 +85,10 @@ El primer desbloqueo puede mostrar antes el selector de cuentas. Se prefirió es
   de los cuatro tesoros (las mismas piezas proporcionales y el mismo `maun-corte` del despiece, una
   sola vez por carga). En escritorio van lado a lado con filas compartidas por subgrid; en celular, el
   tablero arriba y el formulario abajo, al alcance del pulgar.
+  - **Corregido por el [ADR 0068](0068-la-mesa-y-el-plano.md).** El canto nunca se cortó en el build:
+    Tailwind descartaba `@keyframes maun-corte` porque solo lo nombraba un `style` en línea. Ahora
+    corre, y `acceso.spec.ts` lo mide. El formulario pasa de `bg-paper` a la mesa, la marca queda en
+    30 px con sus 20 de costado y el `h1` sube a 30 y 36 con el resto de la app.
 - **El teclado.** `#root` es `fixed` con `overflow: hidden`, y la pantalla vieja no scrolleaba: con el
   teclado abierto lo de abajo quedaba cortado. Ahora el contenedor toma el alto y el desplazamiento del
   `visualViewport` (`useVentanaVisible`), el tablero se achica a la marca y, al enfocar, se acomoda

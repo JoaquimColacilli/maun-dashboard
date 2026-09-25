@@ -4,6 +4,7 @@
 - Fecha: 2026-09-12
 - Corregida el 2026-09-21 por el [ADR 0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md): el mensaje de Inicio sigue leyendo lo mismo que la barra, pero los dos miden contra **un** sueldo por mes, no contra uno por cobro.
 - Revisada por el [ADR 0062](0062-el-reparto-en-la-compu.md): el molde sigue siendo uno, `Pagina`, con el mismo ancho y centrado en todas las pantallas, y ninguna lo cambia. Una primera versión de ese ADR le había dado un ancho a cada reparto y lo había pegado al menú; se volvió atrás el 2026-09-22.
+- Enmendada el 2026-09-24 por el [ADR 0068](0068-la-mesa-y-el-plano.md): el fondo de la app es una mesa (`--color-mesa`) con tarjetas de papel encima; en oscuro el papel sube de `#121212` a `#171717` y la rampa de grises corre con él; `text-3` baja a `#6d6d6d` en claro para pasar 4,5:1 también sobre la mesa; los radios pasan a 8, 12, 20, 24 y 28, y las sombras quedan para lo que flota.
 
 ## Contexto
 
