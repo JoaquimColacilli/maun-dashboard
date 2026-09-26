@@ -17,8 +17,8 @@ import {
   type EtiquetasDeLaVista,
 } from './etiquetas';
 
-const URL_DE_LA_VISTA = 'https://maun-dashboard.netlify.app/v/tZEFrYutatg5xhw1mcrUKIAFXk';
-const IMAGEN = 'https://maun-dashboard.netlify.app/taller-512.png';
+const URL_DE_LA_VISTA = 'https://numa-dashboard.netlify.app/v/tZEFrYutatg5xhw1mcrUKIAFXk';
+const IMAGEN = 'https://numa-dashboard.netlify.app/taller-512.png';
 
 // Lo que sirve Netlify no es el index.html del repo: vite-plugin-pwa le agrega el link al
 // manifiesto al final del head. La función de borde trabaja sobre eso, así que el fixture es el
@@ -188,7 +188,7 @@ describe('las etiquetas genéricas', () => {
 });
 
 describe('el enlace de la encuesta', () => {
-  const URL_DE_LA_ENCUESTA = 'https://maun-dashboard.netlify.app/o/tZEFrYutatg5xhw1mcrUKIAFXk';
+  const URL_DE_LA_ENCUESTA = 'https://numa-dashboard.netlify.app/o/tZEFrYutatg5xhw1mcrUKIAFXk';
 
   it('se reconoce por su prefijo y el token sale igual que en la vista', () => {
     expect(claseDelEnlace('/o/tZEFrYutatg5xhw1mcrUKIAFXk')).toBe('encuesta');

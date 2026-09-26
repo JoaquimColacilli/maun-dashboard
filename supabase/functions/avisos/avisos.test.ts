@@ -13,7 +13,7 @@ const DIA = '2026-09-14';
 const VAPID = {
   publica: 'la-publica',
   privada: 'la-privada',
-  sujeto: 'https://maun-dashboard.netlify.app',
+  sujeto: 'https://numa-dashboard.netlify.app',
 };
 
 const PREFERENCIAS: PreferenciasDeAvisos = {
@@ -110,7 +110,7 @@ function manejador(
 const CON_CLAVES = {
   VAPID_PUBLIC_KEY: 'la-publica',
   VAPID_PRIVATE_KEY: 'la-privada',
-  VAPID_SUBJECT: 'https://maun-dashboard.netlify.app',
+  VAPID_SUBJECT: 'https://numa-dashboard.netlify.app',
   AVISOS_SECRETO: 'el-secreto',
 };
 
@@ -519,7 +519,7 @@ Deno.test(
       JSON.stringify({ titulo: 'Hola' }),
       {
         vapidDetails: {
-          subject: 'https://maun-dashboard.netlify.app',
+          subject: 'https://numa-dashboard.netlify.app',
           publicKey: vapid.publicKey,
           privateKey: vapid.privateKey,
         },
