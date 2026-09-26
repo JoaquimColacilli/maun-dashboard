@@ -1,6 +1,6 @@
 import type { CategoriaDeAgenda, EventoPropio } from '@maun/domain';
 
-import { Icono } from '@/shared/ui';
+import { Tilde } from '@/shared/ui';
 
 import { CATEGORIA, type FormaDeLaMarca } from '../model/categorias';
 
@@ -76,9 +76,10 @@ export function MarcaConAnillo({
 export interface CasillaDeAnotacionProps {
   evento: EventoPropio;
   alTildar: () => void;
+  dibujar?: boolean;
 }
 
-export function CasillaDeAnotacion({ evento, alTildar }: CasillaDeAnotacionProps) {
+export function CasillaDeAnotacion({ evento, alTildar, dibujar = false }: CasillaDeAnotacionProps) {
   const { borde, fondo } = CATEGORIA[evento.categoria];
   return (
     <button
@@ -94,7 +95,7 @@ export function CasillaDeAnotacion({ evento, alTildar }: CasillaDeAnotacionProps
           evento.hecha ? fondo : ''
         } ${evento.importante ? 'ring-[1.5px] ring-ag-marca ring-offset-1 ring-offset-paper' : ''}`}
       >
-        {evento.hecha && <Icono nombre="check" tamano={14} grosor={2.5} />}
+        {evento.hecha && <Tilde tamano={14} grosor={2.5} dibujar={dibujar} />}
       </span>
     </button>
   );

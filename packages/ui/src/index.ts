@@ -31,6 +31,8 @@ export type { SeccionEnFilaProps, SeccionesEnFilasProps } from './components/Sec
 export { CeldaAncha, Tablero } from './components/Tablero.tsx';
 export type { CeldaAnchaProps, TableroProps } from './components/Tablero.tsx';
 export { TarjetaConLamina } from './components/TarjetaConLamina.tsx';
+export { Tilde } from './components/Tilde.tsx';
+export type { TildeProps } from './components/Tilde.tsx';
 export type { TarjetaConLaminaProps } from './components/TarjetaConLamina.tsx';
 export { Ilustracion, NOMBRES_DE_ILUSTRACION } from './ilustracion/Ilustracion.tsx';
 export type { IlustracionProps, NombreDeIlustracion } from './ilustracion/Ilustracion.tsx';

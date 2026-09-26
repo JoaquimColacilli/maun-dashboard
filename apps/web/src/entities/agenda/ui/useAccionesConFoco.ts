@@ -1,5 +1,5 @@
 import type { EventoPropio } from '@maun/domain';
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
 import type { AccionesDeLaAgenda } from './FilaDeEvento';
 
@@ -18,6 +18,7 @@ export function useAccionesConFoco<T extends HTMLElement>(
 ): AccionesConFoco<T> {
   const raiz = useRef<T>(null);
   const porEnfocar = useRef<CasillaPorEnfocar | null>(null);
+  const [recienHecha, setRecienHecha] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     const pendiente = porEnfocar.current;
@@ -36,7 +37,12 @@ export function useAccionesConFoco<T extends HTMLElement>(
       ...acciones,
       alTildar: (evento: EventoPropio) => {
         porEnfocar.current = { id: evento.id, hecha: !evento.hecha };
+        setRecienHecha(evento.hecha ? null : evento.id);
         acciones.alTildar(evento);
+      },
+      recienHecha,
+      alTerminarDeTachar: () => {
+        setRecienHecha(null);
       },
     },
   };

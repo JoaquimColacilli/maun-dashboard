@@ -133,6 +133,17 @@
     }
   }
 
+  /* La línea del tachado que corre sobre el texto de lo recién tildado (ADR 0074): se descubre de
+     izquierda a derecha con clip-path, que no pide layout. */
+  @keyframes maun-tachado {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
   @keyframes maun-shimmer {
     0% {
       background-position: 200% 0;
@@ -733,6 +744,36 @@
 
   :where(html[data-vista='publica'], [data-quieta]) .fondo-del-elegido {
     transition: none;
+  }
+}
+
+/* La tilde que se dibuja y la línea que tacha (ADR 0074). La tilde es un trazo con pathLength="1"
+   que reusa maun-trazo; se dibuja solo con data-dibujar, que pone quien la muestra cuando el dedo
+   recién tildó o recién copió: al montarse una pantalla, lo hecho ya está hecho. La línea es una
+   copia del texto sin tinta, con su line-through (.linea-del-tachado), que se descubre un escalón
+   después de la tilde; el texto de verdad esconde su propia línea mientras tanto. El recorte va en
+   el bloque que envuelve la copia (.tachado-que-corre), porque en un elemento en línea Chromium
+   recorta con la caja del primer renglón y los demás no se verían. En las páginas del cliente no
+   se dibuja nada. */
+@layer components {
+  .tilde[data-dibujar] path {
+    stroke-dasharray: 1;
+    animation: maun-trazo var(--dur-efectos) var(--resorte-efectos) both;
+  }
+
+  .tachado-que-corre {
+    animation: maun-tachado var(--dur-efectos) var(--resorte-efectos) var(--dur-escalon) both;
+  }
+
+  .linea-del-tachado {
+    visibility: visible;
+    color: transparent;
+    text-decoration-line: line-through;
+    text-decoration-color: var(--color-text-3);
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) :is(.tilde path, .tachado-que-corre) {
+    animation: none;
   }
 }
 
