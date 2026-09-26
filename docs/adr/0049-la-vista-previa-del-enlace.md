@@ -1,6 +1,9 @@
 # 0049. La vista previa del enlace la arma una función de borde, con una función de base propia
 
 Estado: aceptada, 2026-09-19. Completa al [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md).
+Enmendada el 2026-09-25 por el [0073](0073-la-app-se-llama-numa.md): la app se llama NUMA y el
+cliente sigue viendo el taller. `og:image` es `/taller-512.png`, la misma M de 512 con otro nombre, y
+`conLasEtiquetas` además cambia los tres íconos del `head` por los del taller.
 
 ## Contexto
 
@@ -52,7 +55,7 @@ función a dos, y de cero privilegios sobre tablas a cero privilegios sobre tabl
 `og:title` es «{trabajo} · {taller}». `og:description` es fija. `og:url` es la dirección canónica de
 **esa misma página**: si apuntara a la raíz, un rastreador que lo sigue —Meta documenta que lo
 hace— leería las etiquetas de la app y la vista previa diría «Finanzas». `og:image` es el ícono de
-la app: PNG de 512×512 y 2,7 KB, que cumple el mínimo de 300 px, la relación de 4:1 y el tope de
+la app (desde el 0073, el del taller, `taller-512.png`): PNG de 512×512 y 2,7 KB, que cumple el mínimo de 300 px, la relación de 4:1 y el tope de
 600 KB que documenta Meta. El `noindex` sigue, en la etiqueta y en la cabecera.
 
 ### Que nunca rompa la página

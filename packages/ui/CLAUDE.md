@@ -77,6 +77,12 @@ Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están 
 
 La app consume `@maun/ui/theme.css` y `@maun/ui/fonts.css` (IBM Plex Sans 400/500/600 y Young Serif, self-hosted con Fontsource para que funcionen offline). `theme.css` declara `@source '..'`: Tailwind escanea las clases de este paquete desde cualquier app que lo importe.
 
+## La marca (ADR 0073)
+
+- **Los trazos de NUMA viven en `src/marca/trazos.ts`**, un `.ts` sin JSX que el paquete expone como `@maun/ui/marca` (con `@maun/source` al archivo y `types` y `default` a `dist`). Lo importa el script de los íconos de la app, que corre en Node y no lee `.tsx`: no le sumes JSX ni imports de React.
+- **`Logotipo` e `Isotipo`** (`src/marca/Marca.tsx`) dibujan esos trazos en `currentColor`, con `role="img"` y `aria-label="NUMA"`; con `decorativa` van `aria-hidden`. El tamaño lo da quien los usa, con el alto y `w-auto`.
+- La grilla es de 200 de alto, con trazo de 44 y el travesaño de la A de 38. Si se toca un trazo, se regeneran los íconos (`pnpm --filter @maun/web iconos`) y el test de los íconos lo exige.
+
 ## Componentes
 
 - Props en inglés, valores en español (`variant="primario"`, `size="chico"`, `cargando`). Los repartos y el módulo de ilustraciones tienen las props en español (ver arriba).

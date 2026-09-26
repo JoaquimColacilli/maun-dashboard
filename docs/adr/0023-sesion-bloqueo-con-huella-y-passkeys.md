@@ -2,6 +2,9 @@
 
 - Estado: aceptada
 - Fecha: 2026-09-13
+- Enmendado el 2026-09-25 por el [ADR 0073](0073-la-app-se-llama-numa.md): el panel de la marca
+  muestra el logotipo de NUMA en lugar del «MAUN» escrito. El RP ID de las passkeys no cambia; el
+  nombre que muestran se configura en Supabase.
 
 ## Contexto
 

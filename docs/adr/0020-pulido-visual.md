@@ -94,7 +94,8 @@ de mandarte a Finanzas.
   Lo transitorio va en un `role="status"`; cada error en su `role="alert"` y no se va solo. Cada tono
   tiene ícono y verbo propios. La bandeja de rechazos que ya existía (ADR 0016) se mantiene y vive en
   el mismo contenedor.
-- «Registrar diezmo», y el logo lleva a Inicio con «MAUN, ir a Inicio» como nombre.
+- «Registrar diezmo», y el logo lleva a Inicio con «MAUN, ir a Inicio» como nombre. Desde el
+  [ADR 0073](0073-la-app-se-llama-numa.md), «NUMA, ir a Inicio».
 
 ## Lo atado
 

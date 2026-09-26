@@ -76,3 +76,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0070](0070-el-camino-tilda-lo-que-paso.md)                                 | El camino tilda lo que pasó y deja en curso lo que falta            | Aceptada             |
 | [0071](0071-la-entrega-y-sus-fechas.md)                                     | La entrega y sus fechas: listo, estimada, comprometida y respuesta  | Aceptada             |
 | [0072](0072-el-sueldo-se-topea-por-mes.md)                                  | El sueldo se topea por mes                                          | Aceptada             |
+| [0073](0073-la-app-se-llama-numa.md)                                        | La app se llama NUMA; el taller sigue siendo MAUN                   | Aceptada             |

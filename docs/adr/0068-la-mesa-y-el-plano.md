@@ -14,6 +14,10 @@
 - Enmendado el 2026-09-25 por el [ADR 0069](0069-el-dibujo-del-trabajo-del-cliente.md): «Tu mueble»
   dibuja el proceso del trabajo (`TrabajoEnEtapa`) y no un mueble, Gracias es una tarjeta firmada, y el
   lienzo centra el dibujo también de costado. `MuebleEnEtapa` y `Carcasa` ya no existen.
+- Enmendado el 2026-09-25 por el [ADR 0073](0073-la-app-se-llama-numa.md): el «MAUN» de la barra
+  lateral (sección 6) y el del panel de acceso (sección 15) pasan a ser el logotipo de NUMA, a la altura
+  de sus mayúsculas, y el menú de «Cargar algo nuevo» pasa de `top-[81px]` a `top-[71px]`, a los mismos
+  15 px del botón. La firma «Taller MAUN» de `/v/` y `/o/` no cambia: es del taller.
 
 ## Contexto
 
@@ -245,7 +249,9 @@ El + queda centrado (0 px corrido) y 15 px arriba de la píldora en los tres anc
 destino, y el centro de cada botón toca ese botón. A 320 el botón de «Proyectos» mide 53 y su etiqueta
 50,5: entra con 1,25 px de cada lado. En la barra
 lateral, «MAUN» en 36 px agranda su renglón 9 px y el menú de «Cargar algo nuevo» pasa de `top-[72px]` a
-`top-[81px]`: sigue a 15 px del borde de arriba del botón.
+`top-[81px]`: sigue a 15 px del borde de arriba del botón. **Enmendado por el
+[ADR 0073](0073-la-app-se-llama-numa.md)**: el logotipo de NUMA deja el renglón en el alto del enlace
+(44 px) y el menú pasa a `top-[71px]`, medido otra vez a 15 px del botón.
 
 **La barra vuelve después del toque, no en el medio.** Se escondía al enfocar un campo y volvía en el
 `focusout`. Con el rediseño, en la ficha de un contacto el botón «Anotar el relevamiento» quedó en
@@ -408,7 +414,8 @@ Medido con `pnpm --filter @maun/web build` en `main` (`a289e82`) y en esta rama,
   sobre la mesa, sin la línea de abajo.
 - Las pantallas de sesión (entrar, crear cuenta, recuperar, nueva contraseña y el bloqueo) pasan su
   contenedor de `bg-paper` a la mesa, y `BloqueoAlVolver` también. El panel de la marca queda igual: su
-  «MAUN» pasa de `text-h1-lg` (que creció a 36) a `text-[30px]`, y su relleno de costado queda en 20 px
+  «MAUN» pasa de `text-h1-lg` (que creció a 36) a `text-[30px]` (desde el
+  [ADR 0073](0073-la-app-se-llama-numa.md), el logotipo de NUMA de 23 px en ese mismo renglón), y su relleno de costado queda en 20 px
   aunque `--page-pad-mobile` bajó a 16. El `h1` de estas pantallas sube a 30 con el resto:
   `teclado.spec.ts` y `bloqueo.spec.ts` pasan a 390 × 460, así que queda así.
 - Las hojas no cambian de estructura: toman los radios nuevos, 28 la que sube desde abajo y 24 la del
