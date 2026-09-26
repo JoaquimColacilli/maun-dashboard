@@ -26,6 +26,19 @@
         document.addEventListener('DOMContentLoaded', function () {
           var manifiesto = document.querySelector('link[rel="manifest"]');
           if (manifiesto) manifiesto.remove();
+          var delTaller = {
+            '/favicon.ico': '/taller.ico',
+            '/numa.svg': '/taller.svg',
+            '/numa-apple-180.png': '/taller-180.png',
+          };
+          document
+            .querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+            .forEach(function (icono) {
+              var otro = delTaller[icono.getAttribute('href')];
+              if (!otro) return;
+              icono.setAttribute('href', otro);
+              if (icono.hasAttribute('sizes')) icono.setAttribute('sizes', '48x48');
+            });
         });
       }
     </script>

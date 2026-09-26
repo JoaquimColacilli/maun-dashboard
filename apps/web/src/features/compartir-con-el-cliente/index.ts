@@ -1,5 +1,6 @@
 export {
   comoSeVeElEnlace,
+  comoSeVeEnWhatsapp,
   cuantosVeElCliente,
   enlaceDeWhatsapp,
   mensajeParaElCliente,

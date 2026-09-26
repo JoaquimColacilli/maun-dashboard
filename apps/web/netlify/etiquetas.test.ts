@@ -8,6 +8,8 @@ import {
   DESCRIPCION_DE_LA_VISTA,
   escapar,
   etiquetasGenericas,
+  ICONO_DEL_TALLER_EN_LUGAR_DE,
+  ICONOS_DEL_TALLER,
   tituloDeLaEncuesta,
   tituloDeLaVista,
   tokenDeLaRuta,
@@ -16,7 +18,7 @@ import {
 } from './etiquetas';
 
 const URL_DE_LA_VISTA = 'https://maun-dashboard.netlify.app/v/tZEFrYutatg5xhw1mcrUKIAFXk';
-const IMAGEN = 'https://maun-dashboard.netlify.app/pwa-512x512.png';
+const IMAGEN = 'https://maun-dashboard.netlify.app/taller-512.png';
 
 // Lo que sirve Netlify no es el index.html del repo: vite-plugin-pwa le agrega el link al
 // manifiesto al final del head. La función de borde trabaja sobre eso, así que el fixture es el
@@ -98,18 +100,33 @@ describe('el head que sale por el enlace', () => {
     expect(contenido(reescrito, 'og:title')).toBe('Cocina Lucas · MAUN Muebles');
   });
 
-  it('la descripción es fija y no dice «Finanzas»', () => {
+  it('la descripción es fija y no es la de la app', () => {
+    expect(HTML).toContain('Nuevas maneras de gestionar el taller.');
     expect(contenido(reescrito, 'og:description')).toBe(DESCRIPCION_DE_LA_VISTA);
     expect(contenido(reescrito, 'description')).toBe(DESCRIPCION_DE_LA_VISTA);
-    expect(reescrito).not.toContain('Finanzas');
+    expect(reescrito).not.toContain('Nuevas maneras');
   });
 
   it('el og:url apunta a esta página y no a la raíz', () => {
     expect(contenido(reescrito, 'og:url')).toBe(URL_DE_LA_VISTA);
   });
 
-  it('la imagen es el ícono de la app, con dirección absoluta', () => {
+  it('la imagen es el ícono del taller, con dirección absoluta', () => {
     expect(contenido(reescrito, 'og:image')).toBe(IMAGEN);
+  });
+
+  it('los íconos son los del taller, no los de la app', () => {
+    expect(HTML).toContain('href="/numa.svg"');
+    for (const vieja of Object.keys(ICONO_DEL_TALLER_EN_LUGAR_DE)) {
+      expect(reescrito).not.toContain(`href="${vieja}"`);
+    }
+    expect(reescrito).toContain('<link rel="icon" href="/taller.ico" sizes="48x48" />');
+    expect(reescrito).toContain('<link rel="icon" href="/taller.svg" type="image/svg+xml" />');
+    expect(reescrito).toContain('<link rel="apple-touch-icon" href="/taller-180.png" />');
+    expect(reescrito.match(/<link rel="(?:icon|apple-touch-icon)"/g)).toHaveLength(
+      ICONOS_DEL_TALLER.length,
+    );
+    expect(reescrito.indexOf('taller.svg')).toBeLessThan(reescrito.indexOf('charset'));
   });
 
   it('sin imagen, no hay etiqueta de imagen', () => {
@@ -126,7 +143,9 @@ describe('el head que sale por el enlace', () => {
   });
 
   it('no queda ni el título ni la descripción de la app', () => {
-    expect(reescrito).not.toContain('<title>MAUN</title>');
+    expect(HTML).toContain('<title>NUMA</title>');
+    expect(reescrito).not.toContain('<title>NUMA</title>');
+    expect(reescrito).not.toContain('NUMA');
     expect(reescrito.match(/<title>/g)).toHaveLength(1);
     expect(reescrito.match(/name="description"/g)).toHaveLength(1);
   });
@@ -161,7 +180,10 @@ describe('las etiquetas genéricas', () => {
     const genericas = etiquetasGenericas(URL_DE_LA_VISTA, IMAGEN);
     expect(genericas.titulo).toBe(TITULO_GENERICO);
     expect(genericas.descripcion).toBe(DESCRIPCION_DE_LA_VISTA);
-    expect(conLasEtiquetas(HTML, genericas)).not.toContain('Finanzas');
+    const reescrito = conLasEtiquetas(HTML, genericas);
+    expect(/<title>([^<]*)<\/title>/.exec(reescrito)?.[1]).toBe('MAUN');
+    expect(reescrito).not.toContain('Nuevas maneras');
+    expect(reescrito).not.toContain('NUMA');
   });
 });
 
@@ -198,6 +220,23 @@ describe('el enlace de la encuesta', () => {
       url: URL_DE_LA_ENCUESTA,
       imagen: IMAGEN,
     });
+  });
+});
+
+describe('el arranque del documento, cuando la función de borde no corre', () => {
+  it('cambia los mismos íconos por los mismos del taller', () => {
+    const cambios = /var delTaller = \{([^}]*)\}/.exec(FUENTE)?.[1] ?? '';
+    const pares = Object.fromEntries(
+      [...cambios.matchAll(/'([^']+)': '([^']+)'/g)].map(([, vieja = '', nueva = '']) => [
+        vieja,
+        nueva,
+      ]),
+    );
+    expect(pares).toEqual(ICONO_DEL_TALLER_EN_LUGAR_DE);
+    expect(Object.values(pares).sort()).toEqual(
+      ICONOS_DEL_TALLER.map((icono) => icono.href).sort(),
+    );
+    expect(FUENTE).toContain("icono.setAttribute('sizes', '48x48')");
   });
 });
 
