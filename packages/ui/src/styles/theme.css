@@ -268,6 +268,8 @@
      resorte espacial rápido y el de atrás lo alcanza con el espacial, un poco después. Con menos
      movimiento las duraciones valen cero, y el retraso también, porque sale de una de ellas. */
   --retraso-del-borde-de-atras: calc(var(--dur-espacial-rapido) / 4);
+  /* Entre una fila y la siguiente cuando entran escalonadas, como las acciones del menú del «+». */
+  --dur-escalon: 22ms;
 
   /* Los resortes del esquema estándar de Material 3, como curvas: cada uno es un par de curva
      (linear()) y duración, que es el tiempo en que asienta a un milésimo. Salen de amortiguación y
@@ -634,6 +636,7 @@
     --dur-corte: 0ms;
     --dur-corte-stagger: 0ms;
     --dur-trazo: 0ms;
+    --dur-escalon: 0ms;
     /* resortes sin movimiento: los escribe `pnpm --filter @maun/ui resortes` */
     --dur-espacial: 0ms;
     --dur-espacial-rapido: 0ms;

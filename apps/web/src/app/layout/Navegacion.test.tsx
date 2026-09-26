@@ -80,9 +80,64 @@ describe('en el celular', () => {
     expect(screen.getByRole('menuitem', { name: 'Movimiento' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Cobro de proyecto' })).toBeInTheDocument();
 
+    vi.useFakeTimers();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(fab).toHaveAttribute('aria-expanded', 'false');
+    const menu = screen.getByRole('menu', { name: 'Cargar algo nuevo' });
+    expect(menu).toHaveAttribute('inert');
+    expect(menu).toHaveAttribute('data-saliendo');
+    expect(screen.getByRole('button', { name: 'Cerrar el menú' })).toHaveClass(
+      'pointer-events-none',
+    );
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    vi.useRealTimers();
     expect(screen.queryByRole('menuitem', { name: 'Movimiento' })).not.toBeInTheDocument();
+  });
+
+  it('el menú que se cierra solo termina de irse cuando termina su fundido', () => {
+    pantallaDe(390);
+    montar('/');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar algo nuevo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar el menú' }));
+    const menu = screen.getByRole('menu', { name: 'Cargar algo nuevo' });
+    expect(menu).toHaveAttribute('inert');
+    fireEvent.transitionEnd(menu, { propertyName: 'scale' });
+    expect(menu).toBeInTheDocument();
+    fireEvent.transitionEnd(menu, { propertyName: 'opacity' });
+    expect(screen.queryByRole('menu', { name: 'Cargar algo nuevo' })).not.toBeInTheDocument();
+  });
+
+  it('al elegir una acción, el menú, su fondo y el giro del más vuelven en el acto', () => {
+    pantallaDe(390);
+    montar('/');
+
+    const fab = screen.getByRole('button', { name: 'Cargar algo nuevo' });
+    fireEvent.click(fab);
+    expect(fab.className).toContain('[--transicion-propia:rotate_var(--dur-expresivo-rapido)');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Movimiento' }));
+    expect(screen.queryByRole('menu', { name: 'Cargar algo nuevo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cerrar el menú' })).not.toBeInTheDocument();
+    expect(fab).toHaveAttribute('aria-expanded', 'false');
+    expect(fab.style.rotate).toBe('0deg');
+    expect(fab.className).not.toContain('--transicion-propia');
+  });
+
+  it('las acciones entran escalonadas: cada una sabe su lugar', () => {
+    pantallaDe(390);
+    montar('/');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cargar algo nuevo' }));
+    const acciones = screen.getAllByRole('menuitem');
+    expect(acciones.map((accion) => accion.style.getPropertyValue('--indice'))).toEqual(
+      acciones.map((_, indice) => String(indice)),
+    );
+    expect(screen.getByRole('menu', { name: 'Cargar algo nuevo' })).toHaveClass(
+      'menu-del-mas',
+      'origin-bottom',
+    );
   });
 
   it('mientras se escribe en un campo, la barra no queda flotando sobre el teclado', async () => {
