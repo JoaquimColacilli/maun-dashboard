@@ -1,10 +1,12 @@
+import { useEffect, useRef, useState } from 'react';
+
 import {
   descartarDePantalla,
   useAvisosEnPantalla,
   type AvisoEnPantalla,
   type TonoDelAviso,
 } from '@/shared/lib';
-import { Icono, type NombreDeIcono } from '@/shared/ui';
+import { Icono, RESPALDO_DE_LA_SALIDA_MS, type NombreDeIcono } from '@/shared/ui';
 
 import { AvisoDeRechazo } from './AvisoDeRechazo';
 
@@ -16,12 +18,98 @@ const ASPECTO: Readonly<
   error: { icono: 'triangle-alert', tono: 'text-alerta', borde: 'border-alerta' },
 };
 
-function Tarjeta({ aviso }: { aviso: AvisoEnPantalla }) {
+interface AvisoMostrado {
+  aviso: AvisoEnPantalla;
+  saliendo: boolean;
+}
+
+function conLosQueSeVan(
+  mostrados: readonly AvisoMostrado[],
+  avisos: readonly AvisoEnPantalla[],
+): AvisoMostrado[] {
+  const vivos = new Map(avisos.map((aviso) => [aviso.id, aviso]));
+  const siguen = mostrados.map((mostrado) => {
+    const vivo = vivos.get(mostrado.aviso.id);
+    return vivo === undefined
+      ? { aviso: mostrado.aviso, saliendo: true }
+      : { aviso: vivo, saliendo: false };
+  });
+  const yaEstaban = new Set(mostrados.map((mostrado) => mostrado.aviso.id));
+  const nuevos = avisos
+    .filter((aviso) => !yaEstaban.has(aviso.id))
+    .map((aviso) => ({ aviso, saliendo: false }));
+  return [...siguen, ...nuevos];
+}
+
+function useAvisosConSalida(): {
+  mostrados: readonly AvisoMostrado[];
+  termino: (id: number) => void;
+} {
+  const avisos = useAvisosEnPantalla();
+  const [mostrados, setMostrados] = useState<AvisoMostrado[]>(() =>
+    avisos.map((aviso) => ({ aviso, saliendo: false })),
+  );
+  const [previos, setPrevios] = useState(avisos);
+  if (previos !== avisos) {
+    setPrevios(avisos);
+    setMostrados(conLosQueSeVan(mostrados, avisos));
+  }
+  return {
+    mostrados,
+    termino: (id) => {
+      setMostrados((actuales) =>
+        actuales.filter((mostrado) => !(mostrado.saliendo && mostrado.aviso.id === id)),
+      );
+    },
+  };
+}
+
+function Tarjeta({
+  aviso,
+  saliendo,
+  alTerminarDeSalir,
+}: {
+  aviso: AvisoEnPantalla;
+  saliendo: boolean;
+  alTerminarDeSalir: () => void;
+}) {
   const aspecto = ASPECTO[aviso.tono];
   const { accion } = aviso;
+  const tarjeta = useRef<HTMLDivElement>(null);
+  const terminar = useRef(alTerminarDeSalir);
+
+  useEffect(() => {
+    terminar.current = alTerminarDeSalir;
+  });
+
+  useEffect(() => {
+    const elemento = tarjeta.current;
+    if (!saliendo || !elemento) return;
+    let terminado = false;
+    const listo = () => {
+      if (terminado) return;
+      terminado = true;
+      terminar.current();
+    };
+    const alTerminarLaTransicion = (evento: TransitionEvent) => {
+      if (evento.target === elemento && evento.propertyName === 'opacity') listo();
+    };
+    elemento.addEventListener('transitionend', alTerminarLaTransicion);
+    const respaldo = setTimeout(listo, RESPALDO_DE_LA_SALIDA_MS);
+    return () => {
+      elemento.removeEventListener('transitionend', alTerminarLaTransicion);
+      clearTimeout(respaldo);
+    };
+  }, [saliendo]);
+
   return (
     <div
-      className={`pointer-events-auto flex items-start gap-2.5 rounded-panel border bg-paper py-2.5 pr-1.5 pl-3.5 shadow-toast ${aspecto.borde}`}
+      ref={tarjeta}
+      inert={saliendo}
+      data-saliendo={saliendo ? '' : undefined}
+      className={`aviso-en-pantalla flex items-start gap-2.5 rounded-panel border bg-paper py-2.5 pr-1.5 pl-3.5 shadow-toast ${
+        saliendo ? 'pointer-events-none' : 'pointer-events-auto'
+      } ${aspecto.borde}`}
     >
       <span className={`mt-0.5 flex-none ${aspecto.tono}`}>
         <Icono nombre={aspecto.icono} tamano={18} />
@@ -63,20 +151,28 @@ function Tarjeta({ aviso }: { aviso: AvisoEnPantalla }) {
 }
 
 export function Avisos() {
-  const avisos = useAvisosEnPantalla();
-  const transitorios = avisos.filter((aviso) => aviso.tono !== 'error');
-  const errores = avisos.filter((aviso) => aviso.tono === 'error');
+  const { mostrados, termino } = useAvisosConSalida();
+  const tarjeta = ({ aviso, saliendo }: AvisoMostrado) => (
+    <Tarjeta
+      key={aviso.id}
+      aviso={aviso}
+      saliendo={saliendo}
+      alTerminarDeSalir={() => {
+        termino(aviso.id);
+      }}
+    />
+  );
+  const transitorios = mostrados.filter(({ aviso }) => aviso.tono !== 'error');
+  const errores = mostrados.filter(({ aviso }) => aviso.tono === 'error');
 
   return (
     <div className="pointer-events-none fixed inset-x-4 bottom-(--holgura-inferior) z-20 mx-auto flex max-w-[420px] flex-col gap-2">
       <div role="status" className="flex flex-col gap-2">
-        {transitorios.map((aviso) => (
-          <Tarjeta key={aviso.id} aviso={aviso} />
-        ))}
+        {transitorios.map(tarjeta)}
       </div>
-      {errores.map((aviso) => (
-        <div key={aviso.id} role="alert">
-          <Tarjeta aviso={aviso} />
+      {errores.map((mostrado) => (
+        <div key={mostrado.aviso.id} role="alert" inert={mostrado.saliendo}>
+          {tarjeta(mostrado)}
         </div>
       ))}
       <AvisoDeRechazo />

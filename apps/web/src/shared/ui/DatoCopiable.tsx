@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { copiar, type ComoQuedo } from '@/shared/lib';
 
-import { Icono } from '@maun/ui';
+import { Icono, Tilde } from '@maun/ui';
 
 export interface DatoCopiableProps {
   etiqueta: string;
@@ -74,7 +74,11 @@ export function DatoCopiable({
             : 'border-border hover:border-ink hover:bg-surface'
         }`}
       >
-        <Icono nombre={comoQuedo === 'copiado' ? 'check' : 'copy'} tamano={16} />
+        {comoQuedo === 'copiado' ? (
+          <Tilde dibujar tamano={16} grosor={2} />
+        ) : (
+          <Icono nombre="copy" tamano={16} />
+        )}
         {comoQuedo === 'copiado' ? 'Copiado' : 'Copiar'}
       </button>
 

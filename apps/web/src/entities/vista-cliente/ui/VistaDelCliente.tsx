@@ -368,229 +368,231 @@ export function VistaDelCliente({ vista, hoy, alMandar }: VistaDelClienteProps) 
   const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
 
   return (
-    <Pagina className="gap-3 md:gap-4">
-      <header className="flex items-center justify-between gap-3 px-1">
-        <span className="min-w-0 font-display text-lema leading-tight">{vista.taller}</span>
-      </header>
+    <div data-quieta="" className="contents">
+      <Pagina className="gap-3 md:gap-4">
+        <header className="flex items-center justify-between gap-3 px-1">
+          <span className="min-w-0 font-display text-lema leading-tight">{vista.taller}</span>
+        </header>
 
-      <PrincipalYApoyo
-        amplio
-        separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
-        apoyo={
-          <div className="@container flex flex-col gap-3 md:gap-4">
-            <ApoyoDeLaVista vista={vista} hoy={hoy} />
+        <PrincipalYApoyo
+          amplio
+          separacion="gap-y-3 @min-[40rem]/apoyo:gap-y-4"
+          apoyo={
+            <div className="@container flex flex-col gap-3 md:gap-4">
+              <ApoyoDeLaVista vista={vista} hoy={hoy} />
 
-            <p data-fin-de-la-vista className="px-1 text-label leading-relaxed text-text-3">
-              Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
-              trabajo. Si algo no coincide, escribile al taller.
-            </p>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-3 md:gap-4">
-          <TarjetaConLamina
-            como="section"
-            aria-label="Tu mueble"
-            dibujo={<TrabajoEnEtapa etapa={etapaDelDibujo(vista)} />}
-            lamina="[&>svg]:w-56 @min-[40rem]/con-lamina:[&>svg]:w-72"
-          >
-            <span className="text-body text-text-2">{vista.cliente}</span>
-            <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
-              {vista.titulo}
-            </h1>
+              <p data-fin-de-la-vista className="px-1 text-label leading-relaxed text-text-3">
+                Esta página la arma el taller para vos y se actualiza sola a medida que avanza el
+                trabajo. Si algo no coincide, escribile al taller.
+              </p>
+            </div>
+          }
+        >
+          <div className="flex flex-col gap-3 md:gap-4">
+            <TarjetaConLamina
+              como="section"
+              aria-label="Tu mueble"
+              dibujo={<TrabajoEnEtapa etapa={etapaDelDibujo(vista)} />}
+              lamina="[&>svg]:w-56 @min-[40rem]/con-lamina:[&>svg]:w-72"
+            >
+              <span className="text-body text-text-2">{vista.cliente}</span>
+              <h1 className="font-display text-h1 leading-tight text-pretty lg:text-h1-lg">
+                {vista.titulo}
+              </h1>
 
-            <EntradaDeLaVista vista={vista} bajada={nota?.resumen ?? ''} hoy={hoy} />
-          </TarjetaConLamina>
+              <EntradaDeLaVista vista={vista} bajada={nota?.resumen ?? ''} hoy={hoy} />
+            </TarjetaConLamina>
 
-          <p
-            role="status"
-            className={
-              anuncio === ''
-                ? 'sr-only'
-                : 'flex items-start gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-3 text-body leading-relaxed font-medium'
-            }
-          >
-            {anuncio !== '' && (
-              <span aria-hidden className="mt-0.5 flex-none text-hogar">
-                <Icono nombre="circle-check" tamano={18} />
-              </span>
-            )}
-            {anuncio}
-          </p>
-
-          {coordinacion !== null && (
-            <CoordinarLaEntrega
-              key={coordinacion.propuesta.id}
-              coordinacion={coordinacion}
-              hoy={hoy}
-              alMandar={alMandar}
-              alAnunciar={setAnuncio}
-            />
-          )}
-
-          <section aria-label="En qué anda" className={`@container ${TARJETA}`}>
-            <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
-            <CaminoDeHitos hitos={vista.hitos} nota={nota} hoy={hoy} />
-            {vista.sigue !== '' && (
-              <p className="mt-3.5 text-body leading-relaxed text-text-2">{vista.sigue}</p>
-            )}
-          </section>
-
-          {vista.eventos.length > 0 && (
-            <section aria-label="Lo que fue pasando" className={TARJETA}>
-              <h2 className="mb-1 text-section font-semibold">Lo que fue pasando</h2>
-              <ol className="list-none">
-                {vista.eventos.map((evento, indice) => (
-                  <li
-                    key={evento.id}
-                    className="grid grid-cols-[18px_1fr_auto] items-start gap-x-3"
-                  >
-                    <span aria-hidden className="flex h-full flex-col items-center">
-                      <span
-                        className={`h-4 w-px flex-none ${indice === 0 ? 'bg-transparent' : 'bg-hairline'}`}
-                      />
-                      <span
-                        className={`size-2 flex-none rounded-pill ${indice === 0 ? 'bg-ink' : 'bg-border'}`}
-                      />
-                      <span
-                        className={`w-px flex-1 ${indice === vista.eventos.length - 1 ? 'bg-transparent' : 'bg-hairline'}`}
-                      />
-                    </span>
-                    <span className="min-w-0 py-3">
-                      <span className="block text-body leading-normal text-pretty">
-                        {evento.texto}
-                      </span>
-                      <span className="mt-0.5 block text-label text-text-3 tabular-nums">
-                        {fechaLarga(evento.fecha, hoy)}
-                      </span>
-                    </span>
-                    <span className="py-3 text-body font-semibold whitespace-nowrap text-hogar tabular-nums">
-                      {evento.monto === null ? '' : formatearPesos(evento.monto)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-
-          <section aria-label="Lo que pagaste" className={TARJETA}>
-            <h2 className="mb-1.5 text-section font-semibold">Lo que pagaste</h2>
-            {vista.pagos.length === 0 ? (
-              textoSinPagos !== '' && (
-                <p className="border-t border-hairline py-3.5 text-body leading-normal text-text-2">
-                  {textoSinPagos}
-                </p>
-              )
-            ) : (
-              <ul className="list-none">
-                {vista.pagos.map((pago) => (
-                  <li
-                    key={pago.id}
-                    className="flex min-h-12 items-baseline gap-3 border-t border-hairline-soft py-2.5"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-body font-medium">
-                        {pago.concepto.trim() === '' ? 'Pago' : pago.concepto}
-                      </span>
-                      <span className="block text-label text-text-3 tabular-nums">
-                        {fechaLarga(pago.fecha, hoy)}
-                      </span>
-                    </span>
-                    <span className="flex-none text-body font-semibold tabular-nums">
-                      {formatearPesos(pago.monto)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <CierreDeLosPagos vista={vista} />
-            <p className="mt-2.5 text-label leading-normal text-text-3">{textoDelPie}</p>
-          </section>
-
-          <section aria-label="Fotos y planos" className={TARJETA}>
-            <div className="mb-3 flex items-baseline justify-between gap-2.5">
-              <h2 className="text-section font-semibold">Fotos y planos</h2>
-              {vista.archivos.length > 0 && (
-                <span className="text-label text-text-3">
-                  {vista.archivos.length === 1
-                    ? '1 archivo'
-                    : `${String(vista.archivos.length)} archivos`}
+            <p
+              role="status"
+              className={
+                anuncio === ''
+                  ? 'sr-only'
+                  : 'flex items-start gap-2.5 rounded-panel border border-hairline bg-paper px-4 py-3 text-body leading-relaxed font-medium'
+              }
+            >
+              {anuncio !== '' && (
+                <span aria-hidden className="mt-0.5 flex-none text-hogar">
+                  <Icono nombre="circle-check" tamano={18} />
                 </span>
               )}
-            </div>
+              {anuncio}
+            </p>
 
-            {vista.archivos.length === 0 ? (
-              <div className="flex flex-col gap-2 rounded-field border border-dashed border-border px-4 py-5">
-                <span className="text-body font-medium">Todavía no hay fotos</span>
-                <span className="text-body leading-normal text-text-2">
-                  Acá van a aparecer los planos, los renders y las fotos que el taller comparta, del
-                  diseño a la entrega.
-                </span>
-              </div>
-            ) : (
-              <>
-                {visuales.length > 0 && (
-                  <ul className="grid list-none grid-cols-2 gap-2.5">
-                    {visuales.map((archivo) => (
-                      <li key={archivo.id}>
-                        <a
-                          href={urlDelArchivo(archivo.ruta)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex flex-col overflow-hidden rounded-field border border-hairline hover:border-ink"
-                        >
-                          <img
-                            src={urlDelArchivo(archivo.rutaMini)}
-                            alt={archivo.nombre}
-                            width={archivo.ancho ?? undefined}
-                            height={archivo.alto ?? undefined}
-                            loading="lazy"
-                            className="aspect-4/3 w-full bg-surface object-cover"
-                          />
-                          <span className="flex items-center gap-2 border-t border-hairline-soft px-2.5 py-2">
-                            <Icono nombre="image" tamano={15} />
-                            <span className="min-w-0 flex-1 truncate text-label leading-normal">
-                              {archivo.nombre}
-                            </span>
-                          </span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {documentos.length > 0 && (
-                  <ul className={`list-none ${visuales.length > 0 ? 'mt-3.5' : ''}`}>
-                    {documentos.map((archivo) => (
-                      <li key={archivo.id}>
-                        <a
-                          href={urlDelArchivo(archivo.ruta)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex min-h-14 items-center gap-3 border-t border-hairline-soft py-2.5 no-underline"
-                        >
-                          <span className="flex size-9.5 flex-none items-center justify-center rounded-field bg-surface">
-                            <Icono nombre="file-text" tamano={18} />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-body font-medium">
-                              {archivo.nombre}
-                            </span>
-                            <span className="block text-meta text-text-3">
-                              {TIPO[archivo.tipo] ?? 'Archivo'}
-                            </span>
-                          </span>
-                          <Icono nombre="arrow-up-right" tamano={16} />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
+            {coordinacion !== null && (
+              <CoordinarLaEntrega
+                key={coordinacion.propuesta.id}
+                coordinacion={coordinacion}
+                hoy={hoy}
+                alMandar={alMandar}
+                alAnunciar={setAnuncio}
+              />
             )}
-          </section>
-        </div>
-      </PrincipalYApoyo>
-    </Pagina>
+
+            <section aria-label="En qué anda" className={`@container ${TARJETA}`}>
+              <h2 className="mb-3.5 text-section font-semibold">El camino de tu mueble</h2>
+              <CaminoDeHitos hitos={vista.hitos} nota={nota} hoy={hoy} />
+              {vista.sigue !== '' && (
+                <p className="mt-3.5 text-body leading-relaxed text-text-2">{vista.sigue}</p>
+              )}
+            </section>
+
+            {vista.eventos.length > 0 && (
+              <section aria-label="Lo que fue pasando" className={TARJETA}>
+                <h2 className="mb-1 text-section font-semibold">Lo que fue pasando</h2>
+                <ol className="list-none">
+                  {vista.eventos.map((evento, indice) => (
+                    <li
+                      key={evento.id}
+                      className="grid grid-cols-[18px_1fr_auto] items-start gap-x-3"
+                    >
+                      <span aria-hidden className="flex h-full flex-col items-center">
+                        <span
+                          className={`h-4 w-px flex-none ${indice === 0 ? 'bg-transparent' : 'bg-hairline'}`}
+                        />
+                        <span
+                          className={`size-2 flex-none rounded-pill ${indice === 0 ? 'bg-ink' : 'bg-border'}`}
+                        />
+                        <span
+                          className={`w-px flex-1 ${indice === vista.eventos.length - 1 ? 'bg-transparent' : 'bg-hairline'}`}
+                        />
+                      </span>
+                      <span className="min-w-0 py-3">
+                        <span className="block text-body leading-normal text-pretty">
+                          {evento.texto}
+                        </span>
+                        <span className="mt-0.5 block text-label text-text-3 tabular-nums">
+                          {fechaLarga(evento.fecha, hoy)}
+                        </span>
+                      </span>
+                      <span className="py-3 text-body font-semibold whitespace-nowrap text-hogar tabular-nums">
+                        {evento.monto === null ? '' : formatearPesos(evento.monto)}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            <section aria-label="Lo que pagaste" className={TARJETA}>
+              <h2 className="mb-1.5 text-section font-semibold">Lo que pagaste</h2>
+              {vista.pagos.length === 0 ? (
+                textoSinPagos !== '' && (
+                  <p className="border-t border-hairline py-3.5 text-body leading-normal text-text-2">
+                    {textoSinPagos}
+                  </p>
+                )
+              ) : (
+                <ul className="list-none">
+                  {vista.pagos.map((pago) => (
+                    <li
+                      key={pago.id}
+                      className="flex min-h-12 items-baseline gap-3 border-t border-hairline-soft py-2.5"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-body font-medium">
+                          {pago.concepto.trim() === '' ? 'Pago' : pago.concepto}
+                        </span>
+                        <span className="block text-label text-text-3 tabular-nums">
+                          {fechaLarga(pago.fecha, hoy)}
+                        </span>
+                      </span>
+                      <span className="flex-none text-body font-semibold tabular-nums">
+                        {formatearPesos(pago.monto)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <CierreDeLosPagos vista={vista} />
+              <p className="mt-2.5 text-label leading-normal text-text-3">{textoDelPie}</p>
+            </section>
+
+            <section aria-label="Fotos y planos" className={TARJETA}>
+              <div className="mb-3 flex items-baseline justify-between gap-2.5">
+                <h2 className="text-section font-semibold">Fotos y planos</h2>
+                {vista.archivos.length > 0 && (
+                  <span className="text-label text-text-3">
+                    {vista.archivos.length === 1
+                      ? '1 archivo'
+                      : `${String(vista.archivos.length)} archivos`}
+                  </span>
+                )}
+              </div>
+
+              {vista.archivos.length === 0 ? (
+                <div className="flex flex-col gap-2 rounded-field border border-dashed border-border px-4 py-5">
+                  <span className="text-body font-medium">Todavía no hay fotos</span>
+                  <span className="text-body leading-normal text-text-2">
+                    Acá van a aparecer los planos, los renders y las fotos que el taller comparta,
+                    del diseño a la entrega.
+                  </span>
+                </div>
+              ) : (
+                <>
+                  {visuales.length > 0 && (
+                    <ul className="grid list-none grid-cols-2 gap-2.5">
+                      {visuales.map((archivo) => (
+                        <li key={archivo.id}>
+                          <a
+                            href={urlDelArchivo(archivo.ruta)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col overflow-hidden rounded-field border border-hairline hover:border-ink"
+                          >
+                            <img
+                              src={urlDelArchivo(archivo.rutaMini)}
+                              alt={archivo.nombre}
+                              width={archivo.ancho ?? undefined}
+                              height={archivo.alto ?? undefined}
+                              loading="lazy"
+                              className="aspect-4/3 w-full bg-surface object-cover"
+                            />
+                            <span className="flex items-center gap-2 border-t border-hairline-soft px-2.5 py-2">
+                              <Icono nombre="image" tamano={15} />
+                              <span className="min-w-0 flex-1 truncate text-label leading-normal">
+                                {archivo.nombre}
+                              </span>
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {documentos.length > 0 && (
+                    <ul className={`list-none ${visuales.length > 0 ? 'mt-3.5' : ''}`}>
+                      {documentos.map((archivo) => (
+                        <li key={archivo.id}>
+                          <a
+                            href={urlDelArchivo(archivo.ruta)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex min-h-14 items-center gap-3 border-t border-hairline-soft py-2.5 no-underline"
+                          >
+                            <span className="flex size-9.5 flex-none items-center justify-center rounded-field bg-surface">
+                              <Icono nombre="file-text" tamano={18} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-body font-medium">
+                                {archivo.nombre}
+                              </span>
+                              <span className="block text-meta text-text-3">
+                                {TIPO[archivo.tipo] ?? 'Archivo'}
+                              </span>
+                            </span>
+                            <Icono nombre="arrow-up-right" tamano={16} />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </section>
+          </div>
+        </PrincipalYApoyo>
+      </Pagina>
+    </div>
   );
 }

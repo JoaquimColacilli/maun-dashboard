@@ -36,6 +36,7 @@ import {
   Icono,
   Pagina,
   PrincipalYApoyo,
+  Tilde,
 } from '@/shared/ui';
 
 import { filasDeCobro } from '../model/comoTePaga';
@@ -259,7 +260,11 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                           copiar(vista.url);
                         }}
                       >
-                        <Icono nombre={copiado ? 'check' : 'copy'} tamano={18} />
+                        {copiado ? (
+                          <Tilde dibujar tamano={18} grosor={2} />
+                        ) : (
+                          <Icono nombre="copy" tamano={18} />
+                        )}
                         {copiado ? 'Copiado' : 'Copiar'}
                       </Button>
                     </div>

@@ -28,7 +28,15 @@ import {
   uuidv7,
   Ir,
 } from '@/shared/lib';
-import { Button, ConSalida, FilaDeAcciones, Hoja, Icono, type NombreDeIcono } from '@/shared/ui';
+import {
+  Button,
+  ConSalida,
+  FilaDeAcciones,
+  Hoja,
+  Icono,
+  Tilde,
+  type NombreDeIcono,
+} from '@/shared/ui';
 
 import {
   guardarTokenDelPedido,
@@ -117,7 +125,7 @@ function useCopiado(): [boolean, (texto: string) => void] {
 function BotonDeCopiar({ copiado, alTocar }: { copiado: boolean; alTocar: () => void }) {
   return (
     <button type="button" onClick={alTocar} className={SECUNDARIO}>
-      <Icono nombre={copiado ? 'check' : 'copy'} tamano={18} />
+      {copiado ? <Tilde dibujar tamano={18} grosor={2} /> : <Icono nombre="copy" tamano={18} />}
       {copiado ? 'Copiado' : 'Copiar el enlace'}
     </button>
   );

@@ -179,6 +179,34 @@
   }
 }
 
+/* Los avisos (ADR 0074) entran desde abajo y se van con un fundido. Son la excepción a «nada se
+   mueve por su cuenta»: los dispara la cola o el reloj, no el dedo. Uno que se va queda en su lugar,
+   inerte, hasta que termina el fundido. Uno que nace durante una transición de pantalla entra
+   quieto: la transición es del documento (la raíz es la activa) o del <main> (la raíz la tiene
+   adentro), y los avisos viven afuera del <main>. Entran con @starting-style y no con @keyframes
+   para que, cuando la transición termina, no arranquen tarde. */
+@layer components {
+  .aviso-en-pantalla {
+    transition:
+      opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos),
+      translate var(--dur-espacial-rapido) var(--resorte-espacial-rapido);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  .aviso-en-pantalla[data-saliendo] {
+    opacity: 0;
+    transition: opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+  }
+
+  :root:is(:active-view-transition, :has(:active-view-transition)) .aviso-en-pantalla {
+    transition: none;
+  }
+}
+
 @position-try --a-lo-alto-de-la-grilla {
   top: max(anchor(--grilla-del-mes top), 8px);
   bottom: max(anchor(--grilla-del-mes bottom), 8px);
