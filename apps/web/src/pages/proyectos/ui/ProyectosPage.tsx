@@ -467,7 +467,7 @@ export function ProyectosPage() {
                     onClick={() => {
                       setFiltro(estado);
                     }}
-                    className={`h-9 rounded-pill border px-3.5 text-label font-medium ${
+                    className={`apretable h-9 rounded-pill border px-3.5 text-label font-medium ${
                       activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
                     }`}
                   >

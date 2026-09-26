@@ -8,7 +8,7 @@ import {
   type Archivo,
 } from '@/entities/archivo';
 import { fechaLarga, hoyLocal } from '@/shared/lib';
-import { Icono } from '@/shared/ui';
+import { Icono, Interruptor } from '@/shared/ui';
 
 import { cuantosVeElCliente } from '../model/compartir';
 
@@ -82,20 +82,13 @@ export function ArchivosQueVeElCliente({ archivos }: ArchivosQueVeElClienteProps
                   {pesoLegible(archivo.bytes)} · {fechaLarga(archivo.created_at.slice(0, 10), hoy)}
                 </span>
               </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={archivo.visible_para_cliente}
-                aria-label={`Compartir ${archivo.nombre}`}
-                onClick={() => {
-                  compartir.mutate({ id: archivo.id, visible: !archivo.visible_para_cliente });
+              <Interruptor
+                etiqueta={`Compartir ${archivo.nombre}`}
+                activo={archivo.visible_para_cliente}
+                alCambiar={(visible) => {
+                  compartir.mutate({ id: archivo.id, visible });
                 }}
-                className={`flex h-8 w-13 flex-none rounded-pill p-[3px] transition-colors ${
-                  archivo.visible_para_cliente ? 'justify-end bg-hogar' : 'justify-start bg-border'
-                }`}
-              >
-                <span className="size-6.5 rounded-pill bg-paper shadow-float" />
-              </button>
+              />
             </li>
           ))}
         </ul>

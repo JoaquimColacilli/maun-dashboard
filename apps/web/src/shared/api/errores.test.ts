@@ -145,7 +145,7 @@ describe('el error que trae el enlace del correo en la URL', () => {
   it('con PKCE viene en la query', () => {
     expect(
       errorDelEnlace(
-        'https://maun-dashboard.netlify.app/acceso?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+        'https://numa-dashboard.netlify.app/acceso?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
       ),
     ).toBe(
       'El enlace venció o ya se usó: cada enlace sirve una sola vez y por un rato. Pedí uno nuevo.',

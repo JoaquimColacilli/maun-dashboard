@@ -5,6 +5,15 @@ export interface Novedad {
 
 export const NOVEDADES: readonly Novedad[] = [
   {
+    version: '2026-09-26',
+    lineas: [
+      'La app ahora se llama NUMA y estrena logo, ícono y dirección.',
+      'Para ver el ícono nuevo, desinstalá la app del celular y volvé a instalarla desde la dirección nueva, con señal y sin nada pendiente de guardar.',
+      'Los enlaces y los QR que les mandaste a tus clientes dejaron de andar: mandáselos de nuevo desde «Mostrarle al cliente», el ojo de la ficha, y el de la encuesta con «Copiar el enlace».',
+      'Los botones se hunden al tocarlos, los interruptores se deslizan, el menú del «+» se abre desde el botón, lo que tildás se tacha con una línea que corre y los avisos entran desde abajo.',
+    ],
+  },
+  {
     version: '2026-09-25.3',
     lineas: [
       'Tu sueldo ahora se cuenta por mes: los cobros lo van pagando hasta completar el que cargaste en Ajustes, y lo que sobra queda en el taller.',

@@ -141,7 +141,7 @@ export function OpcionesDelTrabajo({
                 onClick={() => {
                   alTildar(opcion, !esLaAprobada);
                 }}
-                className={`flex min-h-tap flex-none items-center gap-1.5 rounded-pill border px-3 text-label font-medium ${
+                className={`apretable flex min-h-tap flex-none items-center gap-1.5 rounded-pill border px-3 text-label font-medium ${
                   esLaAprobada
                     ? 'border-hogar bg-hogar-tint text-hogar'
                     : 'border-border text-text-2 hover:bg-surface'

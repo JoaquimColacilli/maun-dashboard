@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 
 import { copiar, usePantallaDespierta } from '@/shared/lib';
-import { Button, FilaDeAcciones, Hoja, Icono } from '@/shared/ui';
+import { Button, FilaDeAcciones, Hoja, Icono, Tilde } from '@/shared/ui';
 
 const DibujoDelQr = lazy(async () => import('./DibujoDelQr'));
 
@@ -45,7 +45,7 @@ export function HojaDelQr({ trabajo, url, alCerrar }: HojaDelQrProps) {
             fallback={
               <div
                 aria-busy="true"
-                className="aspect-square w-full animate-maun-shimmer rounded-field bg-surface-2"
+                className="aspect-square w-full rounded-field bg-surface-2 motion-safe:animate-maun-shimmer"
               >
                 <span className="sr-only" role="status">
                   Dibujando el código
@@ -61,7 +61,11 @@ export function HojaDelQr({ trabajo, url, alCerrar }: HojaDelQrProps) {
 
         <FilaDeAcciones>
           <Button variant="secundario" onClick={alCopiar}>
-            <Icono nombre={copiado ? 'check' : 'copy'} tamano={18} />
+            {copiado ? (
+              <Tilde dibujar tamano={18} grosor={2} />
+            ) : (
+              <Icono nombre="copy" tamano={18} />
+            )}
             {copiado ? 'Copiado' : 'Copiar el enlace'}
           </Button>
           <Button onClick={alCerrar}>Listo</Button>

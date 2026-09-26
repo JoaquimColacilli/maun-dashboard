@@ -94,7 +94,7 @@ export function HojaDeLaFecha({
                         onClick={() => {
                           setFranja(opcion.valor);
                         }}
-                        className={`min-h-tap rounded-pill border px-4 text-body font-medium ${
+                        className={`apretable min-h-tap rounded-pill border px-4 text-body font-medium ${
                           elegida
                             ? 'border-ink bg-ink text-paper'
                             : 'border-border bg-paper text-ink'

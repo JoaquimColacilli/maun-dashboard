@@ -33,6 +33,20 @@ const LA_DESCRIPCION = /<meta\s[^>]*name=["']description["'][^>]*>/i;
 
 const EL_MANIFIESTO = /<link\s[^>]*rel=["']manifest["'][^>]*>/gi;
 
+const LOS_ICONOS_DE_LA_APP = /<link\s[^>]*rel=["'](?:icon|apple-touch-icon)["'][^>]*>/gi;
+
+export const ICONOS_DEL_TALLER = [
+  { rel: 'icon', href: '/taller.ico', sizes: '48x48' },
+  { rel: 'icon', href: '/taller.svg', type: 'image/svg+xml' },
+  { rel: 'apple-touch-icon', href: '/taller-180.png' },
+] as const;
+
+export const ICONO_DEL_TALLER_EN_LUGAR_DE: Readonly<Record<string, string>> = {
+  '/favicon.ico': '/taller.ico',
+  '/numa.svg': '/taller.svg',
+  '/numa-apple-180.png': '/taller-180.png',
+};
+
 const LA_APERTURA_DEL_HEAD = /<head(\s[^>]*)?>/i;
 
 const ESCAPES: Readonly<Record<string, string>> = {
@@ -97,15 +111,25 @@ function bloqueDelHead(etiquetas: EtiquetasDeLaVista): string {
   if (etiquetas.imagen !== null) {
     lineas.push(`<meta property="og:image" content="${escapar(etiquetas.imagen)}" />`);
   }
+  for (const icono of ICONOS_DEL_TALLER) {
+    const tamano = 'sizes' in icono ? ` sizes="${icono.sizes}"` : '';
+    const tipo = 'type' in icono ? ` type="${icono.type}"` : '';
+    lineas.push(`<link rel="${icono.rel}" href="${icono.href}"${tamano}${tipo} />`);
+  }
   return lineas.join('');
 }
 
-// Primero se saca lo que el index.html trae para toda la app —el título, la descripción y el
-// manifiesto— y recién después se mete el bloque nuevo, para no borrar lo que acabamos de escribir.
-// El manifiesto se va porque el que abre este enlace es un cliente: no tiene por qué recibir la
-// oferta de instalarse la app del taller (ADR 0049).
+// Primero se saca lo que el index.html trae para toda la app —el título, la descripción, el
+// manifiesto y los íconos— y recién después se mete el bloque nuevo, para no borrar lo que acabamos
+// de escribir. El manifiesto se va porque el que abre este enlace es un cliente: no tiene por qué
+// recibir la oferta de instalarse la app del taller (ADR 0049), y los íconos son los del taller
+// (ADR 0073).
 export function conLasEtiquetas(html: string, etiquetas: EtiquetasDeLaVista): string {
-  const limpio = html.replace(EL_TITULO, '').replace(LA_DESCRIPCION, '').replace(EL_MANIFIESTO, '');
+  const limpio = html
+    .replace(EL_TITULO, '')
+    .replace(LA_DESCRIPCION, '')
+    .replace(EL_MANIFIESTO, '')
+    .replace(LOS_ICONOS_DE_LA_APP, '');
 
   const bloque = bloqueDelHead(etiquetas);
   if (!LA_APERTURA_DEL_HEAD.test(limpio)) return limpio;

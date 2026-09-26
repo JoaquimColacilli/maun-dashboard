@@ -2,6 +2,14 @@
 
 - Estado: aceptada
 - Fecha: 2026-09-13
+- Enmendado el 2026-09-25 por el [ADR 0073](0073-la-app-se-llama-numa.md): el panel de la marca
+  muestra el logotipo de NUMA en lugar del «MAUN» escrito.
+- Enmendado el 2026-09-26 por el [ADR 0073](0073-la-app-se-llama-numa.md): la app se mudó a
+  `numa-dashboard.netlify.app`, y el RP ID va atado al dominio. Si las passkeys están prendidas, van
+  con `numa-dashboard.netlify.app`, y las creadas con `maun-dashboard.netlify.app` no sirven más.
+  Verificado ese día con la API de administración: prendidas, con el RP ID y el origen nuevos y el
+  nombre «NUMA». El bloqueo con huella desbloquea con una credencial del dominio de la página, así que
+  en la dirección nueva se activa de nuevo.
 
 ## Contexto
 
@@ -135,6 +143,8 @@ castellano, y lo que no se conoce dice el código entre paréntesis. Dos casos q
   (`deploy-preview-N--maun-dashboard.netlify.app` no es subdominio, y `netlify.app` es sufijo público).
   Para probar la rama en el teléfono: o producción, o un RP ID temporal `localhost` con el teléfono por
   USB y reenvío de puertos de Chrome. Cambiar el RP ID invalida las passkeys ya creadas.
+  - **Enmendado por el [ADR 0073](0073-la-app-se-llama-numa.md)**: desde el 26 de septiembre el RP ID
+    es `numa-dashboard.netlify.app`, y lo mismo vale para `deploy-preview-N--numa-dashboard`.
 - **Supabase registra con `userVerification: 'preferred'`.** En Android la huella se pide igual, y el
   desbloqueo local exige `required`, pero el servidor no lo garantiza.
 - **Desactivar el bloqueo no borra la passkey del servidor**: sigue sirviendo para entrar desde el

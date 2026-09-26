@@ -133,6 +133,17 @@
     }
   }
 
+  /* La línea del tachado que corre sobre el texto de lo recién tildado (ADR 0074): se descubre de
+     izquierda a derecha con clip-path, que no pide layout. */
+  @keyframes maun-tachado {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
   @keyframes maun-shimmer {
     0% {
       background-position: 200% 0;
@@ -261,6 +272,15 @@
   --dur-corte: 500ms;
   --dur-corte-stagger: 400ms;
   --dur-trazo: 600ms;
+
+  /* Lo que se hunde un control mientras el dedo está encima: el apretón (ADR 0074). */
+  --escala-del-apreton: 0.97;
+  /* Lo que responde al tocar se estira en dos tiempos (ADR 0074): el borde de adelante sale con el
+     resorte espacial rápido y el de atrás lo alcanza con el espacial, un poco después. Con menos
+     movimiento las duraciones valen cero, y el retraso también, porque sale de una de ellas. */
+  --retraso-del-borde-de-atras: calc(var(--dur-espacial-rapido) / 4);
+  /* Entre una fila y la siguiente cuando entran escalonadas, como las acciones del menú del «+». */
+  --dur-escalon: 22ms;
 
   /* Los resortes del esquema estándar de Material 3, como curvas: cada uno es un par de curva
      (linear()) y duración, que es el tiempo en que asienta a un milésimo. Salen de amortiguación y
@@ -627,6 +647,7 @@
     --dur-corte: 0ms;
     --dur-corte-stagger: 0ms;
     --dur-trazo: 0ms;
+    --dur-escalon: 0ms;
     /* resortes sin movimiento: los escribe `pnpm --filter @maun/ui resortes` */
     --dur-espacial: 0ms;
     --dur-espacial-rapido: 0ms;
@@ -642,7 +663,117 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* El apretón (ADR 0074): el control se hunde mientras el dedo está encima y vuelve en el acto al
+   soltar, sin transición, para que una navegación no fotografíe un botón a medio volver. La
+   transición de scale va solo en :active y se suma a la que el elemento ya tenía, que la declara
+   en --transicion-propia. Con menos movimiento y en las páginas del cliente no se hunde. */
+@utility apretable {
+  transition: var(--transicion-propia, scale 0s);
+
+  &:active:not(:disabled) {
+    scale: var(--escala-del-apreton);
+    transition:
+      var(--transicion-propia, scale 0s),
+      scale var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      scale: none;
+    }
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) &:active:not(:disabled) {
+    scale: none;
+  }
+}
+
+/* El interruptor (ADR 0074): la perilla es un círculo posicionado por sus dos bordes, y al cambiar de
+   lado sale primero el de adelante y el de atrás lo alcanza. Solo se mueve si el dedo lo cambió
+   (data-tocado): al montarse, y si el dato cambia desde otro lado, queda en su lugar. En las páginas
+   del cliente no se mueve. */
+@layer components {
+  .interruptor .perilla {
+    left: 3px;
+    right: calc(100% - 29px);
+  }
+
+  .interruptor[aria-checked='true'] .perilla {
+    left: calc(100% - 29px);
+    right: 3px;
+  }
+
+  .interruptor[data-tocado] .perilla {
+    transition:
+      left var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      right var(--dur-espacial) var(--resorte-espacial) var(--retraso-del-borde-de-atras);
+  }
+
+  .interruptor[data-tocado][aria-checked='true'] .perilla {
+    transition:
+      right var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      left var(--dur-espacial) var(--resorte-espacial) var(--retraso-del-borde-de-atras);
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) .interruptor .perilla {
+    transition: none !important;
+  }
+}
+
+/* El fondo del elegido de un segmentado (ADR 0074) viaja igual que la perilla: sale el borde que va
+   adelante y el de atrás lo alcanza. FondoDelElegido lo mide y le pone data-hacia solo cuando el
+   dedo cambió la opción; al montarse, al cambiar de ancho o si el dato cambia desde otro lado, se
+   ubica sin transición. */
+@layer components {
+  .fondo-del-elegido[data-hacia='derecha'] {
+    transition:
+      right var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      left var(--dur-espacial) var(--resorte-espacial) var(--retraso-del-borde-de-atras);
+  }
+
+  .fondo-del-elegido[data-hacia='izquierda'] {
+    transition:
+      left var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      right var(--dur-espacial) var(--resorte-espacial) var(--retraso-del-borde-de-atras);
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) .fondo-del-elegido {
+    transition: none !important;
+  }
+}
+
+/* La tilde que se dibuja y la línea que tacha (ADR 0074). La tilde es un trazo con pathLength="1"
+   que reusa maun-trazo; se dibuja solo con data-dibujar, que pone quien la muestra cuando el dedo
+   recién tildó o recién copió: al montarse una pantalla, lo hecho ya está hecho. La línea es una
+   copia del texto sin tinta, con su line-through (.linea-del-tachado), que se descubre un escalón
+   después de la tilde; el texto de verdad esconde su propia línea mientras tanto. El recorte va en
+   el bloque que envuelve la copia (.tachado-que-corre), porque en un elemento en línea Chromium
+   recorta con la caja del primer renglón y los demás no se verían. En las páginas del cliente no
+   se dibuja nada. */
+@layer components {
+  .tilde[data-dibujar] path {
+    stroke-dasharray: 1;
+    animation: maun-trazo var(--dur-efectos) var(--resorte-efectos) both;
+  }
+
+  .tachado-que-corre {
+    animation: maun-tachado var(--dur-efectos) var(--resorte-efectos) var(--dur-escalon) both;
+  }
+
+  .linea-del-tachado {
+    visibility: visible;
+    color: transparent;
+    text-decoration-line: line-through;
+    text-decoration-color: var(--color-text-3);
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) :is(.tilde path, .tachado-que-corre) {
+    animation: none !important;
   }
 }
 

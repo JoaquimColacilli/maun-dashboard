@@ -65,11 +65,19 @@ export default defineConfig(({ mode }) => {
         filename: 'sw.ts',
         registerType: 'prompt',
         injectRegister: false,
-        includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png'],
+        includeAssets: [
+          'favicon.ico',
+          'numa.svg',
+          'numa-apple-180.png',
+          'taller.ico',
+          'taller.svg',
+          'taller-180.png',
+        ],
         manifest: {
-          name: 'MAUN',
-          short_name: 'MAUN',
-          description: 'Finanzas y proyectos del taller MAUN.',
+          id: '/',
+          name: 'NUMA',
+          short_name: 'NUMA',
+          description: 'Nuevas maneras de gestionar el taller.',
           lang: 'es-AR',
           start_url: '/',
           scope: '/',
@@ -77,11 +85,10 @@ export default defineConfig(({ mode }) => {
           background_color: '#f2f1ed',
           theme_color: '#f2f1ed',
           icons: [
-            { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-            { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+            { src: 'numa-192.png', sizes: '192x192', type: 'image/png' },
+            { src: 'numa-512.png', sizes: '512x512', type: 'image/png' },
             {
-              src: 'maskable-icon-512x512.png',
+              src: 'numa-enmascarable-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
@@ -96,7 +103,7 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       setupFiles: ['./vitest.setup.ts'],
-      include: ['src/**/*.test.{ts,tsx}', 'netlify/**/*.test.ts'],
+      include: ['src/**/*.test.{ts,tsx}', 'netlify/**/*.test.ts', 'scripts/**/*.test.ts'],
     },
   };
 });

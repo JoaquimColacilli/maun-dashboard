@@ -201,7 +201,7 @@ function ListaDelMes({
                   onClick={() => {
                     alAnotar(fecha);
                   }}
-                  className="flex h-9 items-center gap-1.5 rounded-pill border border-dashed border-border px-3 text-label font-medium"
+                  className="apretable flex h-9 items-center gap-1.5 rounded-pill border border-dashed border-border px-3 text-label font-medium"
                 >
                   <Icono nombre="plus" tamano={14} />
                   Anotar
@@ -227,7 +227,7 @@ function ListaDelMes({
                   onClick={() => {
                     alAnotar(fecha);
                   }}
-                  className="flex h-9 items-center gap-1.5 rounded-pill border border-dashed border-border px-3 text-label font-medium"
+                  className="apretable flex h-9 items-center gap-1.5 rounded-pill border border-dashed border-border px-3 text-label font-medium"
                 >
                   <Icono nombre="plus" tamano={14} />
                   Anotar
@@ -610,7 +610,7 @@ export function AgendaPage() {
               onClick={() => {
                 setFiltro(id);
               }}
-              className={`flex h-[34px] items-center gap-1.5 rounded-pill border px-2.5 text-label font-medium ${
+              className={`apretable flex h-[34px] items-center gap-1.5 rounded-pill border px-2.5 text-label font-medium ${
                 activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
               }`}
             >

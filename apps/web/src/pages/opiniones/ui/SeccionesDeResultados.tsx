@@ -303,7 +303,7 @@ export function PreguntaPorPregunta({
               onClick={() => {
                 setConNumeros((actual) => !actual);
               }}
-              className="flex h-8.5 items-center gap-1.75 rounded-pill border border-border bg-paper px-2.75 text-label font-medium hover:bg-ink/5"
+              className="apretable flex h-8.5 items-center gap-1.75 rounded-pill border border-border bg-paper px-2.75 text-label font-medium hover:bg-ink/5"
             >
               <Icono nombre="table" tamano={15} />
               {conNumeros ? 'Ocultar los números' : 'Ver los números'}

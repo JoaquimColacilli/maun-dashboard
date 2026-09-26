@@ -2,6 +2,9 @@
 
 Estado: aceptada, 2026-09-19. Amplía la lista blanca del [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md).
 
+Enmendada el 2026-09-25 por el [0074](0074-lo-que-responde-al-tocar.md): «Copiado» aparece con una
+tilde que se dibuja, adentro de la app. En la página del cliente no se dibuja: aparece hecha.
+
 ## Contexto
 
 El dueño miró la vista del cliente del PR 28 y pidió una sola cosa nueva:

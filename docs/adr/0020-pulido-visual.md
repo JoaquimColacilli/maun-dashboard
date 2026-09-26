@@ -5,6 +5,7 @@
 - Corregida el 2026-09-21 por el [ADR 0056](0056-el-sueldo-del-mes-se-mide-contra-un-sueldo.md): el mensaje de Inicio sigue leyendo lo mismo que la barra, pero los dos miden contra **un** sueldo por mes, no contra uno por cobro.
 - Revisada por el [ADR 0062](0062-el-reparto-en-la-compu.md): el molde sigue siendo uno, `Pagina`, con el mismo ancho y centrado en todas las pantallas, y ninguna lo cambia. Una primera versión de ese ADR le había dado un ancho a cada reparto y lo había pegado al menú; se volvió atrás el 2026-09-22.
 - Enmendada el 2026-09-24 por el [ADR 0068](0068-la-mesa-y-el-plano.md): el fondo de la app es una mesa (`--color-mesa`) con tarjetas de papel encima; en oscuro el papel sube de `#121212` a `#171717` y la rampa de grises corre con él; `text-3` baja a `#6d6d6d` en claro para pasar 4,5:1 también sobre la mesa; los radios pasan a 8, 12, 20, 24 y 28, y las sombras quedan para lo que flota.
+- Enmendada el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): los avisos entran desde abajo y se van con un fundido, y el que se va queda en su lugar, inerte, hasta terminar; el contexto de salida de `ConSalida` se exporta como `useSalida` (`shared/ui/salida.ts`) y el menú de «Cargar algo nuevo» lo usa para irse hacia el «+».
 
 ## Contexto
 
@@ -94,7 +95,8 @@ de mandarte a Finanzas.
   Lo transitorio va en un `role="status"`; cada error en su `role="alert"` y no se va solo. Cada tono
   tiene ícono y verbo propios. La bandeja de rechazos que ya existía (ADR 0016) se mantiene y vive en
   el mismo contenedor.
-- «Registrar diezmo», y el logo lleva a Inicio con «MAUN, ir a Inicio» como nombre.
+- «Registrar diezmo», y el logo lleva a Inicio con «MAUN, ir a Inicio» como nombre. Desde el
+  [ADR 0073](0073-la-app-se-llama-numa.md), «NUMA, ir a Inicio».
 
 ## Lo atado
 

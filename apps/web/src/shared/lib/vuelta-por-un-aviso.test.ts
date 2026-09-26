@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { esVueltaPorUnAviso, rutaDelAviso, VUELTA_POR_UN_AVISO } from './vuelta-por-un-aviso';
 
-const ORIGEN = 'https://maun-dashboard.netlify.app';
+const ORIGEN = 'https://numa-dashboard.netlify.app';
 
 describe('esVueltaPorUnAviso', () => {
   it('reconoce el mensaje que manda el service worker al tocar un aviso', () => {

@@ -26,16 +26,29 @@
         document.addEventListener('DOMContentLoaded', function () {
           var manifiesto = document.querySelector('link[rel="manifest"]');
           if (manifiesto) manifiesto.remove();
+          var delTaller = {
+            '/favicon.ico': '/taller.ico',
+            '/numa.svg': '/taller.svg',
+            '/numa-apple-180.png': '/taller-180.png',
+          };
+          document
+            .querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')
+            .forEach(function (icono) {
+              var otro = delTaller[icono.getAttribute('href')];
+              if (!otro) return;
+              icono.setAttribute('href', otro);
+              if (icono.hasAttribute('sizes')) icono.setAttribute('sizes', '48x48');
+            });
         });
       }
     </script>
-    <meta name="description" content="Finanzas y proyectos del taller MAUN." />
+    <meta name="description" content="Nuevas maneras de gestionar el taller." />
     <meta name="robots" content="noindex, nofollow, noarchive, noimageindex" />
-    <link rel="icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/numa.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/numa-apple-180.png" />
     <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
-    <title>MAUN</title>
+    <title>NUMA</title>
   </head>
   <body>
     <div id="root"></div>

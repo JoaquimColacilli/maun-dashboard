@@ -368,7 +368,7 @@ export function VistaDelCliente({ vista, hoy, alMandar }: VistaDelClienteProps) 
   const textoDelPie = pieDeLosPagos(vista, hayComoPagar);
 
   return (
-    <Pagina className="gap-3 md:gap-4">
+    <Pagina quieta className="gap-3 md:gap-4">
       <header className="flex items-center justify-between gap-3 px-1">
         <span className="min-w-0 font-display text-lema leading-tight">{vista.taller}</span>
       </header>

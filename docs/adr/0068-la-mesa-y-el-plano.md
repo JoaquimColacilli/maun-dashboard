@@ -14,6 +14,16 @@
 - Enmendado el 2026-09-25 por el [ADR 0069](0069-el-dibujo-del-trabajo-del-cliente.md): «Tu mueble»
   dibuja el proceso del trabajo (`TrabajoEnEtapa`) y no un mueble, Gracias es una tarjeta firmada, y el
   lienzo centra el dibujo también de costado. `MuebleEnEtapa` y `Carcasa` ya no existen.
+- Enmendado el 2026-09-25 por el [ADR 0073](0073-la-app-se-llama-numa.md): el «MAUN» de la barra
+  lateral (sección 6) y el del panel de acceso (sección 15) pasan a ser el logotipo de NUMA, a la altura
+  de sus mayúsculas, y el menú de «Cargar algo nuevo» pasa de `top-[81px]` a `top-[71px]`, a los mismos
+  15 px del botón. La firma «Taller MAUN» de `/v/` y `/o/` no cambia: es del taller.
+- Enmendado el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): además de las cuatro
+  cosas de la sección 11 se mueven, al tocarlas y hasta quedar quietas, el apretón de los botones y los
+  chips, la perilla del interruptor, el fondo del elegido de los segmentados de un renglón, el menú del
+  «+», la tilde y el tachado de lo recién tildado y la tilde de «Copiado». Los avisos entran y se van
+  animados aunque los dispare la cola o el reloj: son la excepción declarada. El interruptor de los
+  archivos que ve el cliente deja el `bg-hogar` y pasa a tinta.
 
 ## Contexto
 
@@ -175,7 +185,10 @@ Los tokens cambian en `theme.css` y todo lo que ya usaba tokens cambia solo.
 - **Botones, chips, insignias y buscadores son cápsulas**; los segmentados llevan pista `bg-ink/6 p-1`
   con el elegido en `bg-elevado shadow-float` (en cápsula los de un renglón; en `rounded-panel` con
   segmentos de 16 px los que pueden partirse). En las pestañas de Proyectos y de Opiniones el fondo del
-  elegido sigue siendo el `span` aparte, sin transición (0066).
+  elegido sigue siendo el `span` aparte, sin transición (0066). Desde el
+  [ADR 0074](0074-lo-que-responde-al-tocar.md), en los de elección única de un renglón el
+  `bg-elevado shadow-float` es `FondoDelElegido`, un fondo aparte que viaja a la opción nueva cuando el
+  dedo la cambia; los que pueden partirse cambian de golpe como antes.
 - **El vacío por un filtro o una búsqueda es una caja punteada**, sin dibujo y sin botón de crear.
 - **El encabezado de cada ficha es una tarjeta**, con el cliente, el título, el estado, la marca de
   liquidación, la nota de «Pasó de Consultas…» y las fechas, y lleva el único `data-destino-de` de la
@@ -245,7 +258,9 @@ El + queda centrado (0 px corrido) y 15 px arriba de la píldora en los tres anc
 destino, y el centro de cada botón toca ese botón. A 320 el botón de «Proyectos» mide 53 y su etiqueta
 50,5: entra con 1,25 px de cada lado. En la barra
 lateral, «MAUN» en 36 px agranda su renglón 9 px y el menú de «Cargar algo nuevo» pasa de `top-[72px]` a
-`top-[81px]`: sigue a 15 px del borde de arriba del botón.
+`top-[81px]`: sigue a 15 px del borde de arriba del botón. **Enmendado por el
+[ADR 0073](0073-la-app-se-llama-numa.md)**: el logotipo de NUMA deja el renglón en el alto del enlace
+(44 px) y el menú pasa a `top-[71px]`, medido otra vez a 15 px del botón.
 
 **La barra vuelve después del toque, no en el medio.** Se escondía al enfocar un campo y volvía en el
 `focusout`. Con el rediseño, en la ficha de un contacto el botón «Anotar el relevamiento» quedó en
@@ -353,6 +368,14 @@ Se mueven cuatro cosas, y ninguna en loop, al pasar el mouse ni al scrollear:
 Con `prefers-reduced-motion`, `--dur-corte`, `--dur-corte-stagger`, `--dur-trazo` y `--dur-medium` valen
 cero y el barrido global deja cada animación en 0,01 ms: todo aparece hecho.
 
+**Enmendado por el [ADR 0074](0074-lo-que-responde-al-tocar.md)**: la regla sigue siendo que nada se
+mueve por su cuenta, en loop, al pasar el mouse ni al scrollear, pero ya no son cuatro cosas. Lo que
+responde al dedo se mueve y termina quieto (el apretón, el interruptor, el fondo del segmentado, el
+menú del «+», la tilde y el tachado, «Copiado»). **Los avisos son la excepción**: entran desde abajo y
+se van con un fundido aunque los dispare la cola o el reloj, y uno que nace durante una transición de
+pantalla entra quieto. El barrido de menos movimiento suma `animation-iteration-count: 1`, y los tres
+loops que no tenían guarda van con `motion-safe:`.
+
 ### 12. La accesibilidad
 
 - **Cada lámina es `aria-hidden`**, y el dibujo no aparece en el árbol de accesibilidad: lo que dice
@@ -408,7 +431,8 @@ Medido con `pnpm --filter @maun/web build` en `main` (`a289e82`) y en esta rama,
   sobre la mesa, sin la línea de abajo.
 - Las pantallas de sesión (entrar, crear cuenta, recuperar, nueva contraseña y el bloqueo) pasan su
   contenedor de `bg-paper` a la mesa, y `BloqueoAlVolver` también. El panel de la marca queda igual: su
-  «MAUN» pasa de `text-h1-lg` (que creció a 36) a `text-[30px]`, y su relleno de costado queda en 20 px
+  «MAUN» pasa de `text-h1-lg` (que creció a 36) a `text-[30px]` (desde el
+  [ADR 0073](0073-la-app-se-llama-numa.md), el logotipo de NUMA de 23 px en ese mismo renglón), y su relleno de costado queda en 20 px
   aunque `--page-pad-mobile` bajó a 16. El `h1` de estas pantallas sube a 30 con el resto:
   `teclado.spec.ts` y `bloqueo.spec.ts` pasan a 390 × 460, así que queda así.
 - Las hojas no cambian de estructura: toman los radios nuevos, 28 la que sube desde abajo y 24 la del

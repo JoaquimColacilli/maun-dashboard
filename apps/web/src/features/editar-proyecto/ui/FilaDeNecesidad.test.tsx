@@ -25,6 +25,11 @@ function necesidad(extra: Partial<Necesidad> = {}): Necesidad {
   };
 }
 
+function terminarLaAnimacion(elemento: Element): void {
+  fireEvent.animationEnd(elemento);
+  fireEvent(elemento, new Event('webkitAnimationEnd', { bubbles: true }));
+}
+
 function montar(fila: Necesidad = necesidad(), bloqueado = false) {
   if (HERRAJES === undefined) throw new Error('falta la lista de herrajes');
   const alTildar = vi.fn<(listo: boolean) => void>();
@@ -243,8 +248,71 @@ describe('la fila con teclado y lector de pantalla', () => {
     const copia = within(screen.getByRole('listitem'))
       .getAllByText('Bisagras Cazoleta 35 Cierre Suave')
       .filter((elemento) => elemento.tagName === 'SPAN');
-    expect(copia).toHaveLength(1);
-    expect(copia[0]).toHaveAttribute('aria-hidden', 'true');
+    expect(copia.length).toBeGreaterThan(0);
+    for (const elemento of copia) {
+      expect(elemento.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
+  });
+
+  it('al tildarla, la tilde se dibuja y una línea corre sobre el nombre; al destildar vuelve en el acto', () => {
+    if (HERRAJES === undefined) throw new Error('falta la lista de herrajes');
+    const LISTA = HERRAJES;
+    const alTildar = vi.fn();
+    const { rerender } = render(
+      <ul>
+        <FilaDeNecesidad
+          necesidad={necesidad()}
+          lista={LISTA}
+          bloqueado={false}
+          alTildar={alTildar}
+          alEditar={vi.fn()}
+          alQuitar={vi.fn()}
+        />
+      </ul>,
+    );
+    const casilla = screen.getByRole('checkbox');
+    expect(casilla).toHaveClass('appearance-none');
+    fireEvent.click(casilla);
+    expect(alTildar).toHaveBeenCalledWith(true);
+    const tildada = (listo: boolean) => (
+      <ul>
+        <FilaDeNecesidad
+          necesidad={necesidad({ listo })}
+          lista={LISTA}
+          bloqueado={false}
+          alTildar={alTildar}
+          alEditar={vi.fn()}
+          alQuitar={vi.fn()}
+        />
+      </ul>
+    );
+    rerender(tildada(true));
+    const fila = screen.getByRole('listitem');
+    expect(fila.querySelector('svg.tilde')).toHaveAttribute('data-dibujar');
+    const linea = fila.querySelector('.tachado-que-corre');
+    expect(linea).not.toBeNull();
+    expect(linea?.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(
+      screen.getByRole('textbox', { name: 'Nombre de Bisagras Cazoleta 35 Cierre Suave' }),
+    ).toHaveClass('line-through', 'decoration-transparent');
+    if (linea) terminarLaAnimacion(linea);
+    expect(fila.querySelector('.tachado-que-corre')).toBeNull();
+    expect(fila.querySelector('svg.tilde')).not.toHaveAttribute('data-dibujar');
+    expect(
+      screen.getByRole('textbox', { name: 'Nombre de Bisagras Cazoleta 35 Cierre Suave' }),
+    ).not.toHaveClass('decoration-transparent');
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    rerender(tildada(false));
+    expect(fila.querySelector('svg.tilde')).toBeNull();
+    expect(fila.querySelector('.tachado-que-corre')).toBeNull();
+  });
+
+  it('lo que ya estaba tildado al abrir la ficha no se dibuja de nuevo', () => {
+    montar(necesidad({ listo: true }));
+    const fila = screen.getByRole('listitem');
+    expect(fila.querySelector('svg.tilde')).not.toHaveAttribute('data-dibujar');
+    expect(fila.querySelector('.tachado-que-corre')).toBeNull();
   });
 
   it('en un trabajo cerrado los campos se leen pero no se editan', () => {

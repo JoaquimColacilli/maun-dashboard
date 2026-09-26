@@ -125,6 +125,88 @@
   }
 }
 
+/* El menú del «+» (ADR 0074) crece desde el botón que lo abre, con el origen del lado del «+», y
+   sus acciones entran escalonadas. Al cerrarse vuelve hacia el botón y las acciones se van con él,
+   todas juntas. Si se elige una acción, el menú se desmonta en el acto y la navegación se lleva la
+   pantalla: esa salida no se anima. */
+@layer components {
+  .menu-del-mas {
+    transition:
+      scale var(--dur-espacial) var(--resorte-espacial),
+      opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+
+    @starting-style {
+      scale: 0.4;
+      opacity: 0;
+    }
+  }
+
+  .menu-del-mas[data-saliendo] {
+    scale: 0.4;
+    opacity: 0;
+    transition:
+      scale var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+  }
+
+  .accion-del-menu {
+    transition:
+      opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos)
+        calc(var(--indice, 0) * var(--dur-escalon)),
+      translate var(--dur-espacial-rapido) var(--resorte-espacial-rapido)
+        calc(var(--indice, 0) * var(--dur-escalon));
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+
+  .menu-del-mas[data-saliendo] .accion-del-menu {
+    transition: none;
+  }
+
+  .fondo-del-menu {
+    transition: opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+
+  .fondo-del-menu[data-saliendo] {
+    opacity: 0;
+  }
+}
+
+/* Los avisos (ADR 0074) entran desde abajo y se van con un fundido. Son la excepción a «nada se
+   mueve por su cuenta»: los dispara la cola o el reloj, no el dedo. Uno que se va queda en su lugar,
+   inerte, hasta que termina el fundido. Uno que nace durante una transición de pantalla entra
+   quieto: la transición es del documento (la raíz es la activa) o del <main> (la raíz la tiene
+   adentro), y los avisos viven afuera del <main>. Entran con @starting-style y no con @keyframes
+   para que, cuando la transición termina, no arranquen tarde. */
+@layer components {
+  .aviso-en-pantalla {
+    transition:
+      opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos),
+      translate var(--dur-espacial-rapido) var(--resorte-espacial-rapido);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  .aviso-en-pantalla[data-saliendo] {
+    opacity: 0;
+    transition: opacity var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+  }
+
+  :root:is(:active-view-transition, :has(:active-view-transition)) .aviso-en-pantalla {
+    transition: none;
+  }
+}
+
 @position-try --a-lo-alto-de-la-grilla {
   top: max(anchor(--grilla-del-mes top), 8px);
   bottom: max(anchor(--grilla-del-mes bottom), 8px);

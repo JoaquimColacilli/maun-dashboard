@@ -17,7 +17,7 @@ interface ContextoDeNetlify {
 
 export const TOPE_DE_LA_CONSULTA_MS = 1_000;
 
-export const IMAGEN_DE_LA_VISTA = '/pwa-512x512.png';
+export const IMAGEN_DE_LA_VISTA = '/taller-512.png';
 
 interface TituloDelTrabajo {
   trabajo: string;

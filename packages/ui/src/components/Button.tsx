@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-pill py-1.5 text-center font-medium transition-colors duration-(--dur-fast) ease-out';
+  'apretable inline-flex items-center justify-center gap-2 rounded-pill py-1.5 text-center font-medium [--transicion-propia:color_var(--dur-fast)_var(--ease-out),background-color_var(--dur-fast)_var(--ease-out),border-color_var(--dur-fast)_var(--ease-out)]';
 
 const VARIANTES = {
   primario: 'bg-ink px-[18px] text-paper enabled:hover:bg-ink-hover',
@@ -55,7 +55,7 @@ export function Button({
       {cargando && (
         <span
           aria-hidden
-          className="size-4 animate-maun-spin rounded-full border-2 border-paper/35 border-t-paper"
+          className="size-4 rounded-full border-2 border-paper/35 border-t-paper motion-safe:animate-maun-spin"
         />
       )}
       {children}

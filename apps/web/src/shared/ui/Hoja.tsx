@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -20,15 +18,8 @@ import {
   useAnchoDePantalla,
 } from '@/shared/lib';
 
-interface Salida {
-  saliendo: boolean;
-  alTerminar: () => void;
-  despuesDeSalir: (accion: () => void) => void;
-}
+import { ContextoDeSalida, RESPALDO_DE_LA_SALIDA_MS, useSalida } from './salida';
 
-const ContextoDeSalida = createContext<Salida | null>(null);
-
-const RESPALDO_DE_LA_SALIDA_MS = 400;
 const RESPALDO_DE_LO_QUE_SIGUE_MS = 600;
 
 function unaSolaVez(accion: () => void): () => void {
@@ -144,7 +135,7 @@ export function Hoja({
   const [preguntando, setPreguntando] = useState(false);
   const [focoAntesDePreguntar, setFocoAntesDePreguntar] = useState<HTMLElement | null>(null);
 
-  const salida = useContext(ContextoDeSalida);
+  const salida = useSalida();
   const saliendo = salida?.saliendo ?? false;
   const alTerminar = salida?.alTerminar;
   const enCelular = pantalla === 'movil';

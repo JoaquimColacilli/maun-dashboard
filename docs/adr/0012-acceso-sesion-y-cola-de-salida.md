@@ -2,6 +2,12 @@
 
 Estado: aceptada, 2026-09-11. Es lo que se construyó en la fase 2C.
 
+Enmendada el 2026-09-26 por el [0073](0073-la-app-se-llama-numa.md): la app se mudó a
+`numa-dashboard.netlify.app`. El `site_url` es `https://numa-dashboard.netlify.app` y las redirecciones
+permitidas son `http://localhost:5173/**`, `https://numa-dashboard.netlify.app/**` y
+`https://*--numa-dashboard.netlify.app/**`; las de `maun-dashboard` ya no están. Verificado ese día con
+la API de administración.
+
 ## Contexto
 
 El acceso es lo primero que ve el usuario y lo primero de la app real. El taller tiene mala señal, la usa una persona (el hermano del dueño) y los datos viven detrás de RLS por household (ADR 0004). Tres cosas cambiaron respecto del brief de la fase 2: el registro público queda **abierto**, la confirmación de mail **activada**, y el alta es **auto-servicio** —quien se registra sale con su propio taller, sin que nadie lo apruebe—. El mail sale por el servicio integrado de Supabase, sin SMTP propio.

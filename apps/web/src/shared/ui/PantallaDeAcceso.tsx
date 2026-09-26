@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
-import { Avatar } from '@maun/ui';
+import { Avatar, Logotipo } from '@maun/ui';
 
 import { useAnchoDePantalla, useVentanaVisible } from '@/shared/lib';
 
@@ -142,7 +142,9 @@ export function PantallaDeAcceso({
             compacto ? 'min-h-0 pb-4' : 'min-h-[calc(env(safe-area-inset-top)+64px)] pb-7'
           }`}
         >
-          <p className="font-display text-[30px] leading-none lg:row-start-1">MAUN</p>
+          <p className="h-[30px] lg:row-start-1">
+            <Logotipo className="mt-0.5 h-[23px] w-auto" />
+          </p>
           <p className="text-label text-sobre-marca/60 lg:row-start-3 lg:self-end">
             Un taller, cuatro tesoros.
           </p>

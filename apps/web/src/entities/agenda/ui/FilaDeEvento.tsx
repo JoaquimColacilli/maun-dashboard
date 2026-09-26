@@ -18,6 +18,8 @@ export interface AccionesDeLaAgenda {
   alMarcar: (evento: EventoDeLaAgenda) => void;
   alBorrar: (evento: EventoPropio) => void;
   alRegistrar?: (evento: EventoDerivado) => void;
+  recienHecha?: string | null;
+  alTerminarDeTachar?: () => void;
 }
 
 export interface FilaDeEventoProps {
@@ -60,10 +62,14 @@ function Contenido({
   evento,
   hoy,
   enElDia,
+  tachar = false,
+  alTerminarDeTachar,
 }: {
   evento: EventoDeLaAgenda;
   hoy: string;
   enElDia: boolean;
+  tachar?: boolean;
+  alTerminarDeTachar?: () => void;
 }) {
   const categoria = CATEGORIA[evento.categoria];
   const urgencia = urgenciaDelEvento(evento, hoy);
@@ -95,9 +101,18 @@ function Contenido({
         <span
           className={`leading-snug text-pretty ${
             hecha ? 'text-label text-text-3 line-through' : 'text-body text-ink'
-          }`}
+          } ${tachar ? 'relative decoration-transparent' : ''}`}
         >
           {textoDelEvento(evento)}
+          {tachar && (
+            <span
+              aria-hidden
+              className="tachado-que-corre linea-del-tachado absolute inset-0"
+              onAnimationEnd={alTerminarDeTachar}
+            >
+              {textoDelEvento(evento)}
+            </span>
+          )}
         </span>
         {hecha && <span className="sr-only">, {textoDeLoHecho(evento)}</span>}
       </span>
@@ -272,6 +287,8 @@ export function FilaDeEvento({
     );
   }
 
+  const tachar = evento.hecha && acciones.recienHecha === evento.id;
+
   return (
     <li
       data-anotacion={evento.id}
@@ -282,13 +299,20 @@ export function FilaDeEvento({
     >
       <CasillaDeAnotacion
         evento={evento}
+        dibujar={tachar}
         alTildar={() => {
           acciones.alTildar(evento);
         }}
       />
       {enElDia || alAbrirElDia === undefined ? (
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <Contenido evento={evento} hoy={hoy} enElDia={enElDia} />
+          <Contenido
+            evento={evento}
+            hoy={hoy}
+            enElDia={enElDia}
+            tachar={tachar}
+            alTerminarDeTachar={acciones.alTerminarDeTachar}
+          />
         </div>
       ) : (
         <button
@@ -298,7 +322,13 @@ export function FilaDeEvento({
           }}
           className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded-field text-left"
         >
-          <Contenido evento={evento} hoy={hoy} enElDia={false} />
+          <Contenido
+            evento={evento}
+            hoy={hoy}
+            enElDia={false}
+            tachar={tachar}
+            alTerminarDeTachar={acciones.alTerminarDeTachar}
+          />
         </button>
       )}
       {enElDia && (

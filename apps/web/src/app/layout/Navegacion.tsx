@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 
 import { VersionDeLaApp } from '@/features/ver-novedades';
@@ -10,7 +10,15 @@ import {
   useIr,
   useUbicacionVisible,
 } from '@/shared/lib';
-import { Avatar, Icono } from '@/shared/ui';
+import {
+  Avatar,
+  ConSalida,
+  Icono,
+  Isotipo,
+  Logotipo,
+  RESPALDO_DE_LA_SALIDA_MS,
+  useSalida,
+} from '@/shared/ui';
 
 import { historialDelNavegador } from '../navegacion/historial';
 import { destinoDeLaBarra } from '../navegacion/pila';
@@ -59,12 +67,12 @@ function LogoAInicio({
 }: {
   irA: (ruta: string) => void;
   className: string;
-  children: string;
+  children: ReactNode;
 }) {
   return (
     <Ir
       a={DESTINOS.inicio.ruta}
-      aria-label="MAUN, ir a Inicio"
+      aria-label="NUMA, ir a Inicio"
       className={className}
       alTocar={() => {
         irA(DESTINOS.inicio.ruta);
@@ -133,6 +141,7 @@ function useEditando(): boolean {
 
 function useMenuDeAcciones() {
   const [abierto, setAbierto] = useState(false);
+  const [enElActo, setEnElActo] = useState(false);
 
   useEffect(() => {
     if (!abierto) return;
@@ -145,43 +154,88 @@ function useMenuDeAcciones() {
     };
   }, [abierto]);
 
-  return { abierto, setAbierto };
+  return {
+    abierto,
+    enElActo,
+    alternar: () => {
+      setEnElActo(false);
+      setAbierto(!abierto);
+    },
+    cerrar: () => {
+      setAbierto(false);
+    },
+    cerrarEnElActo: () => {
+      setEnElActo(true);
+      setAbierto(false);
+    },
+  };
 }
 
-function MenuDeAcciones({
-  abierto,
-  cerrar,
-  irA,
-  className,
-}: {
-  abierto: boolean;
+interface MenuDeAccionesProps {
   cerrar: () => void;
+  cerrarEnElActo: () => void;
   irA: (ruta: string) => void;
   className: string;
-}) {
-  if (!abierto) return null;
+}
+
+function Menu({ cerrar, cerrarEnElActo, irA, className }: MenuDeAccionesProps) {
+  const salida = useSalida();
+  const saliendo = salida?.saliendo ?? false;
+  const alTerminar = salida?.alTerminar;
+  const menu = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const elemento = menu.current;
+    if (!saliendo || !elemento || !alTerminar) return;
+    let terminado = false;
+    const terminar = () => {
+      if (terminado) return;
+      terminado = true;
+      alTerminar();
+    };
+    const alTerminarLaTransicion = (evento: TransitionEvent) => {
+      if (evento.target === elemento && evento.propertyName === 'opacity') terminar();
+    };
+    elemento.addEventListener('transitionend', alTerminarLaTransicion);
+    const respaldo = setTimeout(terminar, RESPALDO_DE_LA_SALIDA_MS);
+    return () => {
+      elemento.removeEventListener('transitionend', alTerminarLaTransicion);
+      clearTimeout(respaldo);
+    };
+  }, [saliendo, alTerminar]);
 
   return (
     <>
       <button
         type="button"
         aria-label="Cerrar el menú"
-        className="pointer-events-auto fixed inset-0 z-20 bg-velo-suave"
+        inert={saliendo}
+        data-saliendo={saliendo ? '' : undefined}
+        className={`fondo-del-menu fixed inset-0 z-20 bg-velo-suave ${
+          saliendo ? 'pointer-events-none' : 'pointer-events-auto'
+        }`}
         onClick={cerrar}
       />
       <div
+        ref={menu}
         role="menu"
         aria-label="Cargar algo nuevo"
-        className={`z-30 flex min-w-[250px] flex-col gap-0.5 rounded-panel bg-ink p-1.5 text-paper shadow-menu ${className}`}
+        inert={saliendo}
+        data-saliendo={saliendo ? '' : undefined}
+        className={`menu-del-mas z-30 flex min-w-[250px] flex-col gap-0.5 rounded-panel bg-ink p-1.5 text-paper shadow-menu ${
+          saliendo ? 'pointer-events-none' : ''
+        } ${className}`}
       >
-        {ACCIONES_RAPIDAS.map((accion) => (
+        {ACCIONES_RAPIDAS.map((accion, indice) => (
           <button
             key={accion.etiqueta}
             type="button"
             role="menuitem"
-            className="flex min-h-tap items-center gap-3 rounded-field px-3 text-left text-body-lg hover:bg-paper/10"
+            style={{ '--indice': indice } as CSSProperties}
+            className="accion-del-menu flex min-h-tap items-center gap-3 rounded-field px-3 text-left text-body-lg hover:bg-paper/10"
             onClick={() => {
-              cerrar();
+              alTerminar?.();
+              cerrarEnElActo();
               irA(accion.ruta);
             }}
           >
@@ -194,6 +248,15 @@ function MenuDeAcciones({
   );
 }
 
+function MenuDeAcciones({
+  abierto,
+  ...props
+}: MenuDeAccionesProps & {
+  abierto: boolean;
+}) {
+  return <ConSalida valor={abierto}>{() => <Menu {...props} />}</ConSalida>;
+}
+
 function BarraInferior({
   activo,
   irA,
@@ -201,7 +264,7 @@ function BarraInferior({
   activo: IdDeSeccion | undefined;
   irA: (r: string) => void;
 }) {
-  const { abierto, setAbierto } = useMenuDeAcciones();
+  const { abierto, enElActo, alternar, cerrar, cerrarEnElActo } = useMenuDeAcciones();
   const editando = useEditando();
   const irALaSeccion = useIrALaSeccion(irA);
   const columnas = ['col-start-1', 'col-start-2', 'col-start-4', 'col-start-5'];
@@ -212,11 +275,10 @@ function BarraInferior({
     <>
       <MenuDeAcciones
         abierto={abierto}
-        cerrar={() => {
-          setAbierto(false);
-        }}
+        cerrar={cerrar}
+        cerrarEnElActo={cerrarEnElActo}
         irA={irA}
-        className="pointer-events-auto fixed bottom-(--holgura-inferior) left-1/2 -translate-x-1/2"
+        className="pointer-events-auto fixed bottom-(--holgura-inferior) left-1/2 origin-bottom -translate-x-1/2"
       />
       <nav aria-label="Principal" className="grid w-full grid-cols-1">
         <div
@@ -249,11 +311,13 @@ function BarraInferior({
           type="button"
           aria-label="Cargar algo nuevo"
           aria-expanded={abierto}
-          className="pointer-events-auto relative col-start-1 row-start-1 flex size-fab items-center justify-center self-start justify-self-center rounded-pill bg-ink text-paper shadow-fab transition-transform duration-(--dur-fast) ease-out"
+          className={`apretable pointer-events-auto relative col-start-1 row-start-1 flex size-fab items-center justify-center self-start justify-self-center rounded-pill bg-ink text-paper shadow-fab ${
+            enElActo
+              ? ''
+              : '[--transicion-propia:rotate_var(--dur-expresivo-rapido)_var(--resorte-expresivo-rapido)]'
+          }`}
           style={{ rotate: abierto ? '45deg' : '0deg' }}
-          onClick={() => {
-            setAbierto(!abierto);
-          }}
+          onClick={alternar}
         >
           <Icono nombre="plus" tamano={26} grosor={2} />
         </button>
@@ -263,7 +327,7 @@ function BarraInferior({
 }
 
 function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: string) => void }) {
-  const { abierto, setAbierto } = useMenuDeAcciones();
+  const { abierto, alternar, cerrar, cerrarEnElActo } = useMenuDeAcciones();
 
   return (
     <nav
@@ -272,28 +336,25 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
     >
       <LogoAInicio
         irA={irA}
-        className="mb-3.5 flex size-tap items-center justify-center rounded-pill font-display text-h1 hover:bg-ink/5"
+        className="mb-3.5 flex size-tap items-center justify-center rounded-pill hover:bg-ink/5"
       >
-        M
+        <Isotipo decorativa className="h-[23px] w-auto" />
       </LogoAInicio>
       <button
         type="button"
         aria-label="Cargar algo nuevo"
         aria-expanded={abierto}
-        className="mb-4.5 flex size-tap items-center justify-center rounded-pill bg-ink text-paper shadow-fab"
-        onClick={() => {
-          setAbierto(!abierto);
-        }}
+        className="apretable mb-4.5 flex size-tap items-center justify-center rounded-pill bg-ink text-paper shadow-fab"
+        onClick={alternar}
       >
         <Icono nombre="plus" tamano={22} grosor={2} />
       </button>
       <MenuDeAcciones
         abierto={abierto}
-        cerrar={() => {
-          setAbierto(false);
-        }}
+        cerrar={cerrar}
+        cerrarEnElActo={cerrarEnElActo}
         irA={irA}
-        className="absolute top-[84px] left-[68px]"
+        className="absolute top-[84px] left-[68px] origin-top-left"
       />
       {NAV_TABLET.map((id) => {
         const destino = DESTINOS[id];
@@ -354,7 +415,7 @@ function Sidebar({
   foto: string;
   sincronizacion: string;
 }) {
-  const { abierto, setAbierto } = useMenuDeAcciones();
+  const { abierto, alternar, cerrar, cerrarEnElActo } = useMenuDeAcciones();
 
   return (
     <nav
@@ -364,30 +425,27 @@ function Sidebar({
       <div className="flex items-baseline justify-between pb-4.5">
         <LogoAInicio
           irA={irA}
-          className="rounded-pill px-2.5 font-display text-h1-lg hover:bg-ink/5"
+          className="flex min-h-tap items-center rounded-pill px-2.5 hover:bg-ink/5"
         >
-          MAUN
+          <Logotipo decorativa className="h-[27px] w-auto" />
         </LogoAInicio>
         <span className="text-meta text-text-3">Taller</span>
       </div>
       <button
         type="button"
         aria-expanded={abierto}
-        className="mb-4 flex h-10 items-center justify-center gap-2 rounded-pill bg-ink text-label font-medium text-paper shadow-fab"
-        onClick={() => {
-          setAbierto(!abierto);
-        }}
+        className="apretable mb-4 flex h-10 items-center justify-center gap-2 rounded-pill bg-ink text-label font-medium text-paper shadow-fab"
+        onClick={alternar}
       >
         <Icono nombre="plus" tamano={18} grosor={2} />
         Cargar algo nuevo
       </button>
       <MenuDeAcciones
         abierto={abierto}
-        cerrar={() => {
-          setAbierto(false);
-        }}
+        cerrar={cerrar}
+        cerrarEnElActo={cerrarEnElActo}
         irA={irA}
-        className="absolute top-[81px] left-3.5"
+        className="absolute top-[71px] left-3.5 origin-top-left"
       />
       {NAV_ESCRITORIO.map((id) => {
         const destino = DESTINOS[id];

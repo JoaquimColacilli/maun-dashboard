@@ -1,8 +1,8 @@
-# MAUN
+# NUMA
 
 Money and projects for a custom furniture workshop in Argentina.
 
-MAUN is the private application a one-person workshop runs on: the clients who call, each job from the
+NUMA is the private application a one-person workshop, MAUN Muebles, runs on: the clients who call, each job from the
 first visit to the last payment, and where every peso goes once a job is paid. It is used at the
 workshop computer and on a phone, in a place with very little signal.
 
@@ -257,6 +257,13 @@ with it reopening the application without signal, only exists there. The first r
 pnpm --filter @maun/web exec playwright install chromium
 ```
 
+The application is called NUMA and lives at `numa-dashboard.netlify.app` (the old
+`maun-dashboard.netlify.app` no longer exists and does not redirect). The workshop is MAUN, and MAUN is
+still the internal name: the `@maun/*` packages, the keys stored on each device and the local database
+keep it. What a client sees stays the workshop's, except the address of the link. The logo and the
+icons come from one set of strokes in `packages/ui`, and the icons are regenerated with
+`pnpm --filter @maun/web iconos` ([0073](docs/adr/0073-la-app-se-llama-numa.md)).
+
 Boundaries are lint errors, not conventions. Packages depend in one direction: the application uses the
 design system, the domain and the database package; the database package may use the domain; the design
 system and the domain use nothing from the repository. Inside the application, a module imports only
@@ -324,7 +331,7 @@ workshop id, its indexes and its tests; the structural test rejects it otherwise
 apps/web          the installable web application: screens, local replica, outbound queue
 packages/domain   pure business rules: money, the cascade, caps, states, the ledger
 packages/db       database client, generated types, replica merging, and database tooling
-packages/ui       the design system: tokens and components, importing nothing from the repository
+packages/ui       the design system: tokens, components and the NUMA mark, importing nothing from the repository
 packages/config   shared TypeScript and lint configuration
 supabase          hand-written migrations, pgTAP tests, the reminder edge function, the seed, and the schema snapshot
 docs/adr          architecture decision records

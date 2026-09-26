@@ -23,7 +23,7 @@ import {
 } from '@/entities/cliente';
 import { mensajeDeSincronizacion, type DatosDeCliente } from '@/shared/api';
 import { metaDeAvisos, uuidv7 } from '@/shared/lib';
-import { Button, Campo, FilaDeAcciones, Hoja } from '@/shared/ui';
+import { Button, Campo, FilaDeAcciones, FondoDelElegido, Hoja } from '@/shared/ui';
 
 export interface HojaDeClienteProps {
   cliente?: Cliente;
@@ -182,7 +182,8 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
 
             <fieldset className="flex flex-col gap-1.5">
               <legend className="mb-1.5 text-label text-text-2">Condición frente al IVA</legend>
-              <div className="grid grid-cols-4 gap-0.5 rounded-pill bg-ink/6 p-1">
+              <div className="relative grid grid-cols-4 gap-0.5 rounded-pill bg-ink/6 p-1">
+                <FondoDelElegido elegido={condicion} />
                 {CONDICIONES_EN_ORDEN.map((id) => (
                   <button
                     key={id}
@@ -190,13 +191,12 @@ export function HojaDeCliente({ cliente, nombreInicial, alCerrar, alGuardar }: H
                     role="radio"
                     aria-checked={condicion === id}
                     aria-label={CONDICION[id].etiqueta}
+                    data-opcion={id}
                     onClick={() => {
                       setValue('condicion_fiscal', id, { shouldDirty: true });
                     }}
-                    className={`min-h-tap rounded-pill text-label ${
-                      condicion === id
-                        ? 'bg-elevado font-semibold text-ink shadow-float'
-                        : 'font-medium text-text-2'
+                    className={`relative min-h-tap rounded-pill text-label ${
+                      condicion === id ? 'font-semibold text-ink' : 'font-medium text-text-2'
                     }`}
                   >
                     {CONDICION[id].corto}

@@ -8,7 +8,7 @@ import { useId } from 'react';
 
 import { MarcaDeCategoria } from '@/entities/agenda';
 import type { EstadoDeLosAvisos, PreferenciasDeLaPersona } from '@/shared/api';
-import { Button, Icono } from '@/shared/ui';
+import { Button, Icono, Interruptor } from '@/shared/ui';
 
 import {
   ANTICIPACION_EN_PALABRAS,
@@ -19,7 +19,6 @@ import {
   otrosDispositivos,
   QUE_AVISA,
 } from '../model/textos';
-import { Interruptor } from './Interruptor';
 import { OpcionesDeZona } from './OpcionesDeZona';
 
 export interface PreferenciasDeLosAvisosProps {
@@ -137,7 +136,7 @@ export function PreferenciasDeLosAvisos({
                 onClick={() => {
                   if (!elegida) alCambiar({ ...preferencias, hora });
                 }}
-                className={`min-h-tap rounded-pill border px-3.5 text-body font-medium tabular-nums ${
+                className={`apretable min-h-tap rounded-pill border px-3.5 text-body font-medium tabular-nums ${
                   elegida
                     ? 'border-ink bg-ink text-paper'
                     : 'border-border bg-paper text-ink hover:bg-surface'

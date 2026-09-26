@@ -7,7 +7,7 @@ import {
 import { useState, type ChangeEvent, type KeyboardEvent } from 'react';
 
 import { nombreConCantidad, type Necesidad, type TipoDeLaLista } from '@/entities/proyecto';
-import { Icono } from '@/shared/ui';
+import { Icono, Tilde } from '@/shared/ui';
 
 const CIFRAS_DE_LA_CANTIDAD = String(CANTIDAD_MAXIMA).length;
 
@@ -85,6 +85,8 @@ export function FilaDeNecesidad({
     },
   );
 
+  const [recienTildada, setRecienTildada] = useState(false);
+  const tachar = recienTildada && necesidad.listo;
   const tono = necesidad.listo ? 'text-text-3 line-through' : 'text-ink';
   const campo =
     'rounded-field border border-transparent bg-transparent hover:border-border focus:border-border focus:bg-paper read-only:hover:border-transparent read-only:focus:bg-transparent';
@@ -95,17 +97,26 @@ export function FilaDeNecesidad({
       data-listo={String(necesidad.listo)}
       className="flex items-start gap-1 border-t border-hairline-soft"
     >
-      <label className="flex size-11 flex-none cursor-pointer items-center justify-center">
+      <label className="relative flex size-11 flex-none cursor-pointer items-center justify-center">
         <input
           type="checkbox"
           checked={necesidad.listo}
           disabled={bloqueado}
           aria-label={`${lista.listo}: ${nombreConCantidad(necesidad)}`}
           onChange={(evento) => {
+            setRecienTildada(evento.target.checked);
             alTildar(evento.target.checked);
           }}
-          className="size-5 accent-ink"
+          className="size-5 cursor-pointer appearance-none rounded-[4px] border-[1.5px] border-text-3 bg-paper checked:border-ink checked:bg-ink disabled:cursor-not-allowed disabled:opacity-50"
         />
+        {necesidad.listo && (
+          <Tilde
+            dibujar={tachar}
+            tamano={14}
+            grosor={3}
+            className="pointer-events-none absolute inset-0 m-auto text-paper"
+          />
+        )}
       </label>
 
       <input
@@ -127,9 +138,14 @@ export function FilaDeNecesidad({
       <div className="grid min-w-0 flex-1">
         <span
           aria-hidden
-          className="invisible col-start-1 row-start-1 min-h-11 border border-transparent px-1.5 py-2.5 text-body leading-normal break-words whitespace-pre-wrap"
+          className={`invisible col-start-1 row-start-1 min-h-11 border border-transparent px-1.5 py-2.5 text-body leading-normal break-words whitespace-pre-wrap ${
+            tachar ? 'tachado-que-corre' : ''
+          }`}
+          onAnimationEnd={() => {
+            setRecienTildada(false);
+          }}
         >
-          {`${nombre.value} `}
+          <span className={tachar ? 'linea-del-tachado' : undefined}>{nombre.value}</span>{' '}
         </span>
         <textarea
           {...nombre}
@@ -140,7 +156,9 @@ export function FilaDeNecesidad({
           maxLength={LARGO_MAXIMO_DEL_NOMBRE}
           readOnly={bloqueado}
           aria-label={`Nombre de ${necesidad.nombre}`}
-          className={`col-start-1 row-start-1 min-h-11 resize-none overflow-hidden px-1.5 py-2.5 text-body leading-normal break-words ${campo} ${tono}`}
+          className={`col-start-1 row-start-1 min-h-11 resize-none overflow-hidden px-1.5 py-2.5 text-body leading-normal break-words ${campo} ${tono} ${
+            tachar ? 'decoration-transparent' : ''
+          }`}
         />
       </div>
 

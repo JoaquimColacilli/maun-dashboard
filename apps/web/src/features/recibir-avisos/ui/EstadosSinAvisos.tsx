@@ -89,7 +89,7 @@ export function InstalarEnElIphone() {
         <div className="flex flex-col gap-2.5 border-b border-hairline px-4 py-4 md:px-5">
           <h2 id={id} className={TITULO}>
             <Icono nombre="smartphone" tamano={20} className="flex-none" />
-            Primero agregá MAUN a la pantalla de inicio
+            Primero agregá NUMA a la pantalla de inicio
           </h2>
           <p className={TEXTO}>
             En el iPhone, los avisos solo llegan si la app está agregada a la pantalla de inicio. No
@@ -122,7 +122,7 @@ export function SinSoporte() {
         Este navegador no puede recibir avisos
       </h2>
       <p className={TEXTO}>
-        Para recibirlos, abrí MAUN en Chrome, Edge o Firefox. Mientras tanto, la agenda sigue
+        Para recibirlos, abrí NUMA en Chrome, Edge o Firefox. Mientras tanto, la agenda sigue
         mostrando todo.
       </p>
     </section>

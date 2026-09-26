@@ -12,8 +12,12 @@ export { EstadoVacio } from './components/EstadoVacio.tsx';
 export type { EstadoVacioProps } from './components/EstadoVacio.tsx';
 export { FilaDeAcciones } from './components/FilaDeAcciones.tsx';
 export type { FilaDeAccionesProps } from './components/FilaDeAcciones.tsx';
+export { FondoDelElegido } from './components/FondoDelElegido.tsx';
+export type { FondoDelElegidoProps } from './components/FondoDelElegido.tsx';
 export { Icono } from './components/Icono.tsx';
 export type { IconoProps, NombreDeIcono } from './components/Icono.tsx';
+export { Interruptor } from './components/Interruptor.tsx';
+export type { InterruptorProps } from './components/Interruptor.tsx';
 export { MoneyInput } from './components/MoneyInput.tsx';
 export { caracteresDe, MontoQueEntra } from './components/MontoQueEntra.tsx';
 export type { MontoQueEntraProps, TamanoDelMonto } from './components/MontoQueEntra.tsx';
@@ -27,6 +31,8 @@ export type { SeccionEnFilaProps, SeccionesEnFilasProps } from './components/Sec
 export { CeldaAncha, Tablero } from './components/Tablero.tsx';
 export type { CeldaAnchaProps, TableroProps } from './components/Tablero.tsx';
 export { TarjetaConLamina } from './components/TarjetaConLamina.tsx';
+export { Tilde } from './components/Tilde.tsx';
+export type { TildeProps } from './components/Tilde.tsx';
 export type { TarjetaConLaminaProps } from './components/TarjetaConLamina.tsx';
 export { Ilustracion, NOMBRES_DE_ILUSTRACION } from './ilustracion/Ilustracion.tsx';
 export type { IlustracionProps, NombreDeIlustracion } from './ilustracion/Ilustracion.tsx';
@@ -42,3 +48,6 @@ export type {
 } from './ilustracion/TableroCortado.tsx';
 export { TrabajoEnEtapa } from './ilustracion/TrabajoEnEtapa.tsx';
 export type { EtapaDelTrabajo, TrabajoEnEtapaProps } from './ilustracion/TrabajoEnEtapa.tsx';
+export { Isotipo, Logotipo } from './marca/Marca.tsx';
+export type { MarcaProps } from './marca/Marca.tsx';
+export { NOMBRE_DE_LA_APP } from './marca/trazos.ts';

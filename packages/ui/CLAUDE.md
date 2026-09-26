@@ -27,7 +27,7 @@ Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están 
 - **Sobre la mesa, sin tarjeta**: el header de las pantallas de lista, los títulos que agrupan tarjetas, las cabeceras de día, el volver y las herramientas de las fichas, y los botones sueltos como «Cargar pagos y gastos».
 - **El canto**: una tarjeta de un tesoro (las de Inicio, «Estado del diezmo») es papel con 5 px del color del tesoro abajo, en un `span` `aria-hidden` sin texto, y 4 px más de relleno abajo. La tarjeta no se tiñe: el color del tesoro va en el canto, como en las piezas del tablero.
 - **Las cápsulas**: botones, chips, insignias, buscadores y los «+ Anotar» son `rounded-pill`. Un chip elegido es `border-ink bg-ink text-paper`; uno sin elegir, `border-hairline bg-paper`.
-- **Los segmentados** llevan pista `bg-ink/6 p-1` y el elegido en `bg-elevado shadow-float`: en cápsula si son de un renglón, y en `rounded-panel` con segmentos de `rounded-[16px]` si pueden partirse en dos renglones.
+- **Los segmentados** llevan pista `bg-ink/6 p-1` y el elegido en `bg-elevado shadow-float`: en cápsula si son de un renglón, y en `rounded-panel` con segmentos de `rounded-[16px]` si pueden partirse en dos renglones. En los de elección única de un renglón, el `bg-elevado shadow-float` es `FondoDelElegido`, que viaja (ADR 0074, abajo).
 - **El vacío por un filtro o una búsqueda es una caja punteada** (`rounded-panel border border-dashed border-border`), sin dibujo y sin botón de crear.
 - **El `hover` sobre la mesa es `bg-ink/5`**, no un gris de superficie: el arnés de las transiciones compara píxeles con el puntero quieto.
 
@@ -62,10 +62,21 @@ Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están 
 - Con `prefers-reduced-motion` las duraciones valen cero.
 - La sombra del empuje (`--sombra-del-empuje`) y el atenuado de la subida (`--atenuado-de-la-subida`) son tokens con su par oscuro, como el resto.
 
+## Lo que responde al tocar (ADR 0074)
+
+- **Nada se mueve por su cuenta.** Lo que responde al dedo se mueve y termina quieto; al montarse, cada control ya está en su estado. Solo `transform` (`scale`, `translate`, `rotate`), `opacity`, `clip-path`, los bordes de algo posicionado y `stroke-dashoffset`. Las duraciones y las curvas son tokens; ninguno usa View Transitions.
+- **Los tokens**: `--escala-del-apreton` (0,97), `--retraso-del-borde-de-atras` (un cuarto del espacial rápido) y `--dur-escalon` (22 ms entre filas escalonadas). Con menos movimiento `--dur-escalon` vale cero y el retraso también, porque sale de una duración; el barrido global lleva `animation-iteration-count: 1`, así que un loop sin guarda queda quieto, pero los loops igual van con `motion-safe:`.
+- **El apretón es `apretable`**, una `@utility` de `theme.css`: `scale` a `--escala-del-apreton` con el resorte de efectos rápidos, solo en `:active`, y al soltar vuelve sin transición (el arnés fotografía el 0 % de una navegación). La utilidad escribe `transition`: **si el elemento ya tenía una, va en `--transicion-propia`** (`[--transicion-propia:color_var(--dur-fast)_var(--ease-out),…]`), nunca en `transition-*`, que la pisaría. `Button` ya la lleva.
+- **La receta de los dos bordes**: lo que viaja se posiciona por `left` y `right`; el borde de adelante sale con el espacial rápido y el de atrás lo alcanza con el espacial y `--retraso-del-borde-de-atras`. Así se estira y vuelve a su forma sin JavaScript de física. La usan la perilla y el fondo del elegido.
+- **`Interruptor`** es el único interruptor: `role="switch"` con `aria-checked`, `etiqueta` o `children` para el nombre, y `className` para la caja que toma el toque. Pone `data-tocado` al click: solo entonces la perilla viaja.
+- **`FondoDelElegido`** va como hijo de la pista (`relative`), y cada opción es hija directa con `data-opcion={valor}` y `relative`, para quedar arriba del fondo. Mide la opción elegida, se ubica sin transición al montarse, al cambiar de ancho y si el dato cambia desde afuera, y viaja (`data-hacia`) solo si hubo un `pointerdown`, `keydown` o `click` en la pista. No cambia el marcado ni el teclado del segmentado.
+- **`Tilde`** es un trazo con `pathLength="1"` del brazo corto al largo; con `dibujar` reusa `maun-trazo`. Quien la usa pone `dibujar` solo cuando el dedo recién tildó o recién copió. **El tachado que corre**: `tachado-que-corre` en un bloque (en un elemento en línea, Chromium recorta con el primer renglón) y adentro `linea-del-tachado`, una copia sin tinta con su `line-through`; mientras corre, el texto de verdad va con `decoration-transparent`.
+- **Las páginas del cliente no se mueven**: cada regla que mueve algo tiene su guarda en `:where(html[data-vista='publica'], [data-quieta])`, **con `!important`**, porque el `:where()` no suma especificidad y la regla que mueve le ganaba. `movimiento.test.ts` lee `theme.css` y lo exige: una regla nueva que mueve, suma su guarda y su caso ahí.
+
 ## Molde de pantalla
 
 - **`Pagina` es el único contenedor de pantalla**: ancho máximo, márgenes por ancho y padding vertical. La app no repite `max-w-content px-(--page-pad-*)` a mano.
-- **Un solo ancho, centrado** (ADR 0062, corregido): `max-w-content` (`--content-max`, 1180 con el padding) y `mx-auto`, igual en todas las pantallas. No tiene prop de ancho a propósito: la primera versión del reparto tuvo uno por reparto y un arranque junto al menú, y dejó las pantallas corridas a la izquierda con un blanco grande a la derecha. Lleva `data-pagina`, que es lo que mide el test del reparto.
+- **Un solo ancho, centrado** (ADR 0062, corregido): `max-w-content` (`--content-max`, 1180 con el padding) y `mx-auto`, igual en todas las pantallas. No tiene prop de ancho a propósito: la primera versión del reparto tuvo uno por reparto y un arranque junto al menú, y dejó las pantallas corridas a la izquierda con un blanco grande a la derecha. Lleva `data-pagina`, que es lo que mide el test del reparto. Con `quieta` lleva además `data-quieta`, la marca de las páginas del cliente adentro de la app (ADR 0074).
 
 ## Los tres repartos (ADR 0062)
 
@@ -77,13 +88,19 @@ Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están 
 
 La app consume `@maun/ui/theme.css` y `@maun/ui/fonts.css` (IBM Plex Sans 400/500/600 y Young Serif, self-hosted con Fontsource para que funcionen offline). `theme.css` declara `@source '..'`: Tailwind escanea las clases de este paquete desde cualquier app que lo importe.
 
+## La marca (ADR 0073)
+
+- **Los trazos de NUMA viven en `src/marca/trazos.ts`**, un `.ts` sin JSX que el paquete expone como `@maun/ui/marca` (con `@maun/source` al archivo y `types` y `default` a `dist`). Lo importa el script de los íconos de la app, que corre en Node y no lee `.tsx`: no le sumes JSX ni imports de React.
+- **`Logotipo` e `Isotipo`** (`src/marca/Marca.tsx`) dibujan esos trazos en `currentColor`, con `role="img"` y `aria-label="NUMA"`; con `decorativa` van `aria-hidden`. El tamaño lo da quien los usa, con el alto y `w-auto`.
+- La grilla es de 200 de alto, con trazo de 44 y el travesaño de la A de 38. Si se toca un trazo, se regeneran los íconos (`pnpm --filter @maun/web iconos`) y el test de los íconos lo exige.
+
 ## Componentes
 
 - Props en inglés, valores en español (`variant="primario"`, `size="chico"`, `cargando`). Los repartos y el módulo de ilustraciones tienen las props en español (ver arriba).
 - `Campo` acepta `ref` (sus props extienden `ComponentPropsWithRef<'input'>`): es lo que React Hook Form necesita para registrar el input.
 - `Campo` acepta `accesorio`, que va a la derecha de la etiqueta (por ejemplo «¿La olvidaste?»), y `sufijo`, que va adentro del campo y recibe el id del input. Siguen siendo tres hijos, así que el subgrid de abajo no cambia.
 - **`CampoDeContrasena` es el único campo de contraseña** (ADR 0023). El botón está siempre, con `aria-pressed` y el nombre fijo «Mostrar la contraseña». No le saca el foco al input (así el teclado del celular no se cierra), conserva el cursor y vuelve a ocultar al enviar el formulario y al volver del bfcache. El `::-ms-reveal` y el `::-ms-clear` de Edge están escondidos en `theme.css`: si no, hay dos ojos, y el de Edge desaparece solo.
-- `Button` es una cápsula (`rounded-pill`, ADR 0068). Tiene `size="grande"`, del alto de un campo (48 px), para el botón principal de las pantallas de sesión, y `variant="herramienta"` con `size="herramienta"` para las herramientas de la cabecera de las fichas: un círculo de 44 px con el ícono que, con `className="sm:px-4"`, pasa a cápsula con texto; deshabilitada conserva su forma. **Los altos de los tamaños son mínimos** (`min-h-*`): una etiqueta que no entra en un renglón agranda el botón en vez de salirse (ADR 0033). No vuelvas a `h-*`.
+- `Button` es una cápsula (`rounded-pill`, ADR 0068), se hunde al apretarlo (`apretable`, ADR 0074) y su spinner gira solo con `motion-safe:`. Tiene `size="grande"`, del alto de un campo (48 px), para el botón principal de las pantallas de sesión, y `variant="herramienta"` con `size="herramienta"` para las herramientas de la cabecera de las fichas: un círculo de 44 px con el ícono que, con `className="sm:px-4"`, pasa a cápsula con texto; deshabilitada conserva su forma. **Los altos de los tamaños son mínimos** (`min-h-*`): una etiqueta que no entra en un renglón agranda el botón en vez de salirse (ADR 0033). No vuelvas a `h-*`.
 - `Campo` acepta `contenedor`, clases que se suman al `div` que envuelve etiqueta, input y ayuda. La ayuda y el error van juntos en una sola celda, así que con `row-span-3 grid grid-rows-subgrid` dos campos en fila alinean sus inputs aunque una etiqueta o una ayuda ocupe dos líneas (ADR 0020).
 - **`Avatar`** son las iniciales del nombre sobre un color que sale de un hash del nombre (`--color-avatar-1` a `-6`, con sus pares del oscuro). Con `foto`, la imagen se pone encima recién cuando carga, y si falla vuelven las iniciales; `data-foto` dice en qué estado está (`sin-foto`, `cargando`, `lista`, `fallo`). Es `aria-hidden`: el nombre siempre está escrito al lado (ADR 0021 y 0022).
 - **`MoneyInput` es el campo de plata** (ADR 0020). Entrega centavos enteros (`number | null`) y muestra el importe formateado mientras se escribe: los dígitos entran por la derecha con el cursor fijo al final (5, 50, 500, 5.000), la coma abre los decimales y pegar un importe con puntos o coma lo lee entero. Decide con `InputEvent.inputType`, no comparando textos. `inputMode="decimal"` y no `numeric`: el teclado numérico de iOS no tiene coma.

@@ -24,7 +24,7 @@ interface CargaDelAviso {
 }
 
 const CARGA_SIN_DATOS: CargaDelAviso = {
-  titulo: 'MAUN',
+  titulo: 'NUMA',
   cuerpo: 'Hay cosas en la agenda.',
   url: '/agenda',
   etiqueta: 'agenda',
@@ -101,8 +101,8 @@ self.addEventListener('push', (evento) => {
     self.registration.showNotification(carga.titulo, {
       body: carga.cuerpo,
       tag: carga.etiqueta,
-      icon: '/pwa-192x192.png',
-      badge: '/pwa-64x64.png',
+      icon: '/numa-192.png',
+      badge: '/numa-insignia-96.png',
       lang: 'es-AR',
       data: { url: carga.url },
     }),

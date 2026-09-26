@@ -12,6 +12,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./marca": {
+      "@maun/source": "./src/marca/trazos.ts",
+      "types": "./dist/marca/trazos.d.ts",
+      "default": "./dist/marca/trazos.js"
+    },
     "./theme.css": "./src/styles/theme.css",
     "./fonts.css": "./src/styles/fonts.css"
   },

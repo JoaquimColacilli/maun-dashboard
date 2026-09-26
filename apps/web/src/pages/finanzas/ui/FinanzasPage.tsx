@@ -68,7 +68,7 @@ function Chip({
       type="button"
       aria-pressed={activo}
       onClick={alElegir}
-      className={`flex min-h-tap items-center gap-2 rounded-pill border px-3 text-label font-medium ${
+      className={`apretable flex min-h-tap items-center gap-2 rounded-pill border px-3 text-label font-medium ${
         activo ? 'border-ink bg-ink text-paper' : 'border-hairline bg-paper text-ink'
       }`}
     >

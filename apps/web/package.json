@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "e2e:version": "playwright test --config playwright.version.config.ts",
     "e2e:reparto": "playwright test --config playwright.reparto.config.ts",
-    "e2e:transiciones": "playwright test --config playwright.transiciones.config.ts"
+    "e2e:transiciones": "playwright test --config playwright.transiciones.config.ts",
+    "iconos": "node --conditions=@maun/source scripts/iconos.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "catalog:",

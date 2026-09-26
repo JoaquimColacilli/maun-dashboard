@@ -7,6 +7,9 @@
   diseño en dónde vive la agenda y en cómo se abre el día: ver Objeciones.
 - Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): la entrega de un
   trabajo cae en la comprometida si la hay, con su franja, y si no en la estimada.
+- Enmendada el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): al tildar una
+  anotación, la tilde se dibuja y una línea corre sobre el texto hasta quedar tachado como siempre;
+  solo en el renglón recién tildado, aunque React lo mueva al final. Destildar vuelve en el acto.
 
 ## Contexto
 

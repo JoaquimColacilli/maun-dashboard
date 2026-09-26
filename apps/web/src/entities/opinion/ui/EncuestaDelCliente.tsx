@@ -286,7 +286,7 @@ export function FormularioDeLaEncuesta({
   }
 
   return (
-    <div className="@container w-full">
+    <div data-quieta="" className="@container w-full">
       <div className="mx-auto w-full max-w-[560px] px-5 pt-5.5 pb-11 @lg:px-7 @lg:pt-10 @lg:pb-14">
         {arriba}
         <header className="flex flex-col gap-0.75">
@@ -345,7 +345,7 @@ export function FormularioDeLaEncuesta({
               }`}
             >
               {enviando && (
-                <span className="animate-maun-spin">
+                <span className="motion-safe:animate-maun-spin">
                   <Icono nombre="loader-circle" tamano={18} />
                 </span>
               )}
@@ -370,7 +370,7 @@ export interface GraciasPorContestarProps {
 export function GraciasPorContestar({ taller, cliente, resena }: GraciasPorContestarProps) {
   const nombre = cliente === null ? '' : primeraPalabra(cliente);
   return (
-    <div className="@container w-full">
+    <div data-quieta="" className="@container w-full">
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-3 px-5 pt-5.5 pb-11 @lg:px-7 @lg:pt-10 @lg:pb-14">
         <MarcaDelTaller taller={taller} />
         <TarjetaConLamina

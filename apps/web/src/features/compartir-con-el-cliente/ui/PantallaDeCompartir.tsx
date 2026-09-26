@@ -36,6 +36,7 @@ import {
   Icono,
   Pagina,
   PrincipalYApoyo,
+  Tilde,
 } from '@/shared/ui';
 
 import { filasDeCobro } from '../model/comoTePaga';
@@ -259,7 +260,11 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                           copiar(vista.url);
                         }}
                       >
-                        <Icono nombre={copiado ? 'check' : 'copy'} tamano={18} />
+                        {copiado ? (
+                          <Tilde dibujar tamano={18} grosor={2} />
+                        ) : (
+                          <Icono nombre="copy" tamano={18} />
+                        )}
                         {copiado ? 'Copiado' : 'Copiar'}
                       </Button>
                     </div>
@@ -312,10 +317,9 @@ export function PantallaDeCompartir({ resumen }: PantallaDeCompartirProps) {
                 ) : (
                   <>
                     <p className="max-w-[520px] text-body leading-relaxed text-text-2">
-                      Este enlace se creó antes de que la dirección se guardara en tu taller, así
-                      que todavía vive en el aparato donde lo hiciste. Abrí este trabajo una vez
-                      desde ahí y la dirección te aparece acá sola, sin tocar el que tu cliente ya
-                      tiene. Si no llegás a ese aparato, creá uno nuevo: el anterior deja de andar.
+                      Este enlace se creó antes de que la dirección se guardara en tu taller, y la
+                      dirección quedó solo en la app de antes. El que tiene tu cliente ya no anda:
+                      creá uno nuevo y mandáselo.
                     </p>
                     <FilaDeAcciones>
                       {botonDeCrear('Crear uno nuevo')}
