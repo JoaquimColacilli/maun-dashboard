@@ -3,6 +3,13 @@
 Estado: aceptada, 2026-09-19. Revierte la decisión «El token se muestra una sola vez» del
 [0046](0046-la-vista-del-cliente-una-lista-blanca-en-la-base.md); el resto de ese ADR sigue en pie.
 
+Enmendada el 2026-09-26 por el [0073](0073-la-app-se-llama-numa.md): la app se mudó a
+`numa-dashboard.netlify.app`, y los tokens de los enlaces de antes de este ADR que no se rellenaron
+quedaron en el `localStorage` del origen viejo, que la app nueva no puede leer. Para esos, la pantalla
+de compartir ya no dice que abrir el trabajo desde el aparato donde se creó trae la dirección: dice
+que quedó solo en la app de antes, que el enlace del cliente ya no anda, y ofrece crear uno nuevo. El
+relleno desde el aparato sigue en el código, para un token guardado en la misma dirección.
+
 ## Contexto
 
 El dueño usó la vista del cliente y volvió con esto:

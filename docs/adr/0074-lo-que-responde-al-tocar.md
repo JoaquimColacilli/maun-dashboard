@@ -335,25 +335,25 @@ son, sin medirlos.
 ## El peso
 
 Medido con `pnpm --filter @maun/web build` en `main` (`b5186e6`) y en esta rama, con la marca del 0073 y
-la novedad incluidas:
+la novedad incluidas (medido otra vez el 26 de septiembre, con la dirección nueva):
 
 | Archivo             | `main`                   | Esta rama                | Diferencia            |
 | ------------------- | ------------------------ | ------------------------ | --------------------- |
 | `index.html`        | 2,30 kB (0,94 gzip)      | 2,85 kB (1,09 gzip)      | +0,55 kB (+0,15 gzip) |
 | CSS (`index-*.css`) | 101,31 kB (20,00 gzip)   | 106,06 kB (20,93 gzip)   | +4,75 kB (+0,93 gzip) |
 | `ui-*.js`           | 150,37 kB (47,84 gzip)   | 151,91 kB (48,41 gzip)   | +1,54 kB (+0,57 gzip) |
-| `index-*.js`        | 700,79 kB (193,08 gzip)  | 706,57 kB (194,99 gzip)  | +5,78 kB (+1,91 gzip) |
+| `index-*.js`        | 700,79 kB (193,08 gzip)  | 706,61 kB (195,01 gzip)  | +5,82 kB (+1,93 gzip) |
 | `crear-cuenta-*.js` | 2,71 kB (1,37 gzip)      | 2,71 kB (1,38 gzip)      | —                     |
 | `vendor-*.js`       | 753,91 kB (220,48 gzip)  | 753,91 kB (220,48 gzip)  | sin cambios           |
-| Precache            | 31 entradas, 1810,04 KiB | 39 entradas, 1844,69 KiB | +8, +34,65 KiB        |
+| Precache            | 31 entradas, 1810,04 KiB | 37 entradas, 1843,31 KiB | +6, +33,27 KiB        |
 
 - **El `index.html`** crece por el arranque que cambia los íconos en `/v/` y `/o/` (0073).
 - **El CSS** crece por el apretón, el interruptor, el fondo del elegido, la tilde, el tachado, el menú,
   los avisos y sus guardas.
 - **`ui`** suma `Logotipo`, `Isotipo`, `Interruptor`, `FondoDelElegido` y `Tilde`; **`index`**, la salida
-  del menú y de los avisos, el estado de lo recién tildado, el título de `/v/` y la novedad (0,53 kB).
-- **El precache** suma los íconos nuevos de NUMA y los del taller con su nombre nuevo, y conserva por una
-  versión `pwa-64x64.png` y `pwa-192x192.png` (0073).
+  del menú y de los avisos, el estado de lo recién tildado, el título de `/v/` y la novedad (medio kB).
+- **El precache** suma los íconos nuevos de NUMA y los del taller con su nombre nuevo; `pwa-64x64.png`,
+  `pwa-192x192.png` y el enmascarable viejo se fueron (0073).
 - **Ninguna dependencia nueva.**
 
 ## Cómo se verificó

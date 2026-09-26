@@ -189,6 +189,9 @@ minimum_password_length = 6
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
 
+# Las passkeys están prendidas en producción, verificado el 2026-09-26 con la API de administración
+# (ADR 0073): rp_id "numa-dashboard.netlify.app", rp_origins ["https://numa-dashboard.netlify.app"] y
+# rp_display_name "NUMA". El bloque de abajo es la plantilla del CLI y queda comentado.
 # Configure passkey sign-ins.
 # [auth.passkey]
 # enabled = false

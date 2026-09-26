@@ -257,10 +257,11 @@ with it reopening the application without signal, only exists there. The first r
 pnpm --filter @maun/web exec playwright install chromium
 ```
 
-The application is called NUMA; the workshop is MAUN, and MAUN is still the internal name: the
-`@maun/*` packages, the keys stored on each device, the local database and the domain keep it, because
-they carry data or identity. What a client sees stays the workshop's. The logo and the icons come from
-one set of strokes in `packages/ui`, and the icons are regenerated with
+The application is called NUMA and lives at `numa-dashboard.netlify.app` (the old
+`maun-dashboard.netlify.app` no longer exists and does not redirect). The workshop is MAUN, and MAUN is
+still the internal name: the `@maun/*` packages, the keys stored on each device and the local database
+keep it. What a client sees stays the workshop's, except the address of the link. The logo and the
+icons come from one set of strokes in `packages/ui`, and the icons are regenerated with
 `pnpm --filter @maun/web iconos` ([0073](docs/adr/0073-la-app-se-llama-numa.md)).
 
 Boundaries are lint errors, not conventions. Packages depend in one direction: the application uses the
