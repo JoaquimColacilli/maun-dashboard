@@ -4,6 +4,11 @@
 - Fecha: 2026-09-23
 - Corrige al [0013](0013-shell-navegacion-e-inicio.md) en las transiciones: `conTransicion()` y el
   cross-fade de cada navegación se van. La tablet y la compu se ven igual que antes.
+- Enmendado el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): el «+» del celular gira
+  con el resorte expresivo rápido en lugar de `--dur-fast`, y al elegir una acción el menú y el giro
+  vuelven en el acto para que la transición de la navegación se lleve la pantalla quieta. Lo que
+  responde al tocar (el apretón, que vuelve sin transición al soltar) termina en la pantalla quieta, y
+  un aviso que nace durante una transición entra quieto: el arnés no cambió sus umbrales.
 
 ## Contexto
 

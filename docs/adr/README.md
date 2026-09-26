@@ -77,3 +77,4 @@ Formato: contexto, decisión, alternativas descartadas y consecuencias. Una pág
 | [0071](0071-la-entrega-y-sus-fechas.md)                                     | La entrega y sus fechas: listo, estimada, comprometida y respuesta  | Aceptada             |
 | [0072](0072-el-sueldo-se-topea-por-mes.md)                                  | El sueldo se topea por mes                                          | Aceptada             |
 | [0073](0073-la-app-se-llama-numa.md)                                        | La app se llama NUMA; el taller sigue siendo MAUN                   | Aceptada             |
+| [0074](0074-lo-que-responde-al-tocar.md)                                    | Lo que responde al tocar: se hunde, se desliza, se abre y se tacha  | Aceptada             |

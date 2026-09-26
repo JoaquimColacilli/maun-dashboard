@@ -14,6 +14,10 @@
 - Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): una entrega
   comprometida con el cliente no se arrastra en la agenda; se cambia desde la ficha. Listo y la
   comprometida se escriben, como los costos, con un update de sus columnas solas.
+- Enmendada el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): la casilla de lo que
+  hace falta sigue siendo un checkbox nativo, con `appearance: none` y la misma zona de 44 px; al
+  tildar, la tilde se dibuja y una línea corre sobre el nombre, colgada de la copia que hace crecer el
+  campo. Destildar vuelve en el acto.
 
 ## Contexto
 

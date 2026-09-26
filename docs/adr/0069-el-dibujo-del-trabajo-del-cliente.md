@@ -6,6 +6,10 @@
   lienzo centra el dibujo también de costado, y `MuebleEnEtapa` y `Carcasa` se van.
 - Completada el 2026-09-25 por el [ADR 0071](0071-la-entrega-y-sus-fechas.md): la escena `listo`,
   la hoja con la vuelta marcada en el calendario, para el mueble terminado que espera su día.
+- Enmendada el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): la página del cliente
+  tampoco se mueve al apretar ni al copiar. Las guardas cuelgan de `html[data-vista='publica']` y de
+  `data-quieta`, una marca en la raíz de `VistaDelCliente` y de la encuesta, así la vista previa de
+  adentro de la app queda igual a lo que ve él. La firma de Gracias se sigue trazando.
 
 ## Contexto
 

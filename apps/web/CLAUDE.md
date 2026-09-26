@@ -195,6 +195,19 @@ src/
 - **Sobre la mesa el `hover` es `bg-ink/5`**: el arnés de las transiciones compara píxeles con el puntero quieto sobre la barra lateral, y un gris de superficie cambiaría la foto.
 - **Una pantalla vacía nueva se suma a `rediseno.spec.ts`** (`e2e/reparto`), con su clave de `PANTALLAS`: ahí se mide que lleve una sola lámina, que el dibujo no tape texto, que no aparezca en el árbol de accesibilidad y que siga al tema.
 
+## Lo que responde al tocar (ADR 0074)
+
+- **Nada se mueve por su cuenta, ni al montarse.** Lo que responde al dedo se mueve y termina en la pantalla quieta; al abrir una pantalla, cada control ya está en su estado. Los avisos son la única excepción: entran y se van animados aunque los dispare la cola o el reloj. Las recetas y los tokens están en `packages/ui/CLAUDE.md`.
+- **El apretón (`apretable`) lo llevan `Button`, los chips con `aria-pressed`, los «+ Anotar» y los tres «+» de la navegación. Nada más.** Un chip nuevo con `aria-pressed` lo suma. Si el elemento ya tenía una transición, va en `[--transicion-propia:…]`: con `transition-*` la utilidad la pisa.
+- **El interruptor es `Interruptor` de `@/shared/ui`**, prendido en tinta. No armes otro a mano.
+- **Un segmentado de elección única de un renglón lleva `FondoDelElegido`**: la pista `relative`, cada opción hija directa con `relative` y `data-opcion={valor}`, y el fondo como hijo de la pista con `elegido={valor}`; el elegido ya no lleva `bg-elevado shadow-float`. No lo llevan los que pueden partirse (`rounded-panel`), las casillas de `ComoTePaga` ni las pestañas que navegan, que mueve el coordinador.
+- **El menú del «+» sale con `ConSalida` y `useSalida`** (`shared/ui/salida.ts`): mientras sale queda montado, `inert` y sin tomar toques. Al elegir una acción se llama `cerrarEnElActo` antes de navegar, para que el menú y el giro del «+» no queden a medio camino en la foto de la transición.
+- **Lo recién tildado dibuja su tilde y corre su línea con un estado local** (`recienTildada` en `FilaDeNecesidad`, `recienHecha` en `useAccionesConFoco`), que se apaga en el `animationend`. **Nunca por `data-hecha`, `data-listo` ni el dato**, que ya están al montar: haría correr todo lo hecho cada vez que se abre la pantalla. En la agenda el estado vive en el hook y no en el renglón, porque React mueve el renglón al final.
+- **Un aviso que se va queda en su lugar, `inert`, hasta terminar su fundido** (`Avisos.tsx`, con el respaldo de 400 ms de las hojas). Uno que nace durante una transición de pantalla entra quieto.
+- **Lo que se ve como el cliente lleva `data-quieta` en su raíz** (`VistaDelCliente`, la encuesta): adentro, nada se hunde, viaja ni se dibuja, igual que en `/v/` y `/o/`. Una vista nueva del cliente adentro de la app lo suma.
+- **Un loop va con `motion-safe:`** y con menos movimiento muestra un estado fijo.
+- **`con-sesion/lo-que-responde-al-tocar.spec.ts`** prueba que cada movimiento termina igual que la pantalla recién montada (con `comparar` del arnés), que con menos movimiento nada dura más de 0,01 ms y que las páginas del cliente quedan quietas. Un movimiento nuevo suma su caso ahí.
+
 ## Entorno
 
 - Las variables se validan con zod en `shared/config/env.ts`, al arrancar (`app/arranque.tsx`). Si falta una, la app muestra cuál y no monta.
@@ -206,6 +219,7 @@ src/
 ## Tests
 
 - Vitest y Testing Library, al lado del archivo (`*.test.ts[x]`).
+- **jsdom no tiene `AnimationEvent`, y React escucha `webkitAnimationEnd` en su lugar.** Para terminar una animación en un test se disparan los dos eventos (`terminarLaAnimacion` en `FilaDeNecesidad.test.tsx`).
 - `shared/lib/cache/cola.test.ts` es el test de la cola: usa IndexedDB de verdad (`fake-indexeddb`) y prueba que sin red la mutación queda en pausa, sobrevive a cerrar la app y se aplica en orden al volver la señal.
 - El household de prueba se vacía con `vaciarTaller` (proyectos primero, después clientes): la base rechaza con `MN003` la baja de un cliente con proyectos vivos.
 - Playwright en `e2e/`, con cinco proyectos: `setup`, `acceso-celular` y `acceso-escritorio` (sin sesión, en `e2e/sin-sesion/`), y `celular` y `escritorio` (con sesión, en `e2e/con-sesion/`).
@@ -535,4 +549,6 @@ src/
 - **Ctrl+Shift+R (`Page.reload` con `ignoreCache`) en la única pestaña deja a la versión vieja sin nadie que la use, y la que esperaba se activa sola.** Para probar una página sin controlar con una versión esperando hace falta otra pestaña abierta. Y `Page.reload` por CDP vuelve antes de navegar: esperá el `load`.
 - **`--app=` necesita `channel: 'chromium'`** (el headless nuevo). En `chrome-headless-shell`, que es el de siempre, se ignora y abre `about:blank`; con el canal, `display-mode: standalone` da verdadero.
 - **Dos arneses a la vez chocan en el 4180**, y un worktree debajo de `%TEMP%` pasa los 260 caracteres de Windows: Vite no resuelve sus propios `#imports`. Usá una ruta corta.
+- **React 19 aplica un toque en una microtarea.** Después de un `.click()` hecho adentro de `page.evaluate`, esperá dos `await Promise.resolve()` antes de leer el DOM o `getAnimations()`: si no, todavía está el estado de antes. Un `locator.click()` de Playwright no tiene el problema.
+- **Una casilla con el foco suma su anillo a la captura**: antes de comparar con la pantalla recién montada, sacale el foco (`blur()`).
 - **La capa tapa los días de al lado.** Para probar que tocar otro día la mueve, elegí uno que no quede debajo: `agenda.spec.ts` va de un lunes al domingo de la misma fila. Las puntas se miden con `getBoundingClientRect` (`puntaDe`), porque la que no corresponde tiene ancho cero.

@@ -18,6 +18,12 @@
   lateral (sección 6) y el del panel de acceso (sección 15) pasan a ser el logotipo de NUMA, a la altura
   de sus mayúsculas, y el menú de «Cargar algo nuevo» pasa de `top-[81px]` a `top-[71px]`, a los mismos
   15 px del botón. La firma «Taller MAUN» de `/v/` y `/o/` no cambia: es del taller.
+- Enmendado el 2026-09-25 por el [ADR 0074](0074-lo-que-responde-al-tocar.md): además de las cuatro
+  cosas de la sección 11 se mueven, al tocarlas y hasta quedar quietas, el apretón de los botones y los
+  chips, la perilla del interruptor, el fondo del elegido de los segmentados de un renglón, el menú del
+  «+», la tilde y el tachado de lo recién tildado y la tilde de «Copiado». Los avisos entran y se van
+  animados aunque los dispare la cola o el reloj: son la excepción declarada. El interruptor de los
+  archivos que ve el cliente deja el `bg-hogar` y pasa a tinta.
 
 ## Contexto
 
@@ -179,7 +185,10 @@ Los tokens cambian en `theme.css` y todo lo que ya usaba tokens cambia solo.
 - **Botones, chips, insignias y buscadores son cápsulas**; los segmentados llevan pista `bg-ink/6 p-1`
   con el elegido en `bg-elevado shadow-float` (en cápsula los de un renglón; en `rounded-panel` con
   segmentos de 16 px los que pueden partirse). En las pestañas de Proyectos y de Opiniones el fondo del
-  elegido sigue siendo el `span` aparte, sin transición (0066).
+  elegido sigue siendo el `span` aparte, sin transición (0066). Desde el
+  [ADR 0074](0074-lo-que-responde-al-tocar.md), en los de elección única de un renglón el
+  `bg-elevado shadow-float` es `FondoDelElegido`, un fondo aparte que viaja a la opción nueva cuando el
+  dedo la cambia; los que pueden partirse cambian de golpe como antes.
 - **El vacío por un filtro o una búsqueda es una caja punteada**, sin dibujo y sin botón de crear.
 - **El encabezado de cada ficha es una tarjeta**, con el cliente, el título, el estado, la marca de
   liquidación, la nota de «Pasó de Consultas…» y las fechas, y lleva el único `data-destino-de` de la
@@ -358,6 +367,14 @@ Se mueven cuatro cosas, y ninguna en loop, al pasar el mouse ni al scrollear:
 
 Con `prefers-reduced-motion`, `--dur-corte`, `--dur-corte-stagger`, `--dur-trazo` y `--dur-medium` valen
 cero y el barrido global deja cada animación en 0,01 ms: todo aparece hecho.
+
+**Enmendado por el [ADR 0074](0074-lo-que-responde-al-tocar.md)**: la regla sigue siendo que nada se
+mueve por su cuenta, en loop, al pasar el mouse ni al scrollear, pero ya no son cuatro cosas. Lo que
+responde al dedo se mueve y termina quieto (el apretón, el interruptor, el fondo del segmentado, el
+menú del «+», la tilde y el tachado, «Copiado»). **Los avisos son la excepción**: entran desde abajo y
+se van con un fundido aunque los dispare la cola o el reloj, y uno que nace durante una transición de
+pantalla entra quieto. El barrido de menos movimiento suma `animation-iteration-count: 1`, y los tres
+loops que no tenían guarda van con `motion-safe:`.
 
 ### 12. La accesibilidad
 
