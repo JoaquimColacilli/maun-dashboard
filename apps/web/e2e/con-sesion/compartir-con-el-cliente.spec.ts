@@ -206,7 +206,7 @@ test('el enlace creado en un aparato se ve igual en el otro, sin tener que crear
   const otroAparato = page.getByRole('region', { name: 'El enlace' });
   await expect(otroAparato).toBeVisible(CARGA);
   await expect(otroAparato.locator('.font-mono')).toHaveText(url);
-  await expect(page.getByText('todavía vive en el aparato donde lo hiciste')).toBeHidden();
+  await expect(page.getByText('quedó solo en la app de antes')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Crear uno nuevo' })).toBeHidden();
 
   await otroAparato.getByRole('button', { name: 'Copiar' }).click();
@@ -232,7 +232,7 @@ test('un enlace de los de antes se rellena solo desde el aparato que lo tiene gu
   // Sin el token guardado de este lado, la pantalla lo dice y no muestra una dirección inventada.
   await abrir(page, `/proyectos/${id}/compartir`);
   await expect(page.getByRole('region', { name: 'El enlace' })).toContainText(
-    'todavía vive en el aparato donde lo hiciste',
+    'quedó solo en la app de antes',
     CARGA,
   );
   await expect(page.getByRole('region', { name: 'El enlace' }).locator('.font-mono')).toHaveCount(
