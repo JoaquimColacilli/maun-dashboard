@@ -49,3 +49,17 @@ describe('con menos movimiento', () => {
     expect(barrido).toContain('transition-duration: 0.01ms !important;');
   });
 });
+
+describe('en las páginas del cliente', () => {
+  it('las guardas ganan a las reglas que mueven, sin depender del orden ni de la especificidad', () => {
+    expect(tema).toMatch(
+      /:where\(html\[data-vista='publica'\], \[data-quieta\]\) \.interruptor \.perilla \{\s*transition: none !important;/,
+    );
+    expect(tema).toMatch(
+      /:where\(html\[data-vista='publica'\], \[data-quieta\]\) \.fondo-del-elegido \{\s*transition: none !important;/,
+    );
+    expect(tema).toMatch(
+      /:where\(html\[data-vista='publica'\], \[data-quieta\]\) :is\(\.tilde path, \.tachado-que-corre\) \{\s*animation: none !important;/,
+    );
+  });
+});

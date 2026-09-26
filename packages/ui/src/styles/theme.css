@@ -721,7 +721,7 @@
   }
 
   :where(html[data-vista='publica'], [data-quieta]) .interruptor .perilla {
-    transition: none;
+    transition: none !important;
   }
 }
 
@@ -743,7 +743,7 @@
   }
 
   :where(html[data-vista='publica'], [data-quieta]) .fondo-del-elegido {
-    transition: none;
+    transition: none !important;
   }
 }
 
@@ -773,7 +773,7 @@
   }
 
   :where(html[data-vista='publica'], [data-quieta]) :is(.tilde path, .tachado-que-corre) {
-    animation: none;
+    animation: none !important;
   }
 }
 

@@ -36,7 +36,7 @@ describe('la tilde', () => {
     expect(copia).toContain('text-decoration-line: line-through;');
     expect(tema).toMatch(/@keyframes maun-tachado \{\s*from \{\s*clip-path: inset\(0 100% 0 0\);/);
     expect(tema).toMatch(
-      /:where\(html\[data-vista='publica'\], \[data-quieta\]\) :is\(\.tilde path, \.tachado-que-corre\) \{\s*animation: none;/,
+      /:where\(html\[data-vista='publica'\], \[data-quieta\]\) :is\(\.tilde path, \.tachado-que-corre\) \{\s*animation: none !important;/,
     );
   });
 });
