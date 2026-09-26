@@ -318,7 +318,7 @@ test('un push que llega arma la notificación con el texto de la función, y sin
       etiqueta: 'agenda-2026-09-14',
     }),
   });
-  const conIcono = { icon: '/pwa-192x192.png', badge: '/pwa-64x64.png', lang: 'es-AR' };
+  const conIcono = { icon: '/numa-192.png', badge: '/numa-insignia-96.png', lang: 'es-AR' };
   await expect
     .poll(() => notificacionesArmadas(trabajador), { timeout: 10_000 })
     .toEqual([
@@ -339,7 +339,7 @@ test('un push que llega arma la notificación con el texto de la función, y sin
   await expect
     .poll(() => notificacionesArmadas(trabajador), { timeout: 10_000 })
     .toContainEqual({
-      titulo: 'MAUN',
+      titulo: 'NUMA',
       body: 'Hay cosas en la agenda.',
       tag: 'agenda',
       data: { url: '/agenda' },
