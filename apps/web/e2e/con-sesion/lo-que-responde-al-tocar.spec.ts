@@ -542,22 +542,34 @@ test('los avisos entran desde abajo y se van con un fundido, y el que se va qued
   expect(entradas.flat()).toEqual(expect.arrayContaining(['opacity', 'translate']));
 
   const alCerrar = await aviso.evaluate(async (tarjeta) => {
+    const yaSeIba = tarjeta.hasAttribute('data-saliendo');
+    const fundido: string[] = [];
+    tarjeta.addEventListener('transitionrun', (evento) => {
+      if (evento instanceof TransitionEvent && evento.target === tarjeta) {
+        fundido.push(evento.propertyName);
+      }
+    });
     const cerrar = tarjeta.querySelector('button[aria-label="Cerrar el aviso"]');
     if (!(cerrar instanceof HTMLElement)) throw new Error('sin el botón de cerrar');
     cerrar.click();
     await Promise.resolve();
     await Promise.resolve();
-    return {
+    const enElActo = {
       sigue: tarjeta.isConnected,
       inerte: tarjeta.hasAttribute('inert'),
       saliendo: tarjeta.hasAttribute('data-saliendo'),
-      fundido: tarjeta
-        .getAnimations()
-        .map((animacion) => (animacion as CSSTransition).transitionProperty),
     };
+    await new Promise<void>((listo) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          listo();
+        });
+      });
+    });
+    return { yaSeIba, ...enElActo, fundido };
   });
   console.log(`${testInfo.project.name}, al irse: ${JSON.stringify(alCerrar)}`);
-  expect(alCerrar).toMatchObject({ sigue: true, inerte: true, saliendo: true });
+  expect(alCerrar).toMatchObject({ yaSeIba: false, sigue: true, inerte: true, saliendo: true });
   expect(alCerrar.fundido).toContain('opacity');
   await expect(aviso).toHaveCount(0);
 });
