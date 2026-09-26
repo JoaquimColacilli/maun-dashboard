@@ -24,7 +24,15 @@ import {
   useEstadoSync,
   uuidv7,
 } from '@/shared/lib';
-import { Button, Campo, FilaDeAcciones, Hoja, Icono, MoneyInput } from '@/shared/ui';
+import {
+  Button,
+  Campo,
+  FilaDeAcciones,
+  FondoDelElegido,
+  Hoja,
+  Icono,
+  MoneyInput,
+} from '@/shared/ui';
 
 const UN_DIA_MS = 86_400_000;
 
@@ -47,21 +55,21 @@ function Segmentado({
     <div
       role="radiogroup"
       aria-label="Tipo"
-      className="grid grid-cols-4 gap-0.5 rounded-pill bg-ink/6 p-1"
+      className="relative grid grid-cols-4 gap-0.5 rounded-pill bg-ink/6 p-1"
     >
+      <FondoDelElegido elegido={grupo} />
       {GRUPOS.map((opcion) => (
         <button
           key={opcion.id}
           type="button"
           role="radio"
           aria-checked={grupo === opcion.id}
+          data-opcion={opcion.id}
           onClick={() => {
             alElegir(opcion.id);
           }}
-          className={`min-h-tap rounded-pill text-label ${
-            grupo === opcion.id
-              ? 'bg-elevado font-semibold text-ink shadow-float'
-              : 'font-medium text-text-2'
+          className={`relative min-h-tap rounded-pill text-label ${
+            grupo === opcion.id ? 'font-semibold text-ink' : 'font-medium text-text-2'
           }`}
         >
           {opcion.etiqueta}

@@ -12,6 +12,8 @@ export { EstadoVacio } from './components/EstadoVacio.tsx';
 export type { EstadoVacioProps } from './components/EstadoVacio.tsx';
 export { FilaDeAcciones } from './components/FilaDeAcciones.tsx';
 export type { FilaDeAccionesProps } from './components/FilaDeAcciones.tsx';
+export { FondoDelElegido } from './components/FondoDelElegido.tsx';
+export type { FondoDelElegidoProps } from './components/FondoDelElegido.tsx';
 export { Icono } from './components/Icono.tsx';
 export type { IconoProps, NombreDeIcono } from './components/Icono.tsx';
 export { Interruptor } from './components/Interruptor.tsx';

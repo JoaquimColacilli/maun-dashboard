@@ -14,7 +14,7 @@ import {
 import { useReplicaDelTaller } from '@/entities/replica';
 import { HojaDeCliente } from '@/features/editar-cliente';
 import { formatearPesos, relativa, useIr } from '@/shared/lib';
-import { Button, ConSalida, EstadoVacio, Icono, Pagina } from '@/shared/ui';
+import { Button, ConSalida, EstadoVacio, FondoDelElegido, Icono, Pagina } from '@/shared/ui';
 
 function detalleDe(resumen: ResumenDeCliente, hoy: string): string {
   const partes: string[] = [];
@@ -182,21 +182,21 @@ export function ClientesPage() {
               <div
                 role="radiogroup"
                 aria-label="Ordenar por"
-                className="grid grid-cols-3 gap-0.5 rounded-pill bg-ink/6 p-1 @min-[22rem]:flex"
+                className="relative grid grid-cols-3 gap-0.5 rounded-pill bg-ink/6 p-1 @min-[22rem]:flex"
               >
+                <FondoDelElegido elegido={orden} />
                 {ORDENES.map((opcion) => (
                   <button
                     key={opcion.id}
                     type="button"
                     role="radio"
                     aria-checked={orden === opcion.id}
+                    data-opcion={opcion.id}
                     onClick={() => {
                       setOrden(opcion.id);
                     }}
-                    className={`min-h-tap rounded-pill px-2 text-meta ${
-                      orden === opcion.id
-                        ? 'bg-elevado font-semibold text-ink shadow-float'
-                        : 'font-medium text-text-2'
+                    className={`relative min-h-tap rounded-pill px-2 text-meta ${
+                      orden === opcion.id ? 'font-semibold text-ink' : 'font-medium text-text-2'
                     }`}
                   >
                     {opcion.etiqueta}

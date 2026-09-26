@@ -711,6 +711,28 @@
   }
 }
 
+/* El fondo del elegido de un segmentado (ADR 0074) viaja igual que la perilla: sale el borde que va
+   adelante y el de atrás lo alcanza. FondoDelElegido lo mide y le pone data-hacia solo cuando el
+   dedo cambió la opción; al montarse, al cambiar de ancho o si el dato cambia desde otro lado, se
+   ubica sin transición. */
+@layer components {
+  .fondo-del-elegido[data-hacia='derecha'] {
+    transition:
+      right var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      left var(--dur-espacial) var(--resorte-espacial) var(--retraso-del-borde-de-atras);
+  }
+
+  .fondo-del-elegido[data-hacia='izquierda'] {
+    transition:
+      left var(--dur-espacial-rapido) var(--resorte-espacial-rapido),
+      right var(--dur-espacial) var(--resorte-espacial) var(--retraso-del-borde-de-atras);
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) .fondo-del-elegido {
+    transition: none;
+  }
+}
+
 /* Las ilustraciones son un plano de taller (ADR 0068): dibujos de línea con una sola tinta sobre
    el papel, y los tipos de línea del dibujo técnico usados como vocabulario. No agregan colores:
    todo sale de los tokens de arriba, así que el oscuro viene solo, y el color de los tesoros entra
