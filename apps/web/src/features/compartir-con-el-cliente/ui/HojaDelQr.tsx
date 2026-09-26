@@ -45,7 +45,7 @@ export function HojaDelQr({ trabajo, url, alCerrar }: HojaDelQrProps) {
             fallback={
               <div
                 aria-busy="true"
-                className="aspect-square w-full animate-maun-shimmer rounded-field bg-surface-2"
+                className="aspect-square w-full rounded-field bg-surface-2 motion-safe:animate-maun-shimmer"
               >
                 <span className="sr-only" role="status">
                   Dibujando el código

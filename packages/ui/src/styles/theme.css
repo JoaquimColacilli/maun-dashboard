@@ -262,6 +262,9 @@
   --dur-corte-stagger: 400ms;
   --dur-trazo: 600ms;
 
+  /* Lo que se hunde un control mientras el dedo está encima: el apretón (ADR 0074). */
+  --escala-del-apreton: 0.97;
+
   /* Los resortes del esquema estándar de Material 3, como curvas: cada uno es un par de curva
      (linear()) y duración, que es el tiempo en que asienta a un milésimo. Salen de amortiguación y
      rigidez en src/resortes.ts y los escribe un script; el test los compara (ADR 0066). */
@@ -642,7 +645,33 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* El apretón (ADR 0074): el control se hunde mientras el dedo está encima y vuelve en el acto al
+   soltar, sin transición, para que una navegación no fotografíe un botón a medio volver. La
+   transición de scale va solo en :active y se suma a la que el elemento ya tenía, que la declara
+   en --transicion-propia. Con menos movimiento y en las páginas del cliente no se hunde. */
+@utility apretable {
+  transition: var(--transicion-propia, scale 0s);
+
+  &:active:not(:disabled) {
+    scale: var(--escala-del-apreton);
+    transition:
+      var(--transicion-propia, scale 0s),
+      scale var(--dur-efectos-rapidos) var(--resorte-efectos-rapidos);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      scale: none;
+    }
+  }
+
+  :where(html[data-vista='publica'], [data-quieta]) &:active:not(:disabled) {
+    scale: none;
   }
 }
 

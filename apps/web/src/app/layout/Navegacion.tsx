@@ -249,7 +249,7 @@ function BarraInferior({
           type="button"
           aria-label="Cargar algo nuevo"
           aria-expanded={abierto}
-          className="pointer-events-auto relative col-start-1 row-start-1 flex size-fab items-center justify-center self-start justify-self-center rounded-pill bg-ink text-paper shadow-fab transition-transform duration-(--dur-fast) ease-out"
+          className="apretable pointer-events-auto relative col-start-1 row-start-1 flex size-fab items-center justify-center self-start justify-self-center rounded-pill bg-ink text-paper shadow-fab [--transicion-propia:rotate_var(--dur-fast)_var(--ease-out)]"
           style={{ rotate: abierto ? '45deg' : '0deg' }}
           onClick={() => {
             setAbierto(!abierto);
@@ -280,7 +280,7 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
         type="button"
         aria-label="Cargar algo nuevo"
         aria-expanded={abierto}
-        className="mb-4.5 flex size-tap items-center justify-center rounded-pill bg-ink text-paper shadow-fab"
+        className="apretable mb-4.5 flex size-tap items-center justify-center rounded-pill bg-ink text-paper shadow-fab"
         onClick={() => {
           setAbierto(!abierto);
         }}
@@ -373,7 +373,7 @@ function Sidebar({
       <button
         type="button"
         aria-expanded={abierto}
-        className="mb-4 flex h-10 items-center justify-center gap-2 rounded-pill bg-ink text-label font-medium text-paper shadow-fab"
+        className="apretable mb-4 flex h-10 items-center justify-center gap-2 rounded-pill bg-ink text-label font-medium text-paper shadow-fab"
         onClick={() => {
           setAbierto(!abierto);
         }}

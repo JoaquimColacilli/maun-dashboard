@@ -217,7 +217,7 @@ export function HojaDeMovimiento({
                   onClick={() => {
                     elegirClase(opcion.id);
                   }}
-                  className={`flex min-h-tap items-center gap-2 rounded-pill border px-3 text-label font-medium ${
+                  className={`apretable flex min-h-tap items-center gap-2 rounded-pill border px-3 text-label font-medium ${
                     clase === opcion.id
                       ? 'border-ink bg-ink text-paper'
                       : 'border-border bg-paper text-ink'
@@ -311,7 +311,7 @@ export function HojaDeMovimiento({
                   onClick={() => {
                     setFecha(atajo.id);
                   }}
-                  className={`h-field rounded-pill border px-4 text-body font-medium ${
+                  className={`apretable h-field rounded-pill border px-4 text-body font-medium ${
                     fecha === atajo.id
                       ? 'border-ink bg-ink text-paper'
                       : 'border-border bg-paper text-ink'

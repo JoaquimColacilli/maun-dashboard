@@ -137,7 +137,7 @@ export function PreferenciasDeLosAvisos({
                 onClick={() => {
                   if (!elegida) alCambiar({ ...preferencias, hora });
                 }}
-                className={`min-h-tap rounded-pill border px-3.5 text-body font-medium tabular-nums ${
+                className={`apretable min-h-tap rounded-pill border px-3.5 text-body font-medium tabular-nums ${
                   elegida
                     ? 'border-ink bg-ink text-paper'
                     : 'border-border bg-paper text-ink hover:bg-surface'

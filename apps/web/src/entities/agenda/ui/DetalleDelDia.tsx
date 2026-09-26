@@ -132,7 +132,7 @@ export function DetalleDelDia({
         <button
           type="button"
           onClick={alAnotar}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-pill border border-dashed border-border bg-paper font-medium hover:border-ink hover:bg-surface"
+          className="apretable flex h-12 w-full items-center justify-center gap-2 rounded-pill border border-dashed border-border bg-paper font-medium hover:border-ink hover:bg-surface"
         >
           <Icono nombre="plus" tamano={18} />
           Anotar algo para este día

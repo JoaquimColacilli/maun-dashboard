@@ -345,7 +345,7 @@ export function FormularioDeLaEncuesta({
               }`}
             >
               {enviando && (
-                <span className="animate-maun-spin">
+                <span className="motion-safe:animate-maun-spin">
                   <Icono nombre="loader-circle" tamano={18} />
                 </span>
               )}
