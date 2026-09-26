@@ -272,7 +272,7 @@ export async function simularRegistroEnSupabase(page: Page): Promise<() => numbe
         challenge_id: 'registro-e2e',
         expires_at: Math.floor(Date.now() / 1000) + 300,
         options: {
-          rp: { id: 'localhost', name: 'MAUN' },
+          rp: { id: 'localhost', name: 'NUMA' },
           user: {
             id: randomBytes(16).toString('base64url'),
             name: 'cuenta-de-prueba',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 
 import { VersionDeLaApp } from '@/features/ver-novedades';
@@ -10,7 +10,7 @@ import {
   useIr,
   useUbicacionVisible,
 } from '@/shared/lib';
-import { Avatar, Icono } from '@/shared/ui';
+import { Avatar, Icono, Isotipo, Logotipo } from '@/shared/ui';
 
 import { historialDelNavegador } from '../navegacion/historial';
 import { destinoDeLaBarra } from '../navegacion/pila';
@@ -59,12 +59,12 @@ function LogoAInicio({
 }: {
   irA: (ruta: string) => void;
   className: string;
-  children: string;
+  children: ReactNode;
 }) {
   return (
     <Ir
       a={DESTINOS.inicio.ruta}
-      aria-label="MAUN, ir a Inicio"
+      aria-label="NUMA, ir a Inicio"
       className={className}
       alTocar={() => {
         irA(DESTINOS.inicio.ruta);
@@ -272,9 +272,9 @@ function Riel({ activo, irA }: { activo: IdDeSeccion | undefined; irA: (r: strin
     >
       <LogoAInicio
         irA={irA}
-        className="mb-3.5 flex size-tap items-center justify-center rounded-pill font-display text-h1 hover:bg-ink/5"
+        className="mb-3.5 flex size-tap items-center justify-center rounded-pill hover:bg-ink/5"
       >
-        M
+        <Isotipo decorativa className="h-[23px] w-auto" />
       </LogoAInicio>
       <button
         type="button"
@@ -364,9 +364,9 @@ function Sidebar({
       <div className="flex items-baseline justify-between pb-4.5">
         <LogoAInicio
           irA={irA}
-          className="rounded-pill px-2.5 font-display text-h1-lg hover:bg-ink/5"
+          className="flex min-h-tap items-center rounded-pill px-2.5 hover:bg-ink/5"
         >
-          MAUN
+          <Logotipo decorativa className="h-[27px] w-auto" />
         </LogoAInicio>
         <span className="text-meta text-text-3">Taller</span>
       </div>
@@ -387,7 +387,7 @@ function Sidebar({
           setAbierto(false);
         }}
         irA={irA}
-        className="absolute top-[81px] left-3.5"
+        className="absolute top-[71px] left-3.5"
       />
       {NAV_ESCRITORIO.map((id) => {
         const destino = DESTINOS[id];

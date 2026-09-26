@@ -124,14 +124,14 @@ export function avisoDeLaPrueba(resultado: ResultadoDeLaPrueba): {
 export const PASOS_EN_EL_IPHONE: readonly string[] = [
   'Tocá el botón de compartir, abajo en el medio.',
   'Elegí «Agregar a inicio».',
-  'Abrí MAUN desde el ícono nuevo.',
+  'Abrí NUMA desde el ícono nuevo.',
 ];
 
 export function pasosParaDesbloquear(comoApp: boolean): readonly string[] {
   return comoApp
     ? [
         'Abrí los ajustes del teléfono.',
-        'Buscá MAUN en la lista de apps.',
+        'Buscá NUMA en la lista de apps.',
         'Activá «Permitir notificaciones» y volvé acá.',
       ]
     : [

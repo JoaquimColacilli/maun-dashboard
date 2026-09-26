@@ -143,11 +143,15 @@ describe('en el celular', () => {
 });
 
 describe('en la tablet', () => {
-  it('la M del riel también lleva a Inicio', () => {
+  it('la N del riel también lleva a Inicio', () => {
     pantallaDe(900);
     montar('/proyectos');
 
-    expect(screen.getByRole('link', { name: 'MAUN, ir a Inicio' })).toHaveAttribute('href', '/');
+    const logo = screen.getByRole('link', { name: 'NUMA, ir a Inicio' });
+    expect(logo).toHaveAttribute('href', '/');
+    expect(logo).toHaveClass('size-tap');
+    expect(logo.querySelector('svg')).toHaveAttribute('viewBox', '0 0 158 200');
+    expect(logo.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });
 });
 
@@ -177,7 +181,13 @@ describe('en el escritorio', () => {
     pantallaDe(1440);
     montar('/clientes');
 
-    expect(screen.getByRole('link', { name: 'MAUN, ir a Inicio' })).toHaveAttribute('href', '/');
+    const logo = screen.getByRole('link', { name: 'NUMA, ir a Inicio' });
+    expect(logo).toHaveAttribute('href', '/');
+    expect(logo).toHaveClass('min-h-tap');
+    expect(logo.querySelector('svg')).toHaveAttribute('viewBox', '0 0 738 200');
+    expect(logo.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByText('MAUN')).toBeNull();
+    expect(screen.getByText('Taller')).toBeInTheDocument();
   });
 
   it('muestra el mail y el estado de sincronización', () => {

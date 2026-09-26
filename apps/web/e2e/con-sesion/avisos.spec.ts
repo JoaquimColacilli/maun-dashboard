@@ -261,7 +261,7 @@ test('el teclado recorre la configuración en orden y cambia cada cosa', async (
 test.describe('en un iPhone abierto desde Safari', () => {
   test.use({ userAgent: IPHONE });
 
-  test('pide agregar MAUN a inicio antes de ofrecer los avisos', async ({
+  test('pide agregar NUMA a inicio antes de ofrecer los avisos', async ({
     page,
     isMobile,
   }, testInfo) => {
@@ -271,7 +271,7 @@ test.describe('en un iPhone abierto desde Safari', () => {
     await abrirLosAvisos(page);
 
     await expect(
-      page.getByRole('heading', { name: 'Primero agregá MAUN a la pantalla de inicio' }),
+      page.getByRole('heading', { name: 'Primero agregá NUMA a la pantalla de inicio' }),
     ).toBeVisible(CARGA);
     await expect(page.getByText(/En el iPhone, los avisos solo llegan si la app/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Activar los avisos' })).toHaveCount(0);
