@@ -8,7 +8,7 @@ import { useId } from 'react';
 
 import { MarcaDeCategoria } from '@/entities/agenda';
 import type { EstadoDeLosAvisos, PreferenciasDeLaPersona } from '@/shared/api';
-import { Button, Icono } from '@/shared/ui';
+import { Button, Icono, Interruptor } from '@/shared/ui';
 
 import {
   ANTICIPACION_EN_PALABRAS,
@@ -19,7 +19,6 @@ import {
   otrosDispositivos,
   QUE_AVISA,
 } from '../model/textos';
-import { Interruptor } from './Interruptor';
 import { OpcionesDeZona } from './OpcionesDeZona';
 
 export interface PreferenciasDeLosAvisosProps {

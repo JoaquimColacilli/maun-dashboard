@@ -12,7 +12,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import { TIPO, type FilaDePregunta } from '@/entities/opinion';
 import { hayCambios, useAlgoEnCurso } from '@/shared/lib';
-import { Button, FilaDeAcciones, Icono } from '@/shared/ui';
+import { Button, FilaDeAcciones, Icono, Interruptor } from '@/shared/ui';
 
 import type { ModoDeGuardar } from '../model/acciones';
 
@@ -237,28 +237,18 @@ export function EditorDeUnaPregunta({
         </fieldset>
       )}
 
-      <button
-        type="button"
-        role="switch"
-        aria-checked={borrador.obligatoria}
-        onClick={() => {
-          cambiar({ obligatoria: !borrador.obligatoria });
+      <Interruptor
+        activo={borrador.obligatoria}
+        alCambiar={(obligatoria) => {
+          cambiar({ obligatoria });
         }}
-        className="flex min-h-13 items-center gap-3 rounded-field border border-border bg-paper px-3 py-2 text-left"
+        className="min-h-13 rounded-field border border-border bg-paper px-3 py-2"
       >
-        <span
-          aria-hidden
-          className={`flex h-8 w-13 flex-none rounded-pill p-0.75 transition-colors duration-(--dur-fast) ${
-            borrador.obligatoria ? 'justify-end bg-ink' : 'justify-start bg-border'
-          }`}
-        >
-          <span className="size-6.5 rounded-pill bg-paper shadow-float" />
-        </span>
         <span className="text-body-sm leading-tight">
           Que tenga que contestarla
           <span className="block text-meta text-text-2">Si no, puede saltearla</span>
         </span>
-      </button>
+      </Interruptor>
 
       {avisar && (
         <div className="flex flex-col gap-2.5 rounded-field border border-atencion bg-atencion-tint px-4 py-3.5">
