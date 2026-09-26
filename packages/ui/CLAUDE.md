@@ -76,7 +76,7 @@ Los colores, tamaños de texto, radios y sombras por defecto de Tailwind están 
 ## Molde de pantalla
 
 - **`Pagina` es el único contenedor de pantalla**: ancho máximo, márgenes por ancho y padding vertical. La app no repite `max-w-content px-(--page-pad-*)` a mano.
-- **Un solo ancho, centrado** (ADR 0062, corregido): `max-w-content` (`--content-max`, 1180 con el padding) y `mx-auto`, igual en todas las pantallas. No tiene prop de ancho a propósito: la primera versión del reparto tuvo uno por reparto y un arranque junto al menú, y dejó las pantallas corridas a la izquierda con un blanco grande a la derecha. Lleva `data-pagina`, que es lo que mide el test del reparto.
+- **Un solo ancho, centrado** (ADR 0062, corregido): `max-w-content` (`--content-max`, 1180 con el padding) y `mx-auto`, igual en todas las pantallas. No tiene prop de ancho a propósito: la primera versión del reparto tuvo uno por reparto y un arranque junto al menú, y dejó las pantallas corridas a la izquierda con un blanco grande a la derecha. Lleva `data-pagina`, que es lo que mide el test del reparto. Con `quieta` lleva además `data-quieta`, la marca de las páginas del cliente adentro de la app (ADR 0074).
 
 ## Los tres repartos (ADR 0062)
 

@@ -26,4 +26,22 @@ describe('Pagina', () => {
     const molde = screen.getByText('Contenido').parentElement;
     expect(molde).toHaveClass('gap-4', 'max-w-content');
   });
+
+  it('una página del cliente lleva en el mismo molde la marca que la deja quieta', () => {
+    const { rerender } = render(
+      <Pagina>
+        <p>Contenido</p>
+      </Pagina>,
+    );
+    expect(screen.getByText('Contenido').parentElement).not.toHaveAttribute('data-quieta');
+
+    rerender(
+      <Pagina quieta>
+        <p>Contenido</p>
+      </Pagina>,
+    );
+    const molde = screen.getByText('Contenido').parentElement;
+    expect(molde).toHaveAttribute('data-quieta');
+    expect(molde).toHaveAttribute('data-pagina');
+  });
 });

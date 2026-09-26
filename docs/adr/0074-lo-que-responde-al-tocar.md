@@ -263,10 +263,15 @@ No salen de Bencho, porque Notify ya no los tiene: es una decisión nuestra, con
 
 No se mueve nada, tampoco al apretar ni al copiar (0069). Las guardas cuelgan de
 `:where(html[data-vista='publica'], [data-quieta])`: la primera es la de `/v/` y `/o/`; `data-quieta` es
-una marca propia en la raíz de `VistaDelCliente` (un envoltorio `display: contents`) y en las dos raíces
+una marca propia en la raíz de `VistaDelCliente` (la `Pagina` misma, con `quieta`) y en las dos raíces
 de la encuesta, así «Así la ve tu cliente» y «Mostrarle al cliente» quedan iguales a lo que ve él. Las
 transiciones de color y las hojas que esas páginas ya tenían siguen como estaban, y la firma de Gracias
 se sigue trazando.
+
+**La marca va en la `Pagina`, no en un envoltorio.** La primera versión envolvía la vista en un `div`
+con `display: contents`, y el test del reparto (0062) la dio por fuera del molde en todos los anchos: su
+medición no entra en un elemento sin caja, así que no encontraba el `data-pagina` de adentro. `Pagina`
+suma `quieta`, que pone `data-quieta` en el mismo molde.
 
 **Las guardas van con `!important`.** El e2e encontró que en `/v/` «Copiado» dibujaba su tilde:
 `.tilde[data-dibujar] path` tiene más especificidad que la guarda, cuyo `:where()` no suma nada. Con
@@ -378,6 +383,9 @@ la novedad incluidas:
     y conserva el foco; el segmentado sigue con una parada de Tab por opción y Espacio elige, como antes;
     Enter en el «+» lo abre (`[expanded]`) y Escape lo cierra.
 - **`e2e:transiciones` sigue en verde sin tocar sus umbrales**, y `rediseno.spec.ts` no se tocó.
+- **El test del reparto** (`e2e:reparto`, 0062) encontró el envoltorio `display: contents` de la vista
+  del cliente: en todos los anchos, por el enlace y adentro de la app, «no está adentro del molde de la
+  página». Con la marca en la `Pagina` volvió a pasar, sin tocar el test.
 - **Los cuadros**, con y sin menos movimiento y a 1/10 de velocidad, del menú al abrir y al cerrar, el
   segmentado, el apretón, el aviso al entrar y al salir, la agenda al tildar y copiar; y un video de cada
   recorrido. Mirados uno por uno.
